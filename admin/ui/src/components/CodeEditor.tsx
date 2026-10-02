@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { json } from '@codemirror/lang-json';
 import { sql, SQLite } from '@codemirror/lang-sql';
-import { bracketMatching, defaultHighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { HighlightStyle, bracketMatching, syntaxHighlighting } from '@codemirror/language';
+import { tags } from '@lezer/highlight';
 import { EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, placeholder as placeholderExt } from '@codemirror/view';
 
@@ -14,6 +15,25 @@ export interface CodeEditorProps {
   placeholder?: string;
   minLines?: number;
 }
+
+/** Token colours come from CSS variables, so they follow the light/dark theme. */
+const themedHighlight = HighlightStyle.define([
+  {
+    tag: [tags.keyword, tags.operatorKeyword, tags.modifier],
+    color: 'var(--syn-keyword)',
+    fontWeight: '600',
+  },
+  { tag: [tags.string, tags.special(tags.string)], color: 'var(--syn-string)' },
+  { tag: [tags.number, tags.bool, tags.null], color: 'var(--syn-number)' },
+  { tag: [tags.typeName, tags.standard(tags.name)], color: 'var(--syn-type)' },
+  { tag: [tags.propertyName], color: 'var(--syn-property)' },
+  {
+    tag: [tags.comment, tags.lineComment, tags.blockComment],
+    color: 'var(--muted)',
+    fontStyle: 'italic',
+  },
+  { tag: [tags.brace, tags.paren, tags.squareBracket, tags.punctuation], color: 'var(--muted)' },
+]);
 
 /**
  * Small CodeMirror 6 wrapper (only the extensions we need, to keep the
@@ -42,7 +62,7 @@ export function CodeEditor({
           lineNumbers(),
           history(),
           bracketMatching(),
-          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          syntaxHighlighting(themedHighlight),
           keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
           language === 'sql' ? sql({ dialect: SQLite }) : json(),
           EditorView.lineWrapping,

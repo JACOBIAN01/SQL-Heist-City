@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { AdminUser } from '@heist/shared';
 import { api } from '../api/client';
 import { meQueryKey } from '../auth/useMe';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 export function Shell({ user }: { user: AdminUser }) {
   const queryClient = useQueryClient();
@@ -26,6 +27,7 @@ export function Shell({ user }: { user: AdminUser }) {
           {isAdmin && <NavLink to="/audit">Audit log</NavLink>}
           {isAdmin && <NavLink to="/users">Users</NavLink>}
         </nav>
+        <ThemeToggle />
         <span className="who">
           {user.email} <span className="badge">{user.role}</span>
           <button className="link" onClick={() => void logout()}>

@@ -10,6 +10,11 @@
   --ok: #1f7a4d;
   --warn: #9a6700;
   --code-bg: #f1f3f6;
+  --syn-keyword: #7a2bb5;
+  --syn-string: #a3361f;
+  --syn-number: #1a6b8a;
+  --syn-type: #1f7a4d;
+  --syn-property: #2a4fa8;
   --radius: 8px;
   color-scheme: light;
   font-family:
@@ -22,8 +27,29 @@
   color: var(--text);
   background: var(--bg);
 }
+/* Dark palette: explicit choice (data-theme="dark"), or the OS setting
+   when the user picked "System" (no data-theme attribute). */
+:root[data-theme='dark'] {
+  --bg: #0f1216;
+  --panel: #171b21;
+  --text: #e6e9ee;
+  --muted: #8b95a5;
+  --border: #2a3039;
+  --accent: #d4a017;
+  --accent-text: #111;
+  --danger: #ef6b5f;
+  --ok: #4cc38a;
+  --warn: #e5b33b;
+  --code-bg: #1f252d;
+  --syn-keyword: #c99bff;
+  --syn-string: #f0a07a;
+  --syn-number: #6cc4e8;
+  --syn-type: #7fd6a4;
+  --syn-property: #8fb4ff;
+  color-scheme: dark;
+}
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #0f1216;
     --panel: #171b21;
     --text: #e6e9ee;
@@ -35,6 +61,16 @@
     --ok: #4cc38a;
     --warn: #e5b33b;
     --code-bg: #1f252d;
+    --syn-keyword: #c99bff;
+    --syn-string: #f0a07a;
+    --syn-number: #6cc4e8;
+    --syn-type: #7fd6a4;
+    --syn-property: #8fb4ff;
+    --syn-keyword: #c99bff;
+    --syn-string: #f0a07a;
+    --syn-number: #6cc4e8;
+    --syn-type: #7fd6a4;
+    --syn-property: #8fb4ff;
     color-scheme: dark;
   }
 }
@@ -340,4 +376,29 @@ tr[aria-selected='true'] {
 }
 .cm-host .cm-activeLineGutter {
   background: transparent;
+}
+
+/* Theme switcher */
+.theme-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.theme-toggle button {
+  border: none;
+  border-radius: 0;
+  padding: 4px 9px;
+  background: var(--panel);
+  color: var(--muted);
+}
+.theme-toggle button[aria-pressed='true'] {
+  background: var(--code-bg);
+  color: var(--text);
+  font-weight: 600;
+}
+.login-theme {
+  position: fixed;
+  top: 12px;
+  right: 12px;
 }

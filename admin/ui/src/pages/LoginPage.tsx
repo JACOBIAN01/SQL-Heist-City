@@ -4,6 +4,7 @@ import type { AdminUser } from '@heist/shared';
 import { api } from '../api/client';
 import { meQueryKey } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 export function LoginPage() {
   const queryClient = useQueryClient();
@@ -31,6 +32,9 @@ export function LoginPage() {
 
   return (
     <div className="login">
+      <div className="login-theme">
+        <ThemeToggle />
+      </div>
       <form className="card login-card" onSubmit={submit}>
         <h1>SQL Heist City</h1>
         <p className="muted">Teacher &amp; admin console</p>
