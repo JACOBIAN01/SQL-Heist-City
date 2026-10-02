@@ -76,7 +76,7 @@ Goal: teachers configure everything about questions.
 | 2.2 | Users + login/logout (scrypt, session cookie) | login test passes | ✅ Done |
 | 2.3 | Role guard (admin / teacher) | forbidden routes return 403 | ✅ Done |
 | 2.4 | Question CRUD API | create/read/update/disable works | ✅ Done |
-| 2.5 | Versioning + rollback | edit then rollback restores old | ⬜ |
+| 2.5 | Versioning + rollback | edit then rollback restores old | ✅ Done |
 | 2.6 | Audit log | each change recorded | ⬜ |
 | 2.7 | Preview/test endpoint (reference × N seeds, try student query) | returns per-seed results | ⬜ |
 | 2.8 | Save-time validation (reference must pass ≥5 seeds) | bad question rejected | ⬜ |

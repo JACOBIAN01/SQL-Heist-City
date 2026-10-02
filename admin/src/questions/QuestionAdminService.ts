@@ -8,6 +8,7 @@ import type {
 import {
   DuplicateSlugError,
   type QuestionRepository,
+  type QuestionVersion,
   type StoredQuestion,
 } from '@heist/server/questions/QuestionRepository';
 import { conflict, notFound } from '../http/errors';
@@ -79,6 +80,23 @@ export class QuestionAdminService {
         if (!(err instanceof DuplicateSlugError)) throw err;
       }
     }
+  }
+
+  versions(id: number): QuestionVersion[] {
+    this.mustGet(id);
+    return this.questions.versions(id);
+  }
+
+  /** Restores an old version by saving it as a new one — history is never rewritten. */
+  rollback(id: number, version: number, actor: AdminUser): QuestionDetail {
+    const before = this.mustGet(id);
+    const target = this.questions.versions(id).find((v) => v.version === version);
+    if (!target) throw notFound('Version');
+    const restored = this.withSlugCheck(() =>
+      this.questions.update(id, target.template, actor.email),
+    );
+    this.emit('rollback', id, actor, before.template, restored.template, { toVersion: version });
+    return toDetail(restored);
   }
 
   remove(id: number, actor: AdminUser): void {

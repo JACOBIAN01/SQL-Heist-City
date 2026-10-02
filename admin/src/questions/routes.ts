@@ -46,5 +46,18 @@ export function questionRoutes(questions: QuestionAdminService): Router {
       .json({ question: questions.duplicate(idParam(req.params.id), requireUser(res)) });
   });
 
+  router.get('/questions/:id/versions', (req, res) => {
+    res.json({ versions: questions.versions(idParam(req.params.id)) });
+  });
+
+  router.post('/questions/:id/rollback/:version', (req, res) => {
+    const question = questions.rollback(
+      idParam(req.params.id),
+      idParam(req.params.version),
+      requireUser(res),
+    );
+    res.json({ question });
+  });
+
   return router;
 }
