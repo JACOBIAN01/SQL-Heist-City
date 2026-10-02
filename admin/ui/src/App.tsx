@@ -4,6 +4,7 @@ import { ErrorMessage } from './components/ErrorMessage';
 import { Shell } from './layout/Shell';
 import { LoginPage } from './pages/LoginPage';
 import { QuestionListPage } from './pages/QuestionListPage';
+import { QuestionEditorPage } from './pages/QuestionEditorPage';
 
 /** Routes; every page except login requires a session. */
 export function App() {
@@ -17,6 +18,7 @@ export function App() {
       <Route element={<Shell user={me.data} />}>
         <Route index element={<Navigate to="/questions" replace />} />
         <Route path="questions" element={<QuestionListPage />} />
+        <Route path="questions/:id" element={<QuestionEditorPage />} />
         <Route path="pools" element={<Placeholder title="Pools" />} />
         <Route path="import-export" element={<Placeholder title="Import / Export" />} />
         <Route path="settings" element={<Placeholder title="Settings" />} />

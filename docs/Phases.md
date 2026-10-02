@@ -86,7 +86,7 @@ Goal: teachers configure everything about questions.
 | 2.12 | Hot-reload signal to game server | game picks up edit without restart | ✅ Done |
 | 2.13 | React shell (routing, login page, layout) | can log in from UI | ✅ Done |
 | 2.14 | UI: question list (filter, enable/disable) | list matches API | ✅ Done |
-| 2.15 | UI: question editor (CodeMirror fields) | create/edit from UI | ⬜ |
+| 2.15 | UI: question editor (CodeMirror fields) | create/edit from UI | ✅ Done |
 | 2.16 | UI: preview panel | shows variants/results | ⬜ |
 | 2.17 | UI: import/export | upload and download works | ⬜ |
 | 2.18 | UI: settings + reward-map editor | changes reach the game | ⬜ |
