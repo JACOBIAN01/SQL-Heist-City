@@ -37,8 +37,8 @@ Plain functions: binary codec, RNG helpers, result comparator, math.
 ## 4. Patterns (planned) — where, why, how
 | Pattern | Where | Why it helps here | How to extend |
 |---|---|---|---|
-| **Strategy** | `RewardStrategy` (HealReward, WeaponReward, AmmoReward, VaultLockReward); `ComparePolicy` (ordered/unordered/case) | Rewards and comparison rules change independently; teachers add behaviours through config, devs through one class | Add class, register in `RewardRegistry` |
-| **Factory / Registry** | `DataGeneratorFactory` (serial, pick, int, date, fk…), `WeaponFactory`, `RewardRegistry` | Build objects from DB/JSON specs (`{"kind":"pick"}`) without `switch` in callers; keeps questions data-driven | Register new `kind` |
+| **Strategy** | `RewardStrategy` (HealReward, WeaponReward, AmmoReward, VaultLockReward); `ComparePolicy` (ordered/unordered/case); param resolvers per `kind` (`server/src/variants/params.ts`) | Rewards and comparison rules change independently; teachers add behaviours through config, devs through one class | Add class, register in `RewardRegistry` |
+| **Factory / Registry** | column-generator builders (`server/src/variants/dataGenerators.ts`: serial, pick, int, real, date, bool, text_pattern, fk, const), `WeaponFactory`, `RewardRegistry` | Build objects from DB/JSON specs (`{"kind":"pick"}`) without `switch` in callers; keeps questions data-driven | Register new `kind` |
 | **Repository** | `QuestionRepository`, `SettingsRepository`, `UserRepository` (SQLite impls) | Game/admin logic is independent of SQLite; swap to Postgres or in-memory fakes for tests | New impl of interface |
 | **Observer / Event Bus** | `MatchEventBus` (`PlayerKilled`, `LockOpened`, `CashBanked`, `ChallengeSolved`) | Scoreboard, killfeed, bounty markers, metrics subscribe without coupling to combat/vault code | Subscribe handler |
 | **State** | `MatchPhase` (Lobby→Running→Ending→Results); `PlayerState` (Alive, Dead, InVehicle, SolvingChallenge); `ChallengeState` | Removes giant `if (state==…)` blocks; each state owns allowed actions | Add state class |
@@ -46,7 +46,7 @@ Plain functions: binary codec, RNG helpers, result comparator, math.
 | **Object Pool** | Snapshot buffers, vectors, projectiles, particles | No per-tick allocation → stable tick time at 100–200 players | Pool per type |
 | **Facade** | `ChallengeService` (select→variant→grade→reward) | Match code calls one method; sandbox/worker complexity hidden | — |
 | **Adapter** | `SqliteSandboxAdapter` over node:sqlite; `WsConnectionAdapter` over `ws` | Isolates third-party APIs; easy to mock or replace | New adapter |
-| **Decorator** | `RateLimitedGrader`, `MetricsGrader` wrapping `Grader` | Add cross-cutting behaviour without touching core grader | Wrap another decorator |
+| **Decorator** | `RateLimitedGrader`, `MetricsGrader` wrapping `Grader`; `withNulls` wrapping any column generator | Add cross-cutting behaviour without touching core grader | Wrap another decorator |
 | **Template Method** | `BaseRewardStrategy.apply()` = validate → mutate → emit event; subclasses fill the mutate step | Guarantees every reward emits events and audit consistently | Subclass override hook |
 | **Builder** | `VariantBuilder`, `SnapshotBuilder`, `ChunkBuilder` | Multi-step construction with optional parts stays readable | Add step |
 | **Singleton (avoided)** | — | Use DI + composition root instead; singletons hide dependencies and break tests | n/a |

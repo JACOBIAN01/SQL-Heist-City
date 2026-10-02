@@ -56,7 +56,7 @@ Goal: store, vary, and safely grade SQL questions.
 | 1.3 | `QuestionRepository` (read/write interfaces + SQLite impl + in-memory fake) | CRUD tests pass | ✅ Done |
 | 1.4 | Seeded `Rng` | same seed → same sequence | ✅ Done |
 | 1.5 | Param resolver (`pick`, `int`, `date`, `bool`) | params deterministic per seed | ✅ Done |
-| 1.6 | `DataGenerator` factory (serial, pick, int, fk, …) | generated tables deterministic per seed | ⬜ |
+| 1.6 | `DataGenerator` factory (serial, pick, int, fk, …) | generated tables deterministic per seed | ✅ Done |
 | 1.7 | `VariantBuilder` (story + schema + data + reference SQL from a seed) | two seeds → two different variants | ⬜ |
 | 1.8 | SQL sandbox (in-memory SQLite, authorizer, SELECT-only) | dangerous SQL blocked | ⬜ |
 | 1.9 | Sandbox limits (timeout, row cap, worker thread) | infinite recursive CTE is killed | ⬜ |
