@@ -19,6 +19,8 @@ import { questionRoutes } from './questions/routes';
 import { QuestionTester } from './questions/QuestionTester';
 import { SandboxTemplateValidator } from './questions/TemplateValidator';
 import { QuestionImportService } from './questions/io/QuestionImportService';
+import { SettingsService } from './config/SettingsService';
+import { configRoutes } from './config/routes';
 import { Grader } from '@heist/server/sql/Grader';
 import type { SandboxRunner } from '@heist/server/sql/SandboxRunner';
 import { WorkerSandboxRunner } from '@heist/server/sql/WorkerSandboxRunner';
@@ -71,6 +73,7 @@ export function buildAdmin(
   const validator = new SandboxTemplateValidator(tester);
   const questions = new QuestionAdminService(new SqliteQuestionRepository(db), events, validator);
   const io = new QuestionImportService(questions, validator);
+  const settings = new SettingsService(db, events);
 
   const app = createAdminApp({
     logger,
@@ -81,6 +84,7 @@ export function buildAdmin(
       userRoutes(auth, events),
       questionRoutes(questions, tester, io),
       auditRoutes(audit),
+      configRoutes(settings),
     ],
   });
   return { app, auth, events, close: () => sandbox.close() };

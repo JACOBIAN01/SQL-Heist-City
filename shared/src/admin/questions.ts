@@ -89,3 +89,26 @@ export interface ImportReport {
   readonly items: readonly ImportItemResult[];
   readonly counts: Readonly<Record<ImportItemResult['status'], number>>;
 }
+
+// --- Settings ---------------------------------------------------------------
+
+export interface RewardTierEntry {
+  readonly key: string;
+  readonly min: number;
+  readonly max: number;
+  /** True when no admin override exists. */
+  readonly isDefault: boolean;
+}
+
+export const rewardMapUpdateSchema = z.object({
+  rewards: z
+    .array(
+      z.object({
+        key: z.string().min(1),
+        min: z.number().int().min(1).max(5),
+        max: z.number().int().min(1).max(5),
+      }),
+    )
+    .min(1),
+});
+export type RewardMapUpdate = z.infer<typeof rewardMapUpdateSchema>;
