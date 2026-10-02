@@ -65,8 +65,11 @@ export interface SeedPreview {
 
 export interface PreviewReport {
   readonly seeds: readonly SeedPreview[];
-  /** Share of seeds whose expected result differs from every other seed's (anti-copy health). */
-  readonly distinctResultRatio: number;
+  /**
+   * Anti-copy health: share of player pairs (seed pairs) that get different
+   * answers. 0.95 means two random players share an answer 5% of the time.
+   */
+  readonly differentAnswerRate: number;
   readonly ok: boolean;
 }
 

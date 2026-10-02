@@ -13,7 +13,7 @@ afterEach(() => {
 
 const report: PreviewReport = {
   ok: false,
-  distinctResultRatio: 0.5,
+  differentAnswerRate: 0.5,
   seeds: [
     {
       seed: 'preview-1',
@@ -39,7 +39,7 @@ describe('PreviewPanel', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Run preview' }));
 
     expect(await screen.findByText('Problems found')).toBeTruthy();
-    expect(screen.getByText(/50% of seeds have a unique answer/)).toBeTruthy();
+    expect(screen.getByText(/50% of player pairs share an answer/)).toBeTruthy();
     expect(screen.getByText('List employees in Audit')).toBeTruthy();
     expect(screen.getByText('Expected answer (2 rows)')).toBeTruthy();
     expect(screen.getByText('student: wrong')).toBeTruthy();

@@ -31,7 +31,7 @@ describe('question preview', () => {
     expect(first?.referenceSql).toMatch(/^SELECT name FROM employees WHERE dept = '/);
     expect(first?.tables?.[0]?.name).toBe('employees');
     expect(first?.expected?.columns).toEqual(['name']);
-    expect(report.distinctResultRatio).toBeGreaterThan(0.5);
+    expect(report.differentAnswerRate).toBeGreaterThan(0.5);
   });
 
   it('grades a student query against every seed', async () => {

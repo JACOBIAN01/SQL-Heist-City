@@ -36,7 +36,7 @@ Seed = hash(matchSeed, playerId, rewardType, attemptCounter).
 3. Optional structural variants: table/column renames, story theme swap.
 4. Reference SQL on generated data = expected result; a copied query returns different rows → fails.
 5. Selector never repeats a question for the same player+reward until the pool is exhausted.
-6. Guards at save and in `questions:validate`: ≥1 row (unless allowed), ≤ row cap, results differ across ≥80% of 20 seeds, runtime <200 ms.
+6. Guards at save and in `questions:validate`: ≥1 row (unless allowed), ≤ row cap, at most 5% of player pairs (seed pairs) share the same answer, measured on 100 seeds, runtime <200 ms.
 
 ## Tiers
 | Tier | Level | Topics |

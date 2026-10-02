@@ -61,8 +61,8 @@ export function PreviewPanel({ template }: { template: QuestionTemplateInput }) 
               {report.ok ? 'All seeds OK' : 'Problems found'}
             </span>
             <span className="badge">
-              {Math.round(report.distinctResultRatio * 100)}% of seeds have a unique answer
-              {report.distinctResultRatio < 0.8 ? ' — consider more varied params/data' : ''}
+              {Math.round((1 - report.differentAnswerRate) * 100)}% of player pairs share an answer
+              {report.differentAnswerRate < 0.95 ? ' — consider more varied params/data' : ''}
             </span>
           </div>
           {report.seeds.map((s) => (

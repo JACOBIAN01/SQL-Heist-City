@@ -33,7 +33,7 @@ export class QuestionTester {
     }
     return {
       seeds: results,
-      distinctResultRatio: distinctRatio(fingerprints),
+      differentAnswerRate: differentPairRate(fingerprints),
       ok: results.every((r) => r.issues.every((i) => i === 'slow')),
     };
   }
@@ -94,9 +94,13 @@ export class QuestionTester {
   }
 }
 
-function distinctRatio(fingerprints: readonly string[]): number {
-  if (fingerprints.length <= 1) return 1;
+/** Share of unordered pairs with different answers: 1 − Σ c(c−1) / n(n−1). */
+function differentPairRate(fingerprints: readonly string[]): number {
+  const n = fingerprints.length;
+  if (n <= 1) return 1;
   const counts = new Map<string, number>();
   for (const f of fingerprints) counts.set(f, (counts.get(f) ?? 0) + 1);
-  return fingerprints.filter((f) => counts.get(f) === 1).length / fingerprints.length;
+  let samePairs = 0;
+  for (const c of counts.values()) samePairs += c * (c - 1);
+  return 1 - samePairs / (n * (n - 1));
 }

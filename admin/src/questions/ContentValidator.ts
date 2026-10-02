@@ -4,14 +4,15 @@ import type { QuestionTester } from './QuestionTester';
 /** Stricter than save-time validation: this is the QA gate for shipped content. */
 export interface ContentRules {
   readonly seeds: number;
-  readonly minDistinctRatio: number;
+  /** Minimum share of player pairs that must get different answers (anti-copy). */
+  readonly minDifferentAnswerRate: number;
   readonly slowMs: number;
 }
 
 export const CONTENT_RULES: ContentRules = {
   seeds: 100,
-  /** Share of seeds whose answer must be unique (anti-copy; docs/questions.md). */
-  minDistinctRatio: 0.8,
+  /** At most 5% of player pairs may share an answer (docs/questions.md). */
+  minDifferentAnswerRate: 0.95,
   /** A reference query slower than this on any seed is reported. */
   slowMs: 200,
 };
@@ -92,10 +93,10 @@ export class ContentValidator {
             `${failing.length}/${seeds.length} seeds fail — ${first?.seed}: ${first?.error ?? first?.issues.join(', ')}`,
           );
         }
-        if (result.distinctResultRatio < this.rules.minDistinctRatio) {
+        if (result.differentAnswerRate < this.rules.minDifferentAnswerRate) {
           report(
             'error',
-            `only ${Math.round(result.distinctResultRatio * 100)}% of seeds have a unique answer (need ${this.rules.minDistinctRatio * 100}%) — answers can be shared`,
+            `${Math.round((1 - result.differentAnswerRate) * 100)}% of player pairs get the same answer (max ${Math.round((1 - this.rules.minDifferentAnswerRate) * 100)}%) — players could share answers`,
           );
         }
         const slowest = Math.max(...result.seeds.map((s) => s.runtimeMs));

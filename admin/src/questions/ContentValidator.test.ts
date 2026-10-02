@@ -9,7 +9,7 @@ import { QuestionTester } from './QuestionTester';
 
 const validator = new ContentValidator(
   new QuestionTester(new VariantBuilder(builtInDatasets), new Grader(new InProcessSandboxRunner())),
-  { seeds: 10, minDistinctRatio: 0.8, slowMs: 1000 },
+  { seeds: 10, minDifferentAnswerRate: 0.95, slowMs: 1000 },
 );
 
 describe('ContentValidator', () => {
@@ -45,7 +45,7 @@ describe('ContentValidator', () => {
       expect.stringMatching(/^a\.json:emp-high-earners-dept:tier:/),
       'b.json:emp-high-earners-dept:duplicate slug (also in a.json)',
       expect.stringMatching(/^b\.json:broken:10\/10 seeds fail — qa-1: .*no such column/),
-      expect.stringMatching(/^b\.json:constant:only 0% of seeds have a unique answer/),
+      expect.stringMatching(/^b\.json:constant:100% of player pairs get the same answer/),
       'c.json:null:not a question list',
     ]);
   });
