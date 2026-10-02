@@ -39,7 +39,7 @@ Goal: agreed design + an empty monorepo that builds and tests.
 | 0.2 | Create npm-workspaces monorepo (`client server admin shared`) | `npm install` works | ✅ Done |
 | 0.3 | TypeScript base config shared by all workspaces | `npm run typecheck` passes | ✅ Done |
 | 0.4 | Lint + format (ESLint, Prettier, editorconfig) | `npm run lint` passes | ✅ Done |
-| 0.5 | Test runner (Vitest) with one sample test per workspace | `npm test` passes | ⬜ |
+| 0.5 | Test runner (Vitest) with one sample test per workspace | `npm test` passes | ✅ Done |
 | 0.6 | Hello-world server (`/health`) | curl returns ok | ⬜ |
 | 0.7 | Hello-world admin (Express `/health` + React page) | page loads | ⬜ |
 | 0.8 | Hello-world client (Vite + blank Three.js scene) | cube renders | ⬜ |
