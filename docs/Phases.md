@@ -43,7 +43,7 @@ Goal: agreed design + an empty monorepo that builds and tests.
 | 0.6 | Hello-world server (`/health`) | curl returns ok | ✅ Done |
 | 0.7 | Hello-world admin (Express `/health` + React page) | page loads | ✅ Done |
 | 0.8 | Hello-world client (Vite + blank Three.js scene) | cube renders | ✅ Done |
-| 0.9 | CI workflow (lint, typecheck, test) | pipeline file runs locally | ⬜ |
+| 0.9 | CI workflow (lint, typecheck, test) | pipeline file runs locally | ✅ Done |
 
 ---
 ## Phase 1 — Question engine (server only, no UI)  ⬜
