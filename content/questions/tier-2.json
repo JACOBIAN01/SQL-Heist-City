@@ -1,0 +1,2553 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "t2-count-staff",
+      "tier": 2,
+      "topic": [
+        "aggregate",
+        "count"
+      ],
+      "title": "Headcount",
+      "story_md": "How many people could get in your way, and what do they cost?\n\nFor the **{dept}** department return two columns: the **number of employees** and their **total salary**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "dept": {
+          "kind": "pick",
+          "from": "departments"
+        }
+      },
+      "reference_sql": "SELECT COUNT(*), SUM(salary) FROM employees WHERE dept = {dept|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "COUNT(*) counts rows.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-total-loot",
+      "tier": 2,
+      "topic": [
+        "aggregate",
+        "sum"
+      ],
+      "title": "Total Haul",
+      "story_md": "What is zone **{zone}** worth?\n\nReturn the **total value** of all items stored there.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "zone": {
+          "kind": "pick",
+          "from": "vault_zones"
+        }
+      },
+      "reference_sql": "SELECT SUM(value) FROM vault_items WHERE zone = {zone|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "SUM(column) adds values up.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-avg-salary",
+      "tier": 2,
+      "topic": [
+        "aggregate",
+        "avg"
+      ],
+      "title": "Average Paycheck",
+      "story_md": "Know what a bribe needs to beat.\n\nReturn the **average salary** of **{dept}** employees, **rounded to 2 decimals**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "dept": {
+          "kind": "pick",
+          "from": "departments"
+        }
+      },
+      "reference_sql": "SELECT ROUND(AVG(salary), 2) FROM employees WHERE dept = {dept|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "AVG(salary), then ROUND(…, 2).",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-max-min-balance",
+      "tier": 2,
+      "topic": [
+        "aggregate",
+        "min-max"
+      ],
+      "title": "Richest and Poorest",
+      "story_md": "Scope the range of targets.\n\nReturn two columns: the **highest** and the **lowest** balance among **{type}** accounts.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "type": {
+          "kind": "pick",
+          "from": "account_types"
+        }
+      },
+      "reference_sql": "SELECT MAX(balance), MIN(balance) FROM accounts WHERE type = {type|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "MAX() and MIN() can be in one SELECT.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-count-distinct-merchants",
+      "tier": 2,
+      "topic": [
+        "aggregate",
+        "count",
+        "distinct"
+      ],
+      "title": "Shop Count",
+      "story_md": "How active is account **{account}**?\n\nReturn two columns: its **number of transactions** and the **number of distinct merchants** it paid (`COUNT(DISTINCT …)` ignores missing merchants).",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            15,
+            20
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            150,
+            220
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "account": {
+          "kind": "int",
+          "min": 100,
+          "max": 114,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT COUNT(*), COUNT(DISTINCT merchant) FROM transactions WHERE account_id = {account};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "COUNT(DISTINCT col) skips duplicates and NULLs.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-latest-alarm",
+      "tier": 2,
+      "topic": [
+        "aggregate",
+        "min-max",
+        "dates"
+      ],
+      "title": "Last Alarm",
+      "story_md": "When did zone **{zone}** last go off?\n\nReturn the **latest triggered date** for alarms in that zone.",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            70,
+            100
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {
+        "zone": {
+          "kind": "pick",
+          "from": "vault_zones"
+        }
+      },
+      "reference_sql": "SELECT MAX(triggered) FROM alarms WHERE zone = {zone|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "MAX works on YYYY-MM-DD text too.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-heaviest-weight",
+      "tier": 2,
+      "topic": [
+        "aggregate",
+        "sum"
+      ],
+      "title": "Van Capacity",
+      "story_md": "Can the van carry all the **{item}** items?\n\nReturn their **total weight in kg, rounded to 1 decimal**.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            70,
+            100
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "item": {
+          "kind": "pick",
+          "from": "item_types"
+        }
+      },
+      "reference_sql": "SELECT ROUND(SUM(weight_kg), 1) FROM vault_items WHERE item = {item|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "SUM, then ROUND(…, 1).",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-withdraw-stats",
+      "tier": 2,
+      "topic": [
+        "aggregate"
+      ],
+      "title": "Withdrawal Pattern",
+      "story_md": "Profile the withdrawals.\n\nReturn three columns for transactions of kind **withdrawal**: the **count**, the **total amount**, and the **average amount rounded to 2 decimals**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            120,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT COUNT(*), SUM(amount), ROUND(AVG(amount), 2) FROM transactions WHERE kind = 'withdrawal';",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Three aggregates in one SELECT.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-staff-per-dept",
+      "tier": 2,
+      "topic": [
+        "group-by"
+      ],
+      "title": "Team Sizes",
+      "story_md": "Who has the most people?\n\nReturn **dept** and the **number of employees** in each department.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT dept, COUNT(*) FROM employees GROUP BY dept;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "GROUP BY dept, then COUNT(*).",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-value-per-zone",
+      "tier": 2,
+      "topic": [
+        "group-by"
+      ],
+      "title": "Zone Values",
+      "story_md": "Rank the zones by loot.\n\nReturn **zone** and the **total item value** for each zone.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            30,
+            50
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT zone, SUM(value) FROM vault_items GROUP BY zone;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "SUM(value) per zone.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-avg-per-type",
+      "tier": 2,
+      "topic": [
+        "group-by",
+        "avg"
+      ],
+      "title": "Account Types",
+      "story_md": "Which account type holds the most per account?\n\nReturn **type** and the **average balance rounded to 2 decimals** for each account type.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT type, ROUND(AVG(balance), 2) FROM accounts GROUP BY type;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "GROUP BY type with ROUND(AVG(…), 2).",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-alarms-per-level",
+      "tier": 2,
+      "topic": [
+        "group-by"
+      ],
+      "title": "Alarm Levels",
+      "story_md": "Measure how jumpy the system is.\n\nReturn **level** and the **number of alarms** at that level in zone **{zone}**.",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            120,
+            160
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {
+        "zone": {
+          "kind": "pick",
+          "from": "vault_zones"
+        }
+      },
+      "reference_sql": "SELECT level, COUNT(*) FROM alarms WHERE zone = {zone|sql} GROUP BY level;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "WHERE filters rows before grouping.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-spend-per-merchant",
+      "tier": 2,
+      "topic": [
+        "group-by"
+      ],
+      "title": "Spending Map",
+      "story_md": "Follow the money of account **{account}**.\n\nReturn **merchant** and **total amount** spent there (skip rows with no merchant).",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            5,
+            6
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            150,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "account": {
+          "kind": "int",
+          "min": 100,
+          "max": 104,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT merchant, SUM(amount) FROM transactions WHERE account_id = {account} AND merchant IS NOT NULL GROUP BY merchant;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Filter NULL merchants out first.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-hires-per-year",
+      "tier": 2,
+      "topic": [
+        "group-by",
+        "dates"
+      ],
+      "title": "Hiring Waves",
+      "story_md": "When did the bank hire most?\n\nReturn the **year** (as text, e.g. `2019`) and the **number of employees hired** that year.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            70,
+            100
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT strftime('%Y', hired), COUNT(*) FROM employees GROUP BY strftime('%Y', hired);",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "strftime('%Y', hired) extracts the year.",
+          "cost": 0.05
+        },
+        {
+          "text": "Group by the same expression.",
+          "cost": 0.12
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-loans-per-status",
+      "tier": 2,
+      "topic": [
+        "group-by"
+      ],
+      "title": "Loan Book",
+      "story_md": "Who owes the bank money?\n\nReturn **status**, the **number of loans** and their **total amount** for each loan status.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "loans": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": 1000,
+              "max": 50000,
+              "step": 100
+            },
+            "rate": {
+              "kind": "real",
+              "min": 1.5,
+              "max": 12.0,
+              "decimals": 2
+            },
+            "status": {
+              "kind": "pick",
+              "from": "loan_statuses"
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT status, COUNT(*), SUM(amount) FROM loans GROUP BY status;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Two aggregates per group.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-dept-branch-count",
+      "tier": 2,
+      "topic": [
+        "group-by"
+      ],
+      "title": "Branch Staffing",
+      "story_md": "Plan who is in which building.\n\nReturn **branch_id**, **dept** and the **number of employees** for every branch/department combination.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT branch_id, dept, COUNT(*) FROM employees GROUP BY branch_id, dept;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "GROUP BY can take several columns.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-busy-zones",
+      "tier": 2,
+      "topic": [
+        "group-by",
+        "having"
+      ],
+      "title": "Busy Zones",
+      "story_md": "Avoid zones with lots of alarms.\n\nReturn **zone** and **alarm count** for zones with **more than {n}** alarms.",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            90,
+            130
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {
+        "n": {
+          "kind": "int",
+          "min": 10,
+          "max": 13,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT zone, COUNT(*) FROM alarms GROUP BY zone HAVING COUNT(*) > {n};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "HAVING filters groups after GROUP BY.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-rich-depts",
+      "tier": 2,
+      "topic": [
+        "group-by",
+        "having"
+      ],
+      "title": "Rich Departments",
+      "story_md": "Where is the payroll concentrated?\n\nReturn **dept** and **average salary (rounded to 2 decimals)** for departments whose average salary is **above {avg}**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            70,
+            100
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "avg": {
+          "kind": "int",
+          "min": 4800,
+          "max": 5300,
+          "step": 50
+        }
+      },
+      "reference_sql": "SELECT dept, ROUND(AVG(salary), 2) FROM employees GROUP BY dept HAVING AVG(salary) > {avg};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Use AVG(…) in HAVING.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-frequent-shoppers",
+      "tier": 2,
+      "topic": [
+        "group-by",
+        "having"
+      ],
+      "title": "Regulars",
+      "story_md": "Find accounts that move money a lot.\n\nReturn **account_id** and **number of transactions** for accounts with **at least {n}** transactions.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            20,
+            30
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            180,
+            240
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "n": {
+          "kind": "int",
+          "min": 8,
+          "max": 10,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT account_id, COUNT(*) FROM transactions GROUP BY account_id HAVING COUNT(*) >= {n};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "\"At least\" → >= in HAVING.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-valuable-items",
+      "tier": 2,
+      "topic": [
+        "group-by",
+        "having"
+      ],
+      "title": "Worth the Trip",
+      "story_md": "Only item types worth a lot in total are worth carrying.\n\nReturn **item** and **total value** for item types whose total value exceeds **{total}**.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "total": {
+          "kind": "int",
+          "min": 700000,
+          "max": 1100000,
+          "step": 50000
+        }
+      },
+      "reference_sql": "SELECT item, SUM(value) FROM vault_items GROUP BY item HAVING SUM(value) > {total};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "HAVING SUM(value) > …",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-where-and-having",
+      "tier": 2,
+      "topic": [
+        "group-by",
+        "having",
+        "where"
+      ],
+      "title": "Open Alarms by Zone",
+      "story_md": "Count only the alarms nobody has dealt with.\n\nReturn **zone** and the **number of unresolved alarms** (`resolved = 0`) for zones with **at least {n}** of them.",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            150,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {
+        "n": {
+          "kind": "int",
+          "min": 4,
+          "max": 6,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT zone, COUNT(*) FROM alarms WHERE resolved = 0 GROUP BY zone HAVING COUNT(*) >= {n};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "WHERE before grouping, HAVING after.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-balance-bands",
+      "tier": 2,
+      "topic": [
+        "case"
+      ],
+      "title": "Target Tiers",
+      "story_md": "Label every account.\n\nReturn **id** and a **band**: `high` if balance ≥ **{high}**, `mid` if balance ≥ **{mid}**, otherwise `low`.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "high": {
+          "kind": "int",
+          "min": 12000,
+          "max": 16000,
+          "step": 500
+        },
+        "mid": {
+          "kind": "int",
+          "min": 4000,
+          "max": 8000,
+          "step": 500
+        }
+      },
+      "reference_sql": "SELECT id, CASE WHEN balance >= {high} THEN 'high' WHEN balance >= {mid} THEN 'mid' ELSE 'low' END FROM accounts;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "CASE WHEN … THEN … ELSE … END",
+          "cost": 0.05
+        },
+        {
+          "text": "Check the biggest band first.",
+          "cost": 0.12
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-count-bands",
+      "tier": 2,
+      "topic": [
+        "case",
+        "group-by"
+      ],
+      "title": "Band Sizes",
+      "story_md": "How many targets are in each band?\n\nUsing the bands `heavy` (weight_kg ≥ **{heavy}**) and `light` (everything else), return **band** and **number of items** in each band.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "heavy": {
+          "kind": "int",
+          "min": 8,
+          "max": 16,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT CASE WHEN weight_kg >= {heavy} THEN 'heavy' ELSE 'light' END, COUNT(*) FROM vault_items GROUP BY CASE WHEN weight_kg >= {heavy} THEN 'heavy' ELSE 'light' END;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "You can GROUP BY a CASE expression (or its alias).",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-conditional-sum",
+      "tier": 2,
+      "topic": [
+        "case",
+        "aggregate"
+      ],
+      "title": "In and Out",
+      "story_md": "Net flow for account **{account}**.\n\nReturn two columns: the **total of deposits** and the **total of withdrawals** for that account (0 if none).",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            5,
+            6
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            150,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "account": {
+          "kind": "int",
+          "min": 100,
+          "max": 104,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT SUM(CASE WHEN kind = 'deposit' THEN amount ELSE 0 END), SUM(CASE WHEN kind = 'withdrawal' THEN amount ELSE 0 END) FROM transactions WHERE account_id = {account};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "SUM(CASE WHEN kind = … THEN amount ELSE 0 END)",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-full-names",
+      "tier": 2,
+      "topic": [
+        "string"
+      ],
+      "title": "Name Badges",
+      "story_md": "Print fake badges.\n\nReturn **id** and the **full name** as `first_name last_name` (one space between) for **{dept}** employees.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "dept": {
+          "kind": "pick",
+          "from": "departments"
+        }
+      },
+      "reference_sql": "SELECT id, first_name || ' ' || last_name FROM employees WHERE dept = {dept|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Concatenate with ||: a || ' ' || b",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-name-length",
+      "tier": 2,
+      "topic": [
+        "string"
+      ],
+      "title": "Long Names",
+      "story_md": "Long last names are easy to spot on a list.\n\nReturn **last_name** and its **length** for employees whose last name is **longer than {n}** characters.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            60,
+            80
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "n": {
+          "kind": "int",
+          "min": 5,
+          "max": 6,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT last_name, LENGTH(last_name) FROM employees WHERE LENGTH(last_name) > {n};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "LENGTH(text) returns the number of characters.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-upper-initials",
+      "tier": 2,
+      "topic": [
+        "string"
+      ],
+      "title": "Initials",
+      "story_md": "Codenames are initials.\n\nReturn **id** and **initials** — first letter of first_name followed by first letter of last_name, in UPPER case (e.g. `AB`) — for employees on branch **{branch}**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            70,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "branch": {
+          "kind": "int",
+          "min": 1,
+          "max": 8,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT id, UPPER(SUBSTR(first_name, 1, 1) || SUBSTR(last_name, 1, 1)) FROM employees WHERE branch_id = {branch};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "SUBSTR(text, 1, 1) gives the first letter.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-monthly-volume",
+      "tier": 2,
+      "topic": [
+        "dates",
+        "group-by"
+      ],
+      "title": "Monthly Volume",
+      "story_md": "Spot the busiest month.\n\nReturn the **month** as `YYYY-MM` and the **total amount** of **{kind}** transactions in that month.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            200,
+            260
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "kind": {
+          "kind": "pick",
+          "from": [
+            "deposit",
+            "withdrawal",
+            "transfer"
+          ]
+        }
+      },
+      "reference_sql": "SELECT strftime('%Y-%m', at), SUM(amount) FROM transactions WHERE kind = {kind|sql} GROUP BY strftime('%Y-%m', at);",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "strftime('%Y-%m', at)",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-tenure-days",
+      "tier": 2,
+      "topic": [
+        "dates"
+      ],
+      "title": "Old Timers",
+      "story_md": "Veterans know the vault codes.\n\nReturn **id** and **days employed** as of **2026-01-01** (whole days, e.g. via `julianday`) for employees hired before **{before}**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "before": {
+          "kind": "pick",
+          "from": [
+            "2017-01-01",
+            "2018-01-01",
+            "2019-01-01"
+          ]
+        }
+      },
+      "reference_sql": "SELECT id, CAST(julianday('2026-01-01') - julianday(hired) AS INTEGER) FROM employees WHERE hired < {before|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "julianday(a) - julianday(b) gives days between dates.",
+          "cost": 0.05
+        },
+        {
+          "text": "CAST(… AS INTEGER) drops the fraction.",
+          "cost": 0.12
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t2-weekend-alarms",
+      "tier": 2,
+      "topic": [
+        "dates"
+      ],
+      "title": "Weekend Shift",
+      "story_md": "Fewer guards on weekends.\n\nReturn **id** and **triggered** of alarms raised on a **Saturday or Sunday**. (In SQLite, `strftime('%w', d)` is `0` for Sunday and `6` for Saturday.)",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT id, triggered FROM alarms WHERE strftime('%w', triggered) IN ('0', '6');",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "strftime('%w', …) returns text '0'–'6'.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    }
+  ]
+}
