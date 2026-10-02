@@ -45,7 +45,7 @@ Plain functions: binary codec, RNG helpers, result comparator, math.
 | **Command** | Client inputs → `InputCommand` queue (move, fire, interact); admin audit actions | Enables prediction/replay, validation, rate-limiting and logging uniformly | New command + handler |
 | **Object Pool** | Snapshot buffers, vectors, projectiles, particles | No per-tick allocation → stable tick time at 100–200 players | Pool per type |
 | **Facade** | `ChallengeService` (select→variant→grade→reward) | Match code calls one method; sandbox/worker complexity hidden | — |
-| **Adapter** | `SqliteSandboxAdapter` over better-sqlite3; `WsConnectionAdapter` over `ws` | Isolates third-party APIs; easy to mock or replace | New adapter |
+| **Adapter** | `SqliteSandboxAdapter` over node:sqlite; `WsConnectionAdapter` over `ws` | Isolates third-party APIs; easy to mock or replace | New adapter |
 | **Decorator** | `RateLimitedGrader`, `MetricsGrader` wrapping `Grader` | Add cross-cutting behaviour without touching core grader | Wrap another decorator |
 | **Template Method** | `BaseRewardStrategy.apply()` = validate → mutate → emit event; subclasses fill the mutate step | Guarantees every reward emits events and audit consistently | Subclass override hook |
 | **Builder** | `VariantBuilder`, `SnapshotBuilder`, `ChunkBuilder` | Multi-step construction with optional parts stays readable | Add step |

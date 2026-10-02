@@ -1,6 +1,6 @@
 # Backend (game server)
 
-Node.js + TypeScript, `ws`, `better-sqlite3`, worker threads. Authoritative for everything.
+Node.js + TypeScript, `ws`, `node:sqlite`, worker threads. Authoritative for everything.
 
 ## Process model
 ```
@@ -36,7 +36,7 @@ Spatial hash, 64 m cells. Client gets own + 8 neighbour cells; tiered rates (nea
 | `ChallengeService` (Facade) | match code calls `issue()` / `submit()`; selector/variants/worker complexity hidden |
 | `QuestionReader` (Repository + ISP) | server can only read; SQLite details hidden; fakes in tests |
 | `Grader` + `RateLimitedGrader`/`MetricsGrader` (Decorator) | cross-cutting limits and metrics without touching grading logic |
-| `SqliteSandboxAdapter` (Adapter) | isolates better-sqlite3 specifics |
+| `SqliteSandboxAdapter` (Adapter) | isolates node:sqlite specifics |
 | Snapshot/vector pools (Object Pool) | no per-tick allocation |
 | Composition root `server/src/main.ts` (DIP) | the only place that `new`s concrete services |
 
