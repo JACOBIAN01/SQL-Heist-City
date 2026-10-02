@@ -306,3 +306,14 @@ td.num {
   flex-direction: column;
   gap: 12px;
 }
+
+/* Diff */
+.diff .added {
+  color: var(--ok);
+}
+.diff .removed {
+  color: var(--danger);
+}
+tr[aria-selected='true'] {
+  background: var(--code-bg);
+}
