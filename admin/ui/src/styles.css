@@ -317,3 +317,11 @@ td.num {
 tr[aria-selected='true'] {
   background: var(--code-bg);
 }
+
+.pool-picker {
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
