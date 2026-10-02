@@ -80,4 +80,21 @@ export const migrations: readonly string[] = [
   );
   CREATE INDEX audit_log_entity ON audit_log (entity, entity_id);
   `,
+  // 3 — named question pools (Phase 2.11)
+  `
+  CREATE TABLE pools (
+    id          INTEGER PRIMARY KEY,
+    name        TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+    description TEXT    NOT NULL DEFAULT '',
+    created_by  TEXT,
+    created_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE TABLE pool_questions (
+    pool_id     INTEGER NOT NULL REFERENCES pools (id) ON DELETE CASCADE,
+    question_id INTEGER NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
+    PRIMARY KEY (pool_id, question_id)
+  );
+  `,
 ];

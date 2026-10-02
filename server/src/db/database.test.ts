@@ -17,6 +17,8 @@ describe('openDatabase', () => {
     expect(schemaVersion(db)).toBe(migrations.length);
     expect(tableNames(db)).toEqual([
       'audit_log',
+      'pool_questions',
+      'pools',
       'question_topics',
       'question_versions',
       'questions',

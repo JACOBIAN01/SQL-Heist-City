@@ -112,3 +112,21 @@ export const rewardMapUpdateSchema = z.object({
     .min(1),
 });
 export type RewardMapUpdate = z.infer<typeof rewardMapUpdateSchema>;
+
+// --- Pools ------------------------------------------------------------------
+
+export const poolInputSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  description: z.string().max(500).default(''),
+  questionIds: z.array(z.number().int().positive()).max(1000).default([]),
+});
+export type PoolInput = z.input<typeof poolInputSchema>;
+
+export interface Pool {
+  readonly id: number;
+  readonly name: string;
+  readonly description: string;
+  readonly questionIds: readonly number[];
+  readonly createdBy: string | null;
+  readonly updatedAt: string;
+}
