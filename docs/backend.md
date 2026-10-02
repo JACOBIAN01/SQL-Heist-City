@@ -45,12 +45,20 @@ Spatial hash, 64 m cells. Client gets own + 8 neighbour cells; tiered rates (nea
 - Weapon stats from config (`settings.weapons.*`), not code.
 - Spawn protection (default 5 s). Death drops carried cash; guns lost; banked cash and vault progress kept.
 
-## Challenge service (SQL) — `server/src/sql/`
-- `QuestionSelector` — picks per `(rewardType, target)` using `reward_map`, player history (no repeats until pool exhausted), seed.
-- `VariantBuilder` — applies params + data generators (see questions.md).
-- `Grader` — dispatches to worker pool; `sandbox.worker.ts` runs reference + student SQL.
-- `ResultComparator` — compare policy (Strategy).
-- `FeedbackBuilder` — non-leaky hints (row count, missing columns, differing column).
+## Challenge service (SQL)
+| Module | File | Role |
+|---|---|---|
+| `ChallengeService` (Facade) | `server/src/challenges/` | issue / run / submit; one active challenge per player; lockout, expiry, cooldowns; skips broken questions |
+| `QuestionSelector` | `server/src/challenges/` | enabled questions in the reward's tier range; no repeats per player+reward until the pool is used up; widens tiers if empty |
+| `VariantBuilder` (Builder) | `server/src/variants/` | params + rendered story/reference + generated tables for one seed |
+| `Grader` | `server/src/sql/` | reference result once per challenge, then grade / preview student SQL |
+| `SqlSandbox` (Adapter) | `server/src/sql/` | in-memory node:sqlite DB, statement pre-check, authorizer allow-list |
+| `WorkerSandboxRunner` (Object Pool) | `server/src/sql/` | worker threads; kills and replaces a worker on timeout |
+| `ResultComparator` (Strategy) | `server/src/sql/` | ordered / unordered comparison, structured mismatch |
+| `FeedbackBuilder` | `server/src/sql/` | non-leaky hints |
+| `SettingsReader` | `server/src/config/` | lockout/TTL/cooldowns + reward→tier with admin overrides |
+
+Seed = `matchSeed|player|rewardKey|attempt` — every re-request of a reward gets a new variant.
 
 ### Sandbox rules
 Single statement, only `SELECT` / `WITH … SELECT`; SQLite authorizer allows reads of seeded tables only (denies ATTACH, PRAGMA, DDL/DML, extensions); `query_only=ON` + defensive mode; 2 s timeout enforced by terminating the grading worker; row cap 1000; worker `resourceLimits`; fresh in-memory DB per challenge (tables ≤200 rows).

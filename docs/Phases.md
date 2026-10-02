@@ -18,7 +18,7 @@
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Docs & scaffold | ✅ Done |
-| 1 | Question engine | 🟦 In progress |
+| 1 | Question engine | 🟨 In review |
 | 2 | Admin backend + UI | ⬜ |
 | 3 | Seed content (150 questions) | ⬜ |
 | 4 | SQL pop-up UI | ⬜ |
@@ -46,7 +46,7 @@ Goal: agreed design + an empty monorepo that builds and tests.
 | 0.9 | CI workflow (lint, typecheck, test) | pipeline file runs locally | ✅ Done |
 
 ---
-## Phase 1 — Question engine (server only, no UI)  🟦
+## Phase 1 — Question engine (server only, no UI)  🟨
 Goal: store, vary, and safely grade SQL questions.
 
 | # | Subphase | Done when | Status |
