@@ -16,6 +16,7 @@ An empty city, 100 students, 5 banks. The only way to do anything is to out-thin
 | 3 Metro Capital | 4 | 3 | $200k |
 | 4 Grand Reserve | 5 | 4 | $400k |
 | 5 Federal Vault | 6 | 5 | $800k |
+
 Lobby → offices (loose cash, minor loot) → vault floor. Stairs and elevators (loud, chokepoint).
 
 ## Vault
@@ -29,6 +30,7 @@ The world never pauses. While the pop-up is open the player stays vulnerable.
 | Gun | pistol / SMG / shotgun / rifle / sniper | 1 / 3 / 3 / 4 / 5 |
 | Ammo | refill current gun | 1 |
 | Vault lock | progress to loot | bank-based |
+
 - Switching task discards the question; next request = new variant (panic-switching has a cost).
 - Wrong answer: 20 s lockout on that challenge; hints cost cash.
 - Run (preview) is free but rate-limited; only Submit counts.
@@ -42,6 +44,7 @@ The world never pauses. While the pop-up is open the player stays vulnerable.
 | Shotgun | 9×8 | 70 | 6 | 15 m |
 | Rifle | 28 | 450 | 25 | 80 m |
 | Sniper | 90 | 40 | 5 | 200 m |
+
 Hitscan, recoil/spread, headshot ×2. Guns are earned **per life**.
 
 ## Death & respawn

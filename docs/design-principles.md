@@ -22,6 +22,7 @@ Perf exceptions: `// Perf: pooled buffer — Why: avoids GC pauses inside the 50
 | `Grader`, `Sandbox` | execute + compare SQL |
 | `QuestionSelector`, `VariantBuilder` | choose and instantiate questions |
 | `Connection`, `Session` | network lifecycle |
+
 Plain functions: binary codec, RNG helpers, result comparator, math.
 
 ## 3. SOLID applied

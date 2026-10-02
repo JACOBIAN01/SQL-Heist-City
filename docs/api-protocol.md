@@ -30,6 +30,7 @@ Binary frames for high-rate data, JSON frames (`{t, ...}`) for rare messages. Fi
 | `scoreboard` | 1 Hz | top N banked |
 | `vault_progress` | on change | bankId, locksOpen/total |
 | `pong` | — | t |
+
 Never sent: reference SQL, other players' challenge content.
 
 ### Quantisation
@@ -53,6 +54,7 @@ Position 16-bit per axis relative to chunk origin (≈1.5 cm precision), yaw/pit
 | GET/POST/PUT/DELETE | /users | admin | |
 | GET | /analytics/questions | teacher+ | |
 | GET | /audit | admin | |
+
 Errors: `{error: {code, message, details?}}`, standard HTTP codes.
 
 ## Internal
