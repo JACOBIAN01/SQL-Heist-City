@@ -1,6 +1,7 @@
 import type { Role } from '@heist/shared';
 import { openDatabase } from '@heist/server/db/database';
 import { ScryptPasswordHasher } from '../auth/PasswordHasher';
+import { InProcessSandboxRunner } from '@heist/server/sql/SandboxRunner';
 import { buildAdmin } from '../composition';
 import { startTestServer } from './http';
 
@@ -14,7 +15,11 @@ export async function startAdmin(options: { now?: () => number } = {}) {
     db,
     { secureCookies: false, sessionTtlMs: 60 * 60 * 1000 },
     { error: (m, meta) => errors.push(`${m} ${JSON.stringify(meta)}`) },
-    { hasher: new ScryptPasswordHasher({ N: 1024, r: 8, p: 1, keylen: 32 }), ...options },
+    {
+      hasher: new ScryptPasswordHasher({ N: 1024, r: 8, p: 1, keylen: 32 }),
+      sandbox: new InProcessSandboxRunner(),
+      ...options,
+    },
   );
   const client = await startTestServer(admin.app);
 
@@ -28,5 +33,9 @@ export async function startAdmin(options: { now?: () => number } = {}) {
     if (res.status !== 200) throw new Error(`login failed: ${JSON.stringify(res.body)}`);
   }
 
-  return { db, admin, client, errors, createUser, loginAs, close: client.close };
+  const close = async () => {
+    await client.close();
+    await admin.close();
+  };
+  return { db, admin, client, errors, createUser, loginAs, close };
 }

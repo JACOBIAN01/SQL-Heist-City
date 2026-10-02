@@ -78,7 +78,7 @@ Goal: teachers configure everything about questions.
 | 2.4 | Question CRUD API | create/read/update/disable works | ✅ Done |
 | 2.5 | Versioning + rollback | edit then rollback restores old | ✅ Done |
 | 2.6 | Audit log | each change recorded | ✅ Done |
-| 2.7 | Preview/test endpoint (reference × N seeds, try student query) | returns per-seed results | ⬜ |
+| 2.7 | Preview/test endpoint (reference × N seeds, try student query) | returns per-seed results | ✅ Done |
 | 2.8 | Save-time validation (reference must pass ≥5 seeds) | bad question rejected | ⬜ |
 | 2.9 | Import/export (JSON, CSV, dry-run) | round-trip is lossless | ⬜ |
 | 2.10 | Settings + reward-map API | values persist and validate | ⬜ |

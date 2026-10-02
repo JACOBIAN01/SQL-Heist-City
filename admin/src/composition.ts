@@ -16,6 +16,12 @@ import { SqliteAuditLog, auditAdminEvents } from './audit/AuditLog';
 import { auditRoutes } from './audit/routes';
 import { QuestionAdminService } from './questions/QuestionAdminService';
 import { questionRoutes } from './questions/routes';
+import { QuestionTester } from './questions/QuestionTester';
+import { Grader } from '@heist/server/sql/Grader';
+import type { SandboxRunner } from '@heist/server/sql/SandboxRunner';
+import { WorkerSandboxRunner } from '@heist/server/sql/WorkerSandboxRunner';
+import { builtInDatasets } from '@heist/server/variants/datasets';
+import { VariantBuilder } from '@heist/server/variants/VariantBuilder';
 
 export interface AdminConfig {
   readonly secureCookies: boolean;
@@ -27,12 +33,16 @@ export interface AdminOverrides {
   /** Tests use a fast hasher; production uses scrypt defaults. */
   readonly hasher?: PasswordHasher;
   readonly now?: () => number;
+  /** Tests run SQL in-process; production isolates it in worker threads. */
+  readonly sandbox?: SandboxRunner;
 }
 
 export interface Admin {
   readonly app: Express;
   readonly auth: AuthService;
   readonly events: AdminEventBus;
+  /** Release worker threads on shutdown. */
+  close(): Promise<void>;
 }
 
 /**
@@ -55,6 +65,8 @@ export function buildAdmin(
   const audit = new SqliteAuditLog(db);
   auditAdminEvents(events, audit);
   const questions = new QuestionAdminService(new SqliteQuestionRepository(db), events);
+  const sandbox = overrides.sandbox ?? new WorkerSandboxRunner({ size: 2 });
+  const tester = new QuestionTester(new VariantBuilder(builtInDatasets), new Grader(sandbox));
 
   const app = createAdminApp({
     logger,
@@ -63,9 +75,9 @@ export function buildAdmin(
     api: [
       authRoutes(auth, limiter, config),
       userRoutes(auth, events),
-      questionRoutes(questions),
+      questionRoutes(questions, tester),
       auditRoutes(audit),
     ],
   });
-  return { app, auth, events };
+  return { app, auth, events, close: () => sandbox.close() };
 }

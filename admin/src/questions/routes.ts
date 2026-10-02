@@ -1,11 +1,17 @@
 import { Router } from 'express';
-import { questionListQuerySchema, questionTemplateSchema } from '@heist/shared';
+import {
+  previewRequestSchema,
+  questionListQuerySchema,
+  questionTemplateSchema,
+} from '@heist/shared';
+import { z } from 'zod';
 import { requireLogin, requireRole, requireUser } from '../auth/middleware';
 import { parse } from '../http/errors';
 import { idParam } from '../http/params';
 import type { QuestionAdminService } from './QuestionAdminService';
+import type { QuestionTester } from './QuestionTester';
 
-export function questionRoutes(questions: QuestionAdminService): Router {
+export function questionRoutes(questions: QuestionAdminService, tester: QuestionTester): Router {
   const router = Router();
   router.use('/questions', requireLogin);
 
@@ -57,6 +63,20 @@ export function questionRoutes(questions: QuestionAdminService): Router {
       requireUser(res),
     );
     res.json({ question });
+  });
+
+  // Preview a saved question.
+  router.post('/questions/:id/preview', async (req, res) => {
+    const { seeds, studentSql } = parse(previewRequestSchema, req.body);
+    const { template } = questions.get(idParam(req.params.id));
+    res.json({ report: await tester.test(template, seeds, studentSql) });
+  });
+
+  // Preview an unsaved draft from the editor.
+  router.post('/questions/preview', async (req, res) => {
+    const body = parse(previewRequestSchema.extend({ template: z.unknown() }), req.body);
+    const template = parse(questionTemplateSchema, body.template);
+    res.json({ report: await tester.test(template, body.seeds, body.studentSql) });
   });
 
   return router;
