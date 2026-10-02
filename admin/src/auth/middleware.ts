@@ -1,6 +1,6 @@
 import type { RequestHandler, Response } from 'express';
-import type { AdminUser } from '@heist/shared';
-import { HttpError, unauthorized } from '../http/errors';
+import type { AdminUser, Role } from '@heist/shared';
+import { HttpError, forbidden, unauthorized } from '../http/errors';
 import type { AuthService } from './AuthService';
 
 export const SESSION_COOKIE = 'heist_session';
@@ -50,3 +50,16 @@ export function readCookie(header: string | undefined, name: string): string | u
   }
   return undefined;
 }
+
+/** Route guard: logged in, and (optionally) one of the given roles. */
+export function requireRole(...roles: readonly Role[]): RequestHandler {
+  return (_req, res, next) => {
+    const user = currentUser(res);
+    if (!user) return next(unauthorized());
+    if (roles.length > 0 && !roles.includes(user.role)) return next(forbidden());
+    next();
+  };
+}
+
+/** Any logged-in user (admin or teacher). */
+export const requireLogin = requireRole();
