@@ -33,3 +33,13 @@ export const updateUserSchema = z
   .partial()
   .refine((v) => Object.keys(v).length > 0, 'nothing to update');
 export type UpdateUserRequest = z.infer<typeof updateUserSchema>;
+
+export interface AuditEntry {
+  readonly id: number;
+  readonly actor: string | null;
+  readonly action: string;
+  readonly entity: string;
+  readonly entityId: string | null;
+  readonly detail: Record<string, unknown> | null;
+  readonly at: string;
+}

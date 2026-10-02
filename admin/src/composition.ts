@@ -12,6 +12,8 @@ import type { ErrorLogger } from './http/errors';
 import { userRoutes } from './users/routes';
 import { SqliteQuestionRepository } from '@heist/server/questions/SqliteQuestionRepository';
 import { AdminEventBus } from './events/AdminEvents';
+import { SqliteAuditLog, auditAdminEvents } from './audit/AuditLog';
+import { auditRoutes } from './audit/routes';
 import { QuestionAdminService } from './questions/QuestionAdminService';
 import { questionRoutes } from './questions/routes';
 
@@ -50,13 +52,20 @@ export function buildAdmin(
   const auth = new AuthService(users, sessions, overrides.hasher ?? new ScryptPasswordHasher());
   const limiter = new LoginRateLimiter(5, 15 * 60 * 1000, now);
   const events = new AdminEventBus();
+  const audit = new SqliteAuditLog(db);
+  auditAdminEvents(events, audit);
   const questions = new QuestionAdminService(new SqliteQuestionRepository(db), events);
 
   const app = createAdminApp({
     logger,
     ...(config.uiDistDir === undefined ? {} : { uiDistDir: config.uiDistDir }),
     apiMiddleware: [csrfGuard, session(auth)],
-    api: [authRoutes(auth, limiter, config), userRoutes(auth), questionRoutes(questions)],
+    api: [
+      authRoutes(auth, limiter, config),
+      userRoutes(auth, events),
+      questionRoutes(questions),
+      auditRoutes(audit),
+    ],
   });
   return { app, auth, events };
 }
