@@ -44,6 +44,7 @@ npm run ci             # everything CI runs: format check, lint, typecheck, test
 # later phases: npm run load:bots -- --players 100 · npm run questions:validate
 ```
 - TypeScript is pinned to 6.0.x until typescript-eslint supports 7.
+- Admin env: `DB_PATH` (default `data/dev.db`), `ADMIN_EMAIL` + `ADMIN_PASSWORD` (create the first admin on an empty DB), `INTERNAL_SECRET` + `GAME_SERVER_URL` (hot reload to the game server; same `INTERNAL_SECRET` on the game server).
 
 ## Conventions
 - TypeScript strict, no `any` without a comment. ESM everywhere.

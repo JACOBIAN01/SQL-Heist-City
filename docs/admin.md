@@ -21,7 +21,7 @@ Express (REST API; serves the built React UI as static files), `node:sqlite` (sh
 7. **Gameplay settings** — lockout, hint cost, heal amounts, loot values, round length, max players, spawn protection, weapon stats.
 8. **Pools** — named question sets (e.g. "Week 3: JOINs") assignable to rooms/matches (classroom mode).
 9. **Audit log** — who changed what, when.
-10. **Analytics** — solve rate, median time, wrong-answer rate per question.
+10. **Analytics** — solve rate, median time, wrong-answer rate per question. *(Deferred: needs the game to record attempts — Phase 7+.)*
 11. **Hot reload** — after save, calls game server `POST /internal/reload` (shared secret); active challenges keep their original version.
 
 ## Patterns used (why / how)

@@ -2,7 +2,7 @@
 
 Multiplayer browser game: students in an empty city rob 5 banks, but every vault lock, heal, and gun costs a SQL question — while other players shoot them. Teachers manage all questions through an admin backend.
 
-**Status:** Phase 2 — building the admin backend and UI.
+**Status:** Phase 2 complete (admin backend + UI) — awaiting review.
 
 ```
 npm install
