@@ -21,6 +21,8 @@ import { SandboxTemplateValidator } from './questions/TemplateValidator';
 import { QuestionImportService } from './questions/io/QuestionImportService';
 import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
+import { SqlitePoolRepository } from './pools/PoolRepository';
+import { poolRoutes } from './pools/routes';
 import { Grader } from '@heist/server/sql/Grader';
 import type { SandboxRunner } from '@heist/server/sql/SandboxRunner';
 import { WorkerSandboxRunner } from '@heist/server/sql/WorkerSandboxRunner';
@@ -85,6 +87,7 @@ export function buildAdmin(
       questionRoutes(questions, tester, io),
       auditRoutes(audit),
       configRoutes(settings),
+      poolRoutes(new SqlitePoolRepository(db), events),
     ],
   });
   return { app, auth, events, close: () => sandbox.close() };

@@ -82,7 +82,7 @@ Goal: teachers configure everything about questions.
 | 2.8 | Save-time validation (reference must pass ≥5 seeds) | bad question rejected | ✅ Done |
 | 2.9 | Import/export (JSON, CSV, dry-run) | round-trip is lossless | ✅ Done |
 | 2.10 | Settings + reward-map API | values persist and validate | ✅ Done |
-| 2.11 | Pools API | pool CRUD works | ⬜ |
+| 2.11 | Pools API | pool CRUD works | ✅ Done |
 | 2.12 | Hot-reload signal to game server | game picks up edit without restart | ⬜ |
 | 2.13 | React shell (routing, login page, layout) | can log in from UI | ⬜ |
 | 2.14 | UI: question list (filter, enable/disable) | list matches API | ⬜ |

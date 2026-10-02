@@ -101,6 +101,14 @@ function toRecord(event: AdminEvent): AuditRecord {
         entityId: event.key,
         detail: { before: event.before ?? null, after: event.after },
       };
+    case 'pool_changed':
+      return {
+        ...actor,
+        action: event.action,
+        entity: 'pool',
+        entityId: String(event.poolId),
+        detail: event.detail,
+      };
     case 'user_changed':
       return {
         ...actor,

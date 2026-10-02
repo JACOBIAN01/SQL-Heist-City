@@ -9,3 +9,4 @@
 - More SQL dialects (Postgres/MySQL flavour packs)
 - Mobile/touch controls
 - Structural question variants (table/column renames, story theme swap) — designed in questions.md, deferred from Phase 1.7
+- Game side of pools: a match/room restricts QuestionSelector to a pool's questions (needs rooms; Phase 7+). Admin pool CRUD exists since 2.11.
