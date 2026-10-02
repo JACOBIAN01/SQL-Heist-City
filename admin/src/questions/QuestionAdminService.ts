@@ -15,6 +15,11 @@ import { conflict, notFound } from '../http/errors';
 import type { AdminEventBus, QuestionAction } from '../events/AdminEvents';
 import type { TemplateValidator } from './TemplateValidator';
 
+export interface SaveOptions {
+  /** The caller already ran the validator (bulk import) — don't run it twice. */
+  readonly validated?: boolean;
+}
+
 // Pattern: Facade — Why: routes call one method per teacher action; the
 // repository, slug rules and change events stay behind it, so every way of
 // changing a question (UI, import, rollback) follows the same steps.
@@ -40,20 +45,39 @@ export class QuestionAdminService {
       .map(toSummary);
   }
 
+  findBySlug(slug: string): QuestionSummary | undefined {
+    const q = this.questions.getBySlug(slug);
+    return q && toSummary(q);
+  }
+
+  /** Every non-deleted question's template, for export. */
+  allTemplates(): QuestionTemplate[] {
+    return this.questions.list().map((q) => q.template);
+  }
+
   get(id: number): QuestionDetail {
     return toDetail(this.mustGet(id));
   }
 
-  async create(template: QuestionTemplate, actor: AdminUser): Promise<QuestionDetail> {
-    await this.validator.assertValid(template);
+  async create(
+    template: QuestionTemplate,
+    actor: AdminUser,
+    options: SaveOptions = {},
+  ): Promise<QuestionDetail> {
+    if (!options.validated) await this.validator.assertValid(template);
     const created = this.withSlugCheck(() => this.questions.create(template, actor.email));
     this.emit('create', created.id, actor, undefined, created.template);
     return toDetail(created);
   }
 
-  async update(id: number, template: QuestionTemplate, actor: AdminUser): Promise<QuestionDetail> {
+  async update(
+    id: number,
+    template: QuestionTemplate,
+    actor: AdminUser,
+    options: SaveOptions = {},
+  ): Promise<QuestionDetail> {
     const before = this.mustGet(id);
-    await this.validator.assertValid(template);
+    if (!options.validated) await this.validator.assertValid(template);
     const updated = this.withSlugCheck(() => this.questions.update(id, template, actor.email));
     this.emit('update', id, actor, before.template, updated.template);
     return toDetail(updated);

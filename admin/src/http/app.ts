@@ -22,7 +22,7 @@ export function createAdminApp(deps: AdminAppDeps): Express {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
-  app.use(express.json({ limit: '2mb' }));
+  app.use(express.json({ limit: '5mb' }));
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'admin', protocolVersion: PROTOCOL_VERSION });

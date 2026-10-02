@@ -1,19 +1,53 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import {
+  importQuerySchema,
   previewRequestSchema,
   questionListQuerySchema,
   questionTemplateSchema,
 } from '@heist/shared';
 import { z } from 'zod';
 import { requireLogin, requireRole, requireUser } from '../auth/middleware';
-import { parse } from '../http/errors';
+import { HttpError, parse } from '../http/errors';
+import { ImportFormatError, questionFormats } from './io/formats';
+import type { QuestionImportService } from './io/QuestionImportService';
 import { idParam } from '../http/params';
 import type { QuestionAdminService } from './QuestionAdminService';
 import type { QuestionTester } from './QuestionTester';
 
-export function questionRoutes(questions: QuestionAdminService, tester: QuestionTester): Router {
+export function questionRoutes(
+  questions: QuestionAdminService,
+  tester: QuestionTester,
+  io: QuestionImportService,
+): Router {
   const router = Router();
   router.use('/questions', requireLogin);
+
+  // Registered before /questions/:id so "export" isn't read as an id.
+  router.get('/questions/export', (req, res) => {
+    const { format } = parse(
+      z.object({ format: z.enum(['json', 'csv']).default('json') }),
+      req.query,
+    );
+    const f = questionFormats[format];
+    const date = new Date().toISOString().slice(0, 10);
+    res.type(f.contentType).attachment(`questions-${date}.${format}`).send(io.export(f));
+  });
+
+  router.post(
+    '/questions/import',
+    express.text({ type: ['text/csv', 'text/plain'], limit: '10mb' }),
+    async (req, res) => {
+      const options = parse(importQuerySchema, req.query);
+      const format = typeof req.body === 'string' ? questionFormats.csv : questionFormats.json;
+      try {
+        res.json({ report: await io.import(format, req.body, options, requireUser(res)) });
+      } catch (err) {
+        if (err instanceof ImportFormatError)
+          throw new HttpError(400, 'bad_import_file', err.message);
+        throw err;
+      }
+    },
+  );
 
   router.get('/questions', (req, res) => {
     res.json({ questions: questions.list(parse(questionListQuerySchema, req.query)) });

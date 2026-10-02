@@ -18,6 +18,7 @@ import { QuestionAdminService } from './questions/QuestionAdminService';
 import { questionRoutes } from './questions/routes';
 import { QuestionTester } from './questions/QuestionTester';
 import { SandboxTemplateValidator } from './questions/TemplateValidator';
+import { QuestionImportService } from './questions/io/QuestionImportService';
 import { Grader } from '@heist/server/sql/Grader';
 import type { SandboxRunner } from '@heist/server/sql/SandboxRunner';
 import { WorkerSandboxRunner } from '@heist/server/sql/WorkerSandboxRunner';
@@ -67,11 +68,9 @@ export function buildAdmin(
   auditAdminEvents(events, audit);
   const sandbox = overrides.sandbox ?? new WorkerSandboxRunner({ size: 2 });
   const tester = new QuestionTester(new VariantBuilder(builtInDatasets), new Grader(sandbox));
-  const questions = new QuestionAdminService(
-    new SqliteQuestionRepository(db),
-    events,
-    new SandboxTemplateValidator(tester),
-  );
+  const validator = new SandboxTemplateValidator(tester);
+  const questions = new QuestionAdminService(new SqliteQuestionRepository(db), events, validator);
+  const io = new QuestionImportService(questions, validator);
 
   const app = createAdminApp({
     logger,
@@ -80,7 +79,7 @@ export function buildAdmin(
     api: [
       authRoutes(auth, limiter, config),
       userRoutes(auth, events),
-      questionRoutes(questions, tester),
+      questionRoutes(questions, tester, io),
       auditRoutes(audit),
     ],
   });

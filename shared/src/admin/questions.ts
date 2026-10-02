@@ -69,3 +69,23 @@ export interface PreviewReport {
   readonly distinctResultRatio: number;
   readonly ok: boolean;
 }
+
+export const importQuerySchema = z.object({
+  dryRun: booleanQuery.default(false),
+  /** What to do when a slug already exists. */
+  onConflict: z.enum(['skip', 'update']).default('skip'),
+});
+export type ImportQuery = z.infer<typeof importQuerySchema>;
+
+export interface ImportItemResult {
+  readonly index: number;
+  readonly slug: string | null;
+  readonly status: 'created' | 'updated' | 'skipped' | 'invalid';
+  readonly errors?: readonly string[];
+}
+
+export interface ImportReport {
+  readonly dryRun: boolean;
+  readonly items: readonly ImportItemResult[];
+  readonly counts: Readonly<Record<ImportItemResult['status'], number>>;
+}
