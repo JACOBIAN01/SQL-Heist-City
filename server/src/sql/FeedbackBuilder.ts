@@ -1,7 +1,7 @@
 import type { Mismatch } from './ResultComparator';
 import type { SandboxErrorCode } from './SqlSandbox';
 
-export type FeedbackCode = Mismatch['kind'] | SandboxErrorCode;
+export type FeedbackCode = Mismatch['kind'] | SandboxErrorCode | 'timeout';
 
 export interface Feedback {
   readonly code: FeedbackCode;
@@ -47,6 +47,14 @@ export class FeedbackBuilder {
       case 'order':
         return { code: mismatch.kind, message: 'Right rows, wrong order. Check your ORDER BY.' };
     }
+  }
+
+  timeout(): Feedback {
+    return {
+      code: 'timeout',
+      message:
+        'Your query took too long. Look for a missing JOIN condition or a runaway recursive CTE.',
+    };
   }
 
   fromSandboxError(code: SandboxErrorCode, message: string): Feedback {
