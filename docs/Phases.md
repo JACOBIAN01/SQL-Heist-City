@@ -17,7 +17,7 @@
 ### Progress board
 | Phase | Name | Status |
 |---|---|---|
-| 0 | Docs & scaffold | 🟦 In progress |
+| 0 | Docs & scaffold | 🟨 In review |
 | 1 | Question engine | ⬜ |
 | 2 | Admin backend + UI | ⬜ |
 | 3 | Seed content (150 questions) | ⬜ |
@@ -30,7 +30,7 @@
 | 10 | Harden & ship | ⬜ |
 
 ---
-## Phase 0 — Docs & scaffold  🟦
+## Phase 0 — Docs & scaffold  🟨
 Goal: agreed design + an empty monorepo that builds and tests.
 
 | # | Subphase (one thing) | Done when | Status |

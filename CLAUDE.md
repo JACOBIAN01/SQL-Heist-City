@@ -31,16 +31,19 @@ shared/   protocol types, constants, schemas (zod)
 docs/     all design docs (this folder is the source of truth)
 ```
 
-## Commands (available after Phase 0 scaffold)
+## Commands
 ```
 npm install
-npm run dev:server | dev:client | dev:admin
-npm test            # vitest, all workspaces
-npm run lint
-npm run typecheck
-npm run load:bots -- --players 100
-npm run questions:validate
+npm run dev:server     # game server  http://localhost:8080  (/health)
+npm run dev:admin      # admin API :8081 + React UI http://localhost:5174
+npm run dev:client     # game client  http://localhost:5173
+npm test               # vitest, all workspaces
+npm run lint | typecheck | format
+npm run build          # admin UI + client bundles
+npm run ci             # everything CI runs: format check, lint, typecheck, test, build
+# later phases: npm run load:bots -- --players 100 · npm run questions:validate
 ```
+- TypeScript is pinned to 6.0.x until typescript-eslint supports 7.
 
 ## Conventions
 - TypeScript strict, no `any` without a comment. ESM everywhere.
