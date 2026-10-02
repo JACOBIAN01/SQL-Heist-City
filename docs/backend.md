@@ -53,7 +53,7 @@ Spatial hash, 64 m cells. Client gets own + 8 neighbour cells; tiered rates (nea
 - `FeedbackBuilder` — non-leaky hints (row count, missing columns, differing column).
 
 ### Sandbox rules
-Single statement, only `SELECT` / `WITH … SELECT`; SQLite authorizer allows reads of seeded tables only (denies ATTACH, PRAGMA, DDL/DML, extensions); `query_only=ON`; progress-handler timeout (2 s); row cap 1000; worker `resourceLimits`; fresh in-memory DB per challenge (tables ≤200 rows).
+Single statement, only `SELECT` / `WITH … SELECT`; SQLite authorizer allows reads of seeded tables only (denies ATTACH, PRAGMA, DDL/DML, extensions); `query_only=ON` + defensive mode; 2 s timeout enforced by terminating the grading worker; row cap 1000; worker `resourceLimits`; fresh in-memory DB per challenge (tables ≤200 rows).
 
 ### Comparison
 Multiset unless `order_matters`; column order must match; names ignored by default; REAL tolerance 1e-6; NULL explicit; case-sensitive text by default. All via flags on the question.

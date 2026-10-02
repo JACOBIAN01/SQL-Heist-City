@@ -47,7 +47,7 @@ The important system-design ideas this project relies on: what each is, where we
 
 ## 10. Sandboxing untrusted code (the SQL grader)
 - **What:** student SQL is untrusted input executed on our CPU.
-- **Defences (defence in depth):** parse check (single `SELECT`/`WITH`), SQLite **authorizer** (deny ATTACH/PRAGMA/DDL/DML/extensions), `query_only`, **timeout** via progress handler, **row cap**, **memory limit**, **worker isolation**, fresh in-memory DB per challenge, per-player **rate limits**.
+- **Defences (defence in depth):** parse check (single `SELECT`/`WITH`), SQLite **authorizer** (deny ATTACH/PRAGMA/DDL/DML/extensions), `query_only`, **timeout** by terminating the worker, **row cap**, **memory limit**, **worker isolation**, fresh in-memory DB per challenge, per-player **rate limits**.
 - **Why:** one infinite recursive CTE or `ATTACH` must not hurt other players or leak data.
 
 ## 11. Anti-cheat & anti-sharing by design
