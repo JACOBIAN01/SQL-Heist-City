@@ -1,0 +1,2336 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "t1-staff-roster",
+      "tier": 1,
+      "topic": [
+        "select"
+      ],
+      "title": "Staff Roster",
+      "story_md": "The crew needs to know who works at the bank.\n\nReturn every employee's **first_name** and **last_name**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT first_name, last_name FROM employees;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Pick only the two name columns.",
+          "cost": 0.05
+        },
+        {
+          "text": "SELECT first_name, last_name FROM employees",
+          "cost": 0.1
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-vault-inventory",
+      "tier": 1,
+      "topic": [
+        "select"
+      ],
+      "title": "Vault Inventory",
+      "story_md": "List what is stored in the vault.\n\nReturn **tag**, **item** and **value** for every row of `vault_items`.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            30,
+            50
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT tag, item, value FROM vault_items;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Columns are listed after SELECT, separated by commas.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-account-balances",
+      "tier": 1,
+      "topic": [
+        "select"
+      ],
+      "title": "Balance Sheet",
+      "story_md": "Get a quick look at the money.\n\nReturn **id**, **owner** and **balance** of every account.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT id, owner, balance FROM accounts;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Three columns from the accounts table.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-alarm-feed",
+      "tier": 1,
+      "topic": [
+        "select"
+      ],
+      "title": "Alarm Feed",
+      "story_md": "Tap into the alarm feed.\n\nReturn **zone**, **level** and **triggered** for every alarm.",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT zone, level, triggered FROM alarms;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Read three columns from alarms.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-big-earners",
+      "tier": 1,
+      "topic": [
+        "where"
+      ],
+      "title": "Big Earners",
+      "story_md": "Big salaries mean big access.\n\nReturn **first_name** and **salary** of employees earning more than **{min_salary}**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "min_salary": {
+          "kind": "int",
+          "min": 5000,
+          "max": 8000,
+          "step": 250
+        }
+      },
+      "reference_sql": "SELECT first_name, salary FROM employees WHERE salary > {min_salary};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Use WHERE with >.",
+          "cost": 0.05
+        },
+        {
+          "text": "WHERE salary > …",
+          "cost": 0.1
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-rich-accounts",
+      "tier": 1,
+      "topic": [
+        "where"
+      ],
+      "title": "Fat Accounts",
+      "story_md": "Find the juiciest accounts.\n\nReturn **id** and **balance** of accounts with a balance of at least **{min_balance}**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "min_balance": {
+          "kind": "int",
+          "min": 10000,
+          "max": 17000,
+          "step": 500
+        }
+      },
+      "reference_sql": "SELECT id, balance FROM accounts WHERE balance >= {min_balance};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "\"At least\" means >=.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-light-loot",
+      "tier": 1,
+      "topic": [
+        "where"
+      ],
+      "title": "Light Loot",
+      "story_md": "You can only carry light items.\n\nReturn **tag** and **weight_kg** of items weighing less than **{max_kg}** kg.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            30,
+            50
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "max_kg": {
+          "kind": "int",
+          "min": 4,
+          "max": 12,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT tag, weight_kg FROM vault_items WHERE weight_kg < {max_kg};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Compare weight_kg with <.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-long-alarms",
+      "tier": 1,
+      "topic": [
+        "where"
+      ],
+      "title": "Slow Response",
+      "story_md": "Some alarms rang for ages.\n\nReturn **id** and **minutes** of alarms that lasted more than **{min_minutes}** minutes.",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {
+        "min_minutes": {
+          "kind": "int",
+          "min": 60,
+          "max": 100,
+          "step": 5
+        }
+      },
+      "reference_sql": "SELECT id, minutes FROM alarms WHERE minutes > {min_minutes};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Filter on the minutes column.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-branch-floor",
+      "tier": 1,
+      "topic": [
+        "where"
+      ],
+      "title": "Tall Buildings",
+      "story_md": "Taller banks have more floors to search.\n\nReturn **name** and **city** of branches with exactly **{floors}** floors.",
+      "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);",
+      "data_gen": {
+        "branches": {
+          "rows": 24,
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "name": {
+              "kind": "pick",
+              "from": "branch_names"
+            },
+            "city": {
+              "kind": "pick",
+              "from": "cities"
+            },
+            "opened": {
+              "kind": "date",
+              "from": "1990-01-01",
+              "to": "2022-12-31"
+            },
+            "floors": {
+              "kind": "int",
+              "min": 3,
+              "max": 6,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "floors": {
+          "kind": "int",
+          "min": 3,
+          "max": 6,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT name, city FROM branches WHERE floors = {floors};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Use = to match an exact number.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-dept-staff",
+      "tier": 1,
+      "topic": [
+        "where",
+        "text"
+      ],
+      "title": "Department Directory",
+      "story_md": "Target one department.\n\nReturn **first_name** and **last_name** of employees in the **{dept}** department.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "dept": {
+          "kind": "pick",
+          "from": "departments"
+        }
+      },
+      "reference_sql": "SELECT first_name, last_name FROM employees WHERE dept = {dept|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Text values go in single quotes: dept = '…'.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-items-by-type",
+      "tier": 1,
+      "topic": [
+        "where",
+        "text"
+      ],
+      "title": "Shopping List",
+      "story_md": "Your buyer only wants one kind of loot.\n\nReturn **tag** and **value** of every **{item}** in the vault.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            30,
+            50
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "item": {
+          "kind": "pick",
+          "from": "item_types"
+        }
+      },
+      "reference_sql": "SELECT tag, value FROM vault_items WHERE item = {item|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Match the item column exactly.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-name-starts",
+      "tier": 1,
+      "topic": [
+        "like"
+      ],
+      "title": "Name Game",
+      "story_md": "An informant only remembers the start of a name.\n\nReturn **id**, **first_name** and **last_name** of employees whose last name starts with **{prefix}**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            70,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "prefix": {
+          "kind": "pick",
+          "from": [
+            "S",
+            "K",
+            "M",
+            "P",
+            "H",
+            "N"
+          ]
+        }
+      },
+      "reference_sql": "SELECT id, first_name, last_name FROM employees WHERE last_name LIKE {prefix|sql} || '%';",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "LIKE 'S%' matches anything starting with S.",
+          "cost": 0.05
+        },
+        {
+          "text": "% means \"any characters\".",
+          "cost": 0.1
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-tag-contains",
+      "tier": 1,
+      "topic": [
+        "like"
+      ],
+      "title": "Tagged",
+      "story_md": "Tags with a certain digit are fakes.\n\nReturn the **tag** of items whose tag contains the digit **{digit}**.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            30,
+            50
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "digit": {
+          "kind": "pick",
+          "from": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6",
+            "7",
+            "8",
+            "9"
+          ]
+        }
+      },
+      "reference_sql": "SELECT tag FROM vault_items WHERE tag LIKE '%' || {digit|sql} || '%';",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Put % on both sides: LIKE '%7%'.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-merchant-match",
+      "tier": 1,
+      "topic": [
+        "like"
+      ],
+      "title": "Shady Shops",
+      "story_md": "Payments at some shops look suspicious.\n\nReturn **id**, **merchant** and **amount** of transactions whose merchant name contains **{fragment}** (case does not matter).",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            120,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "fragment": {
+          "kind": "pick",
+          "from": [
+            "Mart",
+            "Hub",
+            "Lab",
+            "Box",
+            "Co",
+            "Stop"
+          ]
+        }
+      },
+      "reference_sql": "SELECT id, merchant, amount FROM transactions WHERE merchant LIKE '%' || {fragment|sql} || '%';",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "LIKE with % on both sides finds text anywhere in the value.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-dept-and-salary",
+      "tier": 1,
+      "topic": [
+        "where",
+        "and"
+      ],
+      "title": "Payroll Leak",
+      "story_md": "Find well-paid insiders.\n\nReturn **first_name** and **salary** of **{dept}** employees earning more than **{min_salary}**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            60,
+            80
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "dept": {
+          "kind": "pick",
+          "from": "departments"
+        },
+        "min_salary": {
+          "kind": "int",
+          "min": 3000,
+          "max": 6000,
+          "step": 500
+        }
+      },
+      "reference_sql": "SELECT first_name, salary FROM employees WHERE dept = {dept|sql} AND salary > {min_salary};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Combine two conditions with AND.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-critical-or-long",
+      "tier": 1,
+      "topic": [
+        "where",
+        "or"
+      ],
+      "title": "Red Alerts",
+      "story_md": "Security takes two kinds of alarm seriously.\n\nReturn **id**, **level** and **minutes** of alarms that are **critical** OR lasted more than **{min_minutes}** minutes.",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {
+        "min_minutes": {
+          "kind": "int",
+          "min": 80,
+          "max": 110,
+          "step": 5
+        }
+      },
+      "reference_sql": "SELECT id, level, minutes FROM alarms WHERE level = 'critical' OR minutes > {min_minutes};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Either condition is enough: use OR.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-not-closed",
+      "tier": 1,
+      "topic": [
+        "where",
+        "not"
+      ],
+      "title": "Still Open",
+      "story_md": "Closed accounts are useless.\n\nReturn **id** and **owner** of accounts whose status is NOT **closed**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT id, owner FROM accounts WHERE NOT status = 'closed';",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Use NOT, or != / <>, against 'closed'.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-unresolved-zone",
+      "tier": 1,
+      "topic": [
+        "where",
+        "and"
+      ],
+      "title": "Open Alarms",
+      "story_md": "Unresolved alarms mean guards are busy.\n\nReturn **id** and **triggered** of alarms in zone **{zone}** that are not resolved (`resolved = 0`).",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            150,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {
+        "zone": {
+          "kind": "pick",
+          "from": "vault_zones"
+        }
+      },
+      "reference_sql": "SELECT id, triggered FROM alarms WHERE zone = {zone|sql} AND resolved = 0;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Two conditions joined with AND.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-salary-band",
+      "tier": 1,
+      "topic": [
+        "between"
+      ],
+      "title": "Salary Band",
+      "story_md": "Mid-level staff are easiest to bribe.\n\nReturn **first_name** and **salary** of employees whose salary is between **{lo}** and **{hi}** (inclusive).",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "lo": {
+          "kind": "int",
+          "min": 3000,
+          "max": 4500,
+          "step": 250
+        },
+        "hi": {
+          "kind": "int",
+          "min": 5500,
+          "max": 7000,
+          "step": 250
+        }
+      },
+      "reference_sql": "SELECT first_name, salary FROM employees WHERE salary BETWEEN {lo} AND {hi};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "BETWEEN a AND b includes both ends.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-two-depts",
+      "tier": 1,
+      "topic": [
+        "in"
+      ],
+      "title": "Two Teams",
+      "story_md": "Only two departments have vault keys.\n\nReturn **id** and **dept** of employees in **{d1}** or **{d2}**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "d1": {
+          "kind": "pick",
+          "from": [
+            "Security",
+            "Vault Ops",
+            "Teller"
+          ]
+        },
+        "d2": {
+          "kind": "pick",
+          "from": [
+            "Audit",
+            "IT",
+            "Loans"
+          ]
+        }
+      },
+      "reference_sql": "SELECT id, dept FROM employees WHERE dept IN ({d1|sql}, {d2|sql});",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "IN ('a', 'b') matches any value in the list.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-date-window",
+      "tier": 1,
+      "topic": [
+        "between",
+        "dates"
+      ],
+      "title": "Hiring Window",
+      "story_md": "People hired in a certain window had weak background checks.\n\nReturn **first_name** and **hired** of employees hired between **{from}** and **{to}** (inclusive). Dates are stored as text like `2021-06-30`.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            60,
+            80
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "from": {
+          "kind": "pick",
+          "from": [
+            "2017-01-01",
+            "2018-01-01",
+            "2019-01-01"
+          ]
+        },
+        "to": {
+          "kind": "pick",
+          "from": [
+            "2021-12-31",
+            "2022-12-31",
+            "2023-12-31"
+          ]
+        }
+      },
+      "reference_sql": "SELECT first_name, hired FROM employees WHERE hired BETWEEN {from|sql} AND {to|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "YYYY-MM-DD text compares correctly with BETWEEN.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-zone-items",
+      "tier": 1,
+      "topic": [
+        "in"
+      ],
+      "title": "Inner Vaults",
+      "story_md": "The good stuff is in the inner vaults.\n\nReturn **tag** and **zone** of items stored in **Vault A** or **Vault B**.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            30,
+            50
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT tag, zone FROM vault_items WHERE zone IN ('Vault A', 'Vault B');",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Use IN with two zone names.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-top-salaries-order",
+      "tier": 1,
+      "topic": [
+        "order-by"
+      ],
+      "title": "Pay Ladder",
+      "story_md": "Rank the staff.\n\nReturn **first_name** and **salary** of all employees, **highest salary first**. Break ties by **id** ascending.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT first_name, salary FROM employees ORDER BY salary DESC, id ASC;",
+      "order_matters": true,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "ORDER BY salary DESC",
+          "cost": 0.05
+        },
+        {
+          "text": "Add a second sort key: , id",
+          "cost": 0.1
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-oldest-branches",
+      "tier": 1,
+      "topic": [
+        "order-by"
+      ],
+      "title": "Old Money",
+      "story_md": "Older branches have older locks.\n\nReturn **name** and **opened** of every branch, **oldest first**. Break ties by **id**.",
+      "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);",
+      "data_gen": {
+        "branches": {
+          "rows": 10,
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "name": {
+              "kind": "pick",
+              "from": "branch_names"
+            },
+            "city": {
+              "kind": "pick",
+              "from": "cities"
+            },
+            "opened": {
+              "kind": "date",
+              "from": "1990-01-01",
+              "to": "2022-12-31"
+            },
+            "floors": {
+              "kind": "int",
+              "min": 3,
+              "max": 6,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT name, opened FROM branches ORDER BY opened ASC, id ASC;",
+      "order_matters": true,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Dates as YYYY-MM-DD sort correctly as text.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-heavy-first",
+      "tier": 1,
+      "topic": [
+        "order-by"
+      ],
+      "title": "Heavy Lifting",
+      "story_md": "Plan the getaway van.\n\nReturn **tag** and **weight_kg** of items in zone **{zone}**, **heaviest first**, ties by **tag** A→Z.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            60,
+            80
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "zone": {
+          "kind": "pick",
+          "from": "vault_zones"
+        }
+      },
+      "reference_sql": "SELECT tag, weight_kg FROM vault_items WHERE zone = {zone|sql} ORDER BY weight_kg DESC, tag ASC;",
+      "order_matters": true,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Filter with WHERE, then ORDER BY … DESC.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-top-n-items",
+      "tier": 1,
+      "topic": [
+        "limit"
+      ],
+      "title": "Grab and Go",
+      "story_md": "You only have time for a few items.\n\nReturn **tag** and **value** of the **{n}** most valuable items (highest value first, ties by **id**).",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            30,
+            50
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "n": {
+          "kind": "int",
+          "min": 3,
+          "max": 7,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT tag, value FROM vault_items ORDER BY value DESC, id ASC LIMIT {n};",
+      "order_matters": true,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "ORDER BY value DESC, then LIMIT.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-second-page",
+      "tier": 1,
+      "topic": [
+        "limit",
+        "offset"
+      ],
+      "title": "Page Two",
+      "story_md": "The ledger shows 5 accounts per page.\n\nReturn **id** and **balance** for **page {page}** of accounts sorted by balance (highest first, ties by **id**). Page 1 is the first 5 rows.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "page": {
+          "kind": "int",
+          "min": 2,
+          "max": 5,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT id, balance FROM accounts ORDER BY balance DESC, id ASC LIMIT 5 OFFSET ({page} - 1) * 5;",
+      "order_matters": true,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "LIMIT 5 OFFSET skips rows: page 2 skips 5.",
+          "cost": 0.05
+        },
+        {
+          "text": "OFFSET (page - 1) * 5",
+          "cost": 0.1
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-distinct-merchants",
+      "tier": 1,
+      "topic": [
+        "distinct"
+      ],
+      "title": "Where They Shop",
+      "story_md": "Profile one target's habits.\n\nReturn the **distinct** merchant names used by account **{account}** (skip transactions with no merchant).",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            8,
+            10
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            150,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "account": {
+          "kind": "int",
+          "min": 100,
+          "max": 107,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT DISTINCT merchant FROM transactions WHERE account_id = {account} AND merchant IS NOT NULL;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "SELECT DISTINCT removes duplicates.",
+          "cost": 0.05
+        },
+        {
+          "text": "NULL needs IS NOT NULL, not != NULL.",
+          "cost": 0.1
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-distinct-last-names",
+      "tier": 1,
+      "topic": [
+        "distinct"
+      ],
+      "title": "Family Business",
+      "story_md": "Families stick together.\n\nReturn each **distinct last_name** found among **{dept}** employees.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            50,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "dept": {
+          "kind": "pick",
+          "from": "departments"
+        }
+      },
+      "reference_sql": "SELECT DISTINCT last_name FROM employees WHERE dept = {dept|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "DISTINCT applies to the selected column.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t1-distinct-zones-level",
+      "tier": 1,
+      "topic": [
+        "distinct"
+      ],
+      "title": "Hot Zones",
+      "story_md": "Which zones have raised a **{level}** alarm?\n\nReturn each **distinct zone** with at least one alarm of that level.",
+      "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
+      "data_gen": {
+        "alarms": {
+          "rows": [
+            50,
+            80
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "level": {
+              "kind": "pick",
+              "from": "alarm_levels",
+              "weights": [
+                4,
+                3,
+                2,
+                1
+              ]
+            },
+            "triggered": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "minutes": {
+              "kind": "int",
+              "min": 1,
+              "max": 120,
+              "step": 1
+            },
+            "resolved": {
+              "kind": "bool",
+              "p": 0.7
+            }
+          }
+        }
+      },
+      "params": {
+        "level": {
+          "kind": "pick",
+          "from": [
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      },
+      "reference_sql": "SELECT DISTINCT zone FROM alarms WHERE level = {level|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Filter first, then DISTINCT.",
+          "cost": 0.05
+        }
+      ],
+      "enabled": true
+    }
+  ]
+}
