@@ -63,7 +63,7 @@ Goal: store, vary, and safely grade SQL questions.
 | 1.10 | `ResultComparator` (ordered/unordered, aliases, tolerance) | equivalent queries match | ✅ Done |
 | 1.11 | `FeedbackBuilder` (non-leaky hints) | hints never contain reference SQL | ✅ Done |
 | 1.12 | `Grader` (ties sandbox + comparator) | right answer ✔, wrong ✘ | ✅ Done |
-| 1.13 | `QuestionSelector` (per reward, no repeats per player) | no repeat until pool exhausted | ⬜ |
+| 1.13 | `QuestionSelector` (per reward, no repeats per player) | no repeat until pool exhausted | ✅ Done |
 | 1.14 | `ChallengeService` facade (issue / run / submit, lockout) | full flow test passes | ⬜ |
 
 ---
