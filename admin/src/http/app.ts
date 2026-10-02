@@ -1,11 +1,13 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import express, { type Express, type Router } from 'express';
+import express, { type Express, type RequestHandler, type Router } from 'express';
 import { PROTOCOL_VERSION } from '@heist/shared';
 import { apiNotFound, errorHandler, type ErrorLogger } from './errors';
 
 export interface AdminAppDeps {
   readonly logger: ErrorLogger;
+  /** Runs before every /api route (session, CSRF guard). */
+  readonly apiMiddleware?: readonly RequestHandler[];
   /** Feature routers mounted under /api (auth, questions, …), built in main.ts. */
   readonly api?: readonly Router[];
   /** Built React UI to serve; skipped when the folder doesn't exist (in dev, Vite serves it). */
@@ -27,6 +29,7 @@ export function createAdminApp(deps: AdminAppDeps): Express {
   });
 
   const api = express.Router();
+  for (const middleware of deps.apiMiddleware ?? []) api.use(middleware);
   for (const router of deps.api ?? []) api.use(router);
   api.use(apiNotFound);
   app.use('/api', api);

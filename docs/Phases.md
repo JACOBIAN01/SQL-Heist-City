@@ -73,7 +73,7 @@ Goal: teachers configure everything about questions.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 2.1 | Admin server skeleton (Express, error handling, zod validation middleware) | `/health` + validation test | ✅ Done |
-| 2.2 | Users + login/logout (argon2, session cookie) | login test passes | ⬜ |
+| 2.2 | Users + login/logout (argon2, session cookie) | login test passes | ✅ Done |
 | 2.3 | Role guard (admin / teacher) | forbidden routes return 403 | ⬜ |
 | 2.4 | Question CRUD API | create/read/update/disable works | ⬜ |
 | 2.5 | Versioning + rollback | edit then rollback restores old | ⬜ |

@@ -72,7 +72,7 @@ The important system-design ideas this project relies on: what each is, where we
 - **Soft delete + versioning** protect teachers' content from mistakes.
 
 ## 15. Security architecture
-- Authn/z: argon2 password hashes; httpOnly + sameSite=strict session cookies; **RBAC** (admin, teacher) enforced per route; CSRF protection; login rate limiting.
+- Authn/z: scrypt password hashes (node:crypto); httpOnly + sameSite=strict session cookies; **RBAC** (admin, teacher) enforced per route; CSRF protection; login rate limiting.
 - **Input validation at every boundary** with shared zod schemas (WS messages, REST bodies, imported files).
 - **Rate limiting** per message type and per route; max message size.
 - **Least privilege:** game server has read-only DB access (ISP/`QuestionReader`).

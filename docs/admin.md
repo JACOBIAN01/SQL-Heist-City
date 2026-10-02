@@ -9,7 +9,7 @@ Purpose: admins/teachers **create, change, and curate SQL questions and gameplay
 | teacher | create/edit/disable questions, preview, import/export, manage pools; cannot manage users or global settings |
 
 ## Stack
-Express (REST API; serves the built React UI as static files), `node:sqlite` (shared DB file), zod (schemas from `shared/`), argon2, httpOnly+sameSite=strict session cookie. UI: React SPA (TypeScript + Vite; React Router, TanStack Query for data fetching), CodeMirror for SQL fields.
+Express (REST API; serves the built React UI as static files), `node:sqlite` (shared DB file), zod (schemas from `shared/`), scrypt password hashing (node:crypto, no native deps), opaque session tokens stored hashed, httpOnly+sameSite=strict cookie. UI: React SPA (TypeScript + Vite; React Router, TanStack Query for data fetching), CodeMirror for SQL fields.
 
 ## Features
 1. **Question CRUD** — title, story (markdown), tier 1–5, topics, schema SQL, data generator, variant params, reference SQL, compare flags, hints (text + cost), enabled.
