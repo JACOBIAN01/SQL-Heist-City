@@ -1,10 +1,5 @@
-import { MAX_TIER, MIN_TIER, type Rng } from '@heist/shared';
+import { MAX_TIER, MIN_TIER, type Rng, type TierRange } from '@heist/shared';
 import type { QuestionReader, StoredQuestion } from '../questions/QuestionRepository';
-
-export interface TierRange {
-  readonly min: number;
-  readonly max: number;
-}
 
 /**
  * Picks which question a player gets for a reward. Rules:
