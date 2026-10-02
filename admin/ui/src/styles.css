@@ -380,22 +380,18 @@ tr[aria-selected='true'] {
 
 /* Theme switcher */
 .theme-toggle {
-  display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  overflow: hidden;
-}
-.theme-toggle button {
-  border: none;
-  border-radius: 0;
-  padding: 4px 9px;
-  background: var(--panel);
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  font-size: 16px;
+  line-height: 1;
   color: var(--muted);
 }
-.theme-toggle button[aria-pressed='true'] {
-  background: var(--code-bg);
+.theme-toggle:hover {
   color: var(--text);
-  font-weight: 600;
+  background: var(--code-bg);
 }
 .login-theme {
   position: fixed;

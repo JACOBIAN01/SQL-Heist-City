@@ -1,36 +1,41 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { THEME_STORAGE_KEY, readThemeChoice } from './theme';
 import { ThemeToggle } from './ThemeToggle';
 
+function osPrefersDark(dark: boolean) {
+  vi.stubGlobal('matchMedia', (q: string) => ({ matches: dark && q.includes('dark') }));
+}
+
 beforeEach(() => {
   localStorage.clear();
   delete document.documentElement.dataset.theme;
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe('ThemeToggle', () => {
-  it('defaults to Auto (follow the OS)', () => {
+  it('follows the OS until clicked', () => {
+    osPrefersDark(true);
     render(<ThemeToggle />);
-    expect(screen.getByRole('button', { name: 'Auto' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Switch to light mode' })).toBeTruthy();
     expect(document.documentElement.dataset.theme).toBeUndefined();
   });
 
-  it('switches to dark and light, remembers the choice, and Auto clears it', async () => {
+  it('toggles dark ↔ light with one button and remembers it', async () => {
+    osPrefersDark(false);
     render(<ThemeToggle />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole('button', { name: '☾ Dark' }));
+    await user.click(screen.getByRole('button', { name: 'Switch to dark mode' }));
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe('dark');
 
-    await user.click(screen.getByRole('button', { name: '☀ Light' }));
+    await user.click(screen.getByRole('button', { name: 'Switch to light mode' }));
     expect(document.documentElement.dataset.theme).toBe('light');
     expect(readThemeChoice()).toBe('light');
-
-    await user.click(screen.getByRole('button', { name: 'Auto' }));
-    expect(document.documentElement.dataset.theme).toBeUndefined();
-    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
   it('ignores junk in storage', () => {

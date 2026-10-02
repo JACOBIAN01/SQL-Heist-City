@@ -1,26 +1,27 @@
-import { useThemeChoice, type ThemeChoice } from './theme';
+import { useThemeChoice } from './theme';
 
-const OPTIONS: { value: ThemeChoice; label: string; title: string }[] = [
-  { value: 'light', label: '☀ Light', title: 'Light mode' },
-  { value: 'dark', label: '☾ Dark', title: 'Dark mode' },
-  { value: 'system', label: 'Auto', title: 'Follow the computer’s setting' },
-];
+/** OS preference, used until the user picks a theme explicitly. */
+function systemPrefersDark(): boolean {
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-color-scheme: dark)').matches
+  );
+}
 
+/** One icon button: shows the mode you'd switch to (moon in light mode, sun in dark mode). */
 export function ThemeToggle() {
   const [choice, setChoice] = useThemeChoice();
+  const isDark = choice === 'dark' || (choice === 'system' && systemPrefersDark());
+  const label = isDark ? 'Switch to light mode' : 'Switch to dark mode';
   return (
-    <div className="theme-toggle" role="group" aria-label="Color theme">
-      {OPTIONS.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          title={o.title}
-          aria-pressed={choice === o.value}
-          onClick={() => setChoice(o.value)}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+    <button
+      type="button"
+      className="theme-toggle"
+      aria-label={label}
+      title={label}
+      onClick={() => setChoice(isDark ? 'light' : 'dark')}
+    >
+      <span aria-hidden="true">{isDark ? '☀' : '☾'}</span>
+    </button>
   );
 }
