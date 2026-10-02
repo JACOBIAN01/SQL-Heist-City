@@ -19,8 +19,8 @@
 |---|---|---|
 | 0 | Docs & scaffold | ✅ Done |
 | 1 | Question engine | ✅ Done |
-| 2 | Admin backend + UI | 🟨 In review |
-| 3 | Seed content (150 questions) | ⬜ |
+| 2 | Admin backend + UI | ✅ Done |
+| 3 | Seed content (150 questions) | 🟦 In progress |
 | 4 | SQL pop-up UI | ⬜ |
 | 5 | Walk & shoot sandbox | ⬜ |
 | 6 | Scale core (60/100/200) | ⬜ |
@@ -67,7 +67,7 @@ Goal: store, vary, and safely grade SQL questions.
 | 1.14 | `ChallengeService` facade (issue / run / submit, lockout) | full flow test passes | ✅ Done |
 
 ---
-## Phase 2 — Admin backend + UI (Express + React)  🟨
+## Phase 2 — Admin backend + UI (Express + React)  ✅
 Goal: teachers configure everything about questions.
 
 | # | Subphase | Done when | Status |
@@ -93,7 +93,7 @@ Goal: teachers configure everything about questions.
 | 2.19 | UI: pools, versions/diff, audit, users (analytics deferred — needs game attempt data) | each page renders real data | ✅ Done |
 
 ---
-## Phase 3 — Seed content: 150 questions  ⬜
+## Phase 3 — Seed content: 150 questions  🟦
 Goal: ship 150 curated, editable questions.
 
 | # | Subphase | Done when | Status |
