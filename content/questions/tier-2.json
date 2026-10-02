@@ -5,19 +5,13 @@
     {
       "slug": "t2-count-staff",
       "tier": 2,
-      "topic": [
-        "aggregate",
-        "count"
-      ],
+      "topic": ["aggregate", "count"],
       "title": "Headcount",
       "story_md": "How many people could get in your way, and what do they cost?\n\nFor the **{dept}** department return two columns: the **number of employees** and their **total salary**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -79,19 +73,13 @@
     {
       "slug": "t2-total-loot",
       "tier": 2,
-      "topic": [
-        "aggregate",
-        "sum"
-      ],
+      "topic": ["aggregate", "sum"],
       "title": "Total Haul",
       "story_md": "What is zone **{zone}** worth?\n\nReturn the **total value** of all items stored there.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
         "vault_items": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -149,19 +137,13 @@
     {
       "slug": "t2-avg-salary",
       "tier": 2,
-      "topic": [
-        "aggregate",
-        "avg"
-      ],
+      "topic": ["aggregate", "avg"],
       "title": "Average Paycheck",
       "story_md": "Know what a bribe needs to beat.\n\nReturn the **average salary** of **{dept}** employees, **rounded to 2 decimals**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -223,19 +205,13 @@
     {
       "slug": "t2-max-min-balance",
       "tier": 2,
-      "topic": [
-        "aggregate",
-        "min-max"
-      ],
+      "topic": ["aggregate", "min-max"],
       "title": "Richest and Poorest",
       "story_md": "Scope the range of targets.\n\nReturn two columns: the **highest** and the **lowest** balance among **{type}** accounts.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -263,11 +239,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -302,20 +274,13 @@
     {
       "slug": "t2-count-distinct-merchants",
       "tier": 2,
-      "topic": [
-        "aggregate",
-        "count",
-        "distinct"
-      ],
+      "topic": ["aggregate", "count", "distinct"],
       "title": "Shop Count",
       "story_md": "How active is account **{account}**?\n\nReturn two columns: its **number of transactions** and the **number of distinct merchants** it paid (`COUNT(DISTINCT …)` ignores missing merchants).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            15,
-            20
-          ],
+          "rows": [15, 20],
           "columns": {
             "id": {
               "kind": "serial",
@@ -343,11 +308,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -358,10 +319,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            150,
-            220
-          ],
+          "rows": [150, 220],
           "columns": {
             "id": {
               "kind": "serial",
@@ -375,13 +333,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -428,20 +380,13 @@
     {
       "slug": "t2-latest-alarm",
       "tier": 2,
-      "topic": [
-        "aggregate",
-        "min-max",
-        "dates"
-      ],
+      "topic": ["aggregate", "min-max", "dates"],
       "title": "Last Alarm",
       "story_md": "When did zone **{zone}** last go off?\n\nReturn the **latest triggered date** for alarms in that zone.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            70,
-            100
-          ],
+          "rows": [70, 100],
           "columns": {
             "id": {
               "kind": "serial",
@@ -454,12 +399,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
@@ -503,19 +443,13 @@
     {
       "slug": "t2-heaviest-weight",
       "tier": 2,
-      "topic": [
-        "aggregate",
-        "sum"
-      ],
+      "topic": ["aggregate", "sum"],
       "title": "Van Capacity",
       "story_md": "Can the van carry all the **{item}** items?\n\nReturn their **total weight in kg, rounded to 1 decimal**.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
         "vault_items": {
-          "rows": [
-            70,
-            100
-          ],
+          "rows": [70, 100],
           "columns": {
             "id": {
               "kind": "serial",
@@ -573,18 +507,13 @@
     {
       "slug": "t2-withdraw-stats",
       "tier": 2,
-      "topic": [
-        "aggregate"
-      ],
+      "topic": ["aggregate"],
       "title": "Withdrawal Pattern",
       "story_md": "Profile the withdrawals.\n\nReturn three columns for transactions of kind **withdrawal**: the **count**, the **total amount**, and the **average amount rounded to 2 decimals**.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -612,11 +541,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -627,10 +552,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            120,
-            200
-          ],
+          "rows": [120, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -644,13 +566,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -690,18 +606,13 @@
     {
       "slug": "t2-staff-per-dept",
       "tier": 2,
-      "topic": [
-        "group-by"
-      ],
+      "topic": ["group-by"],
       "title": "Team Sizes",
       "story_md": "Who has the most people?\n\nReturn **dept** and the **number of employees** in each department.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -758,18 +669,13 @@
     {
       "slug": "t2-value-per-zone",
       "tier": 2,
-      "topic": [
-        "group-by"
-      ],
+      "topic": ["group-by"],
       "title": "Zone Values",
       "story_md": "Rank the zones by loot.\n\nReturn **zone** and the **total item value** for each zone.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
         "vault_items": {
-          "rows": [
-            30,
-            50
-          ],
+          "rows": [30, 50],
           "columns": {
             "id": {
               "kind": "serial",
@@ -822,19 +728,13 @@
     {
       "slug": "t2-avg-per-type",
       "tier": 2,
-      "topic": [
-        "group-by",
-        "avg"
-      ],
+      "topic": ["group-by", "avg"],
       "title": "Account Types",
       "story_md": "Which account type holds the most per account?\n\nReturn **type** and the **average balance rounded to 2 decimals** for each account type.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -862,11 +762,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -896,18 +792,13 @@
     {
       "slug": "t2-alarms-per-level",
       "tier": 2,
-      "topic": [
-        "group-by"
-      ],
+      "topic": ["group-by"],
       "title": "Alarm Levels",
       "story_md": "Measure how jumpy the system is.\n\nReturn **level** and the **number of alarms** at that level in zone **{zone}**.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            120,
-            160
-          ],
+          "rows": [120, 160],
           "columns": {
             "id": {
               "kind": "serial",
@@ -920,12 +811,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
@@ -969,18 +855,13 @@
     {
       "slug": "t2-spend-per-merchant",
       "tier": 2,
-      "topic": [
-        "group-by"
-      ],
+      "topic": ["group-by"],
       "title": "Spending Map",
       "story_md": "Follow the money of account **{account}**.\n\nReturn **merchant** and **total amount** spent there (skip rows with no merchant).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            5,
-            6
-          ],
+          "rows": [5, 6],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1008,11 +889,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1023,10 +900,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            150,
-            200
-          ],
+          "rows": [150, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1040,13 +914,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -1093,19 +961,13 @@
     {
       "slug": "t2-hires-per-year",
       "tier": 2,
-      "topic": [
-        "group-by",
-        "dates"
-      ],
+      "topic": ["group-by", "dates"],
       "title": "Hiring Waves",
       "story_md": "When did the bank hire most?\n\nReturn the **year** (as text, e.g. `2019`) and the **number of employees hired** that year.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            70,
-            100
-          ],
+          "rows": [70, 100],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1166,18 +1028,13 @@
     {
       "slug": "t2-loans-per-status",
       "tier": 2,
-      "topic": [
-        "group-by"
-      ],
+      "topic": ["group-by"],
       "title": "Loan Book",
       "story_md": "Who owes the bank money?\n\nReturn **status**, the **number of loans** and their **total amount** for each loan status.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1205,11 +1062,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1220,10 +1073,7 @@
           }
         },
         "loans": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1272,18 +1122,13 @@
     {
       "slug": "t2-dept-branch-count",
       "tier": 2,
-      "topic": [
-        "group-by"
-      ],
+      "topic": ["group-by"],
       "title": "Branch Staffing",
       "story_md": "Plan who is in which building.\n\nReturn **branch_id**, **dept** and the **number of employees** for every branch/department combination.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1340,19 +1185,13 @@
     {
       "slug": "t2-busy-zones",
       "tier": 2,
-      "topic": [
-        "group-by",
-        "having"
-      ],
+      "topic": ["group-by", "having"],
       "title": "Busy Zones",
       "story_md": "Avoid zones with lots of alarms.\n\nReturn **zone** and **alarm count** for zones with **more than {n}** alarms.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            90,
-            130
-          ],
+          "rows": [90, 130],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1365,12 +1204,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
@@ -1416,19 +1250,13 @@
     {
       "slug": "t2-rich-depts",
       "tier": 2,
-      "topic": [
-        "group-by",
-        "having"
-      ],
+      "topic": ["group-by", "having"],
       "title": "Rich Departments",
       "story_md": "Where is the payroll concentrated?\n\nReturn **dept** and **average salary (rounded to 2 decimals)** for departments whose average salary is **above {avg}**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            70,
-            100
-          ],
+          "rows": [70, 100],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1492,19 +1320,13 @@
     {
       "slug": "t2-frequent-shoppers",
       "tier": 2,
-      "topic": [
-        "group-by",
-        "having"
-      ],
+      "topic": ["group-by", "having"],
       "title": "Regulars",
       "story_md": "Find accounts that move money a lot.\n\nReturn **account_id** and **number of transactions** for accounts with **at least {n}** transactions.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            20,
-            30
-          ],
+          "rows": [20, 30],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1532,11 +1354,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1547,10 +1365,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            180,
-            240
-          ],
+          "rows": [180, 240],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1564,13 +1379,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -1617,19 +1426,13 @@
     {
       "slug": "t2-valuable-items",
       "tier": 2,
-      "topic": [
-        "group-by",
-        "having"
-      ],
+      "topic": ["group-by", "having"],
       "title": "Worth the Trip",
       "story_md": "Only item types worth a lot in total are worth carrying.\n\nReturn **item** and **total value** for item types whose total value exceeds **{total}**.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
         "vault_items": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1689,20 +1492,13 @@
     {
       "slug": "t2-where-and-having",
       "tier": 2,
-      "topic": [
-        "group-by",
-        "having",
-        "where"
-      ],
+      "topic": ["group-by", "having", "where"],
       "title": "Open Alarms by Zone",
       "story_md": "Count only the alarms nobody has dealt with.\n\nReturn **zone** and the **number of unresolved alarms** (`resolved = 0`) for zones with **at least {n}** of them.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            150,
-            200
-          ],
+          "rows": [150, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1715,12 +1511,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
@@ -1766,18 +1557,13 @@
     {
       "slug": "t2-balance-bands",
       "tier": 2,
-      "topic": [
-        "case"
-      ],
+      "topic": ["case"],
       "title": "Target Tiers",
       "story_md": "Label every account.\n\nReturn **id** and a **band**: `high` if balance ≥ **{high}**, `mid` if balance ≥ **{mid}**, otherwise `low`.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1805,11 +1591,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1856,19 +1638,13 @@
     {
       "slug": "t2-count-bands",
       "tier": 2,
-      "topic": [
-        "case",
-        "group-by"
-      ],
+      "topic": ["case", "group-by"],
       "title": "Band Sizes",
       "story_md": "How many targets are in each band?\n\nUsing the bands `heavy` (weight_kg ≥ **{heavy}**) and `light` (everything else), return **band** and **number of items** in each band.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
         "vault_items": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1928,19 +1704,13 @@
     {
       "slug": "t2-conditional-sum",
       "tier": 2,
-      "topic": [
-        "case",
-        "aggregate"
-      ],
+      "topic": ["case", "aggregate"],
       "title": "In and Out",
       "story_md": "Net flow for account **{account}**.\n\nReturn two columns: the **total of deposits** and the **total of withdrawals** for that account (0 if none).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            5,
-            6
-          ],
+          "rows": [5, 6],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1968,11 +1738,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1983,10 +1749,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            150,
-            200
-          ],
+          "rows": [150, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2000,13 +1763,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -2053,18 +1810,13 @@
     {
       "slug": "t2-full-names",
       "tier": 2,
-      "topic": [
-        "string"
-      ],
+      "topic": ["string"],
       "title": "Name Badges",
       "story_md": "Print fake badges.\n\nReturn **id** and the **full name** as `first_name last_name` (one space between) for **{dept}** employees.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2126,18 +1878,13 @@
     {
       "slug": "t2-name-length",
       "tier": 2,
-      "topic": [
-        "string"
-      ],
+      "topic": ["string"],
       "title": "Long Names",
       "story_md": "Long last names are easy to spot on a list.\n\nReturn **last_name** and its **length** for employees whose last name is **longer than {n}** characters.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            60,
-            80
-          ],
+          "rows": [60, 80],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2201,18 +1948,13 @@
     {
       "slug": "t2-upper-initials",
       "tier": 2,
-      "topic": [
-        "string"
-      ],
+      "topic": ["string"],
       "title": "Initials",
       "story_md": "Codenames are initials.\n\nReturn **id** and **initials** — first letter of first_name followed by first letter of last_name, in UPPER case (e.g. `AB`) — for employees on branch **{branch}**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            70,
-            90
-          ],
+          "rows": [70, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2276,19 +2018,13 @@
     {
       "slug": "t2-monthly-volume",
       "tier": 2,
-      "topic": [
-        "dates",
-        "group-by"
-      ],
+      "topic": ["dates", "group-by"],
       "title": "Monthly Volume",
       "story_md": "Spot the busiest month.\n\nReturn the **month** as `YYYY-MM` and the **total amount** of **{kind}** transactions in that month.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2316,11 +2052,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -2331,10 +2063,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            200,
-            260
-          ],
+          "rows": [200, 260],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2348,13 +2077,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -2378,11 +2101,7 @@
       "params": {
         "kind": {
           "kind": "pick",
-          "from": [
-            "deposit",
-            "withdrawal",
-            "transfer"
-          ]
+          "from": ["deposit", "withdrawal", "transfer"]
         }
       },
       "reference_sql": "SELECT strftime('%Y-%m', at), SUM(amount) FROM transactions WHERE kind = {kind|sql} GROUP BY strftime('%Y-%m', at);",
@@ -2403,18 +2122,13 @@
     {
       "slug": "t2-tenure-days",
       "tier": 2,
-      "topic": [
-        "dates"
-      ],
+      "topic": ["dates"],
       "title": "Old Timers",
       "story_md": "Veterans know the vault codes.\n\nReturn **id** and **days employed** as of **2026-01-01** (whole days, e.g. via `julianday`) for employees hired before **{before}**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2455,11 +2169,7 @@
       "params": {
         "before": {
           "kind": "pick",
-          "from": [
-            "2017-01-01",
-            "2018-01-01",
-            "2019-01-01"
-          ]
+          "from": ["2017-01-01", "2018-01-01", "2019-01-01"]
         }
       },
       "reference_sql": "SELECT id, CAST(julianday('2026-01-01') - julianday(hired) AS INTEGER) FROM employees WHERE hired < {before|sql};",
@@ -2484,18 +2194,13 @@
     {
       "slug": "t2-weekend-alarms",
       "tier": 2,
-      "topic": [
-        "dates"
-      ],
+      "topic": ["dates"],
       "title": "Weekend Shift",
       "story_md": "Fewer guards on weekends.\n\nReturn **id** and **triggered** of alarms raised on a **Saturday or Sunday**. (In SQLite, `strftime('%w', d)` is `0` for Sunday and `6` for Saturday.)",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2508,12 +2213,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",

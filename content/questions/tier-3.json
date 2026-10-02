@@ -5,9 +5,7 @@
     {
       "slug": "t3-account-branch",
       "tier": 3,
-      "topic": [
-        "join"
-      ],
+      "topic": ["join"],
       "title": "Whose Branch?",
       "story_md": "Tall buildings have more floors to hide in.\n\nReturn **account id**, **owner** and the **branch name** for accounts whose branch has **at least {floors}** floors.",
       "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
@@ -41,10 +39,7 @@
           }
         },
         "accounts": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -72,11 +67,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "fk",
@@ -116,18 +107,13 @@
     {
       "slug": "t3-log-names",
       "tier": 3,
-      "topic": [
-        "join"
-      ],
+      "topic": ["join"],
       "title": "Who Opened It?",
       "story_md": "The vault log only stores employee ids.\n\nReturn the **first_name**, **last_name** and **at** date of every **{action}** in zone **{zone}**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -165,10 +151,7 @@
           }
         },
         "vault_logs": {
-          "rows": [
-            150,
-            220
-          ],
+          "rows": [150, 220],
           "columns": {
             "id": {
               "kind": "serial",
@@ -198,20 +181,11 @@
       "params": {
         "action": {
           "kind": "pick",
-          "from": [
-            "open",
-            "inspect",
-            "withdraw"
-          ]
+          "from": ["open", "inspect", "withdraw"]
         },
         "zone": {
           "kind": "pick",
-          "from": [
-            "Vault A",
-            "Vault B",
-            "Server Room",
-            "Office"
-          ]
+          "from": ["Vault A", "Vault B", "Server Room", "Office"]
         }
       },
       "reference_sql": "SELECT e.first_name, e.last_name, l.at FROM vault_logs l JOIN employees e ON e.id = l.employee_id WHERE l.action = {action|sql} AND l.zone = {zone|sql};",
@@ -232,18 +206,13 @@
     {
       "slug": "t3-big-tx-owner",
       "tier": 3,
-      "topic": [
-        "join"
-      ],
+      "topic": ["join"],
       "title": "Big Movers",
       "story_md": "Large transfers deserve a closer look.\n\nReturn **owner**, **amount** and **at** for transactions over **{min_amount}**.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -271,11 +240,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -286,10 +251,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            120,
-            200
-          ],
+          "rows": [120, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -303,13 +265,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -356,10 +312,7 @@
     {
       "slug": "t3-branch-totals",
       "tier": 3,
-      "topic": [
-        "join",
-        "group-by"
-      ],
+      "topic": ["join", "group-by"],
       "title": "Branch Reserves",
       "story_md": "Which building holds the most?\n\nReturn **branch name** and **total balance** of its accounts — one row per branch (by id) that has at least one account.",
       "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
@@ -393,10 +346,7 @@
           }
         },
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -424,11 +374,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "fk",
@@ -461,18 +407,13 @@
     {
       "slug": "t3-loan-owners",
       "tier": 3,
-      "topic": [
-        "join"
-      ],
+      "topic": ["join"],
       "title": "Debtors",
       "story_md": "People with **{status}** loans are desperate.\n\nReturn **owner**, **loan amount** and **rate** for loans with that status.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -500,11 +441,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -515,10 +452,7 @@
           }
         },
         "loans": {
-          "rows": [
-            50,
-            80
-          ],
+          "rows": [50, 80],
           "columns": {
             "id": {
               "kind": "serial",
@@ -572,19 +506,13 @@
     {
       "slug": "t3-dept-log-count",
       "tier": 3,
-      "topic": [
-        "join",
-        "group-by"
-      ],
+      "topic": ["join", "group-by"],
       "title": "Busy Departments",
       "story_md": "Which departments touch the vault most?\n\nReturn **dept** and the **number of vault log entries** made by its employees.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -622,10 +550,7 @@
           }
         },
         "vault_logs": {
-          "rows": [
-            80,
-            140
-          ],
+          "rows": [80, 140],
           "columns": {
             "id": {
               "kind": "serial",
@@ -671,19 +596,13 @@
     {
       "slug": "t3-self-branch-mates",
       "tier": 3,
-      "topic": [
-        "join",
-        "self-join"
-      ],
+      "topic": ["join", "self-join"],
       "title": "Same Building",
       "story_md": "Who works in the same branch as employee **{emp}**?\n\nReturn **id** and **first_name** of every *other* employee with the same branch_id.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            50,
-            70
-          ],
+          "rows": [50, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -747,19 +666,13 @@
     {
       "slug": "t3-no-transactions",
       "tier": 3,
-      "topic": [
-        "left-join",
-        "null"
-      ],
+      "topic": ["left-join", "null"],
       "title": "Sleeping Accounts",
       "story_md": "Dormant accounts are never checked.\n\nReturn **id** and **owner** of accounts with **no transactions at all**.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            60,
-            80
-          ],
+          "rows": [60, 80],
           "columns": {
             "id": {
               "kind": "serial",
@@ -787,11 +700,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -802,10 +711,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            120,
-            160
-          ],
+          "rows": [120, 160],
           "columns": {
             "id": {
               "kind": "serial",
@@ -819,13 +725,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -869,19 +769,13 @@
     {
       "slug": "t3-never-in-vault",
       "tier": 3,
-      "topic": [
-        "left-join",
-        "null"
-      ],
+      "topic": ["left-join", "null"],
       "title": "Never Been Inside",
       "story_md": "Staff who never entered the vault won't recognise you.\n\nReturn **id**, **first_name** and **dept** of employees with **no vault log entries**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
       "data_gen": {
         "employees": {
-          "rows": [
-            50,
-            70
-          ],
+          "rows": [50, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -919,10 +813,7 @@
           }
         },
         "vault_logs": {
-          "rows": [
-            70,
-            100
-          ],
+          "rows": [70, 100],
           "columns": {
             "id": {
               "kind": "serial",
@@ -968,19 +859,13 @@
     {
       "slug": "t3-tx-count-all",
       "tier": 3,
-      "topic": [
-        "left-join",
-        "group-by"
-      ],
+      "topic": ["left-join", "group-by"],
       "title": "Activity Report",
       "story_md": "Every account, even the quiet ones.\n\nReturn **account id** and its **number of transactions** — accounts with none must show **0**.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            50,
-            70
-          ],
+          "rows": [50, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1008,11 +893,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1023,10 +904,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            120,
-            160
-          ],
+          "rows": [120, 160],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1040,13 +918,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -1086,20 +958,13 @@
     {
       "slug": "t3-loan-or-zero",
       "tier": 3,
-      "topic": [
-        "left-join",
-        "null",
-        "coalesce"
-      ],
+      "topic": ["left-join", "null", "coalesce"],
       "title": "Total Debt",
       "story_md": "Owners of **{type}** accounts: how much do they owe?\n\nReturn **account id** and **total loan amount** — show **0** for accounts without loans.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            60,
-            80
-          ],
+          "rows": [60, 80],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1127,11 +992,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1142,10 +1003,7 @@
           }
         },
         "loans": {
-          "rows": [
-            25,
-            40
-          ],
+          "rows": [25, 40],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1199,18 +1057,13 @@
     {
       "slug": "t3-merchant-unknown",
       "tier": 3,
-      "topic": [
-        "null"
-      ],
+      "topic": ["null"],
       "title": "Cash Only",
       "story_md": "Transactions with no merchant are cash.\n\nReturn **id** and **amount** of transactions on account **{account}** whose merchant is **missing (NULL)**.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            6,
-            8
-          ],
+          "rows": [6, 8],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1238,11 +1091,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1253,10 +1102,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            220,
-            280
-          ],
+          "rows": [220, 280],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1270,13 +1116,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -1323,18 +1163,13 @@
     {
       "slug": "t3-left-join-filter",
       "tier": 3,
-      "topic": [
-        "left-join"
-      ],
+      "topic": ["left-join"],
       "title": "Quiet Days",
       "story_md": "Which employees had no shift on **{day}**?\n\nReturn **id** and **first_name** of employees without a shift that day.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            30,
-            40
-          ],
+          "rows": [30, 40],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1372,10 +1207,7 @@
           }
         },
         "shifts": {
-          "rows": [
-            150,
-            200
-          ],
+          "rows": [150, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1433,10 +1265,7 @@
     {
       "slug": "t3-tx-branch-city",
       "tier": 3,
-      "topic": [
-        "join",
-        "multi-join"
-      ],
+      "topic": ["join", "multi-join"],
       "title": "Follow the City",
       "story_md": "Trace money back to buildings.\n\nReturn **transaction id**, **amount** and **branch city** for **{kind}** transactions over **{min_amount}**.",
       "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
@@ -1470,10 +1299,7 @@
           }
         },
         "accounts": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1501,11 +1327,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "fk",
@@ -1515,10 +1337,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            120,
-            200
-          ],
+          "rows": [120, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1532,13 +1351,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -1562,11 +1375,7 @@
       "params": {
         "kind": {
           "kind": "pick",
-          "from": [
-            "deposit",
-            "withdrawal",
-            "transfer"
-          ]
+          "from": ["deposit", "withdrawal", "transfer"]
         },
         "min_amount": {
           "kind": "int",
@@ -1593,11 +1402,7 @@
     {
       "slug": "t3-city-volume",
       "tier": 3,
-      "topic": [
-        "join",
-        "multi-join",
-        "group-by"
-      ],
+      "topic": ["join", "multi-join", "group-by"],
       "title": "City Volume",
       "story_md": "Which city moves the most money?\n\nReturn **city** and the **total transaction amount** across all its branches' accounts.",
       "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
@@ -1631,10 +1436,7 @@
           }
         },
         "accounts": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1662,11 +1464,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "fk",
@@ -1676,10 +1474,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            120,
-            200
-          ],
+          "rows": [120, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1693,13 +1488,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -1739,10 +1528,7 @@
     {
       "slug": "t3-loan-branch",
       "tier": 3,
-      "topic": [
-        "join",
-        "multi-join"
-      ],
+      "topic": ["join", "multi-join"],
       "title": "Risky Branch",
       "story_md": "High-rate loans point to a sloppy branch.\n\nReturn **branch name**, **owner** and **rate** for loans with rate above **{rate}**.",
       "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
@@ -1776,10 +1562,7 @@
           }
         },
         "accounts": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1807,11 +1590,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "fk",
@@ -1821,10 +1600,7 @@
           }
         },
         "loans": {
-          "rows": [
-            50,
-            70
-          ],
+          "rows": [50, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1880,19 +1656,13 @@
     {
       "slug": "t3-log-zone-dept",
       "tier": 3,
-      "topic": [
-        "join",
-        "multi-join"
-      ],
+      "topic": ["join", "multi-join"],
       "title": "Shift Overlap",
       "story_md": "Who was on a **{shift}** shift *and* touched the vault that same day?\n\nReturn **distinct employee id** and **first_name** for employees with a vault log entry on a day they worked a **{shift}** shift.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
       "data_gen": {
         "employees": {
-          "rows": [
-            25,
-            30
-          ],
+          "rows": [25, 30],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1930,10 +1700,7 @@
           }
         },
         "shifts": {
-          "rows": [
-            220,
-            280
-          ],
+          "rows": [220, 280],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1962,10 +1729,7 @@
           }
         },
         "vault_logs": {
-          "rows": [
-            220,
-            280
-          ],
+          "rows": [220, 280],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2016,19 +1780,13 @@
     {
       "slug": "t3-in-subquery",
       "tier": 3,
-      "topic": [
-        "subquery",
-        "in"
-      ],
+      "topic": ["subquery", "in"],
       "title": "Big Spenders",
       "story_md": "Owners who once moved more than **{amount}** in one go.\n\nReturn **id** and **owner** of accounts that have **any** transaction over that amount.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2056,11 +1814,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -2071,10 +1825,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            120,
-            200
-          ],
+          "rows": [120, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2088,13 +1839,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -2141,19 +1886,13 @@
     {
       "slug": "t3-not-in-subquery",
       "tier": 3,
-      "topic": [
-        "subquery",
-        "not-in"
-      ],
+      "topic": ["subquery", "not-in"],
       "title": "Never Withdrew",
       "story_md": "Savers never take money out.\n\nReturn **id** and **owner** of accounts that **never** made a withdrawal.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2181,11 +1920,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -2196,10 +1931,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            120,
-            200
-          ],
+          "rows": [120, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2213,13 +1945,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -2259,19 +1985,13 @@
     {
       "slug": "t3-exists",
       "tier": 3,
-      "topic": [
-        "subquery",
-        "exists"
-      ],
+      "topic": ["subquery", "exists"],
       "title": "Vault Visitors",
       "story_md": "Who visited zone **{zone}**?\n\nReturn **id** and **first_name** of employees for whom **a vault log entry exists** in that zone.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2309,10 +2029,7 @@
           }
         },
         "vault_logs": {
-          "rows": [
-            80,
-            140
-          ],
+          "rows": [80, 140],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2363,19 +2080,13 @@
     {
       "slug": "t3-not-exists",
       "tier": 3,
-      "topic": [
-        "subquery",
-        "not-exists"
-      ],
+      "topic": ["subquery", "not-exists"],
       "title": "Clean Record",
       "story_md": "Employees with **no {action}** entries are trusted.\n\nReturn **id** and **last_name** of employees with no vault log entry of that action.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2413,10 +2124,7 @@
           }
         },
         "vault_logs": {
-          "rows": [
-            80,
-            140
-          ],
+          "rows": [80, 140],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2467,10 +2175,7 @@
     {
       "slug": "t3-in-list-branches",
       "tier": 3,
-      "topic": [
-        "subquery",
-        "in"
-      ],
+      "topic": ["subquery", "in"],
       "title": "Branch Watch",
       "story_md": "Branches opened before **{year}** still use old locks.\n\nReturn **id** and **balance** of accounts that belong to any branch opened before **{year}-01-01**.",
       "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
@@ -2504,10 +2209,7 @@
           }
         },
         "accounts": {
-          "rows": [
-            60,
-            80
-          ],
+          "rows": [60, 80],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2535,11 +2237,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "fk",
@@ -2579,19 +2277,13 @@
     {
       "slug": "t3-loans-on-frozen",
       "tier": 3,
-      "topic": [
-        "subquery",
-        "in"
-      ],
+      "topic": ["subquery", "in"],
       "title": "Frozen Debts",
       "story_md": "Loans on frozen accounts can't be collected.\n\nReturn **loan id** and **amount** of loans whose account has status **frozen**.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2619,11 +2311,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -2634,10 +2322,7 @@
           }
         },
         "loans": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2686,19 +2371,13 @@
     {
       "slug": "t3-above-average",
       "tier": 3,
-      "topic": [
-        "subquery",
-        "scalar"
-      ],
+      "topic": ["subquery", "scalar"],
       "title": "Above Average",
       "story_md": "Above-average earners have more access.\n\nReturn **first_name** and **salary** of employees paid **more than the company average**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2755,19 +2434,13 @@
     {
       "slug": "t3-max-item",
       "tier": 3,
-      "topic": [
-        "subquery",
-        "scalar"
-      ],
+      "topic": ["subquery", "scalar"],
       "title": "Crown Jewel",
       "story_md": "Find the single most valuable thing in zone **{zone}**.\n\nReturn **tag**, **item** and **value** of the item(s) in that zone whose value equals the zone's maximum.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
         "vault_items": {
-          "rows": [
-            70,
-            100
-          ],
+          "rows": [70, 100],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2825,19 +2498,13 @@
     {
       "slug": "t3-share-of-total",
       "tier": 3,
-      "topic": [
-        "subquery",
-        "scalar"
-      ],
+      "topic": ["subquery", "scalar"],
       "title": "Slice of the Pie",
       "story_md": "How much of all the money sits in **{type}** accounts?\n\nReturn one number: their total balance as a **percentage of all balances, rounded to 2 decimals**.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2865,11 +2532,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -2908,18 +2571,13 @@
     {
       "slug": "t3-union",
       "tier": 3,
-      "topic": [
-        "union"
-      ],
+      "topic": ["union"],
       "title": "Wanted List",
       "story_md": "Make one list of everyone flagged.\n\nReturn the **distinct employee ids** who either **{action}ed** in zone **{zone}** OR worked a **night** shift (use UNION).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2957,10 +2615,7 @@
           }
         },
         "vault_logs": {
-          "rows": [
-            100,
-            140
-          ],
+          "rows": [100, 140],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2987,10 +2642,7 @@
           }
         },
         "shifts": {
-          "rows": [
-            100,
-            140
-          ],
+          "rows": [100, 140],
           "columns": {
             "id": {
               "kind": "serial",
@@ -3022,17 +2674,11 @@
       "params": {
         "action": {
           "kind": "pick",
-          "from": [
-            "open",
-            "inspect"
-          ]
+          "from": ["open", "inspect"]
         },
         "zone": {
           "kind": "pick",
-          "from": [
-            "Vault A",
-            "Vault B"
-          ]
+          "from": ["Vault A", "Vault B"]
         }
       },
       "reference_sql": "SELECT employee_id FROM vault_logs WHERE action = {action|sql} AND zone = {zone|sql} UNION SELECT employee_id FROM shifts WHERE shift = 'night';",
@@ -3053,18 +2699,13 @@
     {
       "slug": "t3-intersect",
       "tier": 3,
-      "topic": [
-        "intersect"
-      ],
+      "topic": ["intersect"],
       "title": "Both Sides",
       "story_md": "Who works days *and* nights?\n\nReturn the **employee ids** that appear in both **{a}** shifts and **{b}** shifts.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            30,
-            40
-          ],
+          "rows": [30, 40],
           "columns": {
             "id": {
               "kind": "serial",
@@ -3102,10 +2743,7 @@
           }
         },
         "shifts": {
-          "rows": [
-            120,
-            160
-          ],
+          "rows": [120, 160],
           "columns": {
             "id": {
               "kind": "serial",
@@ -3137,17 +2775,11 @@
       "params": {
         "a": {
           "kind": "pick",
-          "from": [
-            "morning",
-            "day"
-          ]
+          "from": ["morning", "day"]
         },
         "b": {
           "kind": "pick",
-          "from": [
-            "evening",
-            "night"
-          ]
+          "from": ["evening", "night"]
         }
       },
       "reference_sql": "SELECT employee_id FROM shifts WHERE shift = {a|sql} INTERSECT SELECT employee_id FROM shifts WHERE shift = {b|sql};",
@@ -3168,18 +2800,13 @@
     {
       "slug": "t3-except",
       "tier": 3,
-      "topic": [
-        "except"
-      ],
+      "topic": ["except"],
       "title": "Never on Nights",
       "story_md": "Day-only workers don't know the night routine.\n\nReturn **employee ids** who worked a **{shift}** shift but **never** a **night** shift.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            30,
-            40
-          ],
+          "rows": [30, 40],
           "columns": {
             "id": {
               "kind": "serial",
@@ -3217,10 +2844,7 @@
           }
         },
         "shifts": {
-          "rows": [
-            120,
-            160
-          ],
+          "rows": [120, 160],
           "columns": {
             "id": {
               "kind": "serial",
@@ -3252,11 +2876,7 @@
       "params": {
         "shift": {
           "kind": "pick",
-          "from": [
-            "morning",
-            "day",
-            "evening"
-          ]
+          "from": ["morning", "day", "evening"]
         }
       },
       "reference_sql": "SELECT employee_id FROM shifts WHERE shift = {shift|sql} EXCEPT SELECT employee_id FROM shifts WHERE shift = 'night';",
@@ -3277,18 +2897,13 @@
     {
       "slug": "t3-union-all",
       "tier": 3,
-      "topic": [
-        "union"
-      ],
+      "topic": ["union"],
       "title": "Money Trail",
       "story_md": "One timeline of money movements for account **{account}**.\n\nReturn **date** and **amount** from its transactions, plus one row per loan of that account using date `2025-06-30` and the **loan amount**. Keep duplicates (UNION ALL).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            5,
-            6
-          ],
+          "rows": [5, 6],
           "columns": {
             "id": {
               "kind": "serial",
@@ -3316,11 +2931,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -3331,10 +2942,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            80,
-            120
-          ],
+          "rows": [80, 120],
           "columns": {
             "id": {
               "kind": "serial",
@@ -3348,13 +2956,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -3375,10 +2977,7 @@
           }
         },
         "loans": {
-          "rows": [
-            20,
-            30
-          ],
+          "rows": [20, 30],
           "columns": {
             "id": {
               "kind": "serial",

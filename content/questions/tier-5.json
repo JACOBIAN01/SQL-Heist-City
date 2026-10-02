@@ -5,18 +5,13 @@
     {
       "slug": "t5-rec-chain-up",
       "tier": 5,
-      "topic": [
-        "recursive-cte"
-      ],
+      "topic": ["recursive-cte"],
       "title": "Up the Ladder",
       "story_md": "Who does crew member **{member}** ultimately answer to?\n\nReturn **id**, **name** and **level** for the member (level 0), their boss (level 1), the boss's boss (level 2) … up to the top.",
       "schema_sql": "CREATE TABLE crew (id INTEGER PRIMARY KEY, name TEXT, role TEXT, boss_id INTEGER, cut INTEGER);",
       "data_gen": {
         "crew": {
-          "rows": [
-            30,
-            45
-          ],
+          "rows": [30, 45],
           "columns": {
             "id": {
               "kind": "serial",
@@ -74,18 +69,13 @@
     {
       "slug": "t5-rec-subordinates",
       "tier": 5,
-      "topic": [
-        "recursive-cte"
-      ],
+      "topic": ["recursive-cte"],
       "title": "Whole Team",
       "story_md": "Turn crew member **{boss}** and you get their whole team.\n\nReturn **id** and **name** of member {boss} **and everyone who reports to them directly or indirectly**.",
       "schema_sql": "CREATE TABLE crew (id INTEGER PRIMARY KEY, name TEXT, role TEXT, boss_id INTEGER, cut INTEGER);",
       "data_gen": {
         "crew": {
-          "rows": [
-            35,
-            50
-          ],
+          "rows": [35, 50],
           "columns": {
             "id": {
               "kind": "serial",
@@ -139,18 +129,13 @@
     {
       "slug": "t5-rec-depth",
       "tier": 5,
-      "topic": [
-        "recursive-cte"
-      ],
+      "topic": ["recursive-cte"],
       "title": "Org Depth",
       "story_md": "Map the whole hierarchy.\n\nReturn **id** and **depth** of every crew member (members with no boss have depth 0).",
       "schema_sql": "CREATE TABLE crew (id INTEGER PRIMARY KEY, name TEXT, role TEXT, boss_id INTEGER, cut INTEGER);",
       "data_gen": {
         "crew": {
-          "rows": [
-            30,
-            45
-          ],
+          "rows": [30, 45],
           "columns": {
             "id": {
               "kind": "serial",
@@ -197,19 +182,13 @@
     {
       "slug": "t5-rec-team-cut",
       "tier": 5,
-      "topic": [
-        "recursive-cte",
-        "aggregate"
-      ],
+      "topic": ["recursive-cte", "aggregate"],
       "title": "Team Payout",
       "story_md": "What does boss **{boss}**'s whole operation cost?\n\nReturn two numbers: the **number of people** in the team **including the boss**, and their **total cut**.",
       "schema_sql": "CREATE TABLE crew (id INTEGER PRIMARY KEY, name TEXT, role TEXT, boss_id INTEGER, cut INTEGER);",
       "data_gen": {
         "crew": {
-          "rows": [
-            35,
-            50
-          ],
+          "rows": [35, 50],
           "columns": {
             "id": {
               "kind": "serial",
@@ -263,20 +242,13 @@
     {
       "slug": "t5-rec-calendar",
       "tier": 5,
-      "topic": [
-        "recursive-cte",
-        "left-join",
-        "dates"
-      ],
+      "topic": ["recursive-cte", "left-join", "dates"],
       "title": "Every Single Day",
       "story_md": "Guards notice patterns, including quiet days.\n\nFor the **14 days** starting **{start}**, return each **day** and the **number of alarms** that day — days without alarms must show **0**.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            150,
-            200
-          ],
+          "rows": [150, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -289,12 +261,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
@@ -343,19 +310,13 @@
     {
       "slug": "t5-rec-reachable",
       "tier": 5,
-      "topic": [
-        "recursive-cte",
-        "graph"
-      ],
+      "topic": ["recursive-cte", "graph"],
       "title": "Tunnel Network",
       "story_md": "Tunnels connect zones (one-way, `from_zone` → `to_zone`).\n\nReturn every **zone reachable** from **{zone}** and the **fewest tunnels** needed to get there — include **{zone}** itself with **0**. Watch out for loops; no route needs more than 8 tunnels.",
       "schema_sql": "CREATE TABLE tunnels (id INTEGER PRIMARY KEY, from_zone TEXT, to_zone TEXT);",
       "data_gen": {
         "tunnels": {
-          "rows": [
-            12,
-            16
-          ],
+          "rows": [12, 16],
           "columns": {
             "id": {
               "kind": "serial",
@@ -400,19 +361,13 @@
     {
       "slug": "t5-gi-streaks",
       "tier": 5,
-      "topic": [
-        "gaps-islands",
-        "window"
-      ],
+      "topic": ["gaps-islands", "window"],
       "title": "Work Streaks",
       "story_md": "Find employee **{emp}**'s streaks of consecutive working days in March.\n\nCount each day once (they may have several shifts a day). Return **start day**, **end day** and **length** (days) of every streak.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            6,
-            8
-          ],
+          "rows": [6, 8],
           "columns": {
             "id": {
               "kind": "serial",
@@ -450,10 +405,7 @@
           }
         },
         "shifts": {
-          "rows": [
-            150,
-            190
-          ],
+          "rows": [150, 190],
           "columns": {
             "id": {
               "kind": "serial",
@@ -512,20 +464,13 @@
     {
       "slug": "t5-gi-longest",
       "tier": 5,
-      "topic": [
-        "gaps-islands",
-        "window",
-        "cte"
-      ],
+      "topic": ["gaps-islands", "window", "cte"],
       "title": "Iron Man",
       "story_md": "Who never takes a day off?\n\nFor every employee with shifts, return **employee_id** and the **length of their longest streak** of consecutive working days.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            6,
-            8
-          ],
+          "rows": [6, 8],
           "columns": {
             "id": {
               "kind": "serial",
@@ -563,10 +508,7 @@
           }
         },
         "shifts": {
-          "rows": [
-            150,
-            190
-          ],
+          "rows": [150, 190],
           "columns": {
             "id": {
               "kind": "serial",
@@ -618,19 +560,13 @@
     {
       "slug": "t5-gi-gaps",
       "tier": 5,
-      "topic": [
-        "gaps-islands",
-        "window"
-      ],
+      "topic": ["gaps-islands", "window"],
       "title": "Days Off",
       "story_md": "When is employee **{emp}** away?\n\nReturn **first day off** and **last day off** for every gap between two of their working days in March (a gap is one or more days with no shift).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            6,
-            8
-          ],
+          "rows": [6, 8],
           "columns": {
             "id": {
               "kind": "serial",
@@ -668,10 +604,7 @@
           }
         },
         "shifts": {
-          "rows": [
-            100,
-            130
-          ],
+          "rows": [100, 130],
           "columns": {
             "id": {
               "kind": "serial",
@@ -726,19 +659,13 @@
     {
       "slug": "t5-gi-level-runs",
       "tier": 5,
-      "topic": [
-        "gaps-islands",
-        "window"
-      ],
+      "topic": ["gaps-islands", "window"],
       "title": "Escalations",
       "story_md": "In zone **{zone}**, alarms come in runs of the same level.\n\nOrdering the zone's alarms by **triggered, then id**, group **consecutive alarms with the same level** into runs. Return **level**, the **id of the first alarm** in the run and the **run length**.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            90,
-            120
-          ],
+          "rows": [90, 120],
           "columns": {
             "id": {
               "kind": "serial",
@@ -751,12 +678,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
@@ -800,20 +722,13 @@
     {
       "slug": "t5-gi-alarm-day-streaks",
       "tier": 5,
-      "topic": [
-        "gaps-islands",
-        "window",
-        "cte"
-      ],
+      "topic": ["gaps-islands", "window", "cte"],
       "title": "Restless Zones",
       "story_md": "A streak is a run of consecutive days on which a zone raised at least one alarm.\n\nFor every zone return **zone**, the **number of streaks** and the **longest streak** (days).",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            150,
-            200
-          ],
+          "rows": [150, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -826,12 +741,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
@@ -870,19 +780,13 @@
     {
       "slug": "t5-topn-salary",
       "tier": 5,
-      "topic": [
-        "top-n",
-        "window"
-      ],
+      "topic": ["top-n", "window"],
       "title": "Top Earners",
       "story_md": "Each department's top **{n}** earners have the codes.\n\nReturn **dept**, **first_name** and **salary** for the top {n} per department (highest salary first; ties broken by lower id).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            60,
-            80
-          ],
+          "rows": [60, 80],
           "columns": {
             "id": {
               "kind": "serial",
@@ -946,19 +850,13 @@
     {
       "slug": "t5-topn-item-zone",
       "tier": 5,
-      "topic": [
-        "top-n",
-        "window"
-      ],
+      "topic": ["top-n", "window"],
       "title": "Best in Show",
       "story_md": "One item per zone — the best one.\n\nReturn **zone**, **tag** and **value** of the most valuable item in each zone (ties: lower id).",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
         "vault_items": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1011,20 +909,13 @@
     {
       "slug": "t5-topn-merchants",
       "tier": 5,
-      "topic": [
-        "top-n",
-        "window",
-        "group-by"
-      ],
+      "topic": ["top-n", "window", "group-by"],
       "title": "Favourite Shops",
       "story_md": "Where does each target shop most?\n\nFor each account, return **account_id**, **merchant** and **total spent** for its **top 2 merchants** by total amount (ignore missing merchants; ties: merchant name A→Z).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            10,
-            14
-          ],
+          "rows": [10, 14],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1052,11 +943,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1067,10 +954,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            200,
-            260
-          ],
+          "rows": [200, 260],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1084,13 +968,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -1130,20 +1008,13 @@
     {
       "slug": "t5-topn-with-ties",
       "tier": 5,
-      "topic": [
-        "top-n",
-        "window",
-        "rank"
-      ],
+      "topic": ["top-n", "window", "rank"],
       "title": "Joint Winners",
       "story_md": "Best-paid person in each branch — and if there is a tie, all of them.\n\nReturn **branch_id**, **first_name** and **salary** of everyone with the **highest salary in their branch**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            50,
-            70
-          ],
+          "rows": [50, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1200,19 +1071,13 @@
     {
       "slug": "t5-topn-recent-logs",
       "tier": 5,
-      "topic": [
-        "top-n",
-        "window"
-      ],
+      "topic": ["top-n", "window"],
       "title": "Fresh Tracks",
       "story_md": "The latest movements per zone matter most.\n\nReturn **zone**, **log id** and **at** of the **{n} most recent** log entries in each zone (latest date first; same date → higher id first).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
       "data_gen": {
         "employees": {
-          "rows": [
-            30,
-            40
-          ],
+          "rows": [30, 40],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1250,10 +1115,7 @@
           }
         },
         "vault_logs": {
-          "rows": [
-            150,
-            200
-          ],
+          "rows": [150, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1306,19 +1168,13 @@
     {
       "slug": "t5-pivot-alarm-levels",
       "tier": 5,
-      "topic": [
-        "pivot",
-        "case"
-      ],
+      "topic": ["pivot", "case"],
       "title": "Threat Board",
       "story_md": "One row per zone, one column per alarm level.\n\nReturn **zone**, and the counts of **low**, **medium**, **high** and **critical** alarms (in that column order, 0 if none).",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1331,12 +1187,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
@@ -1375,20 +1226,13 @@
     {
       "slug": "t5-pivot-monthly-kinds",
       "tier": 5,
-      "topic": [
-        "pivot",
-        "case",
-        "dates"
-      ],
+      "topic": ["pivot", "case", "dates"],
       "title": "Monthly Ledger",
       "story_md": "A spreadsheet the boss can read.\n\nReturn **month** (`YYYY-MM`) and the total amounts of **deposit**, **withdrawal** and **transfer** transactions that month (in that column order, 0 if none).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1416,11 +1260,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1431,10 +1271,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            200,
-            260
-          ],
+          "rows": [200, 260],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1448,13 +1285,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -1494,19 +1325,13 @@
     {
       "slug": "t5-pivot-shifts",
       "tier": 5,
-      "topic": [
-        "pivot",
-        "case"
-      ],
+      "topic": ["pivot", "case"],
       "title": "Rota",
       "story_md": "Who works which shift?\n\nReturn **employee_id** and how many **morning**, **day**, **evening** and **night** shifts they worked (that column order; only employees with shifts).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            20,
-            30
-          ],
+          "rows": [20, 30],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1544,10 +1369,7 @@
           }
         },
         "shifts": {
-          "rows": [
-            100,
-            160
-          ],
+          "rows": [100, 160],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1595,19 +1417,13 @@
     {
       "slug": "t5-pivot-status-type",
       "tier": 5,
-      "topic": [
-        "pivot",
-        "case"
-      ],
+      "topic": ["pivot", "case"],
       "title": "Account Matrix",
       "story_md": "Rows are account types, columns are statuses.\n\nReturn **type** and the number of **active**, **frozen** and **closed** accounts (that column order).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            80,
-            120
-          ],
+          "rows": [80, 120],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1635,11 +1451,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1669,19 +1481,13 @@
     {
       "slug": "t5-mcte-h2-growth",
       "tier": 5,
-      "topic": [
-        "cte",
-        "analytics"
-      ],
+      "topic": ["cte", "analytics"],
       "title": "Spending Spree",
       "story_md": "Someone suddenly spends more — maybe a bribe.\n\nReturn **account_id**, **H1 total** (Jan–Jun 2025) and **H2 total** (Jul–Dec 2025) of **withdrawal** amounts for accounts whose H2 total is **at least {pct}% higher** than H1 (only accounts with withdrawals in both halves).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            15,
-            20
-          ],
+          "rows": [15, 20],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1709,11 +1515,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -1724,10 +1526,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            260,
-            320
-          ],
+          "rows": [260, 320],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1741,13 +1540,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -1794,20 +1587,13 @@
     {
       "slug": "t5-mcte-payroll-share",
       "tier": 5,
-      "topic": [
-        "cte",
-        "analytics",
-        "window"
-      ],
+      "topic": ["cte", "analytics", "window"],
       "title": "Payroll Share",
       "story_md": "Which department costs the most?\n\nReturn **dept**, **total salary**, its **share of the whole payroll in % (2 decimals)** and its **rank** by total (largest = 1).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1864,20 +1650,13 @@
     {
       "slug": "t5-mcte-inside-job",
       "tier": 5,
-      "topic": [
-        "cte",
-        "analytics",
-        "join"
-      ],
+      "topic": ["cte", "analytics", "join"],
       "title": "Inside Job",
       "story_md": "Suspicious: being in a zone on a day it raised an alarm.\n\nReturn **employee_id** and the **number of distinct (zone, day) matches** for employees with **at least {n}** such matches.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);\nCREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            20,
-            25
-          ],
+          "rows": [20, 25],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1915,10 +1694,7 @@
           }
         },
         "vault_logs": {
-          "rows": [
-            250,
-            300
-          ],
+          "rows": [250, 300],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1945,10 +1721,7 @@
           }
         },
         "alarms": {
-          "rows": [
-            240,
-            300
-          ],
+          "rows": [240, 300],
           "columns": {
             "id": {
               "kind": "serial",
@@ -1961,12 +1734,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
@@ -2012,19 +1780,13 @@
     {
       "slug": "t5-mcte-branch-health",
       "tier": 5,
-      "topic": [
-        "cte",
-        "analytics"
-      ],
+      "topic": ["cte", "analytics"],
       "title": "Branch Health",
       "story_md": "A branch report card.\n\nFor every branch id with accounts, return **branch_id**, **number of accounts**, **average balance (2 decimals)** and **% frozen (2 decimals)**, but only for branches where **more than {pct}%** of accounts are frozen.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            90,
-            130
-          ],
+          "rows": [90, 130],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2052,11 +1814,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -2093,21 +1851,13 @@
     {
       "slug": "t5-mcte-top-merchant-month",
       "tier": 5,
-      "topic": [
-        "cte",
-        "analytics",
-        "window",
-        "top-n"
-      ],
+      "topic": ["cte", "analytics", "window", "top-n"],
       "title": "Shop of the Month",
       "story_md": "Where did the money go each month?\n\nReturn **month** (`YYYY-MM`), the **merchant with the highest total amount** that month and that **total** (ignore missing merchants; ties: merchant name A→Z).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
         "accounts": {
-          "rows": [
-            40,
-            70
-          ],
+          "rows": [40, 70],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2135,11 +1885,7 @@
             "status": {
               "kind": "pick",
               "from": "account_statuses",
-              "weights": [
-                6,
-                2,
-                1
-              ]
+              "weights": [6, 2, 1]
             },
             "branch_id": {
               "kind": "int",
@@ -2150,10 +1896,7 @@
           }
         },
         "transactions": {
-          "rows": [
-            200,
-            260
-          ],
+          "rows": [200, 260],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2167,13 +1910,7 @@
             "kind": {
               "kind": "pick",
               "from": "transaction_kinds",
-              "weights": [
-                4,
-                4,
-                3,
-                1,
-                1
-              ]
+              "weights": [4, 4, 3, 1, 1]
             },
             "amount": {
               "kind": "int",
@@ -2213,19 +1950,13 @@
     {
       "slug": "t5-median-salary",
       "tier": 5,
-      "topic": [
-        "window",
-        "percentile"
-      ],
+      "topic": ["window", "percentile"],
       "title": "The Middle",
       "story_md": "Averages lie; medians don't.\n\nReturn **dept** and the **median salary** (2 decimals). For an even count, the median is the average of the two middle salaries.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            60,
-            90
-          ],
+          "rows": [60, 90],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2286,19 +2017,13 @@
     {
       "slug": "t5-cume-dist",
       "tier": 5,
-      "topic": [
-        "window",
-        "percentile"
-      ],
+      "topic": ["window", "percentile"],
       "title": "Percentile",
       "story_md": "How rare is each item in zone **{zone}**?\n\nReturn **tag**, **value** and its **CUME_DIST** by value ascending (fraction of items with value ≤ this one), rounded to 3 decimals.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
         "vault_items": {
-          "rows": [
-            70,
-            100
-          ],
+          "rows": [70, 100],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2356,18 +2081,13 @@
     {
       "slug": "t5-vs-dept-avg",
       "tier": 5,
-      "topic": [
-        "window"
-      ],
+      "topic": ["window"],
       "title": "Above the Line",
       "story_md": "Compare everyone to their peers without a GROUP BY.\n\nReturn **id**, **dept**, **salary** and **salary minus the department average** (2 decimals), using a window function.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
         "employees": {
-          "rows": [
-            40,
-            60
-          ],
+          "rows": [40, 60],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2424,19 +2144,13 @@
     {
       "slug": "t5-first-value",
       "tier": 5,
-      "topic": [
-        "window",
-        "first-value"
-      ],
+      "topic": ["window", "first-value"],
       "title": "Crown of the Zone",
       "story_md": "Each item next to its zone's crown jewel.\n\nReturn **zone**, **tag**, **value** and the **tag of the most valuable item in the same zone** (ties: lower id).",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
         "vault_items": {
-          "rows": [
-            30,
-            50
-          ],
+          "rows": [30, 50],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2489,19 +2203,13 @@
     {
       "slug": "t5-rolling-7day",
       "tier": 5,
-      "topic": [
-        "window",
-        "range"
-      ],
+      "topic": ["window", "range"],
       "title": "Hot Week",
       "story_md": "Is zone **{zone}** heating up?\n\nFor each of its alarms, return **id**, **triggered** and the **number of alarms in that zone during the 7 days ending on that date** (that date and the 6 before; same-day alarms all count).",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
         "alarms": {
-          "rows": [
-            150,
-            200
-          ],
+          "rows": [150, 200],
           "columns": {
             "id": {
               "kind": "serial",
@@ -2514,12 +2222,7 @@
             "level": {
               "kind": "pick",
               "from": "alarm_levels",
-              "weights": [
-                4,
-                3,
-                2,
-                1
-              ]
+              "weights": [4, 3, 2, 1]
             },
             "triggered": {
               "kind": "date",
