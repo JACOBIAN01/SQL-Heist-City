@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router';
 import { useMe } from './auth/useMe';
 import { ErrorMessage } from './components/ErrorMessage';
 import { Shell } from './layout/Shell';
+import { ImportExportPage } from './pages/ImportExportPage';
 import { LoginPage } from './pages/LoginPage';
 import { QuestionListPage } from './pages/QuestionListPage';
 import { QuestionEditorPage } from './pages/QuestionEditorPage';
@@ -20,7 +21,7 @@ export function App() {
         <Route path="questions" element={<QuestionListPage />} />
         <Route path="questions/:id" element={<QuestionEditorPage />} />
         <Route path="pools" element={<Placeholder title="Pools" />} />
-        <Route path="import-export" element={<Placeholder title="Import / Export" />} />
+        <Route path="import-export" element={<ImportExportPage />} />
         <Route path="settings" element={<Placeholder title="Settings" />} />
         <Route path="audit" element={<Placeholder title="Audit log" />} />
         <Route path="users" element={<Placeholder title="Users" />} />
