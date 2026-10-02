@@ -89,7 +89,7 @@ Goal: teachers configure everything about questions.
 | 2.15 | UI: question editor (CodeMirror fields) | create/edit from UI | ✅ Done |
 | 2.16 | UI: preview panel | shows variants/results | ✅ Done |
 | 2.17 | UI: import/export | upload and download works | ✅ Done |
-| 2.18 | UI: settings + reward-map editor | changes reach the game | ⬜ |
+| 2.18 | UI: settings + reward-map editor | changes reach the game | ✅ Done |
 | 2.19 | UI: pools, versions/diff, audit, analytics views | each page renders real data | ⬜ |
 
 ---

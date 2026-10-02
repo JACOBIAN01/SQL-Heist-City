@@ -5,6 +5,7 @@ import { Shell } from './layout/Shell';
 import { ImportExportPage } from './pages/ImportExportPage';
 import { LoginPage } from './pages/LoginPage';
 import { QuestionListPage } from './pages/QuestionListPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { QuestionEditorPage } from './pages/QuestionEditorPage';
 
 /** Routes; every page except login requires a session. */
@@ -22,7 +23,7 @@ export function App() {
         <Route path="questions/:id" element={<QuestionEditorPage />} />
         <Route path="pools" element={<Placeholder title="Pools" />} />
         <Route path="import-export" element={<ImportExportPage />} />
-        <Route path="settings" element={<Placeholder title="Settings" />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="audit" element={<Placeholder title="Audit log" />} />
         <Route path="users" element={<Placeholder title="Users" />} />
         <Route path="*" element={<Placeholder title="Not found" />} />
