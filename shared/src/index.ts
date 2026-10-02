@@ -5,3 +5,4 @@ export * from './questions/template';
 export * from './random/Rng';
 export * from './config/challenges';
 export * from './challenges/types';
+export * from './admin/auth';
