@@ -90,7 +90,7 @@ Goal: teachers configure everything about questions.
 | 2.16 | UI: preview panel | shows variants/results | ✅ Done |
 | 2.17 | UI: import/export | upload and download works | ✅ Done |
 | 2.18 | UI: settings + reward-map editor | changes reach the game | ✅ Done |
-| 2.19 | UI: pools, versions/diff, audit, analytics views | each page renders real data | ⬜ |
+| 2.19 | UI: pools, versions/diff, audit, users (analytics deferred — needs game attempt data) | each page renders real data | ✅ Done |
 
 ---
 ## Phase 3 — Seed content: 150 questions  ⬜

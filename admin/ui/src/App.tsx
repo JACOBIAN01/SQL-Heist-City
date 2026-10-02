@@ -3,7 +3,10 @@ import { useMe } from './auth/useMe';
 import { ErrorMessage } from './components/ErrorMessage';
 import { Shell } from './layout/Shell';
 import { ImportExportPage } from './pages/ImportExportPage';
+import { AuditPage } from './pages/AuditPage';
 import { LoginPage } from './pages/LoginPage';
+import { PoolsPage } from './pages/PoolsPage';
+import { UsersPage } from './pages/UsersPage';
 import { QuestionListPage } from './pages/QuestionListPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { QuestionEditorPage } from './pages/QuestionEditorPage';
@@ -21,11 +24,11 @@ export function App() {
         <Route index element={<Navigate to="/questions" replace />} />
         <Route path="questions" element={<QuestionListPage />} />
         <Route path="questions/:id" element={<QuestionEditorPage />} />
-        <Route path="pools" element={<Placeholder title="Pools" />} />
+        <Route path="pools" element={<PoolsPage />} />
         <Route path="import-export" element={<ImportExportPage />} />
         <Route path="settings" element={<SettingsPage />} />
-        <Route path="audit" element={<Placeholder title="Audit log" />} />
-        <Route path="users" element={<Placeholder title="Users" />} />
+        <Route path="audit" element={<AuditPage />} />
+        <Route path="users" element={<UsersPage />} />
         <Route path="*" element={<Placeholder title="Not found" />} />
       </Route>
     </Routes>
