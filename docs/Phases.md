@@ -1,107 +1,215 @@
 # Phases
 
-Rule: after each phase → stop → summary → **user approves** → next phase. Every phase has multiple small commits (suggested commit breakdown listed; may be refined).
+## How to read this
+- A **Phase** is a big milestone. It ends with a **user approval gate**: stop, summarise, wait.
+- A **Subphase** (e.g. `1.3`) does **exactly one clear thing**, has a one-line **Done when**, and lands as **one or more small commits**.
+- Status lives here and is updated in the same commit that finishes the work.
+
+### Status legend
+| Mark | Meaning |
+|---|---|
+| ⬜ Not started | |
+| 🟦 In progress | being worked on now |
+| 🟨 In review | built, waiting for user approval |
+| ✅ Done | approved |
+| ⛔ Blocked | waiting on a decision |
+
+### Progress board
+| Phase | Name | Status |
+|---|---|---|
+| 0 | Docs & scaffold | 🟨 In review (0.1 docs) |
+| 1 | Question engine | ⬜ |
+| 2 | Admin backend + UI | ⬜ |
+| 3 | Seed content (150 questions) | ⬜ |
+| 4 | SQL pop-up UI | ⬜ |
+| 5 | Walk & shoot sandbox | ⬜ |
+| 6 | Scale core (60/100/200) | ⬜ |
+| 7 | Heist loop v1 | ⬜ |
+| 8 | City, vehicles, atmosphere | ⬜ |
+| 9 | Banks 2–5, weapons, UX | ⬜ |
+| 10 | Harden & ship | ⬜ |
 
 ---
-## Phase 0 — Docs & scaffold
-**Goal:** agreed design docs + empty-but-working monorepo.
-- 0a Docs (this folder) → **user reviews docs before 0b**.
-- 0b Scaffold: npm workspaces (`client server admin shared`), TS configs, ESLint, Prettier, Vitest, CI workflow, `.gitignore`, `.editorconfig`.
-- 0c Hello-world per workspace (client page, server `/health`, admin `/health`), `npm test` green.
+## Phase 0 — Docs & scaffold  🟨
+Goal: agreed design + an empty monorepo that builds and tests.
 
-**Commits:** docs per file group · workspace skeleton · tooling · hello-world per workspace · CI.
-**Exit:** `npm install && npm test && npm run lint` pass; docs approved.
-
----
-## Phase 1 — Question engine (server, no UI)
-**Goal:** store, vary, and grade SQL questions safely.
-- DB schema + migrations (questions, versions, tiers, reward_map, settings).
-- Question template format + variant DSL (seeded RNG, parameters, data generators).
-- Sandboxed grader (worker thread, authorizer, timeout, row cap).
-- Result-set comparator (order-insensitive unless flagged, alias-tolerant).
-- Challenge selector (per reward + tier, no repeats per player, seeded).
-- Hint/diff feedback without leaking solution.
-
-**Commits:** schema · RNG+DSL · data generators · sandbox · comparator · selector · feedback · tests per piece.
-**Exit:** Vitest suite proves: equivalent queries pass, wrong fail, dangerous SQL blocked, infinite recursion killed, two seeds → different expected rows.
+| # | Subphase (one thing) | Done when | Status |
+|---|---|---|---|
+| 0.1 | Write all design docs | docs reviewed by user | 🟨 In review |
+| 0.2 | Create npm-workspaces monorepo (`client server admin shared`) | `npm install` works | ⬜ |
+| 0.3 | TypeScript base config shared by all workspaces | `npm run typecheck` passes | ⬜ |
+| 0.4 | Lint + format (ESLint, Prettier, editorconfig) | `npm run lint` passes | ⬜ |
+| 0.5 | Test runner (Vitest) with one sample test per workspace | `npm test` passes | ⬜ |
+| 0.6 | Hello-world server (`/health`) | curl returns ok | ⬜ |
+| 0.7 | Hello-world admin (Express `/health` + React page) | page loads | ⬜ |
+| 0.8 | Hello-world client (Vite + blank Three.js scene) | cube renders | ⬜ |
+| 0.9 | CI workflow (lint, typecheck, test) | pipeline file runs locally | ⬜ |
 
 ---
-## Phase 2 — Admin backend + UI (Node)
-**Goal:** teachers configure everything about questions.
-- Auth (login, roles admin/teacher), audit log.
-- Question CRUD, enable/disable, duplicate, version history + rollback.
-- "Test this question": run reference solution on N seeds, preview variants, try a student query.
-- Bulk import/export (JSON, CSV).
-- Config editor: reward→tier mapping, costs, lockout, hint cost, heal amounts, per-match pools.
-- Hot-reload signal to game server.
+## Phase 1 — Question engine (server only, no UI)  ⬜
+Goal: store, vary, and safely grade SQL questions.
 
-**Commits:** auth · CRUD API · versioning · preview/test endpoint · import/export · config API · UI shell · question list/editor · preview UI · config UI.
-**Exit:** edit a question in the UI → next challenge request reflects it with no restart.
-
----
-## Phase 3 — Seed content (150 questions)
-**Goal:** ship 150 curated questions across 5 tiers, all editable.
-- Curriculum map (see `questions.md`), 30 per tier.
-- Authoring in JSON, loaded via admin import (not hard-coded).
-- `questions:validate` script: runs each reference solution against 20 seeds; checks non-empty/unique results, runtime, no solution collisions between variants.
-
-**Commits:** per tier (5 commits) · validator · fixes.
-**Exit:** validator green for all 150; spot-check by user in admin UI.
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 1.1 | Shared types + zod schemas for a question template | schema validates the sample in questions.md | ⬜ |
+| 1.2 | SQLite schema + migrations (questions, versions, hints, reward_map, settings) | migrations run on empty DB | ⬜ |
+| 1.3 | `QuestionRepository` (read/write interfaces + SQLite impl + in-memory fake) | CRUD tests pass | ⬜ |
+| 1.4 | Seeded `Rng` | same seed → same sequence | ⬜ |
+| 1.5 | Param resolver (`pick`, `int`, `date`, `bool`) | params deterministic per seed | ⬜ |
+| 1.6 | `DataGenerator` factory (serial, pick, int, fk, …) | generated tables deterministic per seed | ⬜ |
+| 1.7 | `VariantBuilder` (story + schema + data + reference SQL from a seed) | two seeds → two different variants | ⬜ |
+| 1.8 | SQL sandbox (in-memory SQLite, authorizer, SELECT-only) | dangerous SQL blocked | ⬜ |
+| 1.9 | Sandbox limits (timeout, row cap, worker thread) | infinite recursive CTE is killed | ⬜ |
+| 1.10 | `ResultComparator` (ordered/unordered, aliases, tolerance) | equivalent queries match | ⬜ |
+| 1.11 | `FeedbackBuilder` (non-leaky hints) | hints never contain reference SQL | ⬜ |
+| 1.12 | `Grader` (ties sandbox + comparator) | right answer ✔, wrong ✘ | ⬜ |
+| 1.13 | `QuestionSelector` (per reward, no repeats per player) | no repeat until pool exhausted | ⬜ |
+| 1.14 | `ChallengeService` facade (issue / run / submit, lockout) | full flow test passes | ⬜ |
 
 ---
-## Phase 4 — SQL pop-up UI (client)
-**Goal:** LeetCode-style panel, standalone demo against real server.
-- Layout (story / schema / sample rows | editor / results), CodeMirror 6 SQL, Run (free preview) vs Submit (graded), timer, lockout, hint button, task-switch menu, non-blocking overlay.
-- Draft persistence across switch.
+## Phase 2 — Admin backend + UI (Express + React)  ⬜
+Goal: teachers configure everything about questions.
 
-**Commits:** panel shell · editor · result table · run/submit wiring · lockout/hint · quick-switch · styling/responsive.
-**Exit:** demo page solves a question end-to-end; bundle impact measured.
-
----
-## Phase 5 — Walk & shoot sandbox
-**Goal:** feel of movement and combat with 2+ real players.
-- Three.js scene, third-person camera, movement/jump/crouch, test block map.
-- WS server, binary protocol, tick loop, join/leave.
-- Prediction + reconciliation, interpolation.
-- Hitscan with lag compensation, health, death/respawn.
-
-**Commits:** scene · input/controller · camera · server tick · protocol · prediction · interpolation · weapons · damage.
-**Exit:** two browser tabs shoot each other smoothly at 100 ms simulated latency.
-
----
-## Phase 6 — Scale core (60 → 100 → 200)
-**Goal:** prove the player count.
-- Spatial-hash AOI, tiered update rates, delta snapshots, buffer pooling.
-- Bot harness (`load:bots`), metrics (tick ms, bytes/s, GC).
-- Worker-thread-per-match option.
-
-**Commits:** spatial hash · AOI · delta snapshot · pooling · bots · metrics · tuning.
-**Exit:** 100 bots, tick <15 ms, <4 KB/s/client; 200-bot results documented (pass or known limits).
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 2.1 | Admin server skeleton (Express, error handling, zod validation middleware) | `/health` + validation test | ⬜ |
+| 2.2 | Users + login/logout (argon2, session cookie) | login test passes | ⬜ |
+| 2.3 | Role guard (admin / teacher) | forbidden routes return 403 | ⬜ |
+| 2.4 | Question CRUD API | create/read/update/disable works | ⬜ |
+| 2.5 | Versioning + rollback | edit then rollback restores old | ⬜ |
+| 2.6 | Audit log | each change recorded | ⬜ |
+| 2.7 | Preview/test endpoint (reference × N seeds, try student query) | returns per-seed results | ⬜ |
+| 2.8 | Save-time validation (reference must pass ≥5 seeds) | bad question rejected | ⬜ |
+| 2.9 | Import/export (JSON, CSV, dry-run) | round-trip is lossless | ⬜ |
+| 2.10 | Settings + reward-map API | values persist and validate | ⬜ |
+| 2.11 | Pools API | pool CRUD works | ⬜ |
+| 2.12 | Hot-reload signal to game server | game picks up edit without restart | ⬜ |
+| 2.13 | React shell (routing, login page, layout) | can log in from UI | ⬜ |
+| 2.14 | UI: question list (filter, enable/disable) | list matches API | ⬜ |
+| 2.15 | UI: question editor (CodeMirror fields) | create/edit from UI | ⬜ |
+| 2.16 | UI: preview panel | shows variants/results | ⬜ |
+| 2.17 | UI: import/export | upload and download works | ⬜ |
+| 2.18 | UI: settings + reward-map editor | changes reach the game | ⬜ |
+| 2.19 | UI: pools, versions/diff, audit, analytics views | each page renders real data | ⬜ |
 
 ---
-## Phase 7 — Heist loop v1
-**Goal:** the core game, one bank.
-- Bank 1 (3 floors) interior, doors, stairs/elevator.
-- Vault with 3 locks → SQL challenges via server, persistent lock state.
-- Loot, carrying, drop-on-death, safehouse banking, scoreboard.
-- Heal & gun unlock via SQL (config-driven tiers), ammo refill.
-- Death/respawn at hospital, spawn protection.
+## Phase 3 — Seed content: 150 questions  ⬜
+Goal: ship 150 curated, editable questions.
 
-**Commits:** bank map · interaction system · vault state · challenge wiring · loot · banking · heal · guns · respawn · HUD.
-**Exit:** full loop playable with 3+ players.
-
----
-## Phase 8 — City, vehicles, atmosphere
-- Procedural chunked city (seeded), streaming, instancing.
-- 3 vehicles + simple physics.
-- Day/night, fog, post-FX, spatial audio.
-
-**Exit:** 60 fps on integrated GPU; <8 MB first load.
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 3.1 | `questions:validate` script (reference × 20 seeds, uniqueness, runtime) | runs on sample set | ⬜ |
+| 3.2 | Shared datasets (names, branches, items) for generators | referenced by questions | ⬜ |
+| 3.3 | Tier 1 — 30 questions | validator green | ⬜ |
+| 3.4 | Tier 2 — 30 questions | validator green | ⬜ |
+| 3.5 | Tier 3 — 30 questions | validator green | ⬜ |
+| 3.6 | Tier 4 — 30 questions | validator green | ⬜ |
+| 3.7 | Tier 5 — 30 questions | validator green | ⬜ |
+| 3.8 | `db:seed` (first admin + import via admin path) | fresh DB has 150 questions | ⬜ |
+| 3.9 | User spot-check in admin UI | user approves content | ⬜ |
 
 ---
-## Phase 9 — Banks 2–5, weapons, UX
-- 4 more banks (3–6 floors, rising loot/difficulty), 5 weapon tiers, minimap, vault-progress bounty markers, tutorial, killfeed, scoreboard.
+## Phase 4 — SQL pop-up UI  ⬜
+Goal: LeetCode-style, non-blocking panel, demo against real server.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 4.1 | Panel shell (layout, open/minimise, translucent overlay) | opens over a dummy canvas | ⬜ |
+| 4.2 | Problem pane (story, schema, sample rows) | renders a server payload | ⬜ |
+| 4.3 | CodeMirror SQL editor | typing + highlighting works | ⬜ |
+| 4.4 | Run (free preview) wired to server | preview rows shown | ⬜ |
+| 4.5 | Submit wired + result/feedback display | ✔/✘ shown | ⬜ |
+| 4.6 | Lockout countdown + hint button | lockout enforced from server value | ⬜ |
+| 4.7 | Task switcher (Heal / Gun / Vault) + draft saving | switch keeps drafts | ⬜ |
+| 4.8 | Timer + expiry handling | expired challenge closes cleanly | ⬜ |
+| 4.9 | Polish: responsive, keyboard shortcuts, bundle-size check | within budget | ⬜ |
 
 ---
-## Phase 10 — Harden & ship
-- Rate limits, anti-cheat checks, 100–200 player load test, perf pass, logging/metrics, deployment docs and deploy.
+## Phase 5 — Walk & shoot sandbox  ⬜
+Goal: movement and combat feel good with 2+ real players.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 5.1 | Test map + lighting | scene renders at 60 fps | ⬜ |
+| 5.2 | Local movement (walk, run, jump, crouch) | feels responsive | ⬜ |
+| 5.3 | Third-person camera + pointer lock | smooth orbit/aim | ⬜ |
+| 5.4 | Character model + animations | idle/walk/run play | ⬜ |
+| 5.5 | Binary protocol codec (`shared/`) | encode/decode tests pass | ⬜ |
+| 5.6 | Server tick loop + join/leave | two clients connect | ⬜ |
+| 5.7 | Server-side movement + collisions | no wall-walking | ⬜ |
+| 5.8 | Client prediction + reconciliation | no rubber-band at 100 ms | ⬜ |
+| 5.9 | Remote player interpolation | smooth other players | ⬜ |
+| 5.10 | Weapon fire (hitscan) + hit validation | hits registered by server | ⬜ |
+| 5.11 | Lag compensation | hits land at 100 ms latency | ⬜ |
+| 5.12 | Health, death, respawn | full kill cycle works | ⬜ |
+
+---
+## Phase 6 — Scale core (60 → 100 → 200)  ⬜
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 6.1 | Bot harness (`load:bots`) | spawns N scripted players | ⬜ |
+| 6.2 | Metrics (tick ms, bytes/s) + `/metrics` | visible numbers | ⬜ |
+| 6.3 | Baseline measurement (no optimisation) | numbers recorded in docs | ⬜ |
+| 6.4 | Spatial hash grid | neighbour queries tested | ⬜ |
+| 6.5 | AOI snapshots with tiered rates | bandwidth drops | ⬜ |
+| 6.6 | Delta compression + quantisation | <4 KB/s/client | ⬜ |
+| 6.7 | Object pools (no per-tick allocation) | GC pauses gone | ⬜ |
+| 6.8 | Match worker threads | one match per thread | ⬜ |
+| 6.9 | Tuning + 60/100/200 report | 100 bots under 15 ms tick | ⬜ |
+
+---
+## Phase 7 — Heist loop v1 (one bank)  ⬜
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 7.1 | Bank 1 exterior + lobby | walk inside | ⬜ |
+| 7.2 | Floors, stairs, elevator | reach every floor | ⬜ |
+| 7.3 | Interaction system (press F near object) | prompts + server validation | ⬜ |
+| 7.4 | Vault + lock state (persistent) | locks tracked server-side | ⬜ |
+| 7.5 | Vault lock ⇄ SQL challenge wiring | solve → lock opens | ⬜ |
+| 7.6 | Loot bags + carry/drop | drop on death works | ⬜ |
+| 7.7 | Safehouses + banking | cash banked, score updates | ⬜ |
+| 7.8 | Heal via SQL (3 tiers) | HP rises per tier | ⬜ |
+| 7.9 | Gun unlock via SQL + ammo refill | weapon granted | ⬜ |
+| 7.10 | Quick menu (Tab) + HUD | switch tasks mid-fight | ⬜ |
+| 7.11 | Death/respawn at hospital + spawn protection | rules from gameplay.md | ⬜ |
+| 7.12 | Scoreboard + round timer + win condition | round ends with winner | ⬜ |
+
+---
+## Phase 8 — City, vehicles, atmosphere  ⬜
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 8.1 | Seeded city layout (roads, blocks) | same seed = same city | ⬜ |
+| 8.2 | Instanced buildings + props | draw calls <200 | ⬜ |
+| 8.3 | Chunk streaming + LOD | smooth traversal | ⬜ |
+| 8.4 | Day/night + fog + sky | cycle works | ⬜ |
+| 8.5 | Post-FX (FXAA + bloom) | fps budget kept | ⬜ |
+| 8.6 | Vehicle physics (sedan) | drive and collide | ⬜ |
+| 8.7 | Vehicle enter/exit + networking | other players see it | ⬜ |
+| 8.8 | Sports car + bike | all 3 drivable | ⬜ |
+| 8.9 | Spatial audio | footsteps, shots, ambience | ⬜ |
+| 8.10 | Perf pass | 60 fps, <8 MB load | ⬜ |
+
+---
+## Phase 9 — Banks 2–5, weapons, UX  ⬜
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 9.1 | Bank 2 | playable | ⬜ |
+| 9.2 | Bank 3 | playable | ⬜ |
+| 9.3 | Bank 4 | playable | ⬜ |
+| 9.4 | Bank 5 | playable | ⬜ |
+| 9.5 | Remaining weapon tiers (SMG, shotgun, rifle, sniper) | stats from config | ⬜ |
+| 9.6 | Minimap + vault-progress markers | markers update live | ⬜ |
+| 9.7 | Killfeed + alarm/bounty events | events visible | ⬜ |
+| 9.8 | Tutorial level | new player completes it | ⬜ |
+| 9.9 | Round-end awards screen | awards shown | ⬜ |
+
+---
+## Phase 10 — Harden & ship  ⬜
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 10.1 | Rate limits on every message/route | limits tested | ⬜ |
+| 10.2 | Anti-cheat validation (speed, fire rate, LOS) | cheat tests fail | ⬜ |
+| 10.3 | 100 and 200 player load test | report in docs | ⬜ |
+| 10.4 | Logging, metrics dashboards, backups | documented + working | ⬜ |
+| 10.5 | Containers + deploy scripts | staging deploy works | ⬜ |
+| 10.6 | Production deploy + release checklist | live | ⬜ |

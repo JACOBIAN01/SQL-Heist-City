@@ -1,7 +1,9 @@
 # Rules
 
 ## 1. Workflow rules (MUST)
-1. **One phase at a time.** Phases are defined in `Phases.md`. Do not start the next phase until the user explicitly approves.
+1. **One phase at a time.** Phases and their subphases are defined in `Phases.md`. Do not start the next phase until the user explicitly approves.
+   - Each **subphase does exactly one clear thing** and lands as one or more small commits.
+   - **Status tracking:** update the status marks (⬜ 🟦 🟨 ✅ ⛔) in `Phases.md` in the same commit that changes them; a phase is 🟨 until the user approves, then ✅.
 2. **End-of-phase ritual:** run tests/lint/typecheck, write a short summary (what was built, how to verify, known gaps), list the commits, then stop and wait.
 3. **Multiple small, meaningful commits per phase.** Each commit = one logical change that builds and passes tests. Aim for 5–15 commits per phase. Forbidden: a single "phase done" mega-commit, "wip" commits, commits mixing unrelated changes.
 4. **Commit message format:** `area: imperative summary` (e.g. `server/sql: block ATTACH in grader authorizer`). Body explains *why* when not obvious.
