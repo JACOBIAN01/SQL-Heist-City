@@ -4,3 +4,4 @@ export const PROTOCOL_VERSION = 1;
 export * from './questions/template';
 export * from './random/Rng';
 export * from './config/challenges';
+export * from './challenges/types';
