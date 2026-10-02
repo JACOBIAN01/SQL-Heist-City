@@ -325,3 +325,19 @@ tr[aria-selected='true'] {
   flex-direction: column;
   gap: 4px;
 }
+
+/* CodeMirror follows the page theme */
+.cm-host .cm-gutters {
+  background: var(--code-bg);
+  color: var(--muted);
+  border-right: 1px solid var(--border);
+}
+.cm-host .cm-content {
+  caret-color: var(--text);
+}
+.cm-host .cm-cursor {
+  border-left-color: var(--text);
+}
+.cm-host .cm-activeLineGutter {
+  background: transparent;
+}

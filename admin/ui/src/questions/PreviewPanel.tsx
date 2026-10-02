@@ -3,6 +3,7 @@ import type { QuestionTemplateInput, SeedPreview } from '@heist/shared';
 import { usePreview } from '../api/questions';
 import { CodeEditor } from '../components/CodeEditor';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { InlineMarkdown } from '../components/InlineMarkdown';
 import { ResultTable } from '../components/ResultTable';
 
 /**
@@ -93,7 +94,11 @@ function SeedCard({ seed }: { seed: SeedPreview }) {
       </div>
       {seed.error && <div className="error">{seed.error}</div>}
       {seed.student?.feedback && <p>{seed.student.feedback.message}</p>}
-      {seed.story && <p className="story">{seed.story}</p>}
+      {seed.story && (
+        <p className="story">
+          <InlineMarkdown text={seed.story} />
+        </p>
+      )}
       {seed.referenceSql && <pre>{seed.referenceSql}</pre>}
       {seed.expected && (
         <>
