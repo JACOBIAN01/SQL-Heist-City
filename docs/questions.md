@@ -59,6 +59,9 @@ heal small 1 · heal medium 3 · heal full 4 · ammo 1 · pistol 1 · SMG/shotgu
 
 Themes follow the heist fiction (accounts, transactions, staff, vault logs, alarms, shifts, branches).
 
+## Seed content files
+`content/questions/tier-1.json` … `tier-5.json` (export format, 30 questions each) are the shipped seed set. They are data: load them with `npm run db:seed`, then teachers edit questions in the admin. Shared tables used across questions: employees, branches, accounts, transactions, loans, vault_items, vault_logs, alarms, shifts, cameras, crew (hierarchy via `tree_parent`), tunnels (graph). Conventions: every ORDER BY / window has an explicit tie-breaker stated in the story; averages and ratios say how to round; scalar answers return extra columns so players rarely share an answer.
+
 ## Authoring/QA workflow
 JSON → admin import `--dry-run` → fix → `npm run questions:validate` → teacher spot-check in preview → enable.
 
