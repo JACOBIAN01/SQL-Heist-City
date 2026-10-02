@@ -1,31 +1,43 @@
 import { existsSync } from 'node:fs';
-import express, { type Express } from 'express';
+import { join } from 'node:path';
+import express, { type Express, type Router } from 'express';
 import { PROTOCOL_VERSION } from '@heist/shared';
+import { apiNotFound, errorHandler, type ErrorLogger } from './errors';
 
 export interface AdminAppDeps {
-  /** Built React UI to serve; skipped when the folder doesn't exist (e.g. in dev, where Vite serves it). */
-  uiDistDir?: string;
+  readonly logger: ErrorLogger;
+  /** Feature routers mounted under /api (auth, questions, …), built in main.ts. */
+  readonly api?: readonly Router[];
+  /** Built React UI to serve; skipped when the folder doesn't exist (in dev, Vite serves it). */
+  readonly uiDistDir?: string;
 }
 
-// SOLID: D (Dependency Inversion) — Why: the app is built from injected
-// options instead of reading env/filesystem paths itself, so tests can create
-// it in isolation and main.ts stays the single place that knows the environment.
-export function createAdminApp(deps: AdminAppDeps = {}): Express {
+// SOLID: D (Dependency Inversion) — Why: the app is assembled from injected
+// routers and options instead of creating services itself, so tests build it
+// with in-memory pieces and main.ts stays the one place that knows the
+// environment.
+export function createAdminApp(deps: AdminAppDeps): Express {
   const app = express();
   app.disable('x-powered-by');
-  app.use(express.json({ limit: '1mb' }));
+  app.set('trust proxy', 'loopback');
+  app.use(express.json({ limit: '2mb' }));
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'admin', protocolVersion: PROTOCOL_VERSION });
   });
 
+  const api = express.Router();
+  for (const router of deps.api ?? []) api.use(router);
+  api.use(apiNotFound);
+  app.use('/api', api);
+
   if (deps.uiDistDir && existsSync(deps.uiDistDir)) {
-    app.use(express.static(deps.uiDistDir));
+    const dir = deps.uiDistDir;
+    app.use(express.static(dir));
+    // Client-side routes (e.g. /questions/12) all load the SPA.
+    app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(join(dir, 'index.html')));
   }
 
-  app.use('/api', (_req, res) => {
-    res.status(404).json({ error: { code: 'not_found', message: 'Not found' } });
-  });
-
+  app.use(errorHandler(deps.logger));
   return app;
 }
