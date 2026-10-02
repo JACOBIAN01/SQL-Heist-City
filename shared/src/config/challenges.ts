@@ -7,7 +7,7 @@ import { MAX_TIER, MIN_TIER } from '../questions/template';
  */
 export const challengeSettingsSchema = z.object({
   /** Seconds a challenge is locked after a wrong submit. */
-  lockoutSec: z.number().int().min(0).max(600).default(20),
+  lockoutSec: z.number().int().min(0).max(600).default(10),
   /** Seconds before an unsolved challenge expires (no penalty). */
   ttlSec: z.number().int().min(30).max(3600).default(300),
   /** Minimum gap between Run (preview) presses. */

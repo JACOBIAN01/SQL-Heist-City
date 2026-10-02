@@ -9,7 +9,7 @@ import {
 
 describe('challenge config', () => {
   it('has the documented defaults', () => {
-    expect(DEFAULT_CHALLENGE_SETTINGS).toMatchObject({ lockoutSec: 20, ttlSec: 300 });
+    expect(DEFAULT_CHALLENGE_SETTINGS).toMatchObject({ lockoutSec: 10, ttlSec: 300 });
     expect(DEFAULT_REWARD_TIERS['gun:sniper']).toEqual({ min: 5, max: 5 });
   });
 

@@ -32,7 +32,7 @@ The world never pauses. While the pop-up is open the player stays vulnerable.
 | Vault lock | progress to loot | bank-based |
 
 - Switching task discards the question; next request = new variant (panic-switching has a cost).
-- Wrong answer: 20 s lockout on that challenge; hints cost cash.
+- Wrong answer: 10 s lockout on that challenge; hints cost cash.
 - Run (preview) is free but rate-limited; only Submit counts.
 - Pop-up can be minimised to fight; timer continues. Challenge expires after 5 min with no penalty.
 
