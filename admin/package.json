@@ -11,7 +11,8 @@
     "dev": "concurrently -n api,ui \"npm:dev:api\" \"npm:dev:ui\"",
     "build": "vite build --config ui/vite.config.ts",
     "user:create": "tsx src/cli/createUser.ts",
-    "questions:validate": "tsx src/cli/validateQuestions.ts"
+    "questions:validate": "tsx src/cli/validateQuestions.ts",
+    "db:seed": "tsx src/cli/seed.ts"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",

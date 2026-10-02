@@ -50,6 +50,8 @@ export interface Admin {
   readonly app: Express;
   readonly auth: AuthService;
   readonly events: AdminEventBus;
+  /** Bulk import/export, used by the seed script. */
+  readonly io: QuestionImportService;
   /** Release worker threads on shutdown. */
   close(): Promise<void>;
 }
@@ -105,6 +107,7 @@ export function buildAdmin(
     app,
     auth,
     events,
+    io,
     close: async () => {
       await reload?.flush();
       await sandbox.close();

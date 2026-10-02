@@ -105,7 +105,7 @@ Goal: ship 150 curated, editable questions.
 | 3.5 | Tier 3 — 30 questions | validator green | ✅ Done |
 | 3.6 | Tier 4 — 30 questions | validator green | ✅ Done |
 | 3.7 | Tier 5 — 30 questions | validator green | ✅ Done |
-| 3.8 | `db:seed` (first admin + import via admin path) | fresh DB has 150 questions | ⬜ |
+| 3.8 | `db:seed` (first admin + import via admin path) | fresh DB has 150 questions | ✅ Done |
 | 3.9 | User spot-check in admin UI | user approves content | ⬜ |
 
 ---

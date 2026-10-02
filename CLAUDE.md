@@ -41,8 +41,10 @@ npm test               # vitest, all workspaces
 npm run lint | typecheck | format
 npm run build          # admin UI + client bundles
 npm run ci             # everything CI runs: format check, lint, typecheck, test, build
+npm run db:seed        # import content/questions/*.json (skips existing; --update to overwrite)
+npm run questions:validate   # QA gate for content files (100 seeds each)
 npm run user:create -w @heist/admin -- --email you@school.test --password '…' [--role admin|teacher]
-# later phases: npm run load:bots -- --players 100 · npm run questions:validate
+# later phases: npm run load:bots -- --players 100
 ```
 - TypeScript is pinned to 6.0.x until typescript-eslint supports 7.
 - Admin env: `DB_PATH` (default `data/dev.db`), `ADMIN_EMAIL` + `ADMIN_PASSWORD` (create the first admin on an empty DB), `INTERNAL_SECRET` + `GAME_SERVER_URL` (hot reload to the game server; same `INTERNAL_SECRET` on the game server).
