@@ -9,6 +9,7 @@ import { SqliteSessionStore } from './auth/SessionStore';
 import { SqliteUserRepository } from './auth/UserRepository';
 import { createAdminApp } from './http/app';
 import type { ErrorLogger } from './http/errors';
+import { userRoutes } from './users/routes';
 
 export interface AdminConfig {
   readonly secureCookies: boolean;
@@ -48,7 +49,7 @@ export function buildAdmin(
     logger,
     ...(config.uiDistDir === undefined ? {} : { uiDistDir: config.uiDistDir }),
     apiMiddleware: [csrfGuard, session(auth)],
-    api: [authRoutes(auth, limiter, config)],
+    api: [authRoutes(auth, limiter, config), userRoutes(auth)],
   });
   return { app, auth };
 }

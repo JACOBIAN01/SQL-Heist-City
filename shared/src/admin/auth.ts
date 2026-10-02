@@ -20,3 +20,16 @@ export interface AdminUser {
   readonly disabled: boolean;
   readonly createdAt: string;
 }
+
+export const createUserSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: passwordSchema,
+  role: roleSchema,
+});
+export type CreateUserRequest = z.infer<typeof createUserSchema>;
+
+export const updateUserSchema = z
+  .object({ role: roleSchema, disabled: z.boolean(), password: passwordSchema })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0, 'nothing to update');
+export type UpdateUserRequest = z.infer<typeof updateUserSchema>;
