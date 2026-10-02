@@ -8,7 +8,7 @@
 | UI | Playwright | SQL pop-up flow vs mock server; admin question edit |
 | Load | `load:bots` | 60/100/200 bots; tick ms, bytes/s, grader queue |
 | Perf | scripted fly-through | fps, draw calls, triangles, first-load size |
-| Question QA | `questions:validate` | each reference × 20 seeds |
+| Question QA | `questions:validate` | each reference × 100 seeds |
 
 ## Must-have security tests (Phase 1)
 Blocks `DROP`, `ATTACH`, `PRAGMA`, multi-statement, `load_extension`; kills infinite recursive CTE; row cap enforced; reference never serialised to client payloads.

@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Grader } from '@heist/server/sql/Grader';
 import { WorkerSandboxRunner } from '@heist/server/sql/WorkerSandboxRunner';
@@ -15,9 +15,11 @@ import { QuestionTester } from '../questions/QuestionTester';
  */
 const args = process.argv.slice(2);
 const dir = fileURLToPath(new URL('../../../content/questions', import.meta.url));
+// npm runs workspace scripts inside admin/; resolve paths from where the command was typed.
+const cwd = process.env.INIT_CWD ?? process.cwd();
 const paths =
   args.length > 0
-    ? args
+    ? args.map((a) => resolve(cwd, a))
     : readdirSync(dir)
         .filter((f) => f.endsWith('.json'))
         .sort()

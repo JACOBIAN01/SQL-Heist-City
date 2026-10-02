@@ -9,7 +9,7 @@ export interface ContentRules {
 }
 
 export const CONTENT_RULES: ContentRules = {
-  seeds: 30,
+  seeds: 100,
   /** Share of seeds whose answer must be unique (anti-copy; docs/questions.md). */
   minDistinctRatio: 0.8,
   /** A reference query slower than this on any seed is reported. */
