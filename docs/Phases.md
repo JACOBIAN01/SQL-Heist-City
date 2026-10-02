@@ -59,7 +59,7 @@ Goal: store, vary, and safely grade SQL questions.
 | 1.6 | `DataGenerator` factory (serial, pick, int, fk, …) | generated tables deterministic per seed | ✅ Done |
 | 1.7 | `VariantBuilder` (story + schema + data + reference SQL from a seed) | two seeds → two different variants | ✅ Done |
 | 1.8 | SQL sandbox (in-memory SQLite, authorizer, SELECT-only) | dangerous SQL blocked | ✅ Done |
-| 1.9 | Sandbox limits (timeout, row cap, worker thread) | infinite recursive CTE is killed | ⬜ |
+| 1.9 | Sandbox limits (timeout, row cap, worker thread) | infinite recursive CTE is killed | ✅ Done |
 | 1.10 | `ResultComparator` (ordered/unordered, aliases, tolerance) | equivalent queries match | ⬜ |
 | 1.11 | `FeedbackBuilder` (non-leaky hints) | hints never contain reference SQL | ⬜ |
 | 1.12 | `Grader` (ties sandbox + comparator) | right answer ✔, wrong ✘ | ⬜ |
