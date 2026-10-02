@@ -41,6 +41,7 @@ npm test               # vitest, all workspaces
 npm run lint | typecheck | format
 npm run build          # admin UI + client bundles
 npm run ci             # everything CI runs: format check, lint, typecheck, test, build
+npm run user:create -w @heist/admin -- --email you@school.test --password '…' [--role admin|teacher]
 # later phases: npm run load:bots -- --players 100 · npm run questions:validate
 ```
 - TypeScript is pinned to 6.0.x until typescript-eslint supports 7.

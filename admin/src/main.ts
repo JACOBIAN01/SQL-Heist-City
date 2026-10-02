@@ -36,6 +36,13 @@ const created = await admin.auth.ensureInitialAdmin(
   process.env.ADMIN_PASSWORD,
 );
 if (created) console.log(`created initial admin ${created.email}`);
+if (admin.auth.listUsers().length === 0) {
+  console.warn(
+    'No admin accounts exist yet, so nobody can log in.\n' +
+      "  Create one:  npm run user:create -w @heist/admin -- --email you@school.test --password '…'\n" +
+      '  or restart with ADMIN_EMAIL and ADMIN_PASSWORD set.',
+  );
+}
 
 admin.app.listen(port, () => {
   console.log(`admin listening on http://localhost:${port} (db: ${dbPath})`);

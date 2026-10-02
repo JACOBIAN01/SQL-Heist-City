@@ -9,7 +9,8 @@
     "start": "tsx src/main.ts",
     "dev:ui": "vite --config ui/vite.config.ts",
     "dev": "concurrently -n api,ui \"npm:dev:api\" \"npm:dev:ui\"",
-    "build": "vite build --config ui/vite.config.ts"
+    "build": "vite build --config ui/vite.config.ts",
+    "user:create": "tsx src/cli/createUser.ts"
   },
   "dependencies": {
     "@codemirror/commands": "^6.11.1",
