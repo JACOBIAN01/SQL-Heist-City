@@ -17,7 +17,7 @@ A lightweight, browser-based, multiplayer 3D game (target **100 players/match**,
 ## Stack
 - Client: TypeScript, Vite, Three.js, CodeMirror 6 (SQL)
 - Game server: Node.js + TypeScript, `ws`, binary protocol, 20 Hz tick
-- Admin: Node.js + Fastify REST API + small web UI (vanilla TS/Preact)
+- Admin: Node.js + Express REST API + React web UI (Vite)
 - DB: SQLite via `better-sqlite3` (questions, users, configs); in-memory SQLite for grading sandboxes
 - Tests: Vitest; Playwright for UI smoke tests
 - Monorepo with npm workspaces: `client/ server/ admin/ shared/`

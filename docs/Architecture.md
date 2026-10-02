@@ -17,7 +17,7 @@
  └─────────┬─────────────────┘                              ▼
            │ WebSocket (binary)                   ┌──────────────────┐
            ▼                                      │ Admin API        │
- ┌───────────────────────────┐   hot-reload       │ (Fastify, Node)  │
+ ┌───────────────────────────┐   hot-reload       │ (Express, Node)  │
  │ Game server (Node)        │◄──signal───────────┤ CRUD, import,    │
  │  match loop 20 Hz         │                    │ preview, config  │
  │  AOI / snapshots          │                    └────────┬─────────┘
