@@ -37,7 +37,7 @@ Plain functions: binary codec, RNG helpers, result comparator, math.
 ## 4. Patterns (planned) — where, why, how
 | Pattern | Where | Why it helps here | How to extend |
 |---|---|---|---|
-| **Strategy** | `RewardStrategy` (HealReward, WeaponReward, AmmoReward, VaultLockReward); `ComparePolicy` (ordered/unordered/case); param resolvers per `kind` (`server/src/variants/params.ts`) | Rewards and comparison rules change independently; teachers add behaviours through config, devs through one class | Add class, register in `RewardRegistry` |
+| **Strategy** | `RewardStrategy` (HealReward, WeaponReward, AmmoReward, VaultLockReward); row-match strategies in `ResultComparator` (ordered/unordered); param resolvers per `kind` (`server/src/variants/params.ts`) | Rewards and comparison rules change independently; teachers add behaviours through config, devs through one class | Add class, register in `RewardRegistry` |
 | **Factory / Registry** | column-generator builders (`server/src/variants/dataGenerators.ts`: serial, pick, int, real, date, bool, text_pattern, fk, const), `WeaponFactory`, `RewardRegistry` | Build objects from DB/JSON specs (`{"kind":"pick"}`) without `switch` in callers; keeps questions data-driven | Register new `kind` |
 | **Repository** | `QuestionRepository`, `SettingsRepository`, `UserRepository` (SQLite impls) | Game/admin logic is independent of SQLite; swap to Postgres or in-memory fakes for tests | New impl of interface |
 | **Observer / Event Bus** | `MatchEventBus` (`PlayerKilled`, `LockOpened`, `CashBanked`, `ChallengeSolved`) | Scoreboard, killfeed, bounty markers, metrics subscribe without coupling to combat/vault code | Subscribe handler |
