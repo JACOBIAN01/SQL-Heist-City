@@ -16,11 +16,14 @@ describe('openDatabase', () => {
     const db = openDatabase({ path: ':memory:' });
     expect(schemaVersion(db)).toBe(migrations.length);
     expect(tableNames(db)).toEqual([
+      'audit_log',
       'question_topics',
       'question_versions',
       'questions',
       'reward_map',
+      'sessions',
       'settings',
+      'users',
     ]);
   });
 

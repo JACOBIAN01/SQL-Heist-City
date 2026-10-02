@@ -49,4 +49,35 @@ export const migrations: readonly string[] = [
     value_json TEXT NOT NULL
   );
   `,
+  // 2 — admin users, sessions, audit log (Phase 2)
+  `
+  CREATE TABLE users (
+    id            INTEGER PRIMARY KEY,
+    email         TEXT    NOT NULL UNIQUE COLLATE NOCASE,
+    password_hash TEXT    NOT NULL,
+    role          TEXT    NOT NULL CHECK (role IN ('admin', 'teacher')),
+    disabled      INTEGER NOT NULL DEFAULT 0 CHECK (disabled IN (0, 1)),
+    created_at    TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE TABLE sessions (
+    token_hash TEXT    PRIMARY KEY,
+    user_id    INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    expires_at INTEGER NOT NULL,
+    created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+  CREATE INDEX sessions_user ON sessions (user_id);
+
+  CREATE TABLE audit_log (
+    id          INTEGER PRIMARY KEY,
+    user_id     INTEGER REFERENCES users (id) ON DELETE SET NULL,
+    actor       TEXT,
+    action      TEXT    NOT NULL,
+    entity      TEXT    NOT NULL,
+    entity_id   TEXT,
+    detail_json TEXT,
+    at          TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+  CREATE INDEX audit_log_entity ON audit_log (entity, entity_id);
+  `,
 ];

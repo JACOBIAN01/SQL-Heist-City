@@ -39,6 +39,7 @@ Position 16-bit per axis relative to chunk origin (≈1.5 cm precision), yaw/pit
 ## Admin REST (JSON, cookie auth)
 
 All routes below are under the `/api` prefix (e.g. `POST /api/auth/login`), so they never clash with the React UI's page routes. Mutating requests must send the header `x-heist-admin: 1` (CSRF guard; browsers can't add custom headers to cross-site form posts).
+
 | Method | Route | Role | Notes |
 |---|---|---|---|
 | POST | /auth/login, /auth/logout | — | rate limited |
