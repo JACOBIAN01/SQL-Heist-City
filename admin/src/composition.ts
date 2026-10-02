@@ -10,6 +10,10 @@ import { SqliteUserRepository } from './auth/UserRepository';
 import { createAdminApp } from './http/app';
 import type { ErrorLogger } from './http/errors';
 import { userRoutes } from './users/routes';
+import { SqliteQuestionRepository } from '@heist/server/questions/SqliteQuestionRepository';
+import { AdminEventBus } from './events/AdminEvents';
+import { QuestionAdminService } from './questions/QuestionAdminService';
+import { questionRoutes } from './questions/routes';
 
 export interface AdminConfig {
   readonly secureCookies: boolean;
@@ -26,6 +30,7 @@ export interface AdminOverrides {
 export interface Admin {
   readonly app: Express;
   readonly auth: AuthService;
+  readonly events: AdminEventBus;
 }
 
 /**
@@ -44,12 +49,14 @@ export function buildAdmin(
   const sessions = new SqliteSessionStore(db, config.sessionTtlMs, now);
   const auth = new AuthService(users, sessions, overrides.hasher ?? new ScryptPasswordHasher());
   const limiter = new LoginRateLimiter(5, 15 * 60 * 1000, now);
+  const events = new AdminEventBus();
+  const questions = new QuestionAdminService(new SqliteQuestionRepository(db), events);
 
   const app = createAdminApp({
     logger,
     ...(config.uiDistDir === undefined ? {} : { uiDistDir: config.uiDistDir }),
     apiMiddleware: [csrfGuard, session(auth)],
-    api: [authRoutes(auth, limiter, config), userRoutes(auth)],
+    api: [authRoutes(auth, limiter, config), userRoutes(auth), questionRoutes(questions)],
   });
-  return { app, auth };
+  return { app, auth, events };
 }
