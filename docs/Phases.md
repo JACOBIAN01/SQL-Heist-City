@@ -36,7 +36,7 @@ Goal: agreed design + an empty monorepo that builds and tests.
 | # | Subphase (one thing) | Done when | Status |
 |---|---|---|---|
 | 0.1 | Write all design docs | docs reviewed by user | ✅ Done |
-| 0.2 | Create npm-workspaces monorepo (`client server admin shared`) | `npm install` works | ⬜ |
+| 0.2 | Create npm-workspaces monorepo (`client server admin shared`) | `npm install` works | ✅ Done |
 | 0.3 | TypeScript base config shared by all workspaces | `npm run typecheck` passes | ⬜ |
 | 0.4 | Lint + format (ESLint, Prettier, editorconfig) | `npm run lint` passes | ⬜ |
 | 0.5 | Test runner (Vitest) with one sample test per workspace | `npm test` passes | ⬜ |
