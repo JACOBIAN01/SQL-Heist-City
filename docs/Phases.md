@@ -52,7 +52,7 @@ Goal: store, vary, and safely grade SQL questions.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 1.1 | Shared types + zod schemas for a question template | schema validates the sample in questions.md | ✅ Done |
-| 1.2 | SQLite schema + migrations (questions, versions, hints, reward_map, settings) | migrations run on empty DB | ⬜ |
+| 1.2 | SQLite schema + migrations (questions, versions, hints, reward_map, settings) | migrations run on empty DB | ✅ Done |
 | 1.3 | `QuestionRepository` (read/write interfaces + SQLite impl + in-memory fake) | CRUD tests pass | ⬜ |
 | 1.4 | Seeded `Rng` | same seed → same sequence | ⬜ |
 | 1.5 | Param resolver (`pick`, `int`, `date`, `bool`) | params deterministic per seed | ⬜ |

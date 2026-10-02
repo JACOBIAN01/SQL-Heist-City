@@ -67,17 +67,18 @@ client                server                         db / worker
 
 ## 6. Data model (SQLite)
 ```
-questions(id, slug, tier, topic, title, story_md, schema_sql, data_gen_json,
-          reference_sql, order_matters, enabled, current_version, updated_by, updated_at)
-question_versions(id, question_id, version, snapshot_json, created_by, created_at)
-hints(id, question_id, idx, text, cost)
-variant_params(id, question_id, name, kind, spec_json)       -- see questions.md
-reward_map(reward_type, target, tier_min, tier_max, pool_json) -- e.g. gun:smg → tier 3
+questions(id, slug, tier, title, enabled, current_version, template_json,
+          updated_by, created_at, updated_at, deleted_at)          -- template_json = full validated template
+question_topics(question_id, topic)                                -- for filtering by topic
+question_versions(id, question_id, version, template_json, created_by, created_at)
+reward_map(reward_key, tier_min, tier_max)                         -- e.g. gun:smg → 3..3
 settings(key, value_json)                                    -- gameplay numbers
 users(id, email, pw_hash, role, created_at)
 audit_log(id, user_id, action, entity, entity_id, diff_json, at)
 attempts(id, player_ref, question_id, seed, ok, ms, at)      -- analytics (optional)
 ```
+The whole template (story, schema, generators, params, reference SQL, hints, flags) is stored as one validated JSON document — the shared zod schema is the single definition, so adding a field needs no migration. Only fields we filter/sort on (tier, title, enabled, topics) are copied into columns. Tables are added by later phases' migrations (users/audit in Phase 2, pools in 2.11, attempts later).
+
 Game server opens the DB read-only; admin writes. Admin pings `POST /internal/reload` (shared secret) → server refreshes its in-memory caches.
 
 ## 7. World & rendering approach (summary; detail in frontend.md)
