@@ -50,4 +50,4 @@ npm run questions:validate
 - Comments only where the *why* is non-obvious.
 
 ## Doc index
-Architecture.md · Phases.md · rules.md · design-principles.md · frontend.md · backend.md · admin.md · questions.md · gameplay.md · api-protocol.md · testing.md · deployment.md (all in `docs/`)
+Architecture.md · system-design.md · Phases.md · rules.md · design-principles.md · frontend.md · backend.md · admin.md · questions.md · gameplay.md · api-protocol.md · testing.md · deployment.md (all in `docs/`)

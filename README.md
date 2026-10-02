@@ -4,4 +4,4 @@ Multiplayer browser game: students in an empty city rob 5 banks, but every vault
 
 **Status:** Phase 0 — design docs under review. No code yet.
 
-Start with [CLAUDE.md](CLAUDE.md), then `docs/`: Architecture · Phases · rules · design-principles · frontend · backend · admin · questions · gameplay · api-protocol · testing · deployment · backlog.
+Start with [CLAUDE.md](CLAUDE.md), then `docs/`: Architecture · system-design · Phases · rules · design-principles · frontend · backend · admin · questions · gameplay · api-protocol · testing · deployment · backlog.
