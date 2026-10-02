@@ -102,7 +102,7 @@ Goal: ship 150 curated, editable questions.
 | 3.2 | Shared datasets (names, branches, items) for generators | referenced by questions | ✅ Done |
 | 3.3 | Tier 1 — 30 questions | validator green | ✅ Done |
 | 3.4 | Tier 2 — 30 questions | validator green | ✅ Done |
-| 3.5 | Tier 3 — 30 questions | validator green | ⬜ |
+| 3.5 | Tier 3 — 30 questions | validator green | ✅ Done |
 | 3.6 | Tier 4 — 30 questions | validator green | ⬜ |
 | 3.7 | Tier 5 — 30 questions | validator green | ⬜ |
 | 3.8 | `db:seed` (first admin + import via admin path) | fresh DB has 150 questions | ⬜ |

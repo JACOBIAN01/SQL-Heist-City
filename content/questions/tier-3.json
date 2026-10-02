@@ -1,0 +1,3435 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "t3-account-branch",
+      "tier": 3,
+      "topic": [
+        "join"
+      ],
+      "title": "Whose Branch?",
+      "story_md": "Tall buildings have more floors to hide in.\n\nReturn **account id**, **owner** and the **branch name** for accounts whose branch has **at least {floors}** floors.",
+      "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "branches": {
+          "rows": 10,
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "name": {
+              "kind": "pick",
+              "from": "branch_names"
+            },
+            "city": {
+              "kind": "pick",
+              "from": "cities"
+            },
+            "opened": {
+              "kind": "date",
+              "from": "1990-01-01",
+              "to": "2022-12-31"
+            },
+            "floors": {
+              "kind": "int",
+              "min": 3,
+              "max": 6,
+              "step": 1
+            }
+          }
+        },
+        "accounts": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "fk",
+              "table": "branches",
+              "column": "id"
+            }
+          }
+        }
+      },
+      "params": {
+        "floors": {
+          "kind": "int",
+          "min": 4,
+          "max": 5,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT a.id, a.owner, b.name FROM accounts a JOIN branches b ON b.id = a.branch_id WHERE b.floors >= {floors};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "JOIN branches ON branches.id = accounts.branch_id",
+          "cost": 0.06
+        },
+        {
+          "text": "Filter on the branch floors.",
+          "cost": 0.15
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-log-names",
+      "tier": 3,
+      "topic": [
+        "join"
+      ],
+      "title": "Who Opened It?",
+      "story_md": "The vault log only stores employee ids.\n\nReturn the **first_name**, **last_name** and **at** date of every **{action}** in zone **{zone}**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "vault_logs": {
+          "rows": [
+            150,
+            220
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "action": {
+              "kind": "pick",
+              "from": "vault_actions"
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "action": {
+          "kind": "pick",
+          "from": [
+            "open",
+            "inspect",
+            "withdraw"
+          ]
+        },
+        "zone": {
+          "kind": "pick",
+          "from": [
+            "Vault A",
+            "Vault B",
+            "Server Room",
+            "Office"
+          ]
+        }
+      },
+      "reference_sql": "SELECT e.first_name, e.last_name, l.at FROM vault_logs l JOIN employees e ON e.id = l.employee_id WHERE l.action = {action|sql} AND l.zone = {zone|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Join the log to employees on employee_id.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-big-tx-owner",
+      "tier": 3,
+      "topic": [
+        "join"
+      ],
+      "title": "Big Movers",
+      "story_md": "Large transfers deserve a closer look.\n\nReturn **owner**, **amount** and **at** for transactions over **{min_amount}**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            120,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "min_amount": {
+          "kind": "int",
+          "min": 2300,
+          "max": 2800,
+          "step": 50
+        }
+      },
+      "reference_sql": "SELECT a.owner, t.amount, t.at FROM transactions t JOIN accounts a ON a.id = t.account_id WHERE t.amount > {min_amount};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Join transactions to accounts on account_id.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-branch-totals",
+      "tier": 3,
+      "topic": [
+        "join",
+        "group-by"
+      ],
+      "title": "Branch Reserves",
+      "story_md": "Which building holds the most?\n\nReturn **branch name** and **total balance** of its accounts — one row per branch (by id) that has at least one account.",
+      "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "branches": {
+          "rows": 8,
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "name": {
+              "kind": "pick",
+              "from": "branch_names"
+            },
+            "city": {
+              "kind": "pick",
+              "from": "cities"
+            },
+            "opened": {
+              "kind": "date",
+              "from": "1990-01-01",
+              "to": "2022-12-31"
+            },
+            "floors": {
+              "kind": "int",
+              "min": 3,
+              "max": 6,
+              "step": 1
+            }
+          }
+        },
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "fk",
+              "table": "branches",
+              "column": "id"
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT b.name, SUM(a.balance) FROM branches b JOIN accounts a ON a.branch_id = b.id GROUP BY b.id;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Join, then GROUP BY the branch.",
+          "cost": 0.06
+        },
+        {
+          "text": "Group by branch id: names can repeat.",
+          "cost": 0.15
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-loan-owners",
+      "tier": 3,
+      "topic": [
+        "join"
+      ],
+      "title": "Debtors",
+      "story_md": "People with **{status}** loans are desperate.\n\nReturn **owner**, **loan amount** and **rate** for loans with that status.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "loans": {
+          "rows": [
+            50,
+            80
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": 1000,
+              "max": 50000,
+              "step": 100
+            },
+            "rate": {
+              "kind": "real",
+              "min": 1.5,
+              "max": 12.0,
+              "decimals": 2
+            },
+            "status": {
+              "kind": "pick",
+              "from": "loan_statuses"
+            }
+          }
+        }
+      },
+      "params": {
+        "status": {
+          "kind": "pick",
+          "from": "loan_statuses"
+        }
+      },
+      "reference_sql": "SELECT a.owner, l.amount, l.rate FROM loans l JOIN accounts a ON a.id = l.account_id WHERE l.status = {status|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "loans.account_id points at accounts.id.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-dept-log-count",
+      "tier": 3,
+      "topic": [
+        "join",
+        "group-by"
+      ],
+      "title": "Busy Departments",
+      "story_md": "Which departments touch the vault most?\n\nReturn **dept** and the **number of vault log entries** made by its employees.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "vault_logs": {
+          "rows": [
+            80,
+            140
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "action": {
+              "kind": "pick",
+              "from": "vault_actions"
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT e.dept, COUNT(*) FROM vault_logs l JOIN employees e ON e.id = l.employee_id GROUP BY e.dept;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Join first, then group by the department.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-self-branch-mates",
+      "tier": 3,
+      "topic": [
+        "join",
+        "self-join"
+      ],
+      "title": "Same Building",
+      "story_md": "Who works in the same branch as employee **{emp}**?\n\nReturn **id** and **first_name** of every *other* employee with the same branch_id.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            50,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "emp": {
+          "kind": "int",
+          "min": 1,
+          "max": 40,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT o.id, o.first_name FROM employees e JOIN employees o ON o.branch_id = e.branch_id AND o.id <> e.id WHERE e.id = {emp};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Join employees to itself with two aliases.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-no-transactions",
+      "tier": 3,
+      "topic": [
+        "left-join",
+        "null"
+      ],
+      "title": "Sleeping Accounts",
+      "story_md": "Dormant accounts are never checked.\n\nReturn **id** and **owner** of accounts with **no transactions at all**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            60,
+            80
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            120,
+            160
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT a.id, a.owner FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id WHERE t.id IS NULL;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "LEFT JOIN keeps accounts without matches.",
+          "cost": 0.06
+        },
+        {
+          "text": "Unmatched rows have NULL on the right side.",
+          "cost": 0.15
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-never-in-vault",
+      "tier": 3,
+      "topic": [
+        "left-join",
+        "null"
+      ],
+      "title": "Never Been Inside",
+      "story_md": "Staff who never entered the vault won't recognise you.\n\nReturn **id**, **first_name** and **dept** of employees with **no vault log entries**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            50,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "vault_logs": {
+          "rows": [
+            70,
+            100
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "action": {
+              "kind": "pick",
+              "from": "vault_actions"
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT e.id, e.first_name, e.dept FROM employees e LEFT JOIN vault_logs l ON l.employee_id = e.id WHERE l.id IS NULL;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "LEFT JOIN, then WHERE right_side.id IS NULL.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-tx-count-all",
+      "tier": 3,
+      "topic": [
+        "left-join",
+        "group-by"
+      ],
+      "title": "Activity Report",
+      "story_md": "Every account, even the quiet ones.\n\nReturn **account id** and its **number of transactions** — accounts with none must show **0**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            50,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            120,
+            160
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT a.id, COUNT(t.id) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id GROUP BY a.id;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "COUNT(t.id) counts only matched rows; COUNT(*) would count 1 for empty accounts.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-loan-or-zero",
+      "tier": 3,
+      "topic": [
+        "left-join",
+        "null",
+        "coalesce"
+      ],
+      "title": "Total Debt",
+      "story_md": "Owners of **{type}** accounts: how much do they owe?\n\nReturn **account id** and **total loan amount** — show **0** for accounts without loans.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            60,
+            80
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "loans": {
+          "rows": [
+            25,
+            40
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": 1000,
+              "max": 50000,
+              "step": 100
+            },
+            "rate": {
+              "kind": "real",
+              "min": 1.5,
+              "max": 12.0,
+              "decimals": 2
+            },
+            "status": {
+              "kind": "pick",
+              "from": "loan_statuses"
+            }
+          }
+        }
+      },
+      "params": {
+        "type": {
+          "kind": "pick",
+          "from": "account_types"
+        }
+      },
+      "reference_sql": "SELECT a.id, COALESCE(SUM(l.amount), 0) FROM accounts a LEFT JOIN loans l ON l.account_id = a.id WHERE a.type = {type|sql} GROUP BY a.id;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "COALESCE(x, 0) turns NULL into 0.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-merchant-unknown",
+      "tier": 3,
+      "topic": [
+        "null"
+      ],
+      "title": "Cash Only",
+      "story_md": "Transactions with no merchant are cash.\n\nReturn **id** and **amount** of transactions on account **{account}** whose merchant is **missing (NULL)**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            6,
+            8
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            220,
+            280
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "account": {
+          "kind": "int",
+          "min": 100,
+          "max": 105,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT id, amount FROM transactions WHERE account_id = {account} AND merchant IS NULL;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "= NULL never matches; use IS NULL.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-left-join-filter",
+      "tier": 3,
+      "topic": [
+        "left-join"
+      ],
+      "title": "Quiet Days",
+      "story_md": "Which employees had no shift on **{day}**?\n\nReturn **id** and **first_name** of employees without a shift that day.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            30,
+            40
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "shifts": {
+          "rows": [
+            150,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "day": {
+              "kind": "date",
+              "from": "2025-03-01",
+              "to": "2025-03-31"
+            },
+            "shift": {
+              "kind": "pick",
+              "from": "shift_names"
+            },
+            "hours": {
+              "kind": "int",
+              "min": 4,
+              "max": 10,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "day": {
+          "kind": "date",
+          "from": "2025-03-01",
+          "to": "2025-03-31"
+        }
+      },
+      "reference_sql": "SELECT e.id, e.first_name FROM employees e LEFT JOIN shifts s ON s.employee_id = e.id AND s.day = {day|sql} WHERE s.id IS NULL;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Put the day filter in the ON clause, not WHERE.",
+          "cost": 0.06
+        },
+        {
+          "text": "Otherwise the LEFT JOIN behaves like an INNER JOIN.",
+          "cost": 0.15
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-tx-branch-city",
+      "tier": 3,
+      "topic": [
+        "join",
+        "multi-join"
+      ],
+      "title": "Follow the City",
+      "story_md": "Trace money back to buildings.\n\nReturn **transaction id**, **amount** and **branch city** for **{kind}** transactions over **{min_amount}**.",
+      "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "branches": {
+          "rows": 8,
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "name": {
+              "kind": "pick",
+              "from": "branch_names"
+            },
+            "city": {
+              "kind": "pick",
+              "from": "cities"
+            },
+            "opened": {
+              "kind": "date",
+              "from": "1990-01-01",
+              "to": "2022-12-31"
+            },
+            "floors": {
+              "kind": "int",
+              "min": 3,
+              "max": 6,
+              "step": 1
+            }
+          }
+        },
+        "accounts": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "fk",
+              "table": "branches",
+              "column": "id"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            120,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "kind": {
+          "kind": "pick",
+          "from": [
+            "deposit",
+            "withdrawal",
+            "transfer"
+          ]
+        },
+        "min_amount": {
+          "kind": "int",
+          "min": 1500,
+          "max": 2200,
+          "step": 100
+        }
+      },
+      "reference_sql": "SELECT t.id, t.amount, b.city FROM transactions t JOIN accounts a ON a.id = t.account_id JOIN branches b ON b.id = a.branch_id WHERE t.kind = {kind|sql} AND t.amount > {min_amount};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "transactions → accounts → branches: two JOINs.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-city-volume",
+      "tier": 3,
+      "topic": [
+        "join",
+        "multi-join",
+        "group-by"
+      ],
+      "title": "City Volume",
+      "story_md": "Which city moves the most money?\n\nReturn **city** and the **total transaction amount** across all its branches' accounts.",
+      "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "branches": {
+          "rows": 10,
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "name": {
+              "kind": "pick",
+              "from": "branch_names"
+            },
+            "city": {
+              "kind": "pick",
+              "from": "cities"
+            },
+            "opened": {
+              "kind": "date",
+              "from": "1990-01-01",
+              "to": "2022-12-31"
+            },
+            "floors": {
+              "kind": "int",
+              "min": 3,
+              "max": 6,
+              "step": 1
+            }
+          }
+        },
+        "accounts": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "fk",
+              "table": "branches",
+              "column": "id"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            120,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT b.city, SUM(t.amount) FROM transactions t JOIN accounts a ON a.id = t.account_id JOIN branches b ON b.id = a.branch_id GROUP BY b.city;",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Join three tables, group by city.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-loan-branch",
+      "tier": 3,
+      "topic": [
+        "join",
+        "multi-join"
+      ],
+      "title": "Risky Branch",
+      "story_md": "High-rate loans point to a sloppy branch.\n\nReturn **branch name**, **owner** and **rate** for loans with rate above **{rate}**.",
+      "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
+      "data_gen": {
+        "branches": {
+          "rows": 8,
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "name": {
+              "kind": "pick",
+              "from": "branch_names"
+            },
+            "city": {
+              "kind": "pick",
+              "from": "cities"
+            },
+            "opened": {
+              "kind": "date",
+              "from": "1990-01-01",
+              "to": "2022-12-31"
+            },
+            "floors": {
+              "kind": "int",
+              "min": 3,
+              "max": 6,
+              "step": 1
+            }
+          }
+        },
+        "accounts": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "fk",
+              "table": "branches",
+              "column": "id"
+            }
+          }
+        },
+        "loans": {
+          "rows": [
+            50,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": 1000,
+              "max": 50000,
+              "step": 100
+            },
+            "rate": {
+              "kind": "real",
+              "min": 1.5,
+              "max": 12.0,
+              "decimals": 2
+            },
+            "status": {
+              "kind": "pick",
+              "from": "loan_statuses"
+            }
+          }
+        }
+      },
+      "params": {
+        "rate": {
+          "kind": "int",
+          "min": 8,
+          "max": 10,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT b.name, a.owner, l.rate FROM loans l JOIN accounts a ON a.id = l.account_id JOIN branches b ON b.id = a.branch_id WHERE l.rate > {rate};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "loans → accounts → branches.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-log-zone-dept",
+      "tier": 3,
+      "topic": [
+        "join",
+        "multi-join"
+      ],
+      "title": "Shift Overlap",
+      "story_md": "Who was on a **{shift}** shift *and* touched the vault that same day?\n\nReturn **distinct employee id** and **first_name** for employees with a vault log entry on a day they worked a **{shift}** shift.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            25,
+            30
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "shifts": {
+          "rows": [
+            220,
+            280
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "day": {
+              "kind": "date",
+              "from": "2025-03-01",
+              "to": "2025-03-31"
+            },
+            "shift": {
+              "kind": "pick",
+              "from": "shift_names"
+            },
+            "hours": {
+              "kind": "int",
+              "min": 4,
+              "max": 10,
+              "step": 1
+            }
+          }
+        },
+        "vault_logs": {
+          "rows": [
+            220,
+            280
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "action": {
+              "kind": "pick",
+              "from": "vault_actions"
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-03-01",
+              "to": "2025-03-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "shift": {
+          "kind": "pick",
+          "from": "shift_names"
+        }
+      },
+      "reference_sql": "SELECT DISTINCT e.id, e.first_name FROM employees e JOIN shifts s ON s.employee_id = e.id JOIN vault_logs l ON l.employee_id = e.id AND l.at = s.day WHERE s.shift = {shift|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Join logs on both employee_id and date.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-in-subquery",
+      "tier": 3,
+      "topic": [
+        "subquery",
+        "in"
+      ],
+      "title": "Big Spenders",
+      "story_md": "Owners who once moved more than **{amount}** in one go.\n\nReturn **id** and **owner** of accounts that have **any** transaction over that amount.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            120,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {
+        "amount": {
+          "kind": "int",
+          "min": 2500,
+          "max": 2900,
+          "step": 50
+        }
+      },
+      "reference_sql": "SELECT id, owner FROM accounts WHERE id IN (SELECT account_id FROM transactions WHERE amount > {amount});",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "WHERE id IN (SELECT account_id FROM …)",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-not-in-subquery",
+      "tier": 3,
+      "topic": [
+        "subquery",
+        "not-in"
+      ],
+      "title": "Never Withdrew",
+      "story_md": "Savers never take money out.\n\nReturn **id** and **owner** of accounts that **never** made a withdrawal.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            40,
+            70
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            120,
+            200
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT id, owner FROM accounts WHERE id NOT IN (SELECT account_id FROM transactions WHERE kind = 'withdrawal');",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "NOT IN (subquery) — watch out if the subquery could return NULL.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-exists",
+      "tier": 3,
+      "topic": [
+        "subquery",
+        "exists"
+      ],
+      "title": "Vault Visitors",
+      "story_md": "Who visited zone **{zone}**?\n\nReturn **id** and **first_name** of employees for whom **a vault log entry exists** in that zone.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "vault_logs": {
+          "rows": [
+            80,
+            140
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "action": {
+              "kind": "pick",
+              "from": "vault_actions"
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "zone": {
+          "kind": "pick",
+          "from": "vault_zones"
+        }
+      },
+      "reference_sql": "SELECT e.id, e.first_name FROM employees e WHERE EXISTS (SELECT 1 FROM vault_logs l WHERE l.employee_id = e.id AND l.zone = {zone|sql});",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "EXISTS (SELECT 1 FROM … WHERE matches outer row)",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-not-exists",
+      "tier": 3,
+      "topic": [
+        "subquery",
+        "not-exists"
+      ],
+      "title": "Clean Record",
+      "story_md": "Employees with **no {action}** entries are trusted.\n\nReturn **id** and **last_name** of employees with no vault log entry of that action.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "vault_logs": {
+          "rows": [
+            80,
+            140
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "action": {
+              "kind": "pick",
+              "from": "vault_actions"
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "action": {
+          "kind": "pick",
+          "from": "vault_actions"
+        }
+      },
+      "reference_sql": "SELECT e.id, e.last_name FROM employees e WHERE NOT EXISTS (SELECT 1 FROM vault_logs l WHERE l.employee_id = e.id AND l.action = {action|sql});",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "NOT EXISTS keeps rows with no match.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-in-list-branches",
+      "tier": 3,
+      "topic": [
+        "subquery",
+        "in"
+      ],
+      "title": "Branch Watch",
+      "story_md": "Branches opened before **{year}** still use old locks.\n\nReturn **id** and **balance** of accounts that belong to any branch opened before **{year}-01-01**.",
+      "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);\nCREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "branches": {
+          "rows": 12,
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "name": {
+              "kind": "pick",
+              "from": "branch_names"
+            },
+            "city": {
+              "kind": "pick",
+              "from": "cities"
+            },
+            "opened": {
+              "kind": "date",
+              "from": "1990-01-01",
+              "to": "2022-12-31"
+            },
+            "floors": {
+              "kind": "int",
+              "min": 3,
+              "max": 6,
+              "step": 1
+            }
+          }
+        },
+        "accounts": {
+          "rows": [
+            60,
+            80
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "fk",
+              "table": "branches",
+              "column": "id"
+            }
+          }
+        }
+      },
+      "params": {
+        "year": {
+          "kind": "int",
+          "min": 2004,
+          "max": 2012,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT id, balance FROM accounts WHERE branch_id IN (SELECT id FROM branches WHERE opened < {year} || '-01-01');",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Subquery returns the branch ids.",
+          "cost": 0.06
+        },
+        {
+          "text": "Compare dates as text: opened < '2005-01-01'.",
+          "cost": 0.15
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-loans-on-frozen",
+      "tier": 3,
+      "topic": [
+        "subquery",
+        "in"
+      ],
+      "title": "Frozen Debts",
+      "story_md": "Loans on frozen accounts can't be collected.\n\nReturn **loan id** and **amount** of loans whose account has status **frozen**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "loans": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": 1000,
+              "max": 50000,
+              "step": 100
+            },
+            "rate": {
+              "kind": "real",
+              "min": 1.5,
+              "max": 12.0,
+              "decimals": 2
+            },
+            "status": {
+              "kind": "pick",
+              "from": "loan_statuses"
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT id, amount FROM loans WHERE account_id IN (SELECT id FROM accounts WHERE status = 'frozen');",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Find frozen account ids in a subquery.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-above-average",
+      "tier": 3,
+      "topic": [
+        "subquery",
+        "scalar"
+      ],
+      "title": "Above Average",
+      "story_md": "Above-average earners have more access.\n\nReturn **first_name** and **salary** of employees paid **more than the company average**.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {},
+      "reference_sql": "SELECT first_name, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees);",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Compare with (SELECT AVG(salary) FROM employees).",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-max-item",
+      "tier": 3,
+      "topic": [
+        "subquery",
+        "scalar"
+      ],
+      "title": "Crown Jewel",
+      "story_md": "Find the single most valuable thing in zone **{zone}**.\n\nReturn **tag**, **item** and **value** of the item(s) in that zone whose value equals the zone's maximum.",
+      "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
+      "data_gen": {
+        "vault_items": {
+          "rows": [
+            70,
+            100
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "item": {
+              "kind": "pick",
+              "from": "item_types"
+            },
+            "value": {
+              "kind": "int",
+              "min": 500,
+              "max": 250000,
+              "step": 50
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "weight_kg": {
+              "kind": "real",
+              "min": 0.1,
+              "max": 25,
+              "decimals": 1
+            },
+            "tag": {
+              "kind": "text_pattern",
+              "pattern": "VX-####",
+              "unique": true
+            }
+          }
+        }
+      },
+      "params": {
+        "zone": {
+          "kind": "pick",
+          "from": "vault_zones"
+        }
+      },
+      "reference_sql": "SELECT tag, item, value FROM vault_items WHERE zone = {zone|sql} AND value = (SELECT MAX(value) FROM vault_items WHERE zone = {zone|sql});",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "A subquery can return one value to compare against.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-share-of-total",
+      "tier": 3,
+      "topic": [
+        "subquery",
+        "scalar"
+      ],
+      "title": "Slice of the Pie",
+      "story_md": "How much of all the money sits in **{type}** accounts?\n\nReturn one number: their total balance as a **percentage of all balances, rounded to 2 decimals**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            60,
+            90
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "type": {
+          "kind": "pick",
+          "from": "account_types"
+        }
+      },
+      "reference_sql": "SELECT ROUND(100.0 * SUM(balance) / (SELECT SUM(balance) FROM accounts), 2) FROM accounts WHERE type = {type|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "Divide by (SELECT SUM(balance) FROM accounts).",
+          "cost": 0.06
+        },
+        {
+          "text": "Use 100.0 to avoid integer division.",
+          "cost": 0.15
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-union",
+      "tier": 3,
+      "topic": [
+        "union"
+      ],
+      "title": "Wanted List",
+      "story_md": "Make one list of everyone flagged.\n\nReturn the **distinct employee ids** who either **{action}ed** in zone **{zone}** OR worked a **night** shift (use UNION).",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            40,
+            60
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "vault_logs": {
+          "rows": [
+            100,
+            140
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "action": {
+              "kind": "pick",
+              "from": "vault_actions"
+            },
+            "zone": {
+              "kind": "pick",
+              "from": "vault_zones"
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "shifts": {
+          "rows": [
+            100,
+            140
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "day": {
+              "kind": "date",
+              "from": "2025-03-01",
+              "to": "2025-03-31"
+            },
+            "shift": {
+              "kind": "pick",
+              "from": "shift_names"
+            },
+            "hours": {
+              "kind": "int",
+              "min": 4,
+              "max": 10,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "action": {
+          "kind": "pick",
+          "from": [
+            "open",
+            "inspect"
+          ]
+        },
+        "zone": {
+          "kind": "pick",
+          "from": [
+            "Vault A",
+            "Vault B"
+          ]
+        }
+      },
+      "reference_sql": "SELECT employee_id FROM vault_logs WHERE action = {action|sql} AND zone = {zone|sql} UNION SELECT employee_id FROM shifts WHERE shift = 'night';",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "UNION combines and removes duplicates.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-intersect",
+      "tier": 3,
+      "topic": [
+        "intersect"
+      ],
+      "title": "Both Sides",
+      "story_md": "Who works days *and* nights?\n\nReturn the **employee ids** that appear in both **{a}** shifts and **{b}** shifts.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            30,
+            40
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "shifts": {
+          "rows": [
+            120,
+            160
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "day": {
+              "kind": "date",
+              "from": "2025-03-01",
+              "to": "2025-03-31"
+            },
+            "shift": {
+              "kind": "pick",
+              "from": "shift_names"
+            },
+            "hours": {
+              "kind": "int",
+              "min": 4,
+              "max": 10,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "a": {
+          "kind": "pick",
+          "from": [
+            "morning",
+            "day"
+          ]
+        },
+        "b": {
+          "kind": "pick",
+          "from": [
+            "evening",
+            "night"
+          ]
+        }
+      },
+      "reference_sql": "SELECT employee_id FROM shifts WHERE shift = {a|sql} INTERSECT SELECT employee_id FROM shifts WHERE shift = {b|sql};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "INTERSECT keeps rows in both results.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-except",
+      "tier": 3,
+      "topic": [
+        "except"
+      ],
+      "title": "Never on Nights",
+      "story_md": "Day-only workers don't know the night routine.\n\nReturn **employee ids** who worked a **{shift}** shift but **never** a **night** shift.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [
+            30,
+            40
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "first_name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "last_name": {
+              "kind": "pick",
+              "from": "last_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 10
+            },
+            "hired": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "shifts": {
+          "rows": [
+            120,
+            160
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "employee_id": {
+              "kind": "fk",
+              "table": "employees",
+              "column": "id"
+            },
+            "day": {
+              "kind": "date",
+              "from": "2025-03-01",
+              "to": "2025-03-31"
+            },
+            "shift": {
+              "kind": "pick",
+              "from": "shift_names"
+            },
+            "hours": {
+              "kind": "int",
+              "min": 4,
+              "max": 10,
+              "step": 1
+            }
+          }
+        }
+      },
+      "params": {
+        "shift": {
+          "kind": "pick",
+          "from": [
+            "morning",
+            "day",
+            "evening"
+          ]
+        }
+      },
+      "reference_sql": "SELECT employee_id FROM shifts WHERE shift = {shift|sql} EXCEPT SELECT employee_id FROM shifts WHERE shift = 'night';",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "EXCEPT removes rows found in the second query.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    },
+    {
+      "slug": "t3-union-all",
+      "tier": 3,
+      "topic": [
+        "union"
+      ],
+      "title": "Money Trail",
+      "story_md": "One timeline of money movements for account **{account}**.\n\nReturn **date** and **amount** from its transactions, plus one row per loan of that account using date `2025-06-30` and the **loan amount**. Keep duplicates (UNION ALL).",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);\nCREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, rate REAL, status TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [
+            5,
+            6
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 100
+            },
+            "owner": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "type": {
+              "kind": "pick",
+              "from": "account_types"
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 5
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2018-01-01",
+              "to": "2025-12-31"
+            },
+            "status": {
+              "kind": "pick",
+              "from": "account_statuses",
+              "weights": [
+                6,
+                2,
+                1
+              ]
+            },
+            "branch_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 8,
+              "step": 1
+            }
+          }
+        },
+        "transactions": {
+          "rows": [
+            80,
+            120
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "kind": {
+              "kind": "pick",
+              "from": "transaction_kinds",
+              "weights": [
+                4,
+                4,
+                3,
+                1,
+                1
+              ]
+            },
+            "amount": {
+              "kind": "int",
+              "min": 5,
+              "max": 3000,
+              "step": 5
+            },
+            "at": {
+              "kind": "date",
+              "from": "2025-01-01",
+              "to": "2025-12-31"
+            },
+            "merchant": {
+              "kind": "pick",
+              "from": "merchants",
+              "null_rate": 0.25
+            }
+          }
+        },
+        "loans": {
+          "rows": [
+            20,
+            30
+          ],
+          "columns": {
+            "id": {
+              "kind": "serial",
+              "start": 1
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": 1000,
+              "max": 50000,
+              "step": 100
+            },
+            "rate": {
+              "kind": "real",
+              "min": 1.5,
+              "max": 12.0,
+              "decimals": 2
+            },
+            "status": {
+              "kind": "pick",
+              "from": "loan_statuses"
+            }
+          }
+        }
+      },
+      "params": {
+        "account": {
+          "kind": "int",
+          "min": 100,
+          "max": 104,
+          "step": 1
+        }
+      },
+      "reference_sql": "SELECT at, amount FROM transactions WHERE account_id = {account} UNION ALL SELECT '2025-06-30', amount FROM loans WHERE account_id = {account};",
+      "order_matters": false,
+      "compare": {
+        "names": false,
+        "case": true
+      },
+      "allow_empty": false,
+      "hints": [
+        {
+          "text": "UNION ALL keeps every row, including duplicates.",
+          "cost": 0.06
+        }
+      ],
+      "enabled": true
+    }
+  ]
+}
