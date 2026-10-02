@@ -65,6 +65,13 @@ export const columnSpecSchema = z.discriminatedUnion('kind', [
     null_rate: nullRate,
   }),
   z.object({ kind: z.literal('const'), value: z.union([z.string(), z.number(), z.null()]) }),
+  z.object({
+    kind: z.literal('tree_parent'),
+    /** Id of the table's first row (match the serial column's start). */
+    start: z.number().int().default(1),
+    /** How many leading rows are roots (NULL parent). */
+    roots: z.number().int().min(1).default(1),
+  }),
 ]);
 
 export const tableSpecSchema = z.object({

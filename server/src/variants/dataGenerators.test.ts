@@ -94,6 +94,25 @@ describe('generateTables', () => {
     expect(column(a.get('t'), 'x')).toEqual(column(b.get('t'), 'x'));
   });
 
+  it('tree_parent builds a forest: parents are always earlier rows', () => {
+    const t = gen({
+      staff: {
+        rows: 50,
+        columns: {
+          id: { kind: 'serial', start: 10 },
+          boss_id: { kind: 'tree_parent', start: 10, roots: 2 },
+        },
+      },
+    }).get('staff');
+    const ids = column(t, 'id') as number[];
+    const bosses = column(t, 'boss_id');
+    expect(bosses.slice(0, 2)).toEqual([null, null]);
+    bosses.slice(2).forEach((b, i) => {
+      expect(b as number).toBeGreaterThanOrEqual(10);
+      expect(b as number).toBeLessThan(ids[i + 2] as number);
+    });
+  });
+
   it('fails clearly when a unique pattern is exhausted', () => {
     expect(() =>
       gen({
