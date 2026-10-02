@@ -99,7 +99,7 @@ Goal: ship 150 curated, editable questions.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 3.1 | `questions:validate` script (reference × 20 seeds, uniqueness, runtime) | runs on sample set | ✅ Done |
-| 3.2 | Shared datasets (names, branches, items) for generators | referenced by questions | ⬜ |
+| 3.2 | Shared datasets (names, branches, items) for generators | referenced by questions | ✅ Done |
 | 3.3 | Tier 1 — 30 questions | validator green | ⬜ |
 | 3.4 | Tier 2 — 30 questions | validator green | ⬜ |
 | 3.5 | Tier 3 — 30 questions | validator green | ⬜ |
