@@ -19,6 +19,14 @@ const admin = buildAdmin(
     secureCookies: process.env.NODE_ENV === 'production',
     sessionTtlMs: 12 * 60 * 60 * 1000,
     uiDistDir: fileURLToPath(new URL('../ui/dist', import.meta.url)),
+    ...(process.env.INTERNAL_SECRET
+      ? {
+          gameServer: {
+            url: process.env.GAME_SERVER_URL ?? 'http://localhost:8080',
+            secret: process.env.INTERNAL_SECRET,
+          },
+        }
+      : {}),
   },
   logger,
 );

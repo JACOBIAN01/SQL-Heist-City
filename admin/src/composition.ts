@@ -23,6 +23,7 @@ import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
 import { SqlitePoolRepository } from './pools/PoolRepository';
 import { poolRoutes } from './pools/routes';
+import { ReloadNotifier } from './reload/ReloadNotifier';
 import { Grader } from '@heist/server/sql/Grader';
 import type { SandboxRunner } from '@heist/server/sql/SandboxRunner';
 import { WorkerSandboxRunner } from '@heist/server/sql/WorkerSandboxRunner';
@@ -33,6 +34,8 @@ export interface AdminConfig {
   readonly secureCookies: boolean;
   readonly sessionTtlMs: number;
   readonly uiDistDir?: string;
+  /** When set, admin changes trigger a cache reload on the game server. */
+  readonly gameServer?: { readonly url: string; readonly secret: string };
 }
 
 export interface AdminOverrides {
@@ -70,6 +73,14 @@ export function buildAdmin(
   const events = new AdminEventBus();
   const audit = new SqliteAuditLog(db);
   auditAdminEvents(events, audit);
+  const reload = config.gameServer
+    ? new ReloadNotifier({
+        gameServerUrl: config.gameServer.url,
+        secret: config.gameServer.secret,
+        logger: { warn: (m, meta) => logger.error(m, meta) },
+      })
+    : undefined;
+  reload?.attach(events);
   const sandbox = overrides.sandbox ?? new WorkerSandboxRunner({ size: 2 });
   const tester = new QuestionTester(new VariantBuilder(builtInDatasets), new Grader(sandbox));
   const validator = new SandboxTemplateValidator(tester);
@@ -90,5 +101,13 @@ export function buildAdmin(
       poolRoutes(new SqlitePoolRepository(db), events),
     ],
   });
-  return { app, auth, events, close: () => sandbox.close() };
+  return {
+    app,
+    auth,
+    events,
+    close: async () => {
+      await reload?.flush();
+      await sandbox.close();
+    },
+  };
 }

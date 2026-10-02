@@ -8,17 +8,23 @@ import { startTestServer } from './http';
 export const TEST_PASSWORD = 'correct-horse-battery';
 
 /** Full admin app on an in-memory DB, with a cheap hasher so tests stay fast. */
-export async function startAdmin(options: { now?: () => number } = {}) {
+export async function startAdmin(
+  options: { now?: () => number; gameServer?: { url: string; secret: string } } = {},
+) {
   const db = openDatabase({ path: ':memory:' });
   const errors: string[] = [];
   const admin = buildAdmin(
     db,
-    { secureCookies: false, sessionTtlMs: 60 * 60 * 1000 },
+    {
+      secureCookies: false,
+      sessionTtlMs: 60 * 60 * 1000,
+      ...(options.gameServer ? { gameServer: options.gameServer } : {}),
+    },
     { error: (m, meta) => errors.push(`${m} ${JSON.stringify(meta)}`) },
     {
       hasher: new ScryptPasswordHasher({ N: 1024, r: 8, p: 1, keylen: 32 }),
       sandbox: new InProcessSandboxRunner(),
-      ...options,
+      ...(options.now ? { now: options.now } : {}),
     },
   );
   const client = await startTestServer(admin.app);
