@@ -19,18 +19,20 @@ export function questionRoutes(questions: QuestionAdminService, tester: Question
     res.json({ questions: questions.list(parse(questionListQuerySchema, req.query)) });
   });
 
-  router.post('/questions', (req, res) => {
+  router.post('/questions', async (req, res) => {
     const template = parse(questionTemplateSchema, req.body);
-    res.status(201).json({ question: questions.create(template, requireUser(res)) });
+    res.status(201).json({ question: await questions.create(template, requireUser(res)) });
   });
 
   router.get('/questions/:id', (req, res) => {
     res.json({ question: questions.get(idParam(req.params.id)) });
   });
 
-  router.put('/questions/:id', (req, res) => {
+  router.put('/questions/:id', async (req, res) => {
     const template = parse(questionTemplateSchema, req.body);
-    res.json({ question: questions.update(idParam(req.params.id), template, requireUser(res)) });
+    res.json({
+      question: await questions.update(idParam(req.params.id), template, requireUser(res)),
+    });
   });
 
   router.delete('/questions/:id', requireRole('admin'), (req, res) => {
@@ -56,8 +58,8 @@ export function questionRoutes(questions: QuestionAdminService, tester: Question
     res.json({ versions: questions.versions(idParam(req.params.id)) });
   });
 
-  router.post('/questions/:id/rollback/:version', (req, res) => {
-    const question = questions.rollback(
+  router.post('/questions/:id/rollback/:version', async (req, res) => {
+    const question = await questions.rollback(
       idParam(req.params.id),
       idParam(req.params.version),
       requireUser(res),

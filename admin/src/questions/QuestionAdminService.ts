@@ -13,6 +13,7 @@ import {
 } from '@heist/server/questions/QuestionRepository';
 import { conflict, notFound } from '../http/errors';
 import type { AdminEventBus, QuestionAction } from '../events/AdminEvents';
+import type { TemplateValidator } from './TemplateValidator';
 
 // Pattern: Facade — Why: routes call one method per teacher action; the
 // repository, slug rules and change events stay behind it, so every way of
@@ -21,6 +22,7 @@ export class QuestionAdminService {
   constructor(
     private readonly questions: QuestionRepository,
     private readonly events: AdminEventBus,
+    private readonly validator: TemplateValidator,
   ) {}
 
   list(query: QuestionListQuery = {}): QuestionSummary[] {
@@ -42,14 +44,16 @@ export class QuestionAdminService {
     return toDetail(this.mustGet(id));
   }
 
-  create(template: QuestionTemplate, actor: AdminUser): QuestionDetail {
+  async create(template: QuestionTemplate, actor: AdminUser): Promise<QuestionDetail> {
+    await this.validator.assertValid(template);
     const created = this.withSlugCheck(() => this.questions.create(template, actor.email));
     this.emit('create', created.id, actor, undefined, created.template);
     return toDetail(created);
   }
 
-  update(id: number, template: QuestionTemplate, actor: AdminUser): QuestionDetail {
+  async update(id: number, template: QuestionTemplate, actor: AdminUser): Promise<QuestionDetail> {
     const before = this.mustGet(id);
+    await this.validator.assertValid(template);
     const updated = this.withSlugCheck(() => this.questions.update(id, template, actor.email));
     this.emit('update', id, actor, before.template, updated.template);
     return toDetail(updated);
@@ -88,10 +92,12 @@ export class QuestionAdminService {
   }
 
   /** Restores an old version by saving it as a new one — history is never rewritten. */
-  rollback(id: number, version: number, actor: AdminUser): QuestionDetail {
+  async rollback(id: number, version: number, actor: AdminUser): Promise<QuestionDetail> {
     const before = this.mustGet(id);
     const target = this.questions.versions(id).find((v) => v.version === version);
     if (!target) throw notFound('Version');
+    // Old versions may rely on datasets or rules that changed since.
+    await this.validator.assertValid(target.template);
     const restored = this.withSlugCheck(() =>
       this.questions.update(id, target.template, actor.email),
     );
