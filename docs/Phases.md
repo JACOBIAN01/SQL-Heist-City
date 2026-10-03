@@ -22,7 +22,7 @@
 | 2 | Admin backend + UI | ✅ Done |
 | 3 | Seed content (150 questions) | ✅ Done |
 | 4 | SQL pop-up UI | ✅ Done |
-| 5 | Walk & shoot sandbox | 🟦 In progress |
+| 5 | Walk & shoot sandbox | 🟨 In review |
 | 6 | Scale core (60/100/200) | ⬜ |
 | 7 | Heist loop v1 | ⬜ |
 | 8 | City, vehicles, atmosphere | ⬜ |
@@ -125,7 +125,7 @@ Goal: LeetCode-style, non-blocking panel, demo against real server.
 | 4.9 | Polish: responsive, keyboard shortcuts, bundle-size check | within budget | ✅ Done |
 
 ---
-## Phase 5 — Walk & shoot sandbox  🟦
+## Phase 5 — Walk & shoot sandbox  🟨
 Goal: movement and combat feel good with 2+ real players.
 
 | # | Subphase | Done when | Status |
@@ -141,7 +141,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 5.9 | Remote player interpolation | smooth other players | ✅ Done |
 | 5.10 | Weapon fire (hitscan) + hit validation | hits registered by server | ✅ Done |
 | 5.11 | Lag compensation | hits land at 100 ms latency | ✅ Done |
-| 5.12 | Health, death, respawn | full kill cycle works | ⬜ |
+| 5.12 | Health, death, respawn | full kill cycle works | ✅ Done |
 
 ---
 ## Phase 6 — Scale core (60 → 100 → 200)  ⬜

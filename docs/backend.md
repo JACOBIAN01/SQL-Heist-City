@@ -45,6 +45,26 @@ Spatial hash, 64 m cells. Client gets own + 8 neighbour cells; tiered rates (nea
 - Weapon stats from config (`settings.weapons.*`), not code.
 - Spawn protection (default 5 s). Death drops carried cash; guns lost; banked cash and vault progress kept.
 
+## Game server — built in Phase 5
+Code: `server/src/game/`. Start: `npm run dev:server` (`/ws/game` binary socket; `/ws/challenge` JSON socket; one `UpgradeRouter` shares the HTTP port).
+
+| Piece | File | Job |
+|---|---|---|
+| `GameLoop` | `GameLoop.ts` | 20 Hz drift-corrected timeline, skips ahead after a stall instead of bursting; `TickStats` (p50/p95/max tick ms) |
+| `Match` | `Match.ts` | players, join/leave, per-tick input → movement → fire → respawn → history → snapshots. Socket-free: talks to `PlayerConnection` |
+| `Player` | `Player.ts` | body, hp, weapon, cooldown, protection, input queue (dedup by sequence, capped) |
+| `GameSocket` | `GameSocket.ts` | decodes frames strictly, 1 KB cap, 120 msg/s limit, join timeout, slow-client drop |
+| `LagCompensator` | `LagCompensator.ts` | per-player position history (~0.4 s); `poseAt(tick)` blends between ticks |
+| `SpawnPolicy` (Strategy) | `SpawnPolicy.ts` | farthest spawn from other players |
+
+Rules enforced here (the client is never trusted):
+- **Movement:** the same `stepBody` as the client; at most `maxCommandsPerTick` (6) commands per player per tick, so extra input cannot speed-hack. Walls and floors come from the shared map.
+- **Firing:** the fire button is processed per command; the weapon cooldown counts down in *simulated* time (1/60 s per command), so fire rate cannot be beaten either. Bullet spread is seeded (`match|tick|player|seq`) for reproducible tests.
+- **Hits:** ray from the camera pivot (eye + shoulder) vs. each target's upright-cylinder hit-box; walls block; head zone ×2; range per weapon. Spawn-protected and dead players cannot be hit.
+- **Lag compensation:** targets are rewound by the command's `viewLagMs` (capped by `maxLagCompMs`, default 200) using only completed ticks, so every target is judged at the same moment. History is dropped on respawn so a teleport is never blended.
+- **Death/respawn:** hp 0 → dead (input acknowledged but ignored), kill event, respawn after `respawnDelaySec` at the farthest spawn with `respawnHp` and spawn protection. All numbers in `shared/config/combat.ts`.
+- **Sandbox only:** everyone holds `sandboxWeapon` (rifle) with no ammo limit; Phase 7 replaces this with SQL-earned guns.
+
 ## Challenge service (SQL)
 | Module | File | Role |
 |---|---|---|

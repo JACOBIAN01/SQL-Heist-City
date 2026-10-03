@@ -73,5 +73,22 @@ Behaviour (all decided by the server, shown by the client):
 
 Measured size (gzipped, `npm run size`): client code ≈ 266 kB for the demo page (Three.js ≈ 128 kB, panel + CodeMirror ≈ 137 kB) against a 1 MB code budget; the check runs in CI.
 
+## Game client — built in Phase 5
+Entry: `client/src/main.ts` (composition root); try it with the server running: `npm run dev:server`, `npm run dev:client`, open http://localhost:5173 (add `?lag=50` for 50 ms each way, `?name=`, `?server=<port>`; `npm run bot -w @heist/server -- 3` adds walking bots).
+
+| Piece | Files | Job |
+|---|---|---|
+| Map + light | `world/MapRenderer.ts`, `render/lighting.ts` | instanced boxes per kind from the shared map, one shadow sun that follows the player, fog |
+| Input (Adapter, Command) | `input/InputSampler.ts`, `input/PointerLock.ts` | keys/mouse → one quantised `InputCommand` per 60 Hz tick; click captures the mouse; typing in the SQL editor never moves the player |
+| Loop | `game/FixedStepLoop.ts` | simulation in fixed 1/60 s steps whatever the frame rate |
+| Prediction | `game/LocalPlayer.ts`, `game/PredictedPlayer.ts` | runs the shared movement step locally; on each snapshot rewinds to the server state and replays unacknowledged input; real corrections glide, teleports snap |
+| Camera (Strategy) | `render/CameraRig.ts` | over-the-shoulder, pulls in against walls, same pivot the server shoots from |
+| Character | `entities/CharacterModel.ts`, `entities/animation.ts` | six-box procedural student, clip chosen from motion; stride follows distance walked |
+| Network (Adapter, Decorator, Observer) | `net/GameTransport.ts`, `net/GameClient.ts`, `net/InputBatcher.ts`, `net/SnapshotClock.ts` | binary WebSocket, RTT ping, ~30 input batches/s, server-clock estimate; `DelayedTransport` adds artificial lag |
+| Remote players | `net/SnapshotInterpolator.ts`, `entities/RemotePlayers.ts` | per-player snapshot buffer drawn 100 ms in the past, blended between real snapshots |
+| Combat feedback | `game/CombatFeedback.ts`, `render/Tracers.ts` (Object Pool), `ui/hud/Hud.ts` | own trail drawn at once, others' from server events; hit marker, damage flash, kill feed, death screen. Presentation only |
+
+Frame budget now: ~19 draw calls with one other player (each character is 6), < 1k triangles; bundle 289 kB gzipped. See backlog for the character draw-call plan.
+
 ## Testing
 Unit (Vitest): codec, interpolation, prediction. UI: Playwright smoke for pop-up flow against a mock server. Perf: scripted fly-through logs fps/draw calls via `renderer.info` (Phase 8+).

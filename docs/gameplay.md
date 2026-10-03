@@ -47,6 +47,8 @@ The world never pauses. While the pop-up is open the player stays vulnerable.
 
 Hitscan, recoil/spread, headshot ×2. Guns are earned **per life**.
 
+> **Phase 5 sandbox:** until Phase 7, everyone holds the rifle with unlimited ammo (`sandboxWeapon`), and respawn is 5 s at 50 HP with 5 s protection, all from `shared/config/combat.ts`.
+
 ## Death & respawn
 Drops carried cash as a bag; respawn at hospital after 5 s with 50 HP, unarmed; banked cash and vault progress kept. Kill bonus (small, config) to discourage pure camping.
 

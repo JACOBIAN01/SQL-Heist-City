@@ -49,6 +49,10 @@ Plain functions: binary codec, RNG helpers, result comparator, math.
 | **Decorator** | `RateLimitedGrader`, `MetricsGrader` wrapping `Grader`; `withNulls` wrapping any column generator | Add cross-cutting behaviour without touching core grader | Wrap another decorator |
 | **Template Method** | `BaseRewardStrategy.apply()` = validate → mutate → emit event; subclasses fill the mutate step | Guarantees every reward emits events and audit consistently | Subclass override hook |
 | **Builder** | `VariantBuilder`, `SnapshotBuilder`, `ChunkBuilder` | Multi-step construction with optional parts stays readable | Add step |
+| **Strategy (Phase 5)** | `SpawnPolicy`, `CameraRig` (CameraMode), `SnapshotInterpolator` (InterpolationPolicy) | Spawn choice, camera behaviour and blending rules vary by mode; each is a small swappable class | New policy class |
+| **Command (Phase 5)** | `InputCommand` in `shared/src/sim/input.ts` | One value type is sequenced, validated, queued, rate-limited and replayed for prediction | New button bit |
+| **Adapter / Decorator (Phase 5)** | `GameTransport` (+ `WebSocketGameTransport`, `DelayedTransport`), `PlayerConnection` over `ws`, `InputSampler` over DOM events | Game code sees bytes and commands, not sockets or DOM; latency can be simulated by wrapping | Wrap another transport |
+| **Object Pool (Phase 5)** | `Tracers` | Fixed set of line objects reused for bullet trails; no allocation mid-fight | — |
 | **Singleton (avoided)** | — | Use DI + composition root instead; singletons hide dependencies and break tests | n/a |
 
 ## 5. Anti-patterns to avoid
