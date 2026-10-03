@@ -22,9 +22,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "npm run build -w @heist/admin -w @heist/client",
-    "ci": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run questions:validate && npm run build",
+    "ci": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run questions:validate && npm run build && npm run size",
     "questions:validate": "npm run questions:validate -w @heist/admin --",
-    "db:seed": "npm run db:seed -w @heist/admin --"
+    "db:seed": "npm run db:seed -w @heist/admin --",
+    "size": "node scripts/check-bundle-size.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

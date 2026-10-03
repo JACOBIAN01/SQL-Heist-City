@@ -46,6 +46,29 @@ describe('SqlPanel', () => {
     expect(bar().hidden).toBe(true);
   });
 
+  it('Esc outside the editor minimises and returns focus to the page', () => {
+    panel.open();
+    const button = panel.slots.work.appendChild(document.createElement('button'));
+    button.focus();
+    expect(document.activeElement).toBe(button);
+    button.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    expect(panel.state).toBe('minimised');
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  it('Esc inside the editor leaves the panel open (the editor handles it itself)', () => {
+    panel.open();
+    const editor = panel.slots.work.appendChild(document.createElement('div'));
+    editor.className = 'cm-editor';
+    const inner = editor.appendChild(document.createElement('div'));
+    inner.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+    );
+    expect(panel.state).toBe('open');
+  });
+
   it('close hides everything', () => {
     panel.open();
     click('Close');

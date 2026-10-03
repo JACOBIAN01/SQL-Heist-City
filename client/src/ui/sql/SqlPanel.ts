@@ -79,6 +79,13 @@ export class SqlPanel {
     );
 
     this.slots = { tier, title, timer, switcher, problem, work };
+    // Esc anywhere in the panel except inside the editor (where it just leaves
+    // the editor) hands the keyboard back to the game by minimising.
+    this.root.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      if ((event.target as HTMLElement).closest('.cm-editor')) return;
+      this.minimise();
+    });
     this.host.append(this.root, this.bar);
     this.render();
   }
@@ -102,7 +109,10 @@ export class SqlPanel {
   }
 
   minimise(): void {
-    if (this.current === 'open') this.transition('minimised');
+    if (this.current !== 'open') return;
+    // Give keyboard focus back to the page so movement keys reach the game.
+    if (this.root.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
+    this.transition('minimised');
   }
 
   restore(): void {

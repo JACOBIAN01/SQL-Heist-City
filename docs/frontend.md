@@ -49,26 +49,27 @@ src/
 ## Camera & controls
 Third-person over-the-shoulder; pointer lock; WASD, Shift sprint, Ctrl crouch, Space jump, LMB shoot, RMB aim, R reload, F interact/enter vehicle, **Tab quick menu**, M map. Local player is predicted; remote players interpolated (100 ms buffer).
 
-## SQL pop-up (key feature)
-Non-blocking right-side panel (~45% width, translucent); the world keeps rendering and the player stays vulnerable.
-```
-┌──────────────────────── World keeps running ───────────────────────────┐
-│  HP ▮▮▮▮▯  Ammo 12   ◄ attacker direction indicator                    │
-│ ┌────────────────────────────────────────────────────────────────────┐ │
-│ │ Vault 2/3 · Tier 3 · ⏱ 02:10         [Switch task ▾] [— minimise]  │ │
-│ ├──────────────────────────┬─────────────────────────────────────────┤ │
-│ │ Story / task             │ SELECT ...      (CodeMirror 6)          │ │
-│ │ Schema (tables, columns) │                                         │ │
-│ │ Sample rows              │ [Run ▶ free]  [Submit ✔]  [Hint −$]     │ │
-│ │                          │ Result table / error / diff hint        │ │
-│ └──────────────────────────┴─────────────────────────────────────────┘ │
-└────────────────────────────────────────────────────────────────────────┘
-```
-- Auto-crouch while open; Esc blurs editor so movement keys control the player.
-- **Run** = preview ≤5 rows, free, rate-limited. **Submit** = graded. Wrong → lockout countdown (server value).
-- **Switch task** (Heal / Gun / Vault): draft saved locally per question; new request → new variant.
-- Damage feedback: red vignette + directional arrow + sound; minimise to a slim HP bar to fight.
-- All text (story, hints, costs, lockout) comes from server payloads; the client hard-codes none.
+## SQL pop-up (key feature) — built in Phase 4
+Non-blocking right-side panel (~46% width on desktop, full screen under 760 px); the world keeps rendering and the player stays vulnerable. Code: `client/src/ui/sql/`, demo page `client/sql-demo.html` (spinning cube + real server).
+
+| Piece | File | Job |
+|---|---|---|
+| Shell | `SqlPanel.ts` | frame, open / minimise (slim bar) / close, observable state (game can auto-crouch) |
+| Controller (Facade) | `SqlPanelController.ts` | the one object the game calls: `start(task)`; owns timer, lockout, hints, drafts |
+| Problem pane | `ProblemPane.ts` | story (shared inline-Markdown tokens → elements, never innerHTML), tables with sample rows, hints |
+| Work pane | `WorkPane.ts`, `SqlEditor.ts`, `ResultView.ts` | CodeMirror SQL editor, Run / Submit / Hint, preview rows and verdicts |
+| Task switcher | `TaskSwitcher.ts`, `DraftStore.ts` | header menu of tasks; per-task drafts kept (memory or sessionStorage) |
+| Network | `net/ChallengeApi.ts`, `net/WebSocketChallengeApi.ts` | interface + WebSocket adapter (connect on demand, ref matching, timeouts, server-clock sync) |
+
+Behaviour (all decided by the server, shown by the client):
+- **Run** = free preview of the first rows, rate-limited. **Submit** = graded. A wrong answer locks Submit for the server-set time ("Locked 8 s"); Run still works so you can fix the query.
+- **Hint** button names the next hint's cost before you click it (percent of carried cash or a fixed amount, per the server's `hintCostMode`); hints open in order; the game is told once per first reveal so it deducts the cost.
+- **Switch task** asks for a new question (the old one is dropped), while what you typed per task is remembered.
+- **Timer** counts down to the server's deadline in the header and on the minimised bar (red under 30 s). Running out costs nothing; the panel says so and offers a new question. Closing the panel abandons the task; minimising keeps it.
+- **Keys:** Ctrl/⌘+Enter run, Ctrl/⌘+Shift+Enter submit, Esc in the editor leaves it, Esc elsewhere in the panel minimises (focus returns to the game).
+- Hooks for the game: `onSolved({rewardKey, target})`, `onHintCharged(hint)`, `panel.onStateChange(...)`.
+
+Measured size (gzipped, `npm run size`): client code ≈ 266 kB for the demo page (Three.js ≈ 128 kB, panel + CodeMirror ≈ 137 kB) against a 1 MB code budget; the check runs in CI.
 
 ## Testing
 Unit (Vitest): codec, interpolation, prediction. UI: Playwright smoke for pop-up flow against a mock server. Perf: scripted fly-through logs fps/draw calls via `renderer.info` (Phase 8+).

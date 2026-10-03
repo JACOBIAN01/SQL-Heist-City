@@ -122,7 +122,7 @@ Goal: LeetCode-style, non-blocking panel, demo against real server.
 | 4.6 | Lockout countdown + hint button | lockout enforced from server value | ✅ Done |
 | 4.7 | Task switcher (Heal / Gun / Vault) + draft saving | switch keeps drafts | ✅ Done |
 | 4.8 | Timer + expiry handling | expired challenge closes cleanly | ✅ Done |
-| 4.9 | Polish: responsive, keyboard shortcuts, bundle-size check | within budget | ⬜ |
+| 4.9 | Polish: responsive, keyboard shortcuts, bundle-size check | within budget | ✅ Done |
 
 ---
 ## Phase 5 — Walk & shoot sandbox  ⬜
