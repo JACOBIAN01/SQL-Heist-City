@@ -17,3 +17,4 @@ export * from './sim/movement';
 export * from './world/raycast';
 export * from './net/gameMessages';
 export * from './net/codec';
+export * from './config/match';

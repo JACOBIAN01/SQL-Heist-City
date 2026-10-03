@@ -1,5 +1,6 @@
 import type { Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
+import { upgradeRouterFor } from '../net/UpgradeRouter';
 import type { ChallengeMessageHandler } from './ChallengeMessageHandler';
 
 export interface ChallengeSocketOptions {
@@ -26,10 +27,10 @@ export function attachChallengeSocket(
 ): ChallengeSocket {
   const now = options.now ?? Date.now;
   const wss = new WebSocketServer({
-    server: http,
-    path: options.path ?? '/ws/challenge',
+    noServer: true,
     maxPayload: options.maxPayload ?? 16 * 1024,
   });
+  upgradeRouterFor(http).route(options.path ?? '/ws/challenge', wss);
   let nextPlayer = 1;
 
   wss.on('connection', (socket: WebSocket) => {

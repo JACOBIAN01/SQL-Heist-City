@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { attachChallengeSocket } from './challenges/ChallengeSocket';
 import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
+import { startGame } from './game/startGame';
 import { createHttpServer } from './http/httpServer';
 
 // Entry point: reads the environment, then wires concrete dependencies.
@@ -30,8 +31,10 @@ const server = createHttpServer({
   },
 });
 if (challenges) attachChallengeSocket(server, challenges.handler);
+startGame(server);
 
 server.listen(port, () => {
   console.log(`game server listening on http://localhost:${port}`);
+  console.log(`game socket: ws://localhost:${port}/ws/game`);
   if (challenges) console.log(`challenge socket: ws://localhost:${port}/ws/challenge`);
 });
