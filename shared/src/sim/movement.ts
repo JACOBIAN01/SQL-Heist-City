@@ -210,5 +210,5 @@ function moveVertical(
 
 /** A command with no keys held, e.g. to let a body settle. */
 export function idleCommand(seq: number, yaw = 0): InputCommand {
-  return { seq, moveX: 0, moveY: 0, yaw, pitch: 0, buttons: 0 };
+  return { seq, moveX: 0, moveY: 0, yaw, pitch: 0, buttons: 0, viewLagMs: 0 };
 }

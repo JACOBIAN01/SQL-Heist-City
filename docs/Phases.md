@@ -134,7 +134,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 5.2 | Local movement (walk, run, jump, crouch) | feels responsive | ✅ Done |
 | 5.3 | Third-person camera + pointer lock | smooth orbit/aim | ✅ Done |
 | 5.4 | Character model + animations | idle/walk/run play | ✅ Done |
-| 5.5 | Binary protocol codec (`shared/`) | encode/decode tests pass | ⬜ |
+| 5.5 | Binary protocol codec (`shared/`) | encode/decode tests pass | ✅ Done |
 | 5.6 | Server tick loop + join/leave | two clients connect | ⬜ |
 | 5.7 | Server-side movement + collisions | no wall-walking | ⬜ |
 | 5.8 | Client prediction + reconciliation | no rubber-band at 100 ms | ⬜ |

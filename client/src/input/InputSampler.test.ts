@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Button } from '@heist/shared';
+import { Button, quantiseYaw } from '@heist/shared';
 import { InputSampler } from './InputSampler';
 
 let target: EventTarget;
@@ -47,6 +47,15 @@ describe('InputSampler', () => {
     expect(buttons & Button.Sprint).toBeTruthy();
     expect(buttons & Button.Crouch).toBeTruthy();
     expect(buttons & Button.Fire).toBeFalsy();
+  });
+
+  it('emits wire-quantised angles and lag so prediction matches the server', () => {
+    input.setLooking(true);
+    move(-137, 0);
+    input.setViewLag(117);
+    const c = input.sample();
+    expect(c.yaw).toBe(quantiseYaw(c.yaw));
+    expect(c.viewLagMs).toBe(115);
   });
 
   it('numbers commands consecutively and wraps at 16 bits', () => {

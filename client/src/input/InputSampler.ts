@@ -1,4 +1,11 @@
-import { Button, axisToByte, type InputCommand } from '@heist/shared';
+import {
+  Button,
+  axisToByte,
+  quantiseLag,
+  quantisePitch,
+  quantiseYaw,
+  type InputCommand,
+} from '@heist/shared';
 
 const MAX_PITCH = 1.45;
 /** Radians per mouse pixel. */
@@ -22,6 +29,7 @@ export class InputSampler {
   private yaw = 0;
   private pitch = 0;
   private seq = 0;
+  private viewLagMs = 0;
   /** While false (pointer not locked) mouse movement does not turn the camera. */
   private looking = false;
 
@@ -38,6 +46,11 @@ export class InputSampler {
   setLooking(looking: boolean): void {
     this.looking = looking;
     if (!looking) this.releaseAll();
+  }
+
+  /** Network delay + interpolation delay as the player sees the world; the server rewinds shots by it. */
+  setViewLag(ms: number): void {
+    this.viewLagMs = quantiseLag(ms);
   }
 
   get currentYaw(): number {
@@ -74,9 +87,12 @@ export class InputSampler {
       seq: this.seq,
       moveX: axisToByte(axis(['KeyD'], ['KeyA'])),
       moveY: axisToByte(axis(['KeyW'], ['KeyS'])),
-      yaw: this.yaw,
-      pitch: this.pitch,
+      // Quantised to the wire resolution up front: prediction and the server then
+      // simulate identical numbers (the decoded angle equals what we used here).
+      yaw: quantiseYaw(this.yaw),
+      pitch: quantisePitch(this.pitch),
       buttons,
+      viewLagMs: this.viewLagMs,
     };
   }
 

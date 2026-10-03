@@ -15,6 +15,12 @@ export interface InputCommand {
   /** Radians, positive looks up. */
   readonly pitch: number;
   readonly buttons: number;
+  /**
+   * How far behind the server's present the shooter's screen was (network
+   * delay + interpolation), ms. The server rewinds targets by this (capped) when
+   * resolving a shot — lag compensation. Sent in 5 ms steps.
+   */
+  readonly viewLagMs: number;
 }
 
 export const Button = {
@@ -37,3 +43,21 @@ export const axisToByte = (value: number): number =>
 /** Sequence numbers wrap; `a` is newer than `b` when the signed 16-bit gap is positive. */
 export const seqNewer = (a: number, b: number): boolean =>
   ((a - b + 0x10000) & 0xffff) < 0x8000 && a !== b;
+
+/** Wire resolution for angles. Both sides simulate with the *quantised* values so they cannot disagree. */
+const TAU = Math.PI * 2;
+const HALF_PI = Math.PI / 2;
+
+export const yawToWire = (yaw: number): number =>
+  Math.round(((((yaw % TAU) + TAU) % TAU) / TAU) * 65536) & 0xffff;
+export const yawFromWire = (wire: number): number => (wire / 65536) * TAU;
+export const quantiseYaw = (yaw: number): number => yawFromWire(yawToWire(yaw));
+
+export const pitchToWire = (pitch: number): number =>
+  Math.round((Math.max(-HALF_PI, Math.min(HALF_PI, pitch)) / HALF_PI) * 32767);
+export const pitchFromWire = (wire: number): number => (wire / 32767) * HALF_PI;
+export const quantisePitch = (pitch: number): number => pitchFromWire(pitchToWire(pitch));
+
+export const LAG_STEP_MS = 5;
+export const quantiseLag = (ms: number): number =>
+  Math.max(0, Math.min(255, Math.round(ms / LAG_STEP_MS))) * LAG_STEP_MS;

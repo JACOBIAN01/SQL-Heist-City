@@ -34,9 +34,29 @@ Binary frames for high-rate data, JSON frames (`{t, ...}`) for rare messages. Fi
 | `vault_progress` | on change | bankId, locksOpen/total |
 | `pong` | — | t |
 
-Challenge replies echo the request's `ref` and carry the server clock `now` (epoch ms); all lockout/expiry times (`lockedUntil`, `retryAt`, `expiresAt`) are server time. Challenge messages are JSON text frames (≤16 kB). For the Phase 4 demo they travel on `ws://<host>:8080/ws/challenge` (player id assigned by the server per connection); Phase 5 moves them onto the game connection.
+Challenge replies echo the request's `ref` and carry the server clock `now` (epoch ms); all lockout/expiry times (`lockedUntil`, `retryAt`, `expiresAt`) are server time. Challenge messages are JSON text frames (≤16 kB). For the Phase 4 demo they travel on `ws://<host>:8080/ws/challenge` (player id assigned by the server per connection); They move onto the game connection in Phase 7, when rewards apply to game state (the game socket below carries only movement and combat until then).
 
 Never sent: reference SQL, other players' challenge content.
+
+### Binary layout (built in Phase 5; code in `shared/src/net/codec.ts`)
+Little-endian. The first byte is the type. Decoders throw `CodecError` on truncated, oversized, non-finite or trailing data; servers drop the frame, never crash.
+
+| Client → server | Type | Layout |
+|---|---|---|
+| join | 0x01 | protocol u8, name (len u8 + utf-8, ≤24 B) |
+| input | 0x02 | count u8 (1–8), then per command 10 B: seq u16, moveX i8, moveY i8, yaw u16, pitch i16, buttons u8, viewLag u8 (×5 ms) |
+| ping | 0x03 | clientTime f64 |
+
+| Server → client | Type | Layout |
+|---|---|---|
+| welcome | 0x81 | playerId u16, tick u32, tickRate u8, mapId (string) |
+| snapshot | 0x82 | tick u32, ackSeq u16, self (x y z vx vy vz f32, flags u8, hp u8), count u16, then 20 B per entity: id u16, x y z f32, yaw u16, pitch i16, flags u8, hp u8 |
+| event | 0x83 | sub-type u8 (1 shot, 2 kill, 3 joined, 4 left) + fields |
+| pong | 0x84 | clientTime f64, tick u32 |
+
+Buttons: jump 1, crouch 2, sprint 4, fire 8. Flags: crouching 1, onGround 2, alive 4, firing 8. Positions are plain float32 for now; Phase 6 replaces them with chunk-relative 16-bit values and deltas.
+
+Both sides simulate with the *quantised* yaw/pitch (the client rounds before simulating), so the server replays exactly what the client predicted.
 
 ### Quantisation
 Position 16-bit per axis relative to chunk origin (≈1.5 cm precision), yaw/pitch 8-bit, hp 4-bit bucket.
