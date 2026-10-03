@@ -119,7 +119,7 @@ Goal: LeetCode-style, non-blocking panel, demo against real server.
 | 4.3 | CodeMirror SQL editor | typing + highlighting works | ✅ Done |
 | 4.4 | Run (free preview) wired to server | preview rows shown | ✅ Done |
 | 4.5 | Submit wired + result/feedback display | ✔/✘ shown | ✅ Done |
-| 4.6 | Lockout countdown + hint button | lockout enforced from server value | ⬜ |
+| 4.6 | Lockout countdown + hint button | lockout enforced from server value | ✅ Done |
 | 4.7 | Task switcher (Heal / Gun / Vault) + draft saving | switch keeps drafts | ⬜ |
 | 4.8 | Timer + expiry handling | expired challenge closes cleanly | ⬜ |
 | 4.9 | Polish: responsive, keyboard shortcuts, bundle-size check | within budget | ⬜ |
