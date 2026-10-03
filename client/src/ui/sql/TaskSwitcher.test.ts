@@ -7,27 +7,63 @@ const tasks: TaskOption[] = [
   { key: 'gun:rifle', label: 'Rifle', group: 'Gun' },
 ];
 
+const setup = () => {
+  const host = document.createElement('div');
+  document.body.append(host);
+  const onSelect = vi.fn();
+  const switcher = new TaskSwitcher(host, tasks, onSelect);
+  const menu = host.querySelector('.sqlp-menu') as HTMLElement;
+  const trigger = host.querySelector('.sqlp-switch') as HTMLButtonElement;
+  return { host, onSelect, switcher, menu, trigger };
+};
+
 describe('TaskSwitcher', () => {
-  it('groups tasks and reports the chosen one', () => {
-    const host = document.createElement('div');
-    const onSelect = vi.fn();
-    const switcher = new TaskSwitcher(host, tasks, onSelect);
-    const groups = [...host.querySelectorAll('optgroup')].map((g) => [g.label, g.children.length]);
-    expect(groups).toEqual([
-      ['Heal', 2],
-      ['Gun', 1],
+  it('lists tasks as icon items under group headings, closed at first', () => {
+    const { host, menu } = setup();
+    expect(menu.hidden).toBe(true);
+    expect([...host.querySelectorAll('.sqlp-menu-group')].map((g) => g.textContent)).toEqual([
+      'Heal',
+      'Gun',
     ]);
-    const select = host.querySelector('select') as HTMLSelectElement;
-    select.value = 'gun:rifle';
-    select.dispatchEvent(new Event('change'));
+    expect(host.querySelectorAll('.sqlp-item')).toHaveLength(3);
+    expect(host.querySelector('.sqlp-item svg')).not.toBeNull();
+  });
+
+  it('opens from the trigger, reports the chosen task and closes', () => {
+    const { host, onSelect, menu, trigger } = setup();
+    trigger.click();
+    expect(menu.hidden).toBe(false);
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    (host.querySelector('[data-key="gun:rifle"]') as HTMLElement).click();
     expect(onSelect).toHaveBeenCalledWith(tasks[2]);
-    switcher.setCurrent('heal:small');
-    expect(select.value).toBe('heal:small');
+    expect(menu.hidden).toBe(true);
+  });
+
+  it('Esc closes only the menu; a click elsewhere closes it too', () => {
+    const { host, menu, trigger } = setup();
+    const outer = vi.fn();
+    host.addEventListener('keydown', outer);
+    trigger.click();
+    menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(menu.hidden).toBe(true);
+    expect(outer).not.toHaveBeenCalled();
+    trigger.click();
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(menu.hidden).toBe(true);
+  });
+
+  it('marks the current task', () => {
+    const { host, switcher } = setup();
+    switcher.setCurrent('heal:full');
+    expect(host.querySelector('[data-key="heal:full"]')?.getAttribute('aria-current')).toBe('true');
+    expect(host.querySelector('[data-key="gun:rifle"]')?.getAttribute('aria-current')).toBe(
+      'false',
+    );
   });
 
   it('shows nothing when there is nothing to switch to', () => {
     const host = document.createElement('div');
     new TaskSwitcher(host, [tasks[0] as TaskOption], vi.fn());
-    expect(host.querySelector('select')).toBeNull();
+    expect(host.querySelector('.sqlp-switch')).toBeNull();
   });
 });

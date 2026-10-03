@@ -68,6 +68,7 @@ Behaviour (all decided by the server, shown by the client):
 - **Timer** counts down to the server's deadline in the header and on the minimised bar (red under 30 s). Running out costs nothing; the panel says so and offers a new question. Closing the panel abandons the task; minimising keeps it.
 - **Keys:** Ctrl/⌘+Enter run, Ctrl/⌘+Shift+Enter submit, Esc in the editor leaves it, Esc elsewhere in the panel minimises (focus returns to the game).
 - **Resizable:** drag the panel's left edge (width), the divider between task and editor (split), or the bar under the editor (editor height). Arrow keys on a focused handle nudge it, double-click or Home resets. Sizes are remembered in localStorage. Under 760 px the layout is stacked and the handles are hidden.
+- **Icons:** each reward shows a game-icons.net silhouette (CC BY 3.0, see `docs/credits.md`) on a tile whose border colour is the question tier. They appear in the panel header, the minimised bar and the task switcher, which is an icon grid rather than a native select. The reward → icon map is presentation-only, like `labels.ts`.
 - Hooks for the game: `onSolved({rewardKey, target})`, `onHintCharged(hint)`, `panel.onStateChange(...)`.
 
 Measured size (gzipped, `npm run size`): client code ≈ 266 kB for the demo page (Three.js ≈ 128 kB, panel + CodeMirror ≈ 137 kB) against a 1 MB code budget; the check runs in CI.

@@ -242,10 +242,9 @@ describe('SqlPanelController: switching tasks and drafts', () => {
   it('lists the tasks in the header and starts the chosen one with a fresh request', async () => {
     rebuild(tasks);
     await controller.start(tasks[0] as TaskOption);
-    const select = $('select.sqlp-select') as HTMLSelectElement;
-    expect(select.value).toBe('heal:small');
-    select.value = 'vault:bank-1:lock-1';
-    select.dispatchEvent(new Event('change'));
+    expect($('[data-key="heal:small"]').getAttribute('aria-current')).toBe('true');
+    ($('.sqlp-switch') as HTMLElement).click();
+    ($('[data-key="vault:bank-1:lock-1"]') as HTMLElement).click();
     await flush();
     expect(api.calls.filter((c) => c.method === 'request').map((c) => c.args)).toEqual([
       ['heal:small', undefined],

@@ -1,4 +1,5 @@
 import { h } from '../dom';
+import { rewardIcon } from '../icons/icons';
 import { createResizer } from './Resizer';
 
 export type PanelState = 'closed' | 'open' | 'minimised';
@@ -23,10 +24,12 @@ export class SqlPanel {
   readonly slots: PanelSlots;
   private readonly root: HTMLElement;
   private readonly bar: HTMLElement;
+  private readonly tile: HTMLElement;
   private readonly listeners = new Set<PanelListener>();
   private current: PanelState = 'closed';
 
   constructor(private readonly host: HTMLElement) {
+    const tile = h('span', { class: 'sqlp-tile', attrs: { hidden: '' } });
     const tier = h('span', { class: 'sqlp-tier' });
     const title = h('span', { class: 'sqlp-title' });
     const timer = h('span', { class: 'sqlp-timer', attrs: { 'aria-live': 'off' } });
@@ -61,7 +64,7 @@ export class SqlPanel {
       h(
         'header',
         { class: 'sqlp-head' },
-        h('div', { class: 'sqlp-heading' }, tier, title),
+        h('div', { class: 'sqlp-heading' }, tile, tier, title),
         timer,
         h(
           'div',
@@ -100,6 +103,7 @@ export class SqlPanel {
     this.bar = h(
       'div',
       { class: 'sqlp-bar', attrs: { 'data-state': 'closed' } },
+      h('span', { class: 'sqlp-tile small', attrs: { 'data-role': 'bar-icon', hidden: '' } }),
       h('span', { class: 'sqlp-bar-title', attrs: { 'data-role': 'bar-title' } }),
       h('span', { class: 'sqlp-bar-timer', attrs: { 'data-role': 'bar-timer' } }),
       h('button', {
@@ -110,6 +114,7 @@ export class SqlPanel {
       }),
     );
 
+    this.tile = tile;
     this.slots = { tier, title, timer, switcher, problem, work };
     // Esc anywhere in the panel except inside the editor (where it just leaves
     // the editor) hands the keyboard back to the game by minimising.
@@ -134,6 +139,17 @@ export class SqlPanel {
     };
     set('bar-title', title);
     set('bar-timer', timer);
+  }
+
+  /** Shows the task's icon (tier-coloured tile) in the header and on the minimised bar. */
+  setTaskIcon(rewardKey: string, tier: number): void {
+    const barTile = this.bar.querySelector<HTMLElement>('[data-role="bar-icon"]');
+    for (const tile of [this.tile, barTile]) {
+      if (!tile) continue;
+      tile.dataset.tier = String(tier);
+      tile.replaceChildren(rewardIcon(rewardKey));
+      tile.hidden = false;
+    }
   }
 
   open(): void {

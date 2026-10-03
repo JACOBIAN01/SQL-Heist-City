@@ -242,6 +242,7 @@ export class SqlPanelController {
     const { slots } = this.deps.panel;
     slots.title.textContent = challenge.title;
     slots.tier.textContent = `T${challenge.tier}`;
+    this.deps.panel.setTaskIcon(challenge.rewardKey, challenge.tier);
     this.deps.panel.setBarText(challenge.title, '');
   }
 
