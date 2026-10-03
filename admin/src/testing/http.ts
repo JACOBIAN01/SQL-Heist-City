@@ -28,6 +28,10 @@ export async function startTestServer(app: Express) {
         ...(cookie ? { cookie } : {}),
         // Same header the React app sends; see csrf guard.
         'x-heist-admin': '1',
+        // Fresh connection per request: test servers reuse ephemeral ports, and a
+        // pooled keep-alive socket to a previous (closed) server fails with
+        // "other side closed" intermittently.
+        connection: 'close',
         ...headers,
       },
       ...(body === undefined
