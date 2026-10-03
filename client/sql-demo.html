@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SQL panel demo</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #0b0d10;
+      }
+      canvas {
+        display: block;
+      }
+      #demo-hud {
+        position: fixed;
+        left: 12px;
+        top: 12px;
+        color: #e8ebf0;
+        font:
+          13px system-ui,
+          sans-serif;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        z-index: 10;
+      }
+      #demo-hud button {
+        font: inherit;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="demo-hud"></div>
+    <script type="module" src="/src/demo/sqlDemo.ts"></script>
+  </body>
+</html>

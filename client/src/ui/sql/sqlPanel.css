@@ -1,0 +1,143 @@
+/* SQL challenge panel. Palette is local so the game's look can change without touching the panel. */
+.sqlp,
+.sqlp-bar {
+  --sqlp-bg: rgba(14, 17, 22, 0.9);
+  --sqlp-panel: rgba(255, 255, 255, 0.05);
+  --sqlp-border: rgba(255, 255, 255, 0.12);
+  --sqlp-text: #e8ebf0;
+  --sqlp-muted: #98a2b3;
+  --sqlp-accent: #d4a017;
+  --sqlp-ok: #4cc38a;
+  --sqlp-bad: #ef6b5f;
+  font:
+    13px/1.45 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+  color: var(--sqlp-text);
+  box-sizing: border-box;
+}
+.sqlp *,
+.sqlp-bar * {
+  box-sizing: border-box;
+}
+
+/* Only the panel catches the mouse; everything else still reaches the game. */
+.sqlp {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(46vw, 920px);
+  min-width: 360px;
+  display: flex;
+  flex-direction: column;
+  background: var(--sqlp-bg);
+  border-left: 1px solid var(--sqlp-border);
+  pointer-events: auto;
+  z-index: 1000;
+}
+.sqlp[hidden],
+.sqlp-bar[hidden] {
+  display: none;
+}
+
+.sqlp-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--sqlp-border);
+}
+.sqlp-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+.sqlp-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sqlp-tier {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--sqlp-panel);
+  color: var(--sqlp-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+.sqlp-tier:empty {
+  display: none;
+}
+.sqlp-timer,
+.sqlp-bar-timer {
+  font-variant-numeric: tabular-nums;
+  color: var(--sqlp-muted);
+}
+.sqlp-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sqlp-btn {
+  font: inherit;
+  color: var(--sqlp-text);
+  background: var(--sqlp-panel);
+  border: 1px solid var(--sqlp-border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.sqlp-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+.sqlp-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.sqlp-btn.primary {
+  background: var(--sqlp-accent);
+  border-color: var(--sqlp-accent);
+  color: #111;
+  font-weight: 600;
+}
+
+.sqlp-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+}
+.sqlp-problem,
+.sqlp-work {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px;
+}
+.sqlp-problem {
+  border-right: 1px solid var(--sqlp-border);
+}
+
+/* Slim bar while minimised: players keep fighting with the timer still visible. */
+.sqlp-bar {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  background: var(--sqlp-bg);
+  border: 1px solid var(--sqlp-border);
+  border-radius: 8px;
+  pointer-events: auto;
+  z-index: 1000;
+}
+.sqlp-bar-title {
+  font-weight: 600;
+}

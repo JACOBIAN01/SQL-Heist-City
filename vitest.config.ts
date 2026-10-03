@@ -16,7 +16,14 @@ export default defineConfig({
           include: ['src/**/*.test.{ts,tsx}'],
         },
       },
-      { test: { name: 'client', root: 'client', environment: 'node' } },
+      {
+        test: {
+          name: 'client',
+          root: 'client',
+          environment: 'jsdom',
+          include: ['src/**/*.test.ts'],
+        },
+      },
     ],
   },
 });
