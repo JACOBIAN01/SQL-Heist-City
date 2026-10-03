@@ -11,11 +11,11 @@ Binary frames for high-rate data, JSON frames (`{t, ...}`) for rare messages. Fi
 | `join` | once | name, matchId?, version |
 | `input` | 30–60 Hz batched | seq, move axes, yaw, pitch, buttons bitmask (fire, jump, crouch, sprint, interact) |
 | `switch_weapon`, `reload` | event | slot |
-| `challenge_request` | ≤1/3 s | rewardType, target |
-| `challenge_run` | ≤1/1.5 s | challengeId, sql |
-| `challenge_submit` | ≤1/2 s | challengeId, sql |
-| `challenge_hint` | event | challengeId, hintIdx |
-| `challenge_abandon` | event | challengeId |
+| `challenge_request` | ≤1/3 s | ref, rewardKey (e.g. `heal:small`, `vault:bank-3:lock-1`), target? |
+| `challenge_run` | ≤1/1.5 s | ref, challengeId, sql (≤5000 chars) |
+| `challenge_submit` | ≤1/2 s | ref, challengeId, sql |
+| `challenge_hint` | event | ref, challengeId *(added in 4.6)* |
+| `challenge_abandon` | event | ref |
 | `ping` | 1 Hz | t |
 
 ### Server → Client
@@ -24,12 +24,16 @@ Binary frames for high-rate data, JSON frames (`{t, ...}`) for rare messages. Fi
 | `welcome` | once | playerId, matchSeed, config subset, map seed |
 | `snapshot` | 5–20 Hz | tick, ackSeq, quantised entities (id, x,y,z, yaw, state bits, hp bucket) — delta vs last ack |
 | `event` | event | shot, hit, kill, loot, bank, lock_opened, alarm |
-| `challenge` | event | challengeId, rewardType, tier, title, story, schemaDescription, sampleRows, expiresAt, hints count |
-| `challenge_preview` | event | columns, rows (≤5) or error |
-| `challenge_result` | event | ok, lockoutUntil?, feedback?, reward? |
+| `challenge` | reply | ref, now, result: `IssueResult` (challenge: id, rewardKey, tier, title, story, schemaSql, tables[name, columns, sampleRows, rowCount], hintCount, expiresAt) or a refusal reason |
+| `challenge_preview` | reply | ref, now, result: `RunResult` (columns, rows ≤5, truncated) or SQL error feedback / refusal |
+| `challenge_result` | reply | ref, now, result: `SubmitResult` (`correct` / `wrong` + feedback + lockedUntil / `locked` / `rejected`) |
+| `challenge_abandoned` | reply | ref, now |
+| `challenge_error` | reply | ref?, now, code `bad_message`, message |
 | `scoreboard` | 1 Hz | top N banked |
 | `vault_progress` | on change | bankId, locksOpen/total |
 | `pong` | — | t |
+
+Challenge replies echo the request's `ref` and carry the server clock `now` (epoch ms); all lockout/expiry times (`lockedUntil`, `retryAt`, `expiresAt`) are server time. Challenge messages are JSON text frames (≤16 kB). For the Phase 4 demo they travel on `ws://<host>:8080/ws/challenge` (player id assigned by the server per connection); Phase 5 moves them onto the game connection.
 
 Never sent: reference SQL, other players' challenge content.
 

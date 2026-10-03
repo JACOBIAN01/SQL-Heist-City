@@ -251,3 +251,28 @@
   border: 1px solid var(--sqlp-border);
   border-radius: 4px;
 }
+
+/* Work pane */
+.sqlp-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.sqlp-result {
+  margin-top: 12px;
+}
+.sqlp-msg {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--sqlp-border);
+}
+.sqlp-msg.error,
+.sqlp-msg.wrong {
+  border-color: var(--sqlp-bad);
+  color: var(--sqlp-bad);
+}
+.sqlp-msg.ok {
+  border-color: var(--sqlp-ok);
+  color: var(--sqlp-ok);
+}
