@@ -115,7 +115,7 @@ Goal: LeetCode-style, non-blocking panel, demo against real server.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 4.1 | Panel shell (layout, open/minimise, translucent overlay) | opens over a dummy canvas | ✅ Done |
-| 4.2 | Problem pane (story, schema, sample rows) | renders a server payload | ⬜ |
+| 4.2 | Problem pane (story, schema, sample rows) | renders a server payload | ✅ Done |
 | 4.3 | CodeMirror SQL editor | typing + highlighting works | ⬜ |
 | 4.4 | Run (free preview) wired to server | preview rows shown | ⬜ |
 | 4.5 | Submit wired + result/feedback display | ✔/✘ shown | ⬜ |
