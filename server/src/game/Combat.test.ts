@@ -303,3 +303,74 @@ describe('Combat: death and respawn', () => {
     expect(b.player.body.z).toBeLessThan(z);
   });
 });
+
+describe('Combat: lag compensation', () => {
+  /** The target runs sideways at 10 m/s (0.5 m per tick). `fireAt` is where the shooter aims. */
+  function chase(viewLagMs: number, ticksBack: number) {
+    const { match, spawn } = arena();
+    const a = spawn('A', 0, 0);
+    const b = spawn('B', 0, -10);
+    const x = (tick: number) => tick * 0.5;
+    const history = 12;
+    for (let tick = 1; tick <= history; tick++) {
+      b.player.body.x = x(tick);
+      match.step();
+    }
+    // Next step is tick 13. The target is now at x(13); the shooter's screen showed x(13 − ticksBack).
+    b.player.body.x = x(13);
+    a.player.body.x = x(13 - ticksBack) - 0.55; // aim origin = body.x + 0.55
+    match.receiveInput(a.player.id, [fire({ viewLagMs })]);
+    match.step();
+    return { hp: b.player.hp };
+  }
+
+  it('hits where the target was on the shooter’s screen', () => {
+    // 100 ms = 2 ticks back
+    expect(chase(100, 2).hp).toBe(exact.maxHp - 28);
+  });
+
+  it('misses without compensation: aiming at where the target was, with no lag declared', () => {
+    expect(chase(0, 2).hp).toBe(exact.maxHp);
+  });
+
+  it('blends between ticks for lags that are not a whole number of ticks', () => {
+    // 125 ms = 2.5 ticks back
+    expect(chase(125, 2.5).hp).toBe(exact.maxHp - 28);
+  });
+
+  it('caps the rewind, so claiming a huge lag does not reach back further than the limit', () => {
+    // 200 ms = 4 ticks is allowed...
+    expect(chase(200, 4).hp).toBe(exact.maxHp - 28);
+    // ...but a client claiming 1 s of lag still only rewinds 4 ticks: aiming 8 ticks back misses.
+    expect(chase(1000, 8).hp).toBe(exact.maxHp);
+  });
+
+  it('forgets the past on respawn instead of blending the old spot into the spawn point', () => {
+    const { match, spawn } = arena(open, { ...exact, respawnDelaySec: 0.1 });
+    const a = spawn('A', 0, 0);
+    const b = spawn('B', 0.55, -10);
+    b.player.protectedUntilTick = 0;
+    for (let i = 0; i < 4; i++) match.step();
+    b.player.hp = 1;
+    match.receiveInput(a.player.id, [fire()]);
+    match.step(); // B dies this tick
+    const lastOldTick = match.tick - 1;
+    while (!b.player.alive) match.step();
+    const respawnTick = match.tick;
+    b.player.protectedUntilTick = 0;
+
+    // Shoot at the point 1/3 of the way along the (bogus) old-spot → spawn line.
+    const rewind = respawnTick + 1 - 3; // 150 ms = 3 ticks back from the next step
+    const t = (rewind - lastOldTick) / (respawnTick - lastOldTick);
+    expect(t).toBeGreaterThan(0);
+    expect(t).toBeLessThan(1);
+    const aimX = 0.55 + (90 - 0.55) * t;
+    const aimZ = -10 + (90 + 10) * t;
+    a.player.body.x = aimX - 0.55;
+    a.player.body.z = aimZ + 10;
+    a.player.cooldown = 0;
+    match.receiveInput(a.player.id, [fire({ viewLagMs: 150 })]);
+    match.step();
+    expect(b.player.hp).toBe(exact.respawnHp);
+  });
+});

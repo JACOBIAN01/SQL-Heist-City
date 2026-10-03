@@ -26,6 +26,7 @@ import {
   type ShotTarget,
   type SnapshotMessage,
 } from '@heist/shared';
+import { LagCompensator } from './LagCompensator';
 import { Player, type PlayerConnection } from './Player';
 import { FarthestSpawnPolicy, type SpawnPolicy } from './SpawnPolicy';
 
@@ -63,10 +64,15 @@ export class Match {
   private readonly now: () => number;
   private readonly movement: MovementSettings;
   private readonly combat: CombatSettings;
+  private readonly lagComp: LagCompensator;
 
   constructor(private readonly deps: MatchDeps) {
     this.movement = deps.movement ?? DEFAULT_MOVEMENT_SETTINGS;
     this.combat = deps.combat ?? DEFAULT_COMBAT_SETTINGS;
+    // A bit more history than the rewind cap, so the oldest legal rewind is always covered.
+    this.lagComp = new LagCompensator(
+      Math.ceil((this.combat.maxLagCompMs / 1000) * deps.settings.tickRate) + 4,
+    );
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
   }
@@ -121,6 +127,7 @@ export class Match {
 
   leave(id: number): void {
     if (!this.players.delete(id)) return;
+    this.lagComp.forget(id);
     this.broadcast({ e: 'left', id });
   }
 
@@ -144,6 +151,7 @@ export class Match {
     this.dropIdlePlayers();
     this.respawnDue();
     for (const player of this.players.values()) this.applyInput(player);
+    this.recordHistory();
     this.sendSnapshots();
   }
 
@@ -218,20 +226,39 @@ export class Match {
     }
   }
 
-  /** Who a shot can hit, and where they are. (5.11 rewinds these for lag compensation.) */
-  private targetsFor(shooter: Player, _command: InputCommand): ShotTarget[] {
+  /**
+   * Who a shot can hit, and where they were *as the shooter saw them*: rewound
+   * by the lag the client reports, capped so a lying client can reach back at
+   * most `maxLagCompMs`. Only completed ticks are used, so every target is
+   * judged at the same moment regardless of processing order within a tick.
+   */
+  private targetsFor(shooter: Player, command: InputCommand): ShotTarget[] {
+    const lagMs = Math.min(command.viewLagMs, this.combat.maxLagCompMs);
+    const rewindTick = this.tick - (lagMs / 1000) * this.deps.settings.tickRate;
     const targets: ShotTarget[] = [];
     for (const p of this.players.values()) {
       if (p === shooter || !p.alive || this.isProtected(p)) continue;
-      targets.push({
-        id: p.id,
+      const pose = this.lagComp.poseAt(p.id, rewindTick) ?? {
+        x: p.body.x,
+        y: p.body.y,
+        z: p.body.z,
+        height: bodyHeight(p.body, this.movement),
+      };
+      targets.push({ id: p.id, ...pose });
+    }
+    return targets;
+  }
+
+  private recordHistory(): void {
+    for (const p of this.players.values()) {
+      if (!p.alive) continue;
+      this.lagComp.record(this.tick, p.id, {
         x: p.body.x,
         y: p.body.y,
         z: p.body.z,
         height: bodyHeight(p.body, this.movement),
       });
     }
-    return targets;
   }
 
   private damage(victim: Player, amount: number, attacker: Player): void {
@@ -252,6 +279,7 @@ export class Match {
         this.deps.map,
         [...this.players.values()].filter((o) => o !== p && o.alive).map((o) => o.body),
       );
+      this.lagComp.forget(p.id);
       Object.assign(p.body, createBody(spawn.x, 0, spawn.z));
       p.yaw = spawn.yaw;
       p.hp = this.combat.respawnHp;
