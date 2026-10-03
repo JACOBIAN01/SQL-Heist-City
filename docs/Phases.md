@@ -117,7 +117,7 @@ Goal: LeetCode-style, non-blocking panel, demo against real server.
 | 4.1 | Panel shell (layout, open/minimise, translucent overlay) | opens over a dummy canvas | ✅ Done |
 | 4.2 | Problem pane (story, schema, sample rows) | renders a server payload | ✅ Done |
 | 4.3 | CodeMirror SQL editor | typing + highlighting works | ✅ Done |
-| 4.4 | Run (free preview) wired to server | preview rows shown | ⬜ |
+| 4.4 | Run (free preview) wired to server | preview rows shown | ✅ Done |
 | 4.5 | Submit wired + result/feedback display | ✔/✘ shown | ⬜ |
 | 4.6 | Lockout countdown + hint button | lockout enforced from server value | ⬜ |
 | 4.7 | Task switcher (Heal / Gun / Vault) + draft saving | switch keeps drafts | ⬜ |
