@@ -1,6 +1,8 @@
 import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { DEFAULT_MOVEMENT_SETTINGS, SIM_DT, TEST_MAP } from '@heist/shared';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
+import { RemotePlayers } from './entities/RemotePlayers';
+import { SnapshotClock } from './net/SnapshotClock';
 import { thresholdsFor } from './entities/animation';
 import { FixedStepLoop } from './game/FixedStepLoop';
 import { LocalPlayer } from './game/LocalPlayer';
@@ -63,8 +65,19 @@ let transport: GameTransport = new WebSocketGameTransport(
 );
 if (lag > 0) transport = new DelayedTransport(transport, lag);
 const client = new GameClient(transport, { name: params.get('name') ?? 'Player' });
+const thresholds = thresholdsFor(
+  DEFAULT_MOVEMENT_SETTINGS.walkSpeed,
+  DEFAULT_MOVEMENT_SETTINGS.sprintSpeed,
+);
+const remotes = new RemotePlayers(scene, thresholds);
+const serverClock = new SnapshotClock();
 client.subscribe({
-  snapshot: (snapshot) => predicted.reconcile(snapshot.self, snapshot.ackSeq),
+  snapshot: (snapshot) => {
+    predicted.reconcile(snapshot.self, snapshot.ackSeq);
+    serverClock.observe(snapshot.tick, client.tickRate, performance.now());
+    remotes.onSnapshot((snapshot.tick * 1000) / client.tickRate, snapshot.entities);
+  },
+  event: (event) => remotes.onEvent(event),
 });
 const batcher = new InputBatcher((commands) => client.sendInput(commands));
 
@@ -77,7 +90,7 @@ const loop = new FixedStepLoop(SIM_DT, () => {
 
 const model = new CharacterModel(
   PALETTES[0] ?? { shirt: 0xd4a017, trousers: 0x222222, skin: 0xe0b48a },
-  thresholdsFor(DEFAULT_MOVEMENT_SETTINGS.walkSpeed, DEFAULT_MOVEMENT_SETTINGS.sprintSpeed),
+  thresholds,
 );
 scene.add(model.object);
 
@@ -98,6 +111,8 @@ renderer.setAnimationLoop((now) => {
   loop.advance(frameMs / 1000);
   batcher.flush(now);
   predicted.smooth(frameMs / 1000);
+  if (serverClock.ready)
+    remotes.update(serverClock.serverTimeAt(now) - INTERP_DELAY_MS, frameMs / 1000);
 
   predicted.drawPosition(loop.alpha, drawPos);
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
@@ -126,6 +141,6 @@ renderer.setAnimationLoop((now) => {
   if (now - lastOverlay > 500) {
     lastOverlay = now;
     const { calls, triangles } = renderer.info.render;
-    overlay.textContent = `${client.status} · rtt ${client.rttMs.toFixed(0)} ms · pending ${predicted.pendingCount} · corr ${predicted.lastCorrection.toFixed(3)} m · ${stats.fps.toFixed(0)} fps · worst ${stats.worstMs.toFixed(0)} ms · ${calls} calls · ${(triangles / 1000).toFixed(1)}k tris`;
+    overlay.textContent = `${client.status} · rtt ${client.rttMs.toFixed(0)} ms · players ${remotes.count + 1} · pending ${predicted.pendingCount} · corr ${predicted.lastCorrection.toFixed(3)} m · ${stats.fps.toFixed(0)} fps · worst ${stats.worstMs.toFixed(0)} ms · ${calls} calls · ${(triangles / 1000).toFixed(1)}k tris`;
   }
 });

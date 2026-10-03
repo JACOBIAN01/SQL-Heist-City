@@ -6,7 +6,8 @@
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
     "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts"
+    "start": "tsx src/main.ts",
+    "bot": "tsx src/tools/walkBot.ts"
   },
   "dependencies": {
     "@heist/shared": "*",

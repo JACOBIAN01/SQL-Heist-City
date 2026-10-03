@@ -44,6 +44,7 @@ npm run ci             # everything CI runs: format check, lint, typecheck, test
 npm run db:seed        # import content/questions/*.json (skips existing; --update to overwrite)
 npm run questions:validate   # QA gate for content files (100 seeds each)
 npm run user:create -w @heist/admin -- --email you@school.test --password '…' [--role admin|teacher]
+npm run bot -w @heist/server -- 3    # dev bots that walk in circles (needs the game server running)
 # later phases: npm run load:bots -- --players 100
 ```
 - TypeScript is pinned to 6.0.x until typescript-eslint supports 7.
