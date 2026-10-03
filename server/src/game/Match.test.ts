@@ -237,9 +237,13 @@ describe('Match: server-side movement', () => {
   it('does not move a dead player and discards their input', () => {
     const { match, player } = joined();
     player.alive = false;
+    player.respawnAtTick = Number.MAX_SAFE_INTEGER;
+    const before = player.body.z;
     match.receiveInput(player.id, batch(1, 5));
     match.step();
     expect(player.queue).toHaveLength(0);
-    expect(player.lastAppliedSeq).toBe(0);
+    // Acknowledged (so the client stops replaying it) but never simulated.
+    expect(player.lastAppliedSeq).toBe(5);
+    expect(player.body.z).toBe(before);
   });
 });

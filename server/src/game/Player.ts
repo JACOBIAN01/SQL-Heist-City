@@ -12,8 +12,6 @@ export interface PlayerConnection {
   close(code: number, reason: string): void;
 }
 
-export const MAX_HP = 100;
-
 /**
  * Server-side state of one player. The connection is behind an interface
  * (SOLID: D — Why: Match logic never touches a socket, so it is unit-tested
@@ -23,8 +21,18 @@ export class Player {
   readonly body: BodyState;
   yaw = 0;
   pitch = 0;
-  hp = MAX_HP;
+  hp: number;
   alive = true;
+  /** Weapon held (key into the combat settings). */
+  weaponId: string;
+  /** Seconds until the weapon can fire again; counts down in simulated time, not wall time. */
+  cooldown = 0;
+  /** Tick until which the player cannot be hurt. */
+  protectedUntilTick = 0;
+  /** Tick at which a dead player comes back. */
+  respawnAtTick = 0;
+  kills = 0;
+  deaths = 0;
   /** Last input sequence number applied; echoed in snapshots so the client can reconcile. */
   lastAppliedSeq = 0;
   /** Commands received but not yet applied, oldest first. */
@@ -38,7 +46,11 @@ export class Player {
     readonly connection: PlayerConnection,
     spawn: SpawnPoint,
     now: number,
+    hp: number,
+    weaponId: string,
   ) {
+    this.hp = hp;
+    this.weaponId = weaponId;
     this.body = createBody(spawn.x, 0, spawn.z);
     this.yaw = spawn.yaw;
     this.lastHeardAt = now;

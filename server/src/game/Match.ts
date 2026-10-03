@@ -1,10 +1,21 @@
 import {
+  Button,
+  DEFAULT_COMBAT_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
   Flag,
   PROTOCOL_VERSION,
   SIM_DT,
+  SeededRng,
+  aimDirection,
+  aimOrigin,
+  bodyHeight,
+  createBody,
   encodeServerMessage,
+  hasButton,
+  resolveShot,
+  seedOf,
   stepBody,
+  type CombatSettings,
   type EntityState,
   type GameEvent,
   type GameMap,
@@ -12,6 +23,7 @@ import {
   type MatchSettings,
   type MovementSettings,
   type ServerMessage,
+  type ShotTarget,
   type SnapshotMessage,
 } from '@heist/shared';
 import { Player, type PlayerConnection } from './Player';
@@ -29,6 +41,9 @@ export interface MatchDeps {
   readonly map: GameMap;
   readonly settings: MatchSettings;
   readonly movement?: MovementSettings;
+  readonly combat?: CombatSettings;
+  /** Seeds bullet spread so a match is reproducible in tests. */
+  readonly seed?: string;
   readonly spawnPolicy?: SpawnPolicy;
   /** Wall-clock ms (idle timeouts only; the simulation runs on ticks). */
   readonly now?: () => number;
@@ -47,9 +62,11 @@ export class Match {
   private readonly spawnPolicy: SpawnPolicy;
   private readonly now: () => number;
   private readonly movement: MovementSettings;
+  private readonly combat: CombatSettings;
 
   constructor(private readonly deps: MatchDeps) {
     this.movement = deps.movement ?? DEFAULT_MOVEMENT_SETTINGS;
+    this.combat = deps.combat ?? DEFAULT_COMBAT_SETTINGS;
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
   }
@@ -74,7 +91,16 @@ export class Match {
       this.deps.map,
       [...this.players.values()].map((p) => p.body),
     );
-    const player = new Player(id, cleanName(rawName, id), connection, spawn, this.now());
+    const player = new Player(
+      id,
+      cleanName(rawName, id),
+      connection,
+      spawn,
+      this.now(),
+      this.combat.maxHp,
+      this.combat.sandboxWeapon,
+    );
+    player.protectedUntilTick = this.tick + this.ticksFor(this.combat.spawnProtectionSec);
     this.players.set(id, player);
 
     this.sendTo(player, {
@@ -116,6 +142,7 @@ export class Match {
   step(): void {
     this.tick++;
     this.dropIdlePlayers();
+    this.respawnDue();
     for (const player of this.players.values()) this.applyInput(player);
     this.sendSnapshots();
   }
@@ -127,6 +154,9 @@ export class Match {
    */
   private applyInput(player: Player): void {
     if (!player.alive) {
+      // Nothing is simulated while dead, but acknowledge what arrived so the client stops replaying it.
+      const newest = player.queue.at(-1);
+      if (newest) player.lastAppliedSeq = newest.seq;
       player.queue.length = 0;
       return;
     }
@@ -138,7 +168,105 @@ export class Match {
       player.yaw = command.yaw;
       player.pitch = command.pitch;
       player.lastAppliedSeq = command.seq;
+      player.cooldown = Math.max(0, player.cooldown - SIM_DT);
+      // Tolerance: eight 1/60 s steps must exactly cover a 450 rpm cooldown despite float error.
+      if (hasButton(command.buttons, Button.Fire) && player.cooldown <= 1e-9) {
+        this.fire(player, command);
+      }
     }
+  }
+
+  /**
+   * Hitscan: each pellet is a ray from the shooter's aim origin. The server
+   * decides everything (what is hit, damage, kills); the client only sends
+   * where it was aiming.
+   */
+  private fire(shooter: Player, command: InputCommand): void {
+    const weapon = this.combat.weapons[shooter.weaponId];
+    if (!weapon) return;
+    shooter.cooldown += 60 / weapon.rpm;
+
+    const origin = aimOrigin(shooter.body, command.yaw, this.movement);
+    const targets = this.targetsFor(shooter, command);
+    const rng = new SeededRng(
+      seedOf(this.deps.seed ?? 'match', this.tick, shooter.id, command.seq),
+    );
+
+    for (let pellet = 0; pellet < weapon.pellets; pellet++) {
+      // Random point in a cone: uniform over the disc, so spread is not biased to the centre.
+      const radius = weapon.spread * Math.sqrt(rng.next());
+      const angle = rng.next() * Math.PI * 2;
+      const dir = aimDirection(
+        command.yaw + (radius * Math.cos(angle)) / Math.max(0.2, Math.cos(command.pitch)),
+        command.pitch + radius * Math.sin(angle),
+      );
+      const result = resolveShot(this.deps.map, origin, dir, weapon.range, targets, this.combat);
+      this.broadcast({
+        e: 'shot',
+        shooter: shooter.id,
+        endX: result.end.x,
+        endY: result.end.y,
+        endZ: result.end.z,
+        hit: result.hit,
+        target: result.target,
+      });
+      if (result.hit === 'miss') continue;
+      const victim = this.players.get(result.target);
+      if (!victim) continue;
+      const damage = weapon.damage * (result.hit === 'head' ? this.combat.headshotMultiplier : 1);
+      this.damage(victim, damage, shooter);
+    }
+  }
+
+  /** Who a shot can hit, and where they are. (5.11 rewinds these for lag compensation.) */
+  private targetsFor(shooter: Player, _command: InputCommand): ShotTarget[] {
+    const targets: ShotTarget[] = [];
+    for (const p of this.players.values()) {
+      if (p === shooter || !p.alive || this.isProtected(p)) continue;
+      targets.push({
+        id: p.id,
+        x: p.body.x,
+        y: p.body.y,
+        z: p.body.z,
+        height: bodyHeight(p.body, this.movement),
+      });
+    }
+    return targets;
+  }
+
+  private damage(victim: Player, amount: number, attacker: Player): void {
+    if (!victim.alive || this.isProtected(victim)) return;
+    victim.hp = Math.max(0, victim.hp - Math.round(amount));
+    if (victim.hp > 0) return;
+    victim.alive = false;
+    victim.deaths++;
+    attacker.kills++;
+    victim.respawnAtTick = this.tick + this.ticksFor(this.combat.respawnDelaySec);
+    this.broadcast({ e: 'kill', killer: attacker.id, victim: victim.id });
+  }
+
+  private respawnDue(): void {
+    for (const p of this.players.values()) {
+      if (p.alive || this.tick < p.respawnAtTick) continue;
+      const spawn = this.spawnPolicy.pick(
+        this.deps.map,
+        [...this.players.values()].filter((o) => o !== p && o.alive).map((o) => o.body),
+      );
+      Object.assign(p.body, createBody(spawn.x, 0, spawn.z));
+      p.yaw = spawn.yaw;
+      p.hp = this.combat.respawnHp;
+      p.alive = true;
+      p.cooldown = 0;
+      p.protectedUntilTick = this.tick + this.ticksFor(this.combat.spawnProtectionSec);
+    }
+  }
+
+  private isProtected(player: Player): boolean {
+    return this.tick < player.protectedUntilTick;
+  }
+
+  private ticksFor(seconds: number): number {
+    return Math.round(seconds * this.deps.settings.tickRate);
   }
 
   private dropIdlePlayers(): void {
@@ -153,7 +281,7 @@ export class Match {
 
   private sendSnapshots(): void {
     const entities: EntityState[] = [];
-    for (const p of this.players.values()) entities.push(entityOf(p));
+    for (const p of this.players.values()) entities.push(entityOf(p, this.isProtected(p)));
     for (const player of this.players.values()) {
       const others = entities.filter((e) => e.id !== player.id);
       const b = player.body;
@@ -168,7 +296,7 @@ export class Match {
           vx: b.vx,
           vy: b.vy,
           vz: b.vz,
-          flags: flagsOf(player),
+          flags: flagsOf(player, this.isProtected(player)),
           hp: player.hp,
         },
         entities: others,
@@ -196,15 +324,16 @@ export class Match {
   }
 }
 
-export function flagsOf(player: Player): number {
+export function flagsOf(player: Player, isProtected = false): number {
   let flags = 0;
+  if (isProtected) flags |= Flag.Protected;
   if (player.body.crouching) flags |= Flag.Crouching;
   if (player.body.onGround) flags |= Flag.OnGround;
   if (player.alive) flags |= Flag.Alive;
   return flags;
 }
 
-function entityOf(p: Player): EntityState {
+function entityOf(p: Player, isProtected: boolean): EntityState {
   return {
     id: p.id,
     x: p.body.x,
@@ -212,7 +341,7 @@ function entityOf(p: Player): EntityState {
     z: p.body.z,
     yaw: p.yaw,
     pitch: p.pitch,
-    flags: flagsOf(p),
+    flags: flagsOf(p, isProtected),
     hp: p.hp,
   };
 }

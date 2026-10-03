@@ -139,7 +139,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 5.7 | Server-side movement + collisions | no wall-walking | ✅ Done |
 | 5.8 | Client prediction + reconciliation | no rubber-band at 100 ms | ✅ Done |
 | 5.9 | Remote player interpolation | smooth other players | ✅ Done |
-| 5.10 | Weapon fire (hitscan) + hit validation | hits registered by server | ⬜ |
+| 5.10 | Weapon fire (hitscan) + hit validation | hits registered by server | ✅ Done |
 | 5.11 | Lag compensation | hits land at 100 ms latency | ⬜ |
 | 5.12 | Health, death, respawn | full kill cycle works | ⬜ |
 
