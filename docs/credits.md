@@ -15,3 +15,10 @@ Weapon, heal, ammo, vault and cash icons come from [game-icons.net](https://game
 | Cash (fallback) | Lorc | cash |
 
 Files live in `client/src/ui/icons/svg/`.
+
+## Characters and animations
+The player model and its animations are from [Quaternius](https://quaternius.com), released under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) (public domain; credit not required but given gladly):
+- **Universal Base Characters** (Superhero male and female, hairstyles)
+- **Universal Animation Library** (idle, walk, jog, sprint, crouch, jump, death, hit, pistol clips)
+
+Modified: simplified to ~5k triangles, body split into recolourable skin/shirt/trousers/shoes parts, textures shrunk to WebP, 13 clips kept. Build steps: `tools/characters/README.md`.

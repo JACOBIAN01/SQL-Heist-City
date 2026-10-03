@@ -1,0 +1,13 @@
+{
+  "name": "@heist/character-tools",
+  "description": "Offline build of the Quaternius character GLBs (not part of CI)",
+  "type": "module",
+  "dependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "meshoptimizer": "^1.3.0",
+    "sharp": "^0.35.5"
+  },
+  "private": true
+}
