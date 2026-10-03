@@ -130,7 +130,7 @@ Goal: movement and combat feel good with 2+ real players.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 5.1 | Test map + lighting | scene renders at 60 fps | ⬜ |
+| 5.1 | Test map + lighting | scene renders at 60 fps (11 draw calls, ~600 tris) | ✅ Done |
 | 5.2 | Local movement (walk, run, jump, crouch) | feels responsive | ⬜ |
 | 5.3 | Third-person camera + pointer lock | smooth orbit/aim | ⬜ |
 | 5.4 | Character model + animations | idle/walk/run play | ⬜ |
