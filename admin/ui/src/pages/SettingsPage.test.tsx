@@ -38,13 +38,16 @@ describe('SettingsPage', () => {
     const lockout = await screen.findByLabelText(/Lockout after a wrong answer/);
     await user.clear(lockout);
     await user.type(lockout, '15');
+    await user.selectOptions(screen.getByLabelText(/How hint costs are charged/), 'absolute');
     await user.click(screen.getByRole('button', { name: 'Save rules' }));
     await user.selectOptions(await screen.findByLabelText('gun:rifle min'), '2');
     await user.click(screen.getByRole('button', { name: 'Save tiers' }));
 
     await screen.findAllByText('Saved ✓');
     const settingsPut = calls.find((c) => c.method === 'PUT' && c.path === '/config/settings');
-    expect(settingsPut?.body).toMatchObject({ challenges: { lockoutSec: 15 } });
+    expect(settingsPut?.body).toMatchObject({
+      challenges: { lockoutSec: 15, hintCostMode: 'absolute' },
+    });
     const rewardsPut = calls.find((c) => c.path === '/config/reward-map' && c.method === 'PUT');
     expect(
       (rewardsPut?.body as { rewards: { key: string; min: number }[] }).rewards,

@@ -9,7 +9,9 @@ import {
 import { useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
 
-const FIELDS: { key: keyof ChallengeSettings; label: string; unit: string }[] = [
+type NumericKey = Exclude<keyof ChallengeSettings, 'hintCostMode'>;
+
+const FIELDS: { key: NumericKey; label: string; unit: string }[] = [
   { key: 'lockoutSec', label: 'Lockout after a wrong answer', unit: 's' },
   { key: 'ttlSec', label: 'Challenge expires after', unit: 's' },
   { key: 'runCooldownMs', label: 'Min gap between "Run" presses', unit: 'ms' },
@@ -72,6 +74,22 @@ function ChallengeSettingsCard({ editable }: { editable: boolean }) {
           )}
         </label>
       ))}
+      <label>
+        How hint costs are charged
+        <select
+          disabled={!editable}
+          value={form.hintCostMode}
+          onChange={(e) =>
+            setForm({ ...form, hintCostMode: e.target.value as ChallengeSettings['hintCostMode'] })
+          }
+        >
+          <option value="fraction">Fraction of carried cash (0.05 = 5%)</option>
+          <option value="absolute">Fixed amount</option>
+        </select>
+        {form.hintCostMode !== defaults.hintCostMode && (
+          <span className="muted">default {defaults.hintCostMode}</span>
+        )}
+      </label>
       <ErrorMessage error={save.error} />
       {editable && (
         <div className="row">
