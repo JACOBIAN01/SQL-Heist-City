@@ -22,6 +22,14 @@ export const movementSettingsSchema = z.object({
   radius: z.number().positive().default(0.35),
   standHeight: z.number().positive().default(1.8),
   crouchHeight: z.number().positive().default(1.1),
+  /**
+   * Where the camera pivots / bullets leave, measured from the feet (m), and the
+   * sideways shoulder offset. Shared so the crosshair and the server's shot
+   * start from the exact same line.
+   */
+  eyeHeight: z.number().positive().default(1.55),
+  crouchEyeHeight: z.number().positive().default(1.0),
+  shoulder: z.number().min(0).default(0.55),
   /** Highest ledge walked up without jumping (stairs, kerbs). */
   stepHeight: z.number().min(0).default(0.35),
 });

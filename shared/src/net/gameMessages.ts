@@ -46,6 +46,8 @@ export const Flag = {
   OnGround: 2,
   Alive: 4,
   Firing: 8,
+  /** Spawn protection: cannot be hurt. */
+  Protected: 16,
 } as const;
 
 /** The receiving player's own full state: enough to rewind and replay prediction. */
