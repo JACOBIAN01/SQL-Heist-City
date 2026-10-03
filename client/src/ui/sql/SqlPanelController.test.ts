@@ -4,6 +4,7 @@ import { FakeChallengeApi, sampleChallenge } from '../../testing/FakeChallengeAp
 import { SqlPanel } from './SqlPanel';
 import type { HintReveal } from '@heist/shared';
 import { SqlPanelController, type SolvedInfo } from './SqlPanelController';
+import type { TaskOption } from './TaskSwitcher';
 
 let host: HTMLElement;
 let panel: SqlPanel;
@@ -29,15 +30,21 @@ const button = (label: RegExp) =>
     label.test(b.textContent ?? ''),
   ) as HTMLButtonElement;
 const flush = () => new Promise((r) => setTimeout(r, 0));
+const task = (key: string, target?: string): TaskOption => ({
+  key,
+  label: key,
+  group: key.split(':')[0] ?? key,
+  ...(target === undefined ? {} : { target }),
+});
 
 async function started(sql = 'SELECT name FROM employees') {
-  await controller.start('heist:test');
+  await controller.start(task('heist:test'));
   controller['work'].editor.setValue(sql);
 }
 
 describe('SqlPanelController: starting a task', () => {
   it("opens the panel on the server's challenge: header, story and tables", async () => {
-    await controller.start('heal:small', 'self');
+    await controller.start(task('heal:small', 'self'));
     expect(api.calls[0]).toEqual({ method: 'request', args: ['heal:small', 'self'] });
     expect(panel.state).toBe('open');
     expect(panel.slots.title.textContent).toBe('Payroll Leak');
@@ -48,7 +55,7 @@ describe('SqlPanelController: starting a task', () => {
 
   it("shows the server's refusal in plain words and keeps Run disabled", async () => {
     api.onRequest = async () => ({ ok: false, reason: 'no_questions' });
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
     expect($('.sqlp-problem').textContent).toMatch(/No questions are available/);
     expect(button(/Run/).disabled).toBe(true);
   });
@@ -57,7 +64,7 @@ describe('SqlPanelController: starting a task', () => {
     api.onRequest = async () => {
       throw new ChallengeConnectionError('down');
     };
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
     expect($('.sqlp-problem').textContent).toMatch(/Cannot reach the game server/);
   });
 });
@@ -172,7 +179,7 @@ describe('SqlPanelController: Submit (graded)', () => {
   it('a new task unlocks the editor again', async () => {
     await started();
     await controller.submit();
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
     expect($('.cm-content').getAttribute('aria-readonly')).toBeNull();
   });
 
@@ -216,9 +223,74 @@ describe('SqlPanelController: Submit (graded)', () => {
   });
 });
 
+describe('SqlPanelController: switching tasks and drafts', () => {
+  const rebuild = (tasks: TaskOption[]) => {
+    controller.destroy();
+    panel.destroy();
+    host.replaceChildren();
+    panel = new SqlPanel(host);
+    controller = new SqlPanelController({ panel, api, tasks });
+  };
+  const tasks = [task('heal:small'), task('gun:rifle'), task('vault:bank-1:lock-1', 'bank-1')];
+  const typed = () => controller['work'].editor.getValue();
+  const type = (text: string) =>
+    controller['work'].editor['view'].dispatch({
+      changes: { from: 0, to: controller['work'].editor['view'].state.doc.length, insert: text },
+      userEvent: 'input.type',
+    });
+
+  it('lists the tasks in the header and starts the chosen one with a fresh request', async () => {
+    rebuild(tasks);
+    await controller.start(tasks[0] as TaskOption);
+    const select = $('select.sqlp-select') as HTMLSelectElement;
+    expect(select.value).toBe('heal:small');
+    select.value = 'vault:bank-1:lock-1';
+    select.dispatchEvent(new Event('change'));
+    await flush();
+    expect(api.calls.filter((c) => c.method === 'request').map((c) => c.args)).toEqual([
+      ['heal:small', undefined],
+      ['vault:bank-1:lock-1', 'bank-1'],
+    ]);
+  });
+
+  it("keeps each task's draft when switching away and back", async () => {
+    rebuild(tasks);
+    await controller.start(tasks[0] as TaskOption);
+    type('SELECT heal');
+    await controller.start(tasks[1] as TaskOption);
+    expect(typed()).toBe('');
+    type('SELECT rifle');
+    await controller.start(tasks[0] as TaskOption);
+    expect(typed()).toBe('SELECT heal');
+    await controller.start(tasks[1] as TaskOption);
+    expect(typed()).toBe('SELECT rifle');
+  });
+
+  it('drops the draft once that task is solved', async () => {
+    rebuild(tasks);
+    await controller.start(tasks[0] as TaskOption);
+    type('SELECT 1');
+    await controller.submit();
+    await controller.start(tasks[0] as TaskOption);
+    expect(typed()).toBe('');
+  });
+
+  it('gets a new question every time, even for the same task', async () => {
+    rebuild(tasks);
+    let n = 0;
+    api.onRequest = async () => ({ ok: true, challenge: sampleChallenge({ id: `c${++n}` }) });
+    await controller.start(tasks[0] as TaskOption);
+    await controller.start(tasks[0] as TaskOption);
+    expect(api.calls.filter((c) => c.method === 'request')).toHaveLength(2);
+    controller['work'].editor.setValue('SELECT 1');
+    await controller.run();
+    expect(api.calls.at(-1)).toEqual({ method: 'run', args: ['c2', 'SELECT 1'] });
+  });
+});
+
 describe('SqlPanelController: hints', () => {
   it('shows what the next hint costs before it is taken', async () => {
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
     expect(button(/Hint/).textContent).toBe('Hint 1/2 · −5% of your cash');
   });
 
@@ -229,7 +301,7 @@ describe('SqlPanelController: hints', () => {
     host.replaceChildren();
     panel = new SqlPanel(host);
     controller = new SqlPanelController({ panel, api, onHintCharged: (h) => charged.push(h) });
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
 
     button(/Hint 1/).click();
     await flush();
@@ -254,7 +326,7 @@ describe('SqlPanelController: hints', () => {
     host.replaceChildren();
     panel = new SqlPanel(host);
     controller = new SqlPanelController({ panel, api, onHintCharged: (h) => charged.push(h) });
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
     api.onHint = async (_id, index) => ({
       ok: true,
       hint: { index, text: 'again', cost: 0.05, costMode: 'fraction', charged: false },
@@ -266,10 +338,10 @@ describe('SqlPanelController: hints', () => {
 
   it('hides the button for tasks without hints and after the task is solved', async () => {
     api.onRequest = async () => ({ ok: true, challenge: sampleChallenge({ hintCosts: [] }) });
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
     expect(button(/Hint/).hidden).toBe(true);
     api.onRequest = async () => ({ ok: true, challenge: sampleChallenge() });
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
     expect(button(/Hint/).hidden).toBe(false);
     controller['work'].editor.setValue('SELECT 1');
     await controller.submit();
@@ -277,7 +349,7 @@ describe('SqlPanelController: hints', () => {
   });
 
   it('shows a refusal message and connection errors', async () => {
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
     api.onHint = async () => ({ ok: false, reason: 'expired' });
     await controller.hint();
     expect($('.sqlp-msg.error').textContent).toMatch(/expired/);
@@ -348,7 +420,7 @@ describe('SqlPanelController: lockout countdown', () => {
     await started('SELECT 1');
     api.onSubmit = wrong(api.clock + 10_000);
     await controller.submit();
-    await controller.start('heal:small');
+    await controller.start(task('heal:small'));
     expect(button(/Submit/).disabled).toBe(false);
     expect(controller['ticker']).toBeUndefined();
   });
@@ -359,6 +431,6 @@ it('uses a sample challenge for the header bar text', async () => {
     ok: true,
     challenge: sampleChallenge({ title: 'Heist 1', tier: 3 }),
   });
-  await controller.start('vault:bank-1:lock-1');
+  await controller.start(task('vault:bank-1:lock-1'));
   expect(panel.slots.tier.textContent).toBe('T3');
 });

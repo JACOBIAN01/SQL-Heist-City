@@ -288,3 +288,18 @@
   padding-left: 10px;
   margin-bottom: 8px;
 }
+
+.sqlp-select {
+  font: inherit;
+  color: var(--sqlp-text);
+  background: var(--sqlp-panel);
+  border: 1px solid var(--sqlp-border);
+  border-radius: 6px;
+  padding: 3px 6px;
+  max-width: 180px;
+}
+.sqlp-select option,
+.sqlp-select optgroup {
+  background: #1b1f27;
+  color: var(--sqlp-text);
+}

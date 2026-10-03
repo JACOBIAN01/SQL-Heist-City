@@ -1,10 +1,12 @@
 import type { HintReveal, PublicChallenge, RunResult, SubmitResult } from '@heist/shared';
 import { ChallengeConnectionError, type ChallengeApi } from '../../net/ChallengeApi';
 import { h } from '../dom';
+import { MemoryDraftStore, type DraftStore } from './DraftStore';
 import { hintCostText, rewardLabel } from './labels';
 import { CONNECTION_MESSAGE, hintFailureMessage, reasonMessage } from './messages';
 import { ProblemPane } from './ProblemPane';
 import type { SqlPanel } from './SqlPanel';
+import { TaskSwitcher, type TaskOption } from './TaskSwitcher';
 import { WorkPane } from './WorkPane';
 
 export interface SolvedInfo {
@@ -19,6 +21,10 @@ export interface SqlPanelControllerDeps {
   readonly onSolved?: (info: SolvedInfo) => void;
   /** A hint was revealed for the first time; the game deducts its cost (once). */
   readonly onHintCharged?: (hint: HintReveal) => void;
+  /** Tasks the player can switch between (heal, guns, vault locks…). */
+  readonly tasks?: readonly TaskOption[];
+  /** Where unsent queries are remembered per task. Defaults to memory. */
+  readonly drafts?: DraftStore;
 }
 
 // Pattern: Facade — Why: the game talks to one object ("start a task") while
@@ -32,21 +38,41 @@ export class SqlPanelController {
   /** End of the server's wrong-answer lockout (server clock, epoch ms); 0 = not locked. */
   private lockedUntil = 0;
   private revealed: HintReveal[] = [];
+  private task: TaskOption | null = null;
+  private readonly drafts: DraftStore;
+  private readonly switcher: TaskSwitcher;
   private ticker: ReturnType<typeof setInterval> | undefined;
 
   constructor(private readonly deps: SqlPanelControllerDeps) {
+    this.drafts = deps.drafts ?? new MemoryDraftStore();
+    this.switcher = new TaskSwitcher(
+      deps.panel.slots.switcher,
+      deps.tasks ?? [],
+      (task) => void this.start(task),
+    );
     this.problem = new ProblemPane(deps.panel.slots.problem);
     this.work = new WorkPane(deps.panel.slots.work, {
       onRun: () => void this.run(),
       onSubmit: () => void this.submit(),
       onHint: () => void this.hint(),
+      // Every keystroke is remembered under the current task, so switching away and back keeps it.
+      onChange: (text) => {
+        if (this.task) this.drafts.set(this.task.key, text);
+      },
     });
     this.problem.showMessage('No task yet.');
   }
 
-  /** Asks the server for a task and opens the panel on it. */
-  async start(rewardKey: string, target?: string): Promise<void> {
+  /**
+   * Asks the server for a task and opens the panel on it. Starting a different
+   * task drops the old question (the server issues a new one); what the
+   * player typed for each task is kept.
+   */
+  async start(task: TaskOption): Promise<void> {
     const { panel, api } = this.deps;
+    this.task = task;
+    this.switcher.setCurrent(task.key);
+    this.work.editor.setValue(this.drafts.get(task.key));
     this.challenge = null;
     this.revealed = [];
     this.work.setHint(null);
@@ -57,7 +83,7 @@ export class SqlPanelController {
     panel.open();
     this.setBusy(true);
     try {
-      const result = await api.request(rewardKey, target);
+      const result = await api.request(task.key, task.target);
       if (!result.ok) {
         this.problem.showMessage(reasonMessage(result.reason, this.secondsUntil(result.retryAt)));
         return;
@@ -152,6 +178,7 @@ export class SqlPanelController {
     const view = this.work.result;
     switch (result.status) {
       case 'correct':
+        if (this.task) this.drafts.clear(this.task.key);
         this.challenge = null;
         this.work.setHint(null);
         this.clearLockout();

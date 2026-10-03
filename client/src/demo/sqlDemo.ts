@@ -2,7 +2,9 @@ import { WebSocketChallengeApi } from '../net/WebSocketChallengeApi';
 import { startSandboxScene } from '../render/sandboxScene';
 import { h } from '../ui/dom';
 import { SqlPanel } from '../ui/sql/SqlPanel';
+import { StorageDraftStore } from '../ui/sql/DraftStore';
 import { SqlPanelController } from '../ui/sql/SqlPanelController';
+import type { TaskOption } from '../ui/sql/TaskSwitcher';
 import '../ui/sql/sqlPanel.css';
 
 /**
@@ -17,21 +19,39 @@ const hud = document.getElementById('demo-hud') as HTMLElement;
 const status = h('div', { text: 'The world keeps running behind the panel.' });
 const serverPort = new URLSearchParams(location.search).get('server') ?? '8080';
 const api = new WebSocketChallengeApi(`ws://${location.hostname}:${serverPort}/ws/challenge`);
+// In the real game the host builds this list from the player's situation
+// (hurt? holding a weapon? standing at a vault door?).
+const tasks: TaskOption[] = [
+  { key: 'heal:small', label: 'Small heal', group: 'Heal' },
+  { key: 'heal:medium', label: 'Medium heal', group: 'Heal' },
+  { key: 'heal:full', label: 'Full heal', group: 'Heal' },
+  { key: 'ammo:refill', label: 'Ammo refill', group: 'Ammo' },
+  { key: 'gun:pistol', label: 'Pistol', group: 'Gun' },
+  { key: 'gun:smg', label: 'SMG', group: 'Gun' },
+  { key: 'gun:rifle', label: 'Rifle', group: 'Gun' },
+  { key: 'gun:sniper', label: 'Sniper', group: 'Gun' },
+  { key: 'vault:bank-3:lock-1', label: 'Bank 3 · lock 1', group: 'Vault', target: 'bank-3' },
+  { key: 'vault:bank-3:lock-2', label: 'Bank 3 · lock 2', group: 'Vault', target: 'bank-3' },
+];
 const panel = new SqlPanel(document.body);
 const controller = new SqlPanelController({
   panel,
   api,
+  tasks,
+  drafts: new StorageDraftStore(sessionStorage),
   onHintCharged: (hint) =>
     (status.textContent = `Hint ${hint.index + 1} revealed → game would charge ${hint.cost} (${hint.costMode})`),
   onSolved: ({ rewardKey }) =>
     (status.textContent = `Server accepted the answer → game would grant: ${rewardKey}`),
 });
 
-const start = (label: string, rewardKey: string) =>
-  h('button', { text: label, on: { click: () => void controller.start(rewardKey) } });
+const start = (label: string, key: string) => {
+  const task = tasks.find((t) => t.key === key) as TaskOption;
+  return h('button', { text: label, on: { click: () => void controller.start(task) } });
+};
 hud.append(
-  start('Heal +20 (tier 1)', 'heal:small'),
-  start('Rifle (tier 4)', 'gun:rifle'),
+  start('Heal', 'heal:small'),
+  start('Rifle', 'gun:rifle'),
   start('Vault: bank 3, lock 1', 'vault:bank-3:lock-1'),
   status,
 );
