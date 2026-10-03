@@ -10,6 +10,8 @@ import { DEFAULT_MOVEMENT_SETTINGS, SIM_DT, TEST_MAP } from '@heist/shared';
 import { FixedStepLoop } from './game/FixedStepLoop';
 import { LocalPlayer } from './game/LocalPlayer';
 import { InputSampler } from './input/InputSampler';
+import { PointerLock } from './input/PointerLock';
+import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
@@ -38,8 +40,17 @@ window.addEventListener('resize', resize);
 const spawn = TEST_MAP.spawns[0] ?? { x: 0, z: 0, yaw: 0 };
 const player = new LocalPlayer(TEST_MAP, DEFAULT_MOVEMENT_SETTINGS, spawn);
 const input = new InputSampler();
-input.setLooking(true); // 5.3 ties this to pointer lock; until then mouse always turns the view.
 input.setLook(spawn.yaw);
+const hint = document.createElement('div');
+hint.textContent =
+  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · Esc release mouse';
+hint.style.cssText =
+  'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
+document.body.appendChild(hint);
+new PointerLock(renderer.domElement, input, (locked) => {
+  hint.hidden = locked;
+});
+const rig = new CameraRig(camera, TEST_MAP);
 const loop = new FixedStepLoop(SIM_DT, () => player.apply(input.sample()));
 
 // 5.2 placeholder body and chase camera; replaced by the model (5.4) and camera rig (5.3).
@@ -73,9 +84,15 @@ renderer.setAnimationLoop((now) => {
   body.position.set(drawPos.x, drawPos.y + height / 2, drawPos.z);
   body.rotation.y = input.currentYaw;
 
-  const yaw = input.currentYaw;
-  camera.position.set(drawPos.x + Math.sin(yaw) * 5, drawPos.y + 3, drawPos.z + Math.cos(yaw) * 5);
-  camera.lookAt(drawPos.x, drawPos.y + 1.4, drawPos.z);
+  rig.update(
+    drawPos.x,
+    drawPos.y,
+    drawPos.z,
+    input.currentYaw,
+    input.currentPitch,
+    frameMs / 1000,
+    player.body.crouching,
+  );
   lighting.follow(body);
   renderer.render(scene, camera);
 

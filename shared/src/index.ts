@@ -14,3 +14,4 @@ export * from './world/testMap';
 export * from './config/movement';
 export * from './sim/input';
 export * from './sim/movement';
+export * from './world/raycast';
