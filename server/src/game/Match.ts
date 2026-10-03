@@ -1,12 +1,16 @@
 import {
+  DEFAULT_MOVEMENT_SETTINGS,
   Flag,
   PROTOCOL_VERSION,
+  SIM_DT,
   encodeServerMessage,
+  stepBody,
   type EntityState,
   type GameEvent,
   type GameMap,
   type InputCommand,
   type MatchSettings,
+  type MovementSettings,
   type ServerMessage,
   type SnapshotMessage,
 } from '@heist/shared';
@@ -24,6 +28,7 @@ export type JoinResult =
 export interface MatchDeps {
   readonly map: GameMap;
   readonly settings: MatchSettings;
+  readonly movement?: MovementSettings;
   readonly spawnPolicy?: SpawnPolicy;
   /** Wall-clock ms (idle timeouts only; the simulation runs on ticks). */
   readonly now?: () => number;
@@ -41,8 +46,10 @@ export class Match {
   private nextId = 1;
   private readonly spawnPolicy: SpawnPolicy;
   private readonly now: () => number;
+  private readonly movement: MovementSettings;
 
   constructor(private readonly deps: MatchDeps) {
+    this.movement = deps.movement ?? DEFAULT_MOVEMENT_SETTINGS;
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
   }
@@ -91,7 +98,7 @@ export class Match {
     this.broadcast({ e: 'left', id });
   }
 
-  /** Called with decoded input; applied on the next tick (movement arrives in 5.7). */
+  /** Called with decoded input; applied on the next tick. */
   receiveInput(id: number, commands: readonly InputCommand[]): void {
     const player = this.players.get(id);
     if (!player) return;
@@ -109,7 +116,29 @@ export class Match {
   step(): void {
     this.tick++;
     this.dropIdlePlayers();
+    for (const player of this.players.values()) this.applyInput(player);
     this.sendSnapshots();
+  }
+
+  /**
+   * Applies at most `maxCommandsPerTick` queued commands, in order, with the
+   * same movement step the client predicts with. The cap is the speed-hack
+   * guard: a client cannot move further by sending more commands than time allows.
+   */
+  private applyInput(player: Player): void {
+    if (!player.alive) {
+      player.queue.length = 0;
+      return;
+    }
+    const budget = Math.min(this.deps.settings.maxCommandsPerTick, player.queue.length);
+    for (let i = 0; i < budget; i++) {
+      const command = player.queue.shift();
+      if (!command) break;
+      stepBody(player.body, command, SIM_DT, this.deps.map, this.movement);
+      player.yaw = command.yaw;
+      player.pitch = command.pitch;
+      player.lastAppliedSeq = command.seq;
+    }
   }
 
   private dropIdlePlayers(): void {
