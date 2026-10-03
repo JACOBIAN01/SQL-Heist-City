@@ -1,4 +1,5 @@
 import { h } from '../dom';
+import { createResizer } from './Resizer';
 import { ResultView } from './ResultView';
 import { SqlEditor } from './SqlEditor';
 
@@ -59,6 +60,19 @@ export class WorkPane {
 
     host.append(
       editorHost,
+      createResizer({
+        axis: 'y',
+        direction: 1,
+        label: 'Editor height',
+        read: () => editorHost.getBoundingClientRect().height,
+        apply: (px) => {
+          editorHost.style.height = `${px}px`;
+        },
+        min: () => 72,
+        max: () => window.innerHeight * 0.8,
+        reset: () => editorHost.style.removeProperty('height'),
+        storageKey: 'sqlp.editorHeight',
+      }),
       toolbar,
       h(
         'p',

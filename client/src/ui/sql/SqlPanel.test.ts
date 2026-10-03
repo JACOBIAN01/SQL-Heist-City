@@ -107,3 +107,19 @@ describe('SqlPanel', () => {
     expect(bar().textContent).toContain('02:10');
   });
 });
+
+describe('SqlPanel resizing', () => {
+  it('has handles for panel width, task/editor split only (editor height lives in the work pane)', () => {
+    const labels = [...host.querySelectorAll('[role="separator"]')].map((e) =>
+      e.getAttribute('aria-label'),
+    );
+    expect(labels).toEqual(['Panel width', 'Task and editor split']);
+  });
+
+  it('keyboard on the width handle sets the panel width variable', () => {
+    panel.open();
+    const handle = host.querySelector('[aria-label="Panel width"]') as HTMLElement;
+    handle.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    expect(root().style.getPropertyValue('--sqlp-width')).toMatch(/px$/);
+  });
+});

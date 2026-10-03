@@ -1,4 +1,5 @@
 import { h } from '../dom';
+import { createResizer } from './Resizer';
 
 export type PanelState = 'closed' | 'open' | 'minimised';
 export type PanelListener = (state: PanelState, previous: PanelState) => void;
@@ -33,6 +34,24 @@ export class SqlPanel {
     const problem = h('section', { class: 'sqlp-problem', attrs: { 'aria-label': 'Task' } });
     const work = h('section', { class: 'sqlp-work', attrs: { 'aria-label': 'Your query' } });
 
+    const body: HTMLElement = h(
+      'div',
+      { class: 'sqlp-body' },
+      problem,
+      createResizer({
+        axis: 'x',
+        direction: 1,
+        label: 'Task and editor split',
+        read: () => problem.getBoundingClientRect().width,
+        apply: (px) => body.style.setProperty('--sqlp-split', `${px}px`),
+        min: () => 140,
+        max: () => Math.max(140, body.getBoundingClientRect().width - 200),
+        reset: () => body.style.removeProperty('--sqlp-split'),
+        storageKey: 'sqlp.split',
+      }),
+      work,
+    );
+
     this.root = h(
       'aside',
       {
@@ -62,7 +81,20 @@ export class SqlPanel {
           }),
         ),
       ),
-      h('div', { class: 'sqlp-body' }, problem, work),
+      body,
+    );
+    this.root.prepend(
+      createResizer({
+        axis: 'x',
+        direction: -1,
+        label: 'Panel width',
+        read: () => this.root.getBoundingClientRect().width,
+        apply: (px) => this.root.style.setProperty('--sqlp-width', `${px}px`),
+        min: () => 360,
+        max: () => window.innerWidth * 0.95,
+        reset: () => this.root.style.removeProperty('--sqlp-width'),
+        storageKey: 'sqlp.width',
+      }),
     );
 
     this.bar = h(
