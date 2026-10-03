@@ -1,31 +1,24 @@
-import type { ReactNode } from 'react';
+import { parseInlineMarkdown } from '@heist/shared';
 
-/**
- * Renders the small Markdown subset question stories use: **bold**,
- * `code` and line breaks. Builds React elements (never innerHTML), so story
- * text can't inject markup.
- */
+/** Renders the shared inline-Markdown tokens as React elements (never innerHTML). */
 export function InlineMarkdown({ text }: { text: string }) {
-  const lines = text.split('\n');
+  const lines = parseInlineMarkdown(text);
   return (
     <>
-      {lines.map((line, i) => (
+      {lines.map((tokens, i) => (
         <span key={i}>
-          {renderInline(line)}
+          {tokens.map((t, j) =>
+            t.kind === 'bold' ? (
+              <strong key={j}>{t.text}</strong>
+            ) : t.kind === 'code' ? (
+              <code key={j}>{t.text}</code>
+            ) : (
+              t.text
+            ),
+          )}
           {i < lines.length - 1 && <br />}
         </span>
       ))}
     </>
   );
-}
-
-function renderInline(line: string): ReactNode[] {
-  const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**') && part.length > 4)
-      return <strong key={i}>{part.slice(2, -2)}</strong>;
-    if (part.startsWith('`') && part.endsWith('`') && part.length > 2)
-      return <code key={i}>{part.slice(1, -1)}</code>;
-    return part;
-  });
 }
