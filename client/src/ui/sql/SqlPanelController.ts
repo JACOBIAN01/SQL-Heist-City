@@ -1,13 +1,22 @@
-import type { PublicChallenge, RunResult } from '@heist/shared';
+import type { PublicChallenge, RunResult, SubmitResult } from '@heist/shared';
 import { ChallengeConnectionError, type ChallengeApi } from '../../net/ChallengeApi';
+import { h } from '../dom';
+import { rewardLabel } from './labels';
 import { CONNECTION_MESSAGE, reasonMessage } from './messages';
 import { ProblemPane } from './ProblemPane';
 import type { SqlPanel } from './SqlPanel';
 import { WorkPane } from './WorkPane';
 
+export interface SolvedInfo {
+  readonly rewardKey: string;
+  readonly target: string | null;
+}
+
 export interface SqlPanelControllerDeps {
   readonly panel: SqlPanel;
   readonly api: ChallengeApi;
+  /** The server accepted the answer; the game applies the reward it announces. */
+  readonly onSolved?: (info: SolvedInfo) => void;
 }
 
 // Pattern: Facade — Why: the game talks to one object ("start a task") while
@@ -21,7 +30,10 @@ export class SqlPanelController {
 
   constructor(private readonly deps: SqlPanelControllerDeps) {
     this.problem = new ProblemPane(deps.panel.slots.problem);
-    this.work = new WorkPane(deps.panel.slots.work, { onRun: () => void this.run() });
+    this.work = new WorkPane(deps.panel.slots.work, {
+      onRun: () => void this.run(),
+      onSubmit: () => void this.submit(),
+    });
     this.problem.showMessage('No task yet.');
   }
 
@@ -29,6 +41,7 @@ export class SqlPanelController {
   async start(rewardKey: string, target?: string): Promise<void> {
     const { panel, api } = this.deps;
     this.challenge = null;
+    this.work.editor.setReadOnly(false);
     this.problem.showMessage('Getting your task…');
     this.work.result.showIdle();
     panel.open();
@@ -70,8 +83,64 @@ export class SqlPanelController {
     }
   }
 
+  /** Graded attempt. The server decides; we only show its verdict. */
+  async submit(): Promise<void> {
+    const challenge = this.challenge;
+    if (!challenge || this.busy) return;
+    const sql = this.work.editor.getValue().trim();
+    if (!sql) {
+      this.work.result.showMessage('Write a query first.');
+      return;
+    }
+    this.setBusy(true);
+    this.work.result.showMessage('Checking your answer…');
+    try {
+      this.showSubmitResult(await this.deps.api.submit(challenge.id, sql));
+    } catch (err) {
+      this.work.result.showMessage(this.describe(err), 'error');
+    } finally {
+      this.setBusy(false);
+    }
+  }
+
   destroy(): void {
     this.work.destroy();
+  }
+
+  private showSubmitResult(result: SubmitResult): void {
+    const view = this.work.result;
+    switch (result.status) {
+      case 'correct':
+        this.challenge = null;
+        this.work.editor.setReadOnly(true);
+        view.showWith(
+          `✔ Correct! ${rewardLabel(result.rewardKey)} unlocked.`,
+          'ok',
+          h(
+            'p',
+            {},
+            h('button', {
+              class: 'sqlp-btn primary',
+              text: 'Continue',
+              attrs: { type: 'button' },
+              on: { click: () => this.deps.panel.close() },
+            }),
+          ),
+        );
+        this.deps.onSolved?.({ rewardKey: result.rewardKey, target: result.target });
+        return;
+      case 'wrong':
+        view.showMessage(`✘ Not quite. ${result.feedback.message}`, 'wrong');
+        return;
+      case 'locked': {
+        const seconds = this.secondsUntil(result.lockedUntil) ?? 0;
+        view.showMessage(`Locked out — try again in ${seconds} s.`, 'wrong');
+        return;
+      }
+      case 'rejected':
+        view.showMessage(reasonMessage(result.reason, this.secondsUntil(result.retryAt)), 'error');
+        return;
+    }
   }
 
   private showRunResult(result: RunResult): void {

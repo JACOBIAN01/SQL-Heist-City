@@ -13,13 +13,18 @@ import '../ui/sql/sqlPanel.css';
  */
 startSandboxScene(document.body);
 
+const hud = document.getElementById('demo-hud') as HTMLElement;
+const status = h('div', { text: 'The world keeps running behind the panel.' });
 const serverPort = new URLSearchParams(location.search).get('server') ?? '8080';
 const api = new WebSocketChallengeApi(`ws://${location.hostname}:${serverPort}/ws/challenge`);
 const panel = new SqlPanel(document.body);
-const controller = new SqlPanelController({ panel, api });
+const controller = new SqlPanelController({
+  panel,
+  api,
+  onSolved: ({ rewardKey }) =>
+    (status.textContent = `Server accepted the answer → game would grant: ${rewardKey}`),
+});
 
-const hud = document.getElementById('demo-hud') as HTMLElement;
-const status = h('div', { text: 'The world keeps running behind the panel.' });
 const start = (label: string, rewardKey: string) =>
   h('button', { text: label, on: { click: () => void controller.start(rewardKey) } });
 hud.append(

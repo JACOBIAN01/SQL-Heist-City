@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ChallengeConnectionError } from '../../net/ChallengeApi';
 import { FakeChallengeApi, sampleChallenge } from '../../testing/FakeChallengeApi';
 import { SqlPanel } from './SqlPanel';
-import { SqlPanelController } from './SqlPanelController';
+import { SqlPanelController, type SolvedInfo } from './SqlPanelController';
 
 let host: HTMLElement;
 let panel: SqlPanel;
@@ -139,6 +139,77 @@ describe('SqlPanelController: Run (free preview)', () => {
   it('does nothing before a task exists', async () => {
     await controller.run();
     expect(api.calls).toHaveLength(0);
+  });
+});
+
+describe('SqlPanelController: Submit (graded)', () => {
+  it('sends the query, shows success, announces the reward once and ends the task', async () => {
+    const solved: SolvedInfo[] = [];
+    controller.destroy();
+    panel.destroy();
+    host.replaceChildren();
+    panel = new SqlPanel(host);
+    controller = new SqlPanelController({ panel, api, onSolved: (i) => solved.push(i) });
+    await started('SELECT name FROM employees');
+    api.onSubmit = async () => ({ status: 'correct', rewardKey: 'gun:rifle', target: 'slot-1' });
+    await controller.submit();
+    expect(api.calls.at(-1)).toEqual({
+      method: 'submit',
+      args: ['c1', 'SELECT name FROM employees'],
+    });
+    expect($('.sqlp-msg.ok').textContent).toBe('✔ Correct! Rifle unlocked.');
+    expect(solved).toEqual([{ rewardKey: 'gun:rifle', target: 'slot-1' }]);
+    // The task is finished: no more runs or submits, editor locked.
+    await controller.submit();
+    await controller.run();
+    expect(api.calls.filter((c) => c.method === 'submit')).toHaveLength(1);
+    expect($('.cm-content').getAttribute('aria-readonly')).toBe('true');
+    button(/Continue/).click();
+    expect(panel.state).toBe('closed');
+  });
+
+  it('a new task unlocks the editor again', async () => {
+    await started();
+    await controller.submit();
+    await controller.start('heal:small');
+    expect($('.cm-content').getAttribute('aria-readonly')).toBeNull();
+  });
+
+  it("shows the server's feedback for a wrong answer without revealing anything else", async () => {
+    await started('SELECT 1');
+    api.onSubmit = async () => ({
+      status: 'wrong',
+      feedback: { code: 'row_count', message: 'Your query returns 5 rows; the answer has 3.' },
+      lockedUntil: api.clock + 10_000,
+    });
+    await controller.submit();
+    expect($('.sqlp-msg.wrong').textContent).toBe(
+      '✘ Not quite. Your query returns 5 rows; the answer has 3.',
+    );
+    expect(panel.state).toBe('open');
+  });
+
+  it('reports a lockout and other refusals', async () => {
+    await started();
+    api.onSubmit = async () => ({ status: 'locked', lockedUntil: api.clock + 4_200 });
+    await controller.submit();
+    expect($('.sqlp-msg.wrong').textContent).toBe('Locked out — try again in 5 s.');
+    api.onSubmit = async () => ({ status: 'rejected', reason: 'expired' });
+    await controller.submit();
+    expect($('.sqlp-msg.error').textContent).toMatch(/expired/);
+  });
+
+  it('refuses an empty query and survives a dropped connection', async () => {
+    await started('  ');
+    await controller.submit();
+    expect(api.calls.filter((c) => c.method === 'submit')).toHaveLength(0);
+    controller['work'].editor.setValue('SELECT 1');
+    api.onSubmit = async () => {
+      throw new ChallengeConnectionError('down');
+    };
+    await controller.submit();
+    expect($('.sqlp-msg.error').textContent).toMatch(/Cannot reach the game server/);
+    expect(button(/Submit/).disabled).toBe(false);
   });
 });
 
