@@ -9,3 +9,5 @@ export * from './admin/auth';
 export * from './admin/questions';
 export * from './text/inlineMarkdown';
 export * from './net/challengeMessages';
+export * from './world/map';
+export * from './world/testMap';
