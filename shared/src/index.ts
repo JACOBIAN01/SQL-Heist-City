@@ -11,3 +11,6 @@ export * from './text/inlineMarkdown';
 export * from './net/challengeMessages';
 export * from './world/map';
 export * from './world/testMap';
+export * from './config/movement';
+export * from './sim/input';
+export * from './sim/movement';
