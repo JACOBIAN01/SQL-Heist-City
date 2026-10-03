@@ -1,8 +1,8 @@
-import type { PublicChallenge, RunResult, SubmitResult } from '@heist/shared';
+import type { HintReveal, PublicChallenge, RunResult, SubmitResult } from '@heist/shared';
 import { ChallengeConnectionError, type ChallengeApi } from '../../net/ChallengeApi';
 import { h } from '../dom';
-import { rewardLabel } from './labels';
-import { CONNECTION_MESSAGE, reasonMessage } from './messages';
+import { hintCostText, rewardLabel } from './labels';
+import { CONNECTION_MESSAGE, hintFailureMessage, reasonMessage } from './messages';
 import { ProblemPane } from './ProblemPane';
 import type { SqlPanel } from './SqlPanel';
 import { WorkPane } from './WorkPane';
@@ -17,6 +17,8 @@ export interface SqlPanelControllerDeps {
   readonly api: ChallengeApi;
   /** The server accepted the answer; the game applies the reward it announces. */
   readonly onSolved?: (info: SolvedInfo) => void;
+  /** A hint was revealed for the first time; the game deducts its cost (once). */
+  readonly onHintCharged?: (hint: HintReveal) => void;
 }
 
 // Pattern: Facade — Why: the game talks to one object ("start a task") while
@@ -29,6 +31,7 @@ export class SqlPanelController {
   private busy = false;
   /** End of the server's wrong-answer lockout (server clock, epoch ms); 0 = not locked. */
   private lockedUntil = 0;
+  private revealed: HintReveal[] = [];
   private ticker: ReturnType<typeof setInterval> | undefined;
 
   constructor(private readonly deps: SqlPanelControllerDeps) {
@@ -36,6 +39,7 @@ export class SqlPanelController {
     this.work = new WorkPane(deps.panel.slots.work, {
       onRun: () => void this.run(),
       onSubmit: () => void this.submit(),
+      onHint: () => void this.hint(),
     });
     this.problem.showMessage('No task yet.');
   }
@@ -44,6 +48,8 @@ export class SqlPanelController {
   async start(rewardKey: string, target?: string): Promise<void> {
     const { panel, api } = this.deps;
     this.challenge = null;
+    this.revealed = [];
+    this.work.setHint(null);
     this.clearLockout();
     this.work.editor.setReadOnly(false);
     this.problem.showMessage('Getting your task…');
@@ -59,6 +65,7 @@ export class SqlPanelController {
       this.challenge = result.challenge;
       this.showHeader(result.challenge);
       this.problem.show(result.challenge);
+      this.refreshHintButton();
       this.work.editor.focus();
     } catch (err) {
       this.problem.showMessage(this.describe(err));
@@ -80,6 +87,28 @@ export class SqlPanelController {
     this.work.result.showMessage('Running…');
     try {
       this.showRunResult(await this.deps.api.run(challenge.id, sql));
+    } catch (err) {
+      this.work.result.showMessage(this.describe(err), 'error');
+    } finally {
+      this.setBusy(false);
+    }
+  }
+
+  /** Reveals the next hint. The server orders and charges; we show what it returns. */
+  async hint(): Promise<void> {
+    const challenge = this.challenge;
+    if (!challenge || this.busy || this.revealed.length >= challenge.hintCosts.length) return;
+    this.setBusy(true);
+    try {
+      const result = await this.deps.api.hint(challenge.id, this.revealed.length);
+      if (!result.ok) {
+        this.work.result.showMessage(hintFailureMessage(result.reason), 'error');
+        return;
+      }
+      this.revealed = [...this.revealed, result.hint];
+      this.problem.showHints(this.revealed);
+      this.refreshHintButton();
+      if (result.hint.charged) this.deps.onHintCharged?.(result.hint);
     } catch (err) {
       this.work.result.showMessage(this.describe(err), 'error');
     } finally {
@@ -124,6 +153,7 @@ export class SqlPanelController {
     switch (result.status) {
       case 'correct':
         this.challenge = null;
+        this.work.setHint(null);
         this.clearLockout();
         this.work.editor.setReadOnly(true);
         view.showWith(
@@ -214,6 +244,24 @@ export class SqlPanelController {
   private stopTicker(): void {
     clearInterval(this.ticker);
     this.ticker = undefined;
+  }
+
+  private refreshHintButton(): void {
+    const challenge = this.challenge;
+    if (
+      !challenge ||
+      challenge.hintCosts.length === 0 ||
+      this.revealed.length >= challenge.hintCosts.length
+    ) {
+      this.work.setHint(null);
+      return;
+    }
+    const n = this.revealed.length;
+    const cost = hintCostText(challenge.hintCosts[n] ?? 0, challenge.hintCostMode);
+    this.work.setHint(
+      `Hint ${n + 1}/${challenge.hintCosts.length} · ${cost}`,
+      `Reveal the next hint (${cost})`,
+    );
   }
 
   private setBusy(busy: boolean): void {

@@ -21,6 +21,8 @@ const panel = new SqlPanel(document.body);
 const controller = new SqlPanelController({
   panel,
   api,
+  onHintCharged: (hint) =>
+    (status.textContent = `Hint ${hint.index + 1} revealed → game would charge ${hint.cost} (${hint.costMode})`),
   onSolved: ({ rewardKey }) =>
     (status.textContent = `Server accepted the answer → game would grant: ${rewardKey}`),
 });

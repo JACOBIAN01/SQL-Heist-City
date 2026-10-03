@@ -91,6 +91,16 @@ export class WebSocketChallengeApi implements ChallengeApi {
     return (reply as Extract<ChallengeServerMessage, { t: 'challenge_result' }>).result;
   }
 
+  async hint(challengeId: string, index: number) {
+    const reply = await this.call('challenge_hint', (ref) => ({
+      t: 'challenge_hint',
+      ref,
+      challengeId,
+      index,
+    }));
+    return (reply as Extract<ChallengeServerMessage, { t: 'challenge_hint' }>).result;
+  }
+
   async abandon(): Promise<void> {
     await this.call('challenge_abandoned', (ref) => ({ t: 'challenge_abandon', ref }));
   }

@@ -67,6 +67,15 @@ describe('WebSocketChallengeApi', () => {
     await expect(run).resolves.toMatchObject({ ok: true });
   });
 
+  it('asks for a hint by index and returns the reveal', async () => {
+    const pending = api.hint('c1', 1);
+    await opened();
+    expect(last().sent).toEqual([{ t: 'challenge_hint', ref: 1, challengeId: 'c1', index: 1 }]);
+    const hint = { index: 1, text: 'Use WHERE', cost: 0.1, costMode: 'fraction', charged: true };
+    last().reply({ t: 'challenge_hint', ref: 1, now: 1, result: { ok: true, hint } });
+    await expect(pending).resolves.toEqual({ ok: true, hint });
+  });
+
   it('reuses one socket for several requests', async () => {
     const a = api.request('heal:small');
     await opened();

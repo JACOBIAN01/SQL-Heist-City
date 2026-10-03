@@ -8,6 +8,7 @@ export interface WorkPaneOptions {
   readonly onRun: () => void;
   /** Absent until submitting is wired; the button stays disabled. */
   readonly onSubmit?: () => void;
+  readonly onHint?: () => void;
   readonly onChange?: (value: string) => void;
 }
 
@@ -17,6 +18,7 @@ export class WorkPane {
   readonly result: ResultView;
   private readonly run: HTMLButtonElement;
   private readonly submit: HTMLButtonElement;
+  private readonly hint: HTMLButtonElement;
   private busy = false;
   private submitLocked = false;
   private readonly canSubmit: boolean;
@@ -39,7 +41,21 @@ export class WorkPane {
       },
       on: { click: () => options.onSubmit?.() },
     });
-    const toolbar = h('div', { class: 'sqlp-toolbar' }, this.run, this.submit);
+    this.hint = h('button', {
+      class: 'sqlp-btn',
+      text: 'Hint',
+      attrs: { type: 'button' },
+      on: { click: () => options.onHint?.() },
+    });
+    this.hint.hidden = true;
+    const toolbar = h(
+      'div',
+      { class: 'sqlp-toolbar' },
+      this.run,
+      this.submit,
+      h('span', { class: 'spacer' }),
+      this.hint,
+    );
 
     host.append(
       editorHost,
@@ -82,7 +98,16 @@ export class WorkPane {
     this.submit.textContent = label ?? SUBMIT_LABEL;
   }
 
+  /** Shows the next-hint button with its label, or hides it when the task has no (more) hints. */
+  setHint(label: string | null, tooltip = ''): void {
+    this.hint.hidden = label === null;
+    if (label !== null) this.hint.textContent = label;
+    this.hint.title = tooltip;
+    this.refreshButtons();
+  }
+
   private refreshButtons(): void {
+    this.hint.disabled = this.busy;
     this.run.disabled = this.busy;
     this.submit.disabled = this.busy || this.submitLocked || !this.canSubmit;
   }

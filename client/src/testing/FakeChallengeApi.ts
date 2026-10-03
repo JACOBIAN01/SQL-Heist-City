@@ -1,4 +1,10 @@
-import type { IssueResult, PublicChallenge, RunResult, SubmitResult } from '@heist/shared';
+import type {
+  HintResult,
+  IssueResult,
+  PublicChallenge,
+  RunResult,
+  SubmitResult,
+} from '@heist/shared';
 import type { ChallengeApi } from '../net/ChallengeApi';
 
 export function sampleChallenge(over: Partial<PublicChallenge> = {}): PublicChallenge {
@@ -36,6 +42,22 @@ export class FakeChallengeApi implements ChallengeApi {
     rewardKey: 'heal:small',
     target: null,
   });
+
+  onHint: (id: string, index: number) => Promise<HintResult> = async (_id, index) => ({
+    ok: true,
+    hint: {
+      index,
+      text: `Hint number ${index + 1}`,
+      cost: [0.05, 0.1][index] ?? 0,
+      costMode: 'fraction',
+      charged: true,
+    },
+  });
+
+  hint(id: string, index: number): Promise<HintResult> {
+    this.calls.push({ method: 'hint', args: [id, index] });
+    return this.onHint(id, index);
+  }
 
   request(rewardKey: string, target?: string): Promise<IssueResult> {
     this.calls.push({ method: 'request', args: [rewardKey, target] });

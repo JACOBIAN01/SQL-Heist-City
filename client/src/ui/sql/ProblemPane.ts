@@ -1,13 +1,22 @@
-import { parseInlineMarkdown, type PublicChallenge, type PublicTable } from '@heist/shared';
+import {
+  parseInlineMarkdown,
+  type HintReveal,
+  type PublicChallenge,
+  type PublicTable,
+} from '@heist/shared';
 import { clear, h } from '../dom';
 import { dataTable } from './DataTable';
+import { hintCostText } from './labels';
 
 /** Left pane: the task text, then the tables the query will run against. */
 export class ProblemPane {
+  private hints: HTMLElement | null = null;
+
   constructor(private readonly host: HTMLElement) {}
 
   show(challenge: PublicChallenge): void {
     clear(this.host);
+    this.hints = h('div', { class: 'sqlp-hints' });
     this.host.append(
       h('h2', { class: 'sqlp-h2', text: 'Task' }),
       story(challenge.story),
@@ -19,13 +28,36 @@ export class ProblemPane {
         h('summary', { text: 'Show CREATE TABLE statements' }),
         h('pre', { text: challenge.schemaSql }),
       ),
+      this.hints,
     );
     this.host.scrollTop = 0;
+  }
+
+  /** Shows the hints revealed so far, in order, with what each one cost. */
+  showHints(revealed: readonly HintReveal[]): void {
+    if (!this.hints) return;
+    clear(this.hints);
+    if (revealed.length === 0) return;
+    this.hints.append(
+      h('h2', { class: 'sqlp-h2', text: 'Hints' }),
+      ...revealed.map((hint) =>
+        h(
+          'div',
+          { class: 'sqlp-hint' },
+          h('div', {
+            class: 'sqlp-muted',
+            text: `Hint ${hint.index + 1} · ${hintCostText(hint.cost, hint.costMode)}`,
+          }),
+          h('p', { class: 'sqlp-line', text: hint.text }),
+        ),
+      ),
+    );
   }
 
   /** Placeholder text while there is no challenge (loading, error, expired). */
   showMessage(text: string): void {
     clear(this.host);
+    this.hints = null;
     this.host.append(h('p', { class: 'sqlp-muted', text }));
   }
 }

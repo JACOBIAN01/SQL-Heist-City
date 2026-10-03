@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChallengeConnectionError } from '../../net/ChallengeApi';
 import { FakeChallengeApi, sampleChallenge } from '../../testing/FakeChallengeApi';
 import { SqlPanel } from './SqlPanel';
+import type { HintReveal } from '@heist/shared';
 import { SqlPanelController, type SolvedInfo } from './SqlPanelController';
 
 let host: HTMLElement;
@@ -212,6 +213,79 @@ describe('SqlPanelController: Submit (graded)', () => {
     await controller.submit();
     expect($('.sqlp-msg.error').textContent).toMatch(/Cannot reach the game server/);
     expect(button(/Submit/).disabled).toBe(false);
+  });
+});
+
+describe('SqlPanelController: hints', () => {
+  it('shows what the next hint costs before it is taken', async () => {
+    await controller.start('heal:small');
+    expect(button(/Hint/).textContent).toBe('Hint 1/2 · −5% of your cash');
+  });
+
+  it('reveals hints in order, shows them in the task, announces the charge once', async () => {
+    const charged: HintReveal[] = [];
+    controller.destroy();
+    panel.destroy();
+    host.replaceChildren();
+    panel = new SqlPanel(host);
+    controller = new SqlPanelController({ panel, api, onHintCharged: (h) => charged.push(h) });
+    await controller.start('heal:small');
+
+    button(/Hint 1/).click();
+    await flush();
+    expect(api.calls.at(-1)).toEqual({ method: 'hint', args: ['c1', 0] });
+    expect($('.sqlp-hints').textContent).toContain('Hint number 1');
+    expect(button(/Hint/).textContent).toBe('Hint 2/2 · −10% of your cash');
+
+    button(/Hint 2/).click();
+    await flush();
+    expect(api.calls.at(-1)).toEqual({ method: 'hint', args: ['c1', 1] });
+    expect([...host.querySelectorAll('.sqlp-hint')]).toHaveLength(2);
+    expect(host.querySelector('.sqlp-toolbar button:last-child')?.hasAttribute('hidden')).toBe(
+      true,
+    );
+    expect(charged.map((h) => h.index)).toEqual([0, 1]);
+  });
+
+  it('does not announce a charge for a repeated (free) hint', async () => {
+    const charged: HintReveal[] = [];
+    controller.destroy();
+    panel.destroy();
+    host.replaceChildren();
+    panel = new SqlPanel(host);
+    controller = new SqlPanelController({ panel, api, onHintCharged: (h) => charged.push(h) });
+    await controller.start('heal:small');
+    api.onHint = async (_id, index) => ({
+      ok: true,
+      hint: { index, text: 'again', cost: 0.05, costMode: 'fraction', charged: false },
+    });
+    await controller.hint();
+    expect(charged).toEqual([]);
+    expect($('.sqlp-hints').textContent).toContain('again');
+  });
+
+  it('hides the button for tasks without hints and after the task is solved', async () => {
+    api.onRequest = async () => ({ ok: true, challenge: sampleChallenge({ hintCosts: [] }) });
+    await controller.start('heal:small');
+    expect(button(/Hint/).hidden).toBe(true);
+    api.onRequest = async () => ({ ok: true, challenge: sampleChallenge() });
+    await controller.start('heal:small');
+    expect(button(/Hint/).hidden).toBe(false);
+    controller['work'].editor.setValue('SELECT 1');
+    await controller.submit();
+    expect(button(/Hint/).hidden).toBe(true);
+  });
+
+  it('shows a refusal message and connection errors', async () => {
+    await controller.start('heal:small');
+    api.onHint = async () => ({ ok: false, reason: 'expired' });
+    await controller.hint();
+    expect($('.sqlp-msg.error').textContent).toMatch(/expired/);
+    api.onHint = async () => {
+      throw new ChallengeConnectionError('down');
+    };
+    await controller.hint();
+    expect($('.sqlp-msg.error').textContent).toMatch(/Cannot reach the game server/);
   });
 });
 

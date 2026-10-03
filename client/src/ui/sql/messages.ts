@@ -1,4 +1,4 @@
-import type { RejectReason } from '@heist/shared';
+import type { HintResult, RejectReason } from '@heist/shared';
 
 /** Player-facing wording for server refusals. Wording only — the rules live on the server. */
 export function reasonMessage(reason: RejectReason, secondsUntilRetry?: number): string {
@@ -24,3 +24,10 @@ export function reasonMessage(reason: RejectReason, secondsUntilRetry?: number):
 
 export const CONNECTION_MESSAGE =
   'Cannot reach the game server. Check your connection and try again.';
+
+/** Wording for a refused hint request. */
+export function hintFailureMessage(reason: Extract<HintResult, { ok: false }>['reason']): string {
+  if (reason === 'no_such_hint') return 'There are no more hints for this task.';
+  if (reason === 'out_of_order') return 'Reveal the earlier hint first.';
+  return reasonMessage(reason);
+}

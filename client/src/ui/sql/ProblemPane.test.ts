@@ -66,4 +66,16 @@ describe('ProblemPane', () => {
     pane.showMessage('Loading…');
     expect(host.textContent).toBe('Loading…');
   });
+
+  it('lists revealed hints with their cost, and clears them for a new task', () => {
+    pane.show(challenge);
+    pane.showHints([
+      { index: 0, text: 'Use `WHERE`', cost: 0.05, costMode: 'fraction', charged: true },
+      { index: 1, text: 'Compare salary', cost: 250, costMode: 'absolute', charged: true },
+    ]);
+    const hints = [...host.querySelectorAll('.sqlp-hint')].map((h) => h.textContent);
+    expect(hints).toEqual(['Hint 1 · −5% of your cashUse `WHERE`', 'Hint 2 · −$250Compare salary']);
+    pane.show(challenge);
+    expect(host.querySelectorAll('.sqlp-hint')).toHaveLength(0);
+  });
 });

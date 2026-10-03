@@ -14,6 +14,12 @@ const LABELS: Readonly<Record<string, string>> = {
   'gun:sniper': 'Sniper',
 };
 
+/** How much a hint costs, in the units the server says (never decided here). */
+export function hintCostText(cost: number, mode: 'fraction' | 'absolute'): string {
+  if (cost <= 0) return 'free';
+  return mode === 'fraction' ? `−${Math.round(cost * 100)}% of your cash` : `−$${cost}`;
+}
+
 const VAULT_KEY = /^vault:bank-(\d+):lock-(\d+)$/;
 
 export function rewardLabel(rewardKey: string): string {

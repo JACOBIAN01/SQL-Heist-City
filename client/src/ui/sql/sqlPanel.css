@@ -276,3 +276,15 @@
   border-color: var(--sqlp-ok);
   color: var(--sqlp-ok);
 }
+
+.sqlp-toolbar .spacer {
+  flex: 1;
+}
+.sqlp-hints {
+  margin-top: 16px;
+}
+.sqlp-hint {
+  border-left: 3px solid var(--sqlp-accent);
+  padding-left: 10px;
+  margin-bottom: 8px;
+}
