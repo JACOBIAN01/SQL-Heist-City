@@ -9,6 +9,8 @@ interface Remote {
   readonly buffer: SnapshotInterpolator;
   readonly model: CharacterModel;
   name: string;
+  /** Where the model was last drawn; shot trails start here. */
+  position: { x: number; y: number; z: number };
   /** Snapshots since this player was last listed. */
   missed: number;
 }
@@ -31,6 +33,10 @@ export class RemotePlayers {
 
   get count(): number {
     return this.remotes.size;
+  }
+
+  positionOf(id: number): { x: number; y: number; z: number } | undefined {
+    return this.remotes.get(id)?.position;
   }
 
   nameOf(id: number): string {
@@ -74,6 +80,7 @@ export class RemotePlayers {
       const alive = (pose.flags & Flag.Alive) !== 0;
       remote.model.object.visible = alive;
       remote.model.object.position.set(pose.x, pose.y, pose.z);
+      remote.position = { x: pose.x, y: pose.y, z: pose.z };
       remote.model.object.rotation.y = pose.yaw;
       remote.model.update(
         {
@@ -93,6 +100,7 @@ export class RemotePlayers {
       buffer: new SnapshotInterpolator(),
       model: new CharacterModel(palette, this.thresholds),
       name: this.names.get(id) ?? `Player ${id}`,
+      position: { x: 0, y: 0, z: 0 },
       missed: 0,
     };
     this.scene.add(remote.model.object);

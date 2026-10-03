@@ -3,7 +3,10 @@ import type { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 import {
+  Button,
+  DEFAULT_COMBAT_SETTINGS,
   DEFAULT_MATCH_SETTINGS,
+  Flag,
   PROTOCOL_VERSION,
   TEST_MAP,
   decodeServerMessage,
@@ -143,5 +146,45 @@ describe('GameSocket', () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
     }
     expect([...match.players.values()][0]?.queue).toHaveLength(1);
+  });
+
+  it('plays a full kill cycle over real sockets: shoot, die, respawn', async () => {
+    const a = await connect();
+    a.join('Ana');
+    await a.waitFor((m) => m.t === 'welcome');
+    const b = await connect();
+    b.join('Ben');
+    await b.waitFor((m) => m.t === 'welcome');
+    const [pa, pb] = [...match.players.values()];
+    if (!pa || !pb) throw new Error('players missing');
+    pa.body.x = 0;
+    pa.body.z = 0;
+    pa.protectedUntilTick = 0;
+    pb.body.x = 0.55; // the bullet leaves 0.55 m to the right of the shooter (shoulder)
+    pb.body.z = -10;
+    pb.protectedUntilTick = 0;
+    pb.hp = 20;
+
+    a.ws.send(
+      encodeClientMessage({
+        t: 'input',
+        commands: [
+          { seq: 1, moveX: 0, moveY: 0, yaw: 0, pitch: 0, buttons: Button.Fire, viewLagMs: 0 },
+        ],
+      }),
+    );
+    for (let i = 0; i < 50 && pa.queue.length === 0 && pa.lastAppliedSeq === 0; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    match.step();
+    const kill = await b.waitFor((m) => m.t === 'event' && m.event.e === 'kill');
+    expect(kill).toMatchObject({ event: { killer: pa.id, victim: pb.id } });
+    const dead = await b.waitFor((m) => m.t === 'snapshot' && (m.self.flags & Flag.Alive) === 0);
+    expect(dead.t === 'snapshot' && dead.self.hp).toBe(0);
+
+    const delay = DEFAULT_COMBAT_SETTINGS.respawnDelaySec * DEFAULT_MATCH_SETTINGS.tickRate;
+    for (let i = 0; i < delay; i++) match.step();
+    expect(pb.alive).toBe(true);
+    expect(pb.hp).toBe(DEFAULT_COMBAT_SETTINGS.respawnHp);
   });
 });

@@ -1,5 +1,10 @@
 import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { DEFAULT_MOVEMENT_SETTINGS, SIM_DT, TEST_MAP } from '@heist/shared';
+import {
+  DEFAULT_COMBAT_SETTINGS,
+  DEFAULT_MOVEMENT_SETTINGS,
+  SIM_DT,
+  TEST_MAP,
+} from '@heist/shared';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { RemotePlayers } from './entities/RemotePlayers';
 import { SnapshotClock } from './net/SnapshotClock';
@@ -12,6 +17,9 @@ import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './
 import { InputBatcher } from './net/InputBatcher';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
+import { CombatFeedback } from './game/CombatFeedback';
+import { Tracers } from './render/Tracers';
+import { Hud } from './ui/hud/Hud';
 import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
 import { addLighting } from './render/lighting';
@@ -49,7 +57,7 @@ const hint = document.createElement('div');
 hint.textContent =
   'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · Esc release mouse';
 hint.style.cssText =
-  'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
+  'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
 new PointerLock(renderer.domElement, input, (locked) => {
   hint.hidden = locked;
@@ -71,20 +79,42 @@ const thresholds = thresholdsFor(
 );
 const remotes = new RemotePlayers(scene, thresholds);
 const serverClock = new SnapshotClock();
+const hud = new Hud(document.body);
+const tracers = new Tracers(scene);
+const playerName = params.get('name') ?? 'Player';
+const feedback = new CombatFeedback({
+  hud,
+  tracers,
+  map: TEST_MAP,
+  movement: DEFAULT_MOVEMENT_SETTINGS,
+  combat: DEFAULT_COMBAT_SETTINGS,
+  myId: () => client.playerId,
+  myName: () => playerName,
+  nameOf: (id) => remotes.nameOf(id),
+  positionOf: (id) => remotes.positionOf(id),
+});
 client.subscribe({
   snapshot: (snapshot) => {
     predicted.reconcile(snapshot.self, snapshot.ackSeq);
+    feedback.onSnapshot(snapshot.self, performance.now() / 1000);
     serverClock.observe(snapshot.tick, client.tickRate, performance.now());
     remotes.onSnapshot((snapshot.tick * 1000) / client.tickRate, snapshot.entities);
   },
-  event: (event) => remotes.onEvent(event),
+  event: (event) => {
+    remotes.onEvent(event);
+    feedback.onEvent(event);
+  },
 });
 const batcher = new InputBatcher((commands) => client.sendInput(commands));
 
 // Move now (prediction); the server confirms or corrects later. Offline play still works.
 const loop = new FixedStepLoop(SIM_DT, () => {
   const command = input.sample();
-  predicted.predict(command);
+  // Dead players do not move (the server ignores their input too); keep sending so it can acknowledge it.
+  if (feedback.isAlive) {
+    predicted.predict(command);
+    feedback.onLocalCommand(command, player.body);
+  }
   batcher.push(command);
 });
 
@@ -111,10 +141,12 @@ renderer.setAnimationLoop((now) => {
   loop.advance(frameMs / 1000);
   batcher.flush(now);
   predicted.smooth(frameMs / 1000);
+  tracers.update(frameMs / 1000);
   if (serverClock.ready)
     remotes.update(serverClock.serverTimeAt(now) - INTERP_DELAY_MS, frameMs / 1000);
 
   predicted.drawPosition(loop.alpha, drawPos);
+  model.object.visible = feedback.isAlive;
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
   model.object.rotation.y = input.currentYaw;
   model.update(
