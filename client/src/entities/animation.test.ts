@@ -6,8 +6,9 @@ const t = thresholdsFor(4, 7);
 describe('selectAnimation', () => {
   it.each([
     [{ speed: 0, crouching: false, onGround: true }, 'idle'],
-    [{ speed: 4, crouching: false, onGround: true }, 'walk'],
-    [{ speed: 6.5, crouching: false, onGround: true }, 'run'],
+    [{ speed: 1.5, crouching: false, onGround: true }, 'walk'],
+    [{ speed: 4, crouching: false, onGround: true }, 'jog'],
+    [{ speed: 6.5, crouching: false, onGround: true }, 'sprint'],
     [{ speed: 0, crouching: true, onGround: true }, 'crouch'],
     [{ speed: 2, crouching: true, onGround: true }, 'crouchWalk'],
     [{ speed: 6, crouching: false, onGround: false }, 'air'],

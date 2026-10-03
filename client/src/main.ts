@@ -7,6 +7,8 @@ import {
 } from '@heist/shared';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { RemotePlayers } from './entities/RemotePlayers';
+import { loadCharacterAssets, gltfCharacterFactory } from './entities/characterAssets';
+import type { CharacterFactory } from './entities/CharacterRig';
 import { SnapshotClock } from './net/SnapshotClock';
 import { thresholdsFor } from './entities/animation';
 import { FixedStepLoop } from './game/FixedStepLoop';
@@ -78,7 +80,23 @@ const thresholds = thresholdsFor(
   DEFAULT_MOVEMENT_SETTINGS.walkSpeed,
   DEFAULT_MOVEMENT_SETTINGS.sprintSpeed,
 );
-const remotes = new RemotePlayers(scene, thresholds);
+// Real humans if the character files load; the placeholder boxes otherwise (offline, blocked asset, old browser).
+const assets = await loadCharacterAssets().catch((error: unknown) => {
+  console.warn('character models unavailable, using placeholders', error);
+  return undefined;
+});
+const createRig: CharacterFactory = assets
+  ? gltfCharacterFactory(assets, thresholds)
+  : (seed) =>
+      new CharacterModel(
+        PALETTES[Math.abs(seed) % PALETTES.length] ?? {
+          shirt: 0xd4a017,
+          trousers: 0x222222,
+          skin: 0xe0b48a,
+        },
+        thresholds,
+      );
+const remotes = new RemotePlayers(scene, createRig);
 const serverClock = new SnapshotClock();
 const hud = new Hud(document.body);
 const tracers = new Tracers(scene);
@@ -123,10 +141,7 @@ const loop = new FixedStepLoop(SIM_DT, () => {
   batcher.push(command);
 });
 
-const model = new CharacterModel(
-  PALETTES[0] ?? { shirt: 0xd4a017, trousers: 0x222222, skin: 0xe0b48a },
-  thresholds,
-);
+const model = createRig(0);
 scene.add(model.object);
 
 const stats = new FrameStats();

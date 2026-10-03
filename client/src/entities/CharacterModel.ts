@@ -5,6 +5,7 @@ import {
   type AnimationThresholds,
   type MotionState,
 } from './animation';
+import type { CharacterRig } from './CharacterRig';
 
 export interface CharacterPalette {
   readonly shirt: number;
@@ -50,7 +51,7 @@ interface Pose {
  * with distance walked, so feet never skate (Phase 9 swaps in a skinned glTF
  * behind the same `update` interface).
  */
-export class CharacterModel {
+export class CharacterModel implements CharacterRig {
   readonly root = new Group();
   /** Exposed so tests (and later hit-box debugging) can read the pose. */
   readonly body = new Group();
@@ -117,8 +118,9 @@ export class CharacterModel {
     const swing = Math.sin(this.phase);
     switch (animation) {
       case 'walk':
+      case 'jog':
         return { armSwing: -swing * 0.6, legSwing: swing * 0.7, armLift: 0, drop: 0, lean: 0.04 };
-      case 'run':
+      case 'sprint':
         return { armSwing: -swing * 1.0, legSwing: swing * 1.1, armLift: 0, drop: 0.03, lean: 0.2 };
       case 'crouch':
         return { armSwing: 0, legSwing: 0, armLift: 0, drop: 0.35, lean: 0.25 };

@@ -83,14 +83,14 @@ Entry: `client/src/main.ts` (composition root); try it with the server running: 
 | Loop | `game/FixedStepLoop.ts` | simulation in fixed 1/60 s steps whatever the frame rate |
 | Prediction | `game/LocalPlayer.ts`, `game/PredictedPlayer.ts` | runs the shared movement step locally; on each snapshot rewinds to the server state and replays unacknowledged input; real corrections glide, teleports snap |
 | Camera (Strategy) | `render/CameraRig.ts` | over-the-shoulder, pulls in against walls, same pivot the server shoots from |
-| Character | `entities/CharacterModel.ts`, `entities/animation.ts` | six-box procedural student, clip chosen from motion; stride follows distance walked |
+| Character (Strategy, Factory) | `entities/CharacterRig.ts`, `GltfCharacter.ts`, `characterAssets.ts`, `animation.ts`, `CharacterModel.ts` | rigged human (Quaternius, CC0): ~5k triangles, 3 draw calls, shared animation clips cross-faded by motion, per-player shirt/trousers/shoes colours and skin tone painted in the shader by a per-vertex region code. `CharacterModel` (six boxes) remains as the fallback if the files fail to load |
 | Network (Adapter, Decorator, Observer) | `net/GameTransport.ts`, `net/GameClient.ts`, `net/InputBatcher.ts`, `net/SnapshotClock.ts` | binary WebSocket, RTT ping, ~30 input batches/s, server-clock estimate; `DelayedTransport` adds artificial lag |
 | Remote players | `net/SnapshotInterpolator.ts`, `entities/RemotePlayers.ts` | per-player snapshot buffer drawn 100 ms in the past, blended between real snapshots |
 | Combat feedback | `game/CombatFeedback.ts`, `render/Tracers.ts` (Object Pool), `ui/hud/Hud.ts` | own trail drawn at once, others' from server events; hit marker, damage flash, kill feed, death screen. Presentation only |
 
 Shooting practice: the server spawns `sandboxDummies` (default 2) stationary dummies that respawn where they stand; add `?debug` to the URL to draw every other player's server hit-box (green body, red head slice).
 
-Frame budget now: ~19 draw calls with one other player (each character is 6), < 1k triangles; bundle 289 kB gzipped. See backlog for the character draw-call plan.
+Frame budget now: ~37 draw calls and ~65k triangles (shadow pass included) with six characters; bundle ~295 kB gzipped plus ~1 MB of character files (`client/public/characters/`, built by `tools/characters/`). See backlog for the low-detail model plan.
 
 ## Testing
 Unit (Vitest): codec, interpolation, prediction. UI: Playwright smoke for pop-up flow against a mock server. Perf: scripted fly-through logs fps/draw calls via `renderer.info` (Phase 8+).

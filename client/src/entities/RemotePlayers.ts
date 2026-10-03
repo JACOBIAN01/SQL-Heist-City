@@ -2,12 +2,11 @@ import type { Scene } from 'three';
 import type { EntityState, GameEvent } from '@heist/shared';
 import { Flag } from '@heist/shared';
 import { SnapshotInterpolator } from '../net/SnapshotInterpolator';
-import { CharacterModel, PALETTES } from './CharacterModel';
-import type { AnimationThresholds } from './animation';
+import type { CharacterFactory, CharacterRig } from './CharacterRig';
 
 interface Remote {
   readonly buffer: SnapshotInterpolator;
-  readonly model: CharacterModel;
+  readonly model: CharacterRig;
   name: string;
   /** Where the model was last drawn; shot trails start here. */
   position: { x: number; y: number; z: number };
@@ -30,7 +29,7 @@ export class RemotePlayers {
 
   constructor(
     private readonly scene: Scene,
-    private readonly thresholds: AnimationThresholds,
+    private readonly createRig: CharacterFactory,
   ) {}
 
   get count(): number {
@@ -110,11 +109,9 @@ export class RemotePlayers {
   }
 
   private spawn(id: number): Remote {
-    const palette = PALETTES[id % PALETTES.length] ?? PALETTES[0];
-    if (!palette) throw new Error('no palettes defined');
     const remote: Remote = {
       buffer: new SnapshotInterpolator(),
-      model: new CharacterModel(palette, this.thresholds),
+      model: this.createRig(id),
       name: this.names.get(id) ?? `Player ${id}`,
       position: { x: 0, y: 0, z: 0 },
       flags: 0,

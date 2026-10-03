@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Scene } from 'three';
 import { Flag, type EntityState } from '@heist/shared';
 import { RemotePlayers } from './RemotePlayers';
+import { CharacterModel, PALETTES } from './CharacterModel';
 import { thresholdsFor } from './animation';
 
 const entity = (id: number, x: number, over: Partial<EntityState> = {}): EntityState => ({
@@ -18,7 +19,17 @@ const entity = (id: number, x: number, over: Partial<EntityState> = {}): EntityS
 
 const make = () => {
   const scene = new Scene();
-  return { scene, remotes: new RemotePlayers(scene, thresholdsFor(4, 7)) };
+  return {
+    scene,
+    remotes: new RemotePlayers(
+      scene,
+      (seed) =>
+        new CharacterModel(
+          PALETTES[seed % PALETTES.length] ?? PALETTES[0] ?? { shirt: 0, trousers: 0, skin: 0 },
+          thresholdsFor(4, 7),
+        ),
+    ),
+  };
 };
 
 describe('RemotePlayers', () => {

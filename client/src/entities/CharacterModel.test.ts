@@ -32,9 +32,9 @@ describe('CharacterModel', () => {
     m.update(still, 0.016);
     expect(m.animation).toBe('idle');
     m.update({ ...still, speed: 4 }, 0.016);
-    expect(m.animation).toBe('walk');
+    expect(m.animation).toBe('jog');
     m.update({ ...still, speed: 7 }, 0.016);
-    expect(m.animation).toBe('run');
+    expect(m.animation).toBe('sprint');
   });
 
   it('swings legs in opposite directions while walking', () => {
