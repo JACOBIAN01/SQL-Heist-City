@@ -2,7 +2,9 @@
 
 Multiplayer browser game: students in an empty city rob 5 banks, but every vault lock, heal, and gun costs a SQL question — while other players shoot them. Teachers manage all questions through an admin backend.
 
-**Status:** Phase 4 — building the SQL pop-up UI.
+**Status:** Phase 4 complete (SQL pop-up UI) — awaiting review.
+
+Try the panel: `npm run dev:admin` once (creates the DB), `npm run db:seed`, then `npm run dev:server` and `npm run dev:client` → http://localhost:5173/sql-demo.html
 
 ```
 npm install

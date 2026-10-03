@@ -21,7 +21,7 @@
 | 1 | Question engine | ✅ Done |
 | 2 | Admin backend + UI | ✅ Done |
 | 3 | Seed content (150 questions) | ✅ Done |
-| 4 | SQL pop-up UI | 🟦 In progress |
+| 4 | SQL pop-up UI | 🟨 In review |
 | 5 | Walk & shoot sandbox | ⬜ |
 | 6 | Scale core (60/100/200) | ⬜ |
 | 7 | Heist loop v1 | ⬜ |
@@ -109,7 +109,7 @@ Goal: ship 150 curated, editable questions.
 | 3.9 | User spot-check in admin UI | user approves content | ✅ Done |
 
 ---
-## Phase 4 — SQL pop-up UI  🟦
+## Phase 4 — SQL pop-up UI  🟨
 Goal: LeetCode-style, non-blocking panel, demo against real server.
 
 | # | Subphase | Done when | Status |
