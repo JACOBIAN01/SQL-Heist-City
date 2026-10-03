@@ -31,6 +31,9 @@ export class Player {
   protectedUntilTick = 0;
   /** Tick at which a dead player comes back. */
   respawnAtTick = 0;
+  /** Sandbox target: has no client, never moves, respawns at `home`. */
+  isDummy = false;
+  home: SpawnPoint | undefined;
   kills = 0;
   deaths = 0;
   /** Last input sequence number applied; echoed in snapshots so the client can reconcile. */

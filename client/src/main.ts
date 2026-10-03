@@ -18,6 +18,7 @@ import { InputBatcher } from './net/InputBatcher';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
 import { CombatFeedback } from './game/CombatFeedback';
+import { HitboxDebug } from './entities/HitboxDebug';
 import { Tracers } from './render/Tracers';
 import { Hud } from './ui/hud/Hud';
 import { CameraRig } from './render/CameraRig';
@@ -81,6 +82,10 @@ const remotes = new RemotePlayers(scene, thresholds);
 const serverClock = new SnapshotClock();
 const hud = new Hud(document.body);
 const tracers = new Tracers(scene);
+// ?debug draws the server's hit-boxes around other players.
+const hitboxes = params.has('debug')
+  ? new HitboxDebug(scene, DEFAULT_COMBAT_SETTINGS, DEFAULT_MOVEMENT_SETTINGS)
+  : undefined;
 const playerName = params.get('name') ?? 'Player';
 const feedback = new CombatFeedback({
   hud,
@@ -142,6 +147,7 @@ renderer.setAnimationLoop((now) => {
   batcher.flush(now);
   predicted.smooth(frameMs / 1000);
   tracers.update(frameMs / 1000);
+  hitboxes?.update(remotes.poses());
   if (serverClock.ready)
     remotes.update(serverClock.serverTimeAt(now) - INTERP_DELAY_MS, frameMs / 1000);
 

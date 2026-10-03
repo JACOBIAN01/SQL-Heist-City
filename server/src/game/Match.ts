@@ -25,6 +25,7 @@ import {
   type ServerMessage,
   type ShotTarget,
   type SnapshotMessage,
+  type SpawnPoint,
 } from '@heist/shared';
 import { LagCompensator } from './LagCompensator';
 import { Player, type PlayerConnection } from './Player';
@@ -123,6 +124,25 @@ export class Match {
     }
     this.broadcast({ e: 'joined', id, name: player.name }, id);
     return { ok: true, player };
+  }
+
+  /** Adds a stationary target (sandbox only). It has no connection and is never idle-dropped. */
+  addDummy(name: string, spot: SpawnPoint): Player {
+    const quiet: PlayerConnection = { send: () => {}, close: () => {} };
+    const player = new Player(
+      this.allocateId(),
+      name,
+      quiet,
+      spot,
+      this.now(),
+      this.combat.maxHp,
+      this.combat.sandboxWeapon,
+    );
+    player.isDummy = true;
+    player.home = spot;
+    this.players.set(player.id, player);
+    this.broadcast({ e: 'joined', id: player.id, name }, player.id);
+    return player;
   }
 
   leave(id: number): void {
@@ -275,17 +295,22 @@ export class Match {
   private respawnDue(): void {
     for (const p of this.players.values()) {
       if (p.alive || this.tick < p.respawnAtTick) continue;
-      const spawn = this.spawnPolicy.pick(
-        this.deps.map,
-        [...this.players.values()].filter((o) => o !== p && o.alive).map((o) => o.body),
-      );
+      const spawn =
+        p.home ??
+        this.spawnPolicy.pick(
+          this.deps.map,
+          [...this.players.values()].filter((o) => o !== p && o.alive).map((o) => o.body),
+        );
       this.lagComp.forget(p.id);
       Object.assign(p.body, createBody(spawn.x, 0, spawn.z));
       p.yaw = spawn.yaw;
       p.hp = this.combat.respawnHp;
       p.alive = true;
       p.cooldown = 0;
-      p.protectedUntilTick = this.tick + this.ticksFor(this.combat.spawnProtectionSec);
+      // Dummies are targets: protection would only get in the way of testing.
+      p.protectedUntilTick = p.isDummy
+        ? 0
+        : this.tick + this.ticksFor(this.combat.spawnProtectionSec);
     }
   }
 
@@ -300,7 +325,7 @@ export class Match {
   private dropIdlePlayers(): void {
     const cutoff = this.now() - this.deps.settings.idleTimeoutMs;
     for (const player of [...this.players.values()]) {
-      if (player.lastHeardAt < cutoff) {
+      if (!player.isDummy && player.lastHeardAt < cutoff) {
         player.connection.close(CLOSE_IDLE, 'Timed out');
         this.leave(player.id);
       }
@@ -311,6 +336,7 @@ export class Match {
     const entities: EntityState[] = [];
     for (const p of this.players.values()) entities.push(entityOf(p, this.isProtected(p)));
     for (const player of this.players.values()) {
+      if (player.isDummy) continue; // nobody is listening
       const others = entities.filter((e) => e.id !== player.id);
       const b = player.body;
       const snapshot: SnapshotMessage = {

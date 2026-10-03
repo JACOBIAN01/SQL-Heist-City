@@ -14,6 +14,12 @@ export const matchSettingsSchema = z.object({
   maxCommandsPerTick: z.number().int().min(1).max(30).default(6),
   /** Commands waiting to be applied; more than this and the oldest are dropped. */
   inputQueueLimit: z.number().int().min(1).max(200).default(30),
+  /**
+   * Stationary target dummies in the Phase 5 sandbox, so shooting can be tried
+   * with one browser tab. They count as players, never move and always respawn
+   * where they stand. Set 0 to disable (Phase 7 removes them).
+   */
+  sandboxDummies: z.number().int().min(0).max(20).default(2),
   /** Disconnect a client that sends nothing for this long (ms). */
   idleTimeoutMs: z.number().int().min(1000).default(15_000),
 });

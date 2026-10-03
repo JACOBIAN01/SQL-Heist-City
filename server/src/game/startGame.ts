@@ -16,6 +16,9 @@ export function startGame(
   settings: MatchSettings = DEFAULT_MATCH_SETTINGS,
 ): RunningGame {
   const match = new Match({ map: TEST_MAP, settings });
+  (TEST_MAP.dummies ?? [])
+    .slice(0, settings.sandboxDummies)
+    .forEach((spot, i) => match.addDummy(`Dummy ${i + 1}`, spot));
   const loop = new GameLoop(1000 / settings.tickRate, () => match.step());
   const socket: GameSocket = attachGameSocket(http, match);
   loop.start();

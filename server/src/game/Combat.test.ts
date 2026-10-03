@@ -374,3 +374,53 @@ describe('Combat: lag compensation', () => {
     expect(b.player.hp).toBe(exact.respawnHp);
   });
 });
+
+describe('Combat: sandbox dummies', () => {
+  it('stands still, can be shot and killed, and comes back where it stood', () => {
+    const { match, spawn } = arena();
+    const a = spawn('A', 0, 0);
+    const dummy = match.addDummy('Dummy 1', { x: 0.55, z: -10, yaw: 0 });
+    expect(dummy.isDummy).toBe(true);
+    match.receiveInput(a.player.id, [fire()]);
+    match.step();
+    expect(dummy.hp).toBe(exact.maxHp - 28);
+
+    dummy.hp = 1;
+    a.player.cooldown = 0;
+    match.receiveInput(a.player.id, [fire()]);
+    match.step();
+    expect(dummy.alive).toBe(false);
+    expect(kills(a.connection).at(-1)).toMatchObject({ victim: dummy.id });
+
+    for (let i = 0; i < exact.respawnDelaySec * DEFAULT_MATCH_SETTINGS.tickRate; i++) match.step();
+    expect(dummy.alive).toBe(true);
+    expect([dummy.body.x, dummy.body.z]).toEqual([0.55, -10]);
+    expect(dummy.protectedUntilTick).toBe(0);
+  });
+
+  it('is announced to players who join later and survives the idle timeout', () => {
+    const clock = { t: 0 };
+    const match = new Match({
+      map: open,
+      settings: DEFAULT_MATCH_SETTINGS,
+      combat: exact,
+      now: () => clock.t,
+    });
+    const dummy = match.addDummy('Dummy 1', { x: 5, z: 5, yaw: 0 });
+    const c = new FakeConnection();
+    const joined = match.join(PROTOCOL_VERSION, 'A', c);
+    expect(c.of('event').map((m) => m.event)).toContainEqual(
+      expect.objectContaining({ e: 'joined', id: dummy.id, name: 'Dummy 1' }),
+    );
+    clock.t = DEFAULT_MATCH_SETTINGS.idleTimeoutMs * 10;
+    if (joined.ok) match.touch(joined.player.id); // A is active; only the dummy stays silent
+    match.step();
+    expect(match.players.has(dummy.id)).toBe(true);
+    expect(
+      c
+        .of('snapshot')
+        .at(-1)
+        ?.entities.some((e) => e.id === dummy.id),
+    ).toBe(true);
+  });
+});

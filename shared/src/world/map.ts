@@ -32,6 +32,8 @@ export interface GameMap {
   readonly halfSize: number;
   readonly boxes: readonly MapBox[];
   readonly spawns: readonly SpawnPoint[];
+  /** Where sandbox target dummies stand (optional). */
+  readonly dummies?: readonly SpawnPoint[];
 }
 
 /** Box from its footprint centre, ground-relative bottom and size. */

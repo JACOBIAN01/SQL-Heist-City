@@ -11,6 +11,8 @@ interface Remote {
   name: string;
   /** Where the model was last drawn; shot trails start here. */
   position: { x: number; y: number; z: number };
+  flags: number;
+  hp: number;
   /** Snapshots since this player was last listed. */
   missed: number;
 }
@@ -33,6 +35,18 @@ export class RemotePlayers {
 
   get count(): number {
     return this.remotes.size;
+  }
+
+  /** What is currently drawn, per player: for debug overlays. */
+  *poses(): IterableIterator<{
+    id: number;
+    x: number;
+    y: number;
+    z: number;
+    flags: number;
+    hp: number;
+  }> {
+    for (const [id, r] of this.remotes) yield { id, ...r.position, flags: r.flags, hp: r.hp };
   }
 
   positionOf(id: number): { x: number; y: number; z: number } | undefined {
@@ -81,6 +95,8 @@ export class RemotePlayers {
       remote.model.object.visible = alive;
       remote.model.object.position.set(pose.x, pose.y, pose.z);
       remote.position = { x: pose.x, y: pose.y, z: pose.z };
+      remote.flags = pose.flags;
+      remote.hp = pose.hp;
       remote.model.object.rotation.y = pose.yaw;
       remote.model.update(
         {
@@ -101,6 +117,8 @@ export class RemotePlayers {
       model: new CharacterModel(palette, this.thresholds),
       name: this.names.get(id) ?? `Player ${id}`,
       position: { x: 0, y: 0, z: 0 },
+      flags: 0,
+      hp: 0,
       missed: 0,
     };
     this.scene.add(remote.model.object);

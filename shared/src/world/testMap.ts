@@ -56,4 +56,10 @@ export const TEST_MAP: GameMap = {
     ...staircase(24, 6),
   ],
   spawns: ring(12, 50),
+  // In the open yard, clear of every box, a few metres from the middle.
+  dummies: [
+    { x: 0, z: -12, yaw: 0 },
+    { x: 10, z: -18, yaw: 0 },
+    { x: -10, z: -18, yaw: 0 },
+  ],
 };

@@ -21,7 +21,7 @@ describe('TEST_MAP', () => {
 
   it('has spawn points inside the walls and clear of every box', () => {
     expect(TEST_MAP.spawns.length).toBeGreaterThanOrEqual(8);
-    for (const s of TEST_MAP.spawns) {
+    for (const s of [...TEST_MAP.spawns, ...(TEST_MAP.dummies ?? [])]) {
       expect(Math.abs(s.x)).toBeLessThan(TEST_MAP.halfSize);
       expect(Math.abs(s.z)).toBeLessThan(TEST_MAP.halfSize);
       const body = {
