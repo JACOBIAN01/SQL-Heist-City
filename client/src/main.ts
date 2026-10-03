@@ -1,5 +1,15 @@
-import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
-import { TEST_MAP } from '@heist/shared';
+import {
+  BoxGeometry,
+  Mesh,
+  MeshStandardMaterial,
+  PerspectiveCamera,
+  Scene,
+  WebGLRenderer,
+} from 'three';
+import { DEFAULT_MOVEMENT_SETTINGS, SIM_DT, TEST_MAP } from '@heist/shared';
+import { FixedStepLoop } from './game/FixedStepLoop';
+import { LocalPlayer } from './game/LocalPlayer';
+import { InputSampler } from './input/InputSampler';
 import { FrameStats } from './render/FrameStats';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
@@ -25,23 +35,50 @@ const resize = (): void => {
 resize();
 window.addEventListener('resize', resize);
 
+const spawn = TEST_MAP.spawns[0] ?? { x: 0, z: 0, yaw: 0 };
+const player = new LocalPlayer(TEST_MAP, DEFAULT_MOVEMENT_SETTINGS, spawn);
+const input = new InputSampler();
+input.setLooking(true); // 5.3 ties this to pointer lock; until then mouse always turns the view.
+input.setLook(spawn.yaw);
+const loop = new FixedStepLoop(SIM_DT, () => player.apply(input.sample()));
+
+// 5.2 placeholder body and chase camera; replaced by the model (5.4) and camera rig (5.3).
+const body = new Mesh(
+  new BoxGeometry(0.7, 1.8, 0.7),
+  new MeshStandardMaterial({ color: 0xd4a017 }),
+);
+body.castShadow = true;
+scene.add(body);
+
 const stats = new FrameStats();
 const overlay = document.createElement('div');
 overlay.style.cssText =
   'position:fixed;left:8px;top:8px;font:12px ui-monospace,monospace;color:#fff;background:#0008;padding:4px 8px;border-radius:4px;pointer-events:none';
 document.body.appendChild(overlay);
 
+const drawPos = { x: 0, y: 0, z: 0 };
 let last = performance.now();
 let lastOverlay = 0;
 renderer.setAnimationLoop((now) => {
-  stats.push(now - last);
+  const frameMs = now - last;
   last = now;
-  // 5.1 only: slow orbit so the lighting and shadows can be judged. Real camera comes in 5.3.
-  const angle = now * 0.00008;
-  camera.position.set(Math.cos(angle) * 38, 14, Math.sin(angle) * 38);
-  camera.lookAt(0, 1, 0);
-  lighting.follow(camera);
+  stats.push(frameMs);
+  loop.advance(frameMs / 1000);
+
+  player.drawPosition(loop.alpha, drawPos);
+  const height = player.body.crouching
+    ? DEFAULT_MOVEMENT_SETTINGS.crouchHeight
+    : DEFAULT_MOVEMENT_SETTINGS.standHeight;
+  body.scale.y = height / DEFAULT_MOVEMENT_SETTINGS.standHeight;
+  body.position.set(drawPos.x, drawPos.y + height / 2, drawPos.z);
+  body.rotation.y = input.currentYaw;
+
+  const yaw = input.currentYaw;
+  camera.position.set(drawPos.x + Math.sin(yaw) * 5, drawPos.y + 3, drawPos.z + Math.cos(yaw) * 5);
+  camera.lookAt(drawPos.x, drawPos.y + 1.4, drawPos.z);
+  lighting.follow(body);
   renderer.render(scene, camera);
+
   if (now - lastOverlay > 500) {
     lastOverlay = now;
     const { calls, triangles } = renderer.info.render;
