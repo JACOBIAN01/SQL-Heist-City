@@ -1,5 +1,7 @@
+import type { PublicChallenge } from '@heist/shared';
 import { startSandboxScene } from '../render/sandboxScene';
 import { h } from '../ui/dom';
+import { ProblemPane } from '../ui/sql/ProblemPane';
 import { SqlPanel } from '../ui/sql/SqlPanel';
 import '../ui/sql/sqlPanel.css';
 
@@ -35,7 +37,33 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-panel.slots.title.textContent = 'Demo task';
-panel.slots.tier.textContent = 'T1';
-panel.slots.problem.textContent = 'Problem goes here (Phase 4.2).';
+// Sample payload until the panel is wired to the server (subphase 4.4).
+const sample: PublicChallenge = {
+  id: 'demo',
+  rewardKey: 'heal:small',
+  tier: 1,
+  title: 'Payroll Leak',
+  story:
+    'Return the **first_name** and **salary** of employees earning more than **5000**.\nUse `WHERE`.',
+  schemaSql:
+    'CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, dept TEXT, salary INTEGER);',
+  tables: [
+    {
+      name: 'employees',
+      columns: ['id', 'first_name', 'dept', 'salary'],
+      sampleRows: [
+        [1, 'Ana', 'Audit', 6200],
+        [2, 'Ben', 'IT', 4100],
+        [3, 'Chen', 'Teller', null],
+      ],
+      rowCount: 48,
+    },
+  ],
+  hintCount: 2,
+  expiresAt: Date.now() + 5 * 60_000,
+};
+
+panel.slots.title.textContent = sample.title;
+panel.slots.tier.textContent = `T${sample.tier}`;
+new ProblemPane(panel.slots.problem).show(sample);
 panel.slots.work.textContent = 'Editor goes here (Phase 4.3).';

@@ -141,3 +141,83 @@
 .sqlp-bar-title {
   font-weight: 600;
 }
+
+/* Problem pane */
+.sqlp-h2 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sqlp-muted);
+}
+.sqlp-story {
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+.sqlp-line {
+  margin: 0 0 6px;
+}
+.sqlp-story code,
+.sqlp-card code,
+.sqlp-schema code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--sqlp-panel);
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.sqlp-muted {
+  color: var(--sqlp-muted);
+  margin: 4px 0;
+}
+.sqlp-card {
+  border: 1px solid var(--sqlp-border);
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 10px;
+}
+.sqlp-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.sqlp-table-wrap {
+  overflow-x: auto;
+}
+.sqlp-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+.sqlp-table th,
+.sqlp-table td {
+  text-align: left;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--sqlp-border);
+  white-space: nowrap;
+}
+.sqlp-table th {
+  color: var(--sqlp-muted);
+  font-weight: 600;
+}
+.sqlp-table td.num {
+  font-variant-numeric: tabular-nums;
+}
+.sqlp-table td.null {
+  color: var(--sqlp-muted);
+  font-style: italic;
+}
+.sqlp-schema {
+  margin-top: 8px;
+}
+.sqlp-schema summary {
+  cursor: pointer;
+  color: var(--sqlp-muted);
+}
+.sqlp-schema pre {
+  white-space: pre-wrap;
+  background: var(--sqlp-panel);
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
