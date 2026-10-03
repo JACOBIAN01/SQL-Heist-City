@@ -2,6 +2,7 @@ import type { PublicChallenge } from '@heist/shared';
 import { startSandboxScene } from '../render/sandboxScene';
 import { h } from '../ui/dom';
 import { ProblemPane } from '../ui/sql/ProblemPane';
+import { SqlEditor } from '../ui/sql/SqlEditor';
 import { SqlPanel } from '../ui/sql/SqlPanel';
 import '../ui/sql/sqlPanel.css';
 
@@ -66,4 +67,25 @@ const sample: PublicChallenge = {
 panel.slots.title.textContent = sample.title;
 panel.slots.tier.textContent = `T${sample.tier}`;
 new ProblemPane(panel.slots.problem).show(sample);
-panel.slots.work.textContent = 'Editor goes here (Phase 4.3).';
+const editorHost = h('div', { class: 'sqlp-editor' });
+panel.slots.work.append(
+  editorHost,
+  h(
+    'p',
+    { class: 'sqlp-keys' },
+    h('kbd', { text: 'Ctrl/⌘+Enter' }),
+    ' run · ',
+    h('kbd', { text: 'Ctrl/⌘+Shift+Enter' }),
+    ' submit · ',
+    h('kbd', { text: 'Esc' }),
+    ' back to the game',
+  ),
+);
+const editor = new SqlEditor(editorHost, {
+  placeholder: 'SELECT …',
+  onRun: () => (status.textContent = 'Run pressed (wired in 4.4)'),
+  onSubmit: () => (status.textContent = 'Submit pressed (wired in 4.5)'),
+});
+editor.setValue(
+  'SELECT first_name, salary\nFROM employees\nWHERE salary > 5000; -- my first query',
+);

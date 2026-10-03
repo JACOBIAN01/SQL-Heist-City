@@ -9,6 +9,10 @@
   --sqlp-accent: #d4a017;
   --sqlp-ok: #4cc38a;
   --sqlp-bad: #ef6b5f;
+  --sqlp-syn-keyword: #c99bff;
+  --sqlp-syn-string: #f0a07a;
+  --sqlp-syn-number: #6cc4e8;
+  --sqlp-syn-type: #7fd6a4;
   font:
     13px/1.45 system-ui,
     -apple-system,
@@ -220,4 +224,30 @@
   padding: 8px;
   border-radius: 6px;
   font-size: 12px;
+}
+
+/* Editor */
+.sqlp-editor {
+  border: 1px solid var(--sqlp-border);
+  border-radius: 6px;
+  overflow: hidden;
+  min-height: 9em;
+  max-height: 40vh;
+  display: flex;
+  flex-direction: column;
+}
+.sqlp-editor .cm-editor {
+  flex: 1;
+  min-height: 0;
+}
+.sqlp-keys {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--sqlp-muted);
+}
+.sqlp-keys kbd {
+  font: inherit;
+  padding: 0 4px;
+  border: 1px solid var(--sqlp-border);
+  border-radius: 4px;
 }
