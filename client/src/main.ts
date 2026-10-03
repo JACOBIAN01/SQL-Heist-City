@@ -1,12 +1,7 @@
-import {
-  BoxGeometry,
-  Mesh,
-  MeshStandardMaterial,
-  PerspectiveCamera,
-  Scene,
-  WebGLRenderer,
-} from 'three';
+import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { DEFAULT_MOVEMENT_SETTINGS, SIM_DT, TEST_MAP } from '@heist/shared';
+import { CharacterModel, PALETTES } from './entities/CharacterModel';
+import { thresholdsFor } from './entities/animation';
 import { FixedStepLoop } from './game/FixedStepLoop';
 import { LocalPlayer } from './game/LocalPlayer';
 import { InputSampler } from './input/InputSampler';
@@ -53,13 +48,11 @@ new PointerLock(renderer.domElement, input, (locked) => {
 const rig = new CameraRig(camera, TEST_MAP);
 const loop = new FixedStepLoop(SIM_DT, () => player.apply(input.sample()));
 
-// 5.2 placeholder body and chase camera; replaced by the model (5.4) and camera rig (5.3).
-const body = new Mesh(
-  new BoxGeometry(0.7, 1.8, 0.7),
-  new MeshStandardMaterial({ color: 0xd4a017 }),
+const model = new CharacterModel(
+  PALETTES[0] ?? { shirt: 0xd4a017, trousers: 0x222222, skin: 0xe0b48a },
+  thresholdsFor(DEFAULT_MOVEMENT_SETTINGS.walkSpeed, DEFAULT_MOVEMENT_SETTINGS.sprintSpeed),
 );
-body.castShadow = true;
-scene.add(body);
+scene.add(model.object);
 
 const stats = new FrameStats();
 const overlay = document.createElement('div');
@@ -77,12 +70,16 @@ renderer.setAnimationLoop((now) => {
   loop.advance(frameMs / 1000);
 
   player.drawPosition(loop.alpha, drawPos);
-  const height = player.body.crouching
-    ? DEFAULT_MOVEMENT_SETTINGS.crouchHeight
-    : DEFAULT_MOVEMENT_SETTINGS.standHeight;
-  body.scale.y = height / DEFAULT_MOVEMENT_SETTINGS.standHeight;
-  body.position.set(drawPos.x, drawPos.y + height / 2, drawPos.z);
-  body.rotation.y = input.currentYaw;
+  model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
+  model.object.rotation.y = input.currentYaw;
+  model.update(
+    {
+      speed: Math.hypot(player.body.vx, player.body.vz),
+      crouching: player.body.crouching,
+      onGround: player.body.onGround,
+    },
+    frameMs / 1000,
+  );
 
   rig.update(
     drawPos.x,
@@ -93,7 +90,7 @@ renderer.setAnimationLoop((now) => {
     frameMs / 1000,
     player.body.crouching,
   );
-  lighting.follow(body);
+  lighting.follow(model.object);
   renderer.render(scene, camera);
 
   if (now - lastOverlay > 500) {
