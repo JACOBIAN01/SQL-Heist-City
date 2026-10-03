@@ -303,3 +303,9 @@
   background: #1b1f27;
   color: var(--sqlp-text);
 }
+
+.sqlp-timer[data-urgent='true'],
+.sqlp-bar-timer[data-urgent='true'] {
+  color: var(--sqlp-bad);
+  font-weight: 600;
+}

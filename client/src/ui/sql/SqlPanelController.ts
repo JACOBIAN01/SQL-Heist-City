@@ -2,12 +2,15 @@ import type { HintReveal, PublicChallenge, RunResult, SubmitResult } from '@heis
 import { ChallengeConnectionError, type ChallengeApi } from '../../net/ChallengeApi';
 import { h } from '../dom';
 import { MemoryDraftStore, type DraftStore } from './DraftStore';
-import { hintCostText, rewardLabel } from './labels';
+import { formatClock, hintCostText, rewardLabel } from './labels';
 import { CONNECTION_MESSAGE, hintFailureMessage, reasonMessage } from './messages';
 import { ProblemPane } from './ProblemPane';
 import type { SqlPanel } from './SqlPanel';
 import { TaskSwitcher, type TaskOption } from './TaskSwitcher';
 import { WorkPane } from './WorkPane';
+
+/** Under this much time left the timer turns red. */
+const URGENT_MS = 30_000;
 
 export interface SolvedInfo {
   readonly rewardKey: string;
@@ -61,6 +64,10 @@ export class SqlPanelController {
       },
     });
     this.problem.showMessage('No task yet.');
+    // Closing the panel gives the task up; minimising keeps it (and its timer) running.
+    deps.panel.onStateChange((state) => {
+      if (state === 'closed') this.leave();
+    });
   }
 
   /**
@@ -73,10 +80,8 @@ export class SqlPanelController {
     this.task = task;
     this.switcher.setCurrent(task.key);
     this.work.editor.setValue(this.drafts.get(task.key));
-    this.challenge = null;
+    this.endTask();
     this.revealed = [];
-    this.work.setHint(null);
-    this.clearLockout();
     this.work.editor.setReadOnly(false);
     this.problem.showMessage('Getting your task…');
     this.work.result.showIdle();
@@ -92,6 +97,8 @@ export class SqlPanelController {
       this.showHeader(result.challenge);
       this.problem.show(result.challenge);
       this.refreshHintButton();
+      this.startTicker();
+      this.tick();
       this.work.editor.focus();
     } catch (err) {
       this.problem.showMessage(this.describe(err));
@@ -128,7 +135,8 @@ export class SqlPanelController {
     try {
       const result = await this.deps.api.hint(challenge.id, this.revealed.length);
       if (!result.ok) {
-        this.work.result.showMessage(hintFailureMessage(result.reason), 'error');
+        if (result.reason === 'expired') this.expire();
+        else this.work.result.showMessage(hintFailureMessage(result.reason), 'error');
         return;
       }
       this.revealed = [...this.revealed, result.hint];
@@ -179,9 +187,7 @@ export class SqlPanelController {
     switch (result.status) {
       case 'correct':
         if (this.task) this.drafts.clear(this.task.key);
-        this.challenge = null;
-        this.work.setHint(null);
-        this.clearLockout();
+        this.endTask();
         this.work.editor.setReadOnly(true);
         view.showWith(
           `✔ Correct! ${rewardLabel(result.rewardKey)} unlocked.`,
@@ -209,7 +215,12 @@ export class SqlPanelController {
         return;
       }
       case 'rejected':
-        view.showMessage(reasonMessage(result.reason, this.secondsUntil(result.retryAt)), 'error');
+        if (result.reason === 'expired') this.expire();
+        else
+          view.showMessage(
+            reasonMessage(result.reason, this.secondsUntil(result.retryAt)),
+            'error',
+          );
         return;
     }
   }
@@ -220,6 +231,8 @@ export class SqlPanelController {
       view.showPreview(result.preview.columns, result.preview.rows, result.preview.truncated);
     } else if (result.reason === 'sql') {
       view.showMessage(result.feedback.message, 'error');
+    } else if (result.reason === 'expired') {
+      this.expire();
     } else {
       view.showMessage(reasonMessage(result.reason, this.secondsUntil(result.retryAt)), 'error');
     }
@@ -245,7 +258,6 @@ export class SqlPanelController {
     this.lockedUntil = 0;
     this.work.setSubmitLocked(false);
     this.work.setSubmitLabel();
-    this.stopTicker();
   }
 
   private lockoutSeconds(): number {
@@ -255,13 +267,84 @@ export class SqlPanelController {
   }
 
   private tick(): void {
+    this.tickLockout();
+    this.tickExpiry();
+  }
+
+  private tickLockout(): void {
     if (this.lockedUntil === 0) return;
     const seconds = this.lockoutSeconds();
-    if (seconds > 0) {
-      this.work.setSubmitLabel(`Locked ${seconds} s`);
+    if (seconds > 0) this.work.setSubmitLabel(`Locked ${seconds} s`);
+    else this.clearLockout();
+  }
+
+  // --- task timer: the server set `expiresAt`; running out costs nothing.
+
+  private tickExpiry(): void {
+    const challenge = this.challenge;
+    if (!challenge) return;
+    const remaining = challenge.expiresAt - this.deps.api.serverNow();
+    if (remaining <= 0) {
+      this.expire();
       return;
     }
+    const { slots } = this.deps.panel;
+    slots.timer.textContent = formatClock(remaining);
+    slots.timer.dataset.urgent = String(remaining <= URGENT_MS);
+    this.deps.panel.setBarText(challenge.title, formatClock(remaining));
+  }
+
+  private expire(): void {
+    const challenge = this.challenge;
+    if (!challenge) return;
+    this.endTask();
+    this.work.editor.setReadOnly(true);
+    void this.deps.api.abandon().catch(() => undefined);
+    const { slots } = this.deps.panel;
+    slots.timer.textContent = 'Expired';
+    slots.timer.dataset.urgent = 'true';
+    this.deps.panel.setBarText(challenge.title, 'Expired');
+    const task = this.task;
+    this.work.result.showWith(
+      '⏱ Time ran out — this task expired. There is no penalty.',
+      'error',
+      h(
+        'p',
+        { class: 'sqlp-toolbar' },
+        task
+          ? h('button', {
+              class: 'sqlp-btn primary',
+              text: 'Get a new question',
+              attrs: { type: 'button' },
+              on: { click: () => void this.start(task) },
+            })
+          : null,
+        h('button', {
+          class: 'sqlp-btn',
+          text: 'Close',
+          attrs: { type: 'button' },
+          on: { click: () => this.deps.panel.close() },
+        }),
+      ),
+    );
+  }
+
+  /** The task is over (solved, expired, abandoned or replaced): stop timers and lock the controls. */
+  private endTask(): void {
+    this.challenge = null;
+    this.stopTicker();
     this.clearLockout();
+    this.work.setHint(null);
+    this.work.setBusy(true); // no task: Run / Submit stay off until a new one starts
+    this.deps.panel.slots.timer.textContent = '';
+    this.deps.panel.slots.timer.dataset.urgent = 'false';
+  }
+
+  /** Panel closed: tell the server this player gave the task up. */
+  private leave(): void {
+    if (!this.challenge) return;
+    this.endTask();
+    void this.deps.api.abandon().catch(() => undefined);
   }
 
   private startTicker(): void {

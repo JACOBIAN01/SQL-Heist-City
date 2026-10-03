@@ -288,6 +288,91 @@ describe('SqlPanelController: switching tasks and drafts', () => {
   });
 });
 
+describe('SqlPanelController: task timer and expiry', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const advance = (ms: number) => {
+    api.clock += ms;
+    vi.advanceTimersByTime(ms);
+  };
+  // sampleChallenge expires at 1_300_000 and the fake clock starts at 1_000_000 → 5:00.
+  const timer = () => $('.sqlp-timer');
+
+  it('counts down in the header and on the minimised bar, turning red near the end', async () => {
+    await controller.start(task('heal:small'));
+    expect(timer().textContent).toBe('5:00');
+    advance(61_000);
+    expect(timer().textContent).toBe('3:59');
+    expect(timer().dataset.urgent).toBe('false');
+    panel.minimise();
+    advance(200_000);
+    expect($('.sqlp-bar').textContent).toContain('0:39');
+    advance(10_000);
+    expect(timer().dataset.urgent).toBe('true');
+  });
+
+  it('expires cleanly: no penalty message, controls off, server told, one-click new question', async () => {
+    await controller.start(task('heal:small'));
+    advance(300_000);
+    expect(timer().textContent).toBe('Expired');
+    expect($('.sqlp-msg.error').textContent).toMatch(/expired\. There is no penalty/);
+    expect(api.calls.at(-1)?.method).toBe('abandon');
+    expect(button(/Run/).disabled).toBe(true);
+    expect(button(/Hint/).hidden).toBe(true);
+    expect($('.cm-content').getAttribute('aria-readonly')).toBe('true');
+    await controller.run();
+    await controller.submit();
+    expect(api.calls.filter((c) => c.method === 'run' || c.method === 'submit')).toHaveLength(0);
+
+    // The server issues the next question with a fresh deadline.
+    api.onRequest = async () => ({
+      ok: true,
+      challenge: sampleChallenge({ expiresAt: api.clock + 300_000 }),
+    });
+    button(/Get a new question/).click();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.calls.filter((c) => c.method === 'request')).toHaveLength(2);
+    expect(timer().textContent).toBe('5:00');
+  });
+
+  it('stays minimised when it expires (the player may be fighting) and says so on the bar', async () => {
+    await controller.start(task('heal:small'));
+    panel.minimise();
+    advance(300_000);
+    expect(panel.state).toBe('minimised');
+    expect($('.sqlp-bar').textContent).toContain('Expired');
+  });
+
+  it('follows the server when it reports the task expired', async () => {
+    await controller.start(task('heal:small'));
+    controller['work'].editor.setValue('SELECT 1');
+    api.onSubmit = async () => ({ status: 'rejected', reason: 'expired' });
+    await controller.submit();
+    expect(timer().textContent).toBe('Expired');
+    expect($('.sqlp-msg.error').textContent).toMatch(/expired/);
+  });
+
+  it('closing the panel abandons the task and stops the timer; minimising does not', async () => {
+    await controller.start(task('heal:small'));
+    panel.minimise();
+    expect(api.calls.some((c) => c.method === 'abandon')).toBe(false);
+    panel.restore();
+    panel.close();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(api.calls.at(-1)?.method).toBe('abandon');
+    expect(controller['ticker']).toBeUndefined();
+  });
+
+  it('does not abandon after a solved task is closed', async () => {
+    await controller.start(task('heal:small'));
+    controller['work'].editor.setValue('SELECT 1');
+    await controller.submit();
+    panel.close();
+    expect(api.calls.some((c) => c.method === 'abandon')).toBe(false);
+  });
+});
+
 describe('SqlPanelController: hints', () => {
   it('shows what the next hint costs before it is taken', async () => {
     await controller.start(task('heal:small'));
@@ -350,9 +435,9 @@ describe('SqlPanelController: hints', () => {
 
   it('shows a refusal message and connection errors', async () => {
     await controller.start(task('heal:small'));
-    api.onHint = async () => ({ ok: false, reason: 'expired' });
+    api.onHint = async () => ({ ok: false, reason: 'rate_limited' });
     await controller.hint();
-    expect($('.sqlp-msg.error').textContent).toMatch(/expired/);
+    expect($('.sqlp-msg.error').textContent).toMatch(/Slow down/);
     api.onHint = async () => {
       throw new ChallengeConnectionError('down');
     };
@@ -416,13 +501,13 @@ describe('SqlPanelController: lockout countdown', () => {
     expect(button(/Locked/).textContent).toBe('Locked 4 s');
   });
 
-  it('a new task clears the lockout and stops the timer', async () => {
+  it('a new task clears the lockout', async () => {
     await started('SELECT 1');
     api.onSubmit = wrong(api.clock + 10_000);
     await controller.submit();
     await controller.start(task('heal:small'));
     expect(button(/Submit/).disabled).toBe(false);
-    expect(controller['ticker']).toBeUndefined();
+    expect(button(/Submit/).textContent).toBe('Submit ✔');
   });
 });
 

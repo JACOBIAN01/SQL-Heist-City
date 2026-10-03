@@ -14,6 +14,14 @@ const LABELS: Readonly<Record<string, string>> = {
   'gun:sniper': 'Sniper',
 };
 
+/** Remaining time as m:ss (rounded up, never negative). */
+export function formatClock(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+}
+
 /** How much a hint costs, in the units the server says (never decided here). */
 export function hintCostText(cost: number, mode: 'fraction' | 'absolute'): string {
   if (cost <= 0) return 'free';
