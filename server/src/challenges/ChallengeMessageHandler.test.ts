@@ -104,6 +104,22 @@ describe('ChallengeMessageHandler', () => {
     });
   });
 
+  it('reveals hints through the handler', async () => {
+    repo.update(1, { ...base, hints: [{ text: 'Use WHERE', cost: 0.05 }] }, null);
+    const c = await issue();
+    const reply = await handler.handle('p1', {
+      t: 'challenge_hint',
+      ref: 4,
+      challengeId: c.id,
+      index: 0,
+    });
+    expect(reply).toMatchObject({
+      t: 'challenge_hint',
+      ref: 4,
+      result: { ok: true, hint: { text: 'Use WHERE', charged: true } },
+    });
+  });
+
   it('abandons the current challenge', async () => {
     const c = await issue();
     expect(await handler.handle('p1', { t: 'challenge_abandon', ref: 9 })).toEqual({

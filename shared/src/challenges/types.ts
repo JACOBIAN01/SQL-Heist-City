@@ -20,7 +20,9 @@ export interface PublicChallenge {
   readonly story: string;
   readonly schemaSql: string;
   readonly tables: readonly PublicTable[];
-  readonly hintCount: number;
+  /** Cost of each hint, in order (as authored; see hintCostMode). Hint text is only sent when revealed. */
+  readonly hintCosts: readonly number[];
+  readonly hintCostMode: 'fraction' | 'absolute';
   /** Epoch ms. */
   readonly expiresAt: number;
 }
@@ -64,3 +66,20 @@ export type SubmitResult =
     }
   | { readonly status: 'locked'; readonly lockedUntil: number }
   | { readonly status: 'rejected'; readonly reason: RejectReason; readonly retryAt?: number };
+
+/** A hint the server has revealed. */
+export interface HintReveal {
+  readonly index: number;
+  readonly text: string;
+  readonly cost: number;
+  readonly costMode: 'fraction' | 'absolute';
+  /**
+   * True the first time this hint is revealed: the game charges `cost` once.
+   * Asking again for the same hint is free and returns `charged: false`.
+   */
+  readonly charged: boolean;
+}
+
+export type HintResult =
+  | { readonly ok: true; readonly hint: HintReveal }
+  | { readonly ok: false; readonly reason: 'no_such_hint' | 'out_of_order' | RejectReason };

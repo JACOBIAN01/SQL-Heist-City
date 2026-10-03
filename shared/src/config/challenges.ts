@@ -16,6 +16,11 @@ export const challengeSettingsSchema = z.object({
   submitCooldownMs: z.number().int().min(0).max(60_000).default(2_000),
   /** Minimum gap between new challenge requests. */
   requestCooldownMs: z.number().int().min(0).max(60_000).default(3_000),
+  /**
+   * How a hint's `cost` is charged: a fraction of the player's carried cash
+   * (0.05 = 5%) or an absolute amount.
+   */
+  hintCostMode: z.enum(['fraction', 'absolute']).default('fraction'),
   /** Rows per table shown to the student as samples. */
   sampleRows: z.number().int().min(0).max(20).default(3),
 });

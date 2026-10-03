@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { IssueResult, RunResult, SubmitResult } from '../challenges/types';
+import type { HintResult, IssueResult, RunResult, SubmitResult } from '../challenges/types';
 
 /**
  * Challenge messages on the game WebSocket (JSON frames, see
@@ -22,6 +22,12 @@ export const challengeClientMessageSchema = z.discriminatedUnion('t', [
   }),
   z.object({ t: z.literal('challenge_run'), ref, challengeId, sql }),
   z.object({ t: z.literal('challenge_submit'), ref, challengeId, sql }),
+  z.object({
+    t: z.literal('challenge_hint'),
+    ref,
+    challengeId,
+    index: z.number().int().min(0).max(20),
+  }),
   z.object({ t: z.literal('challenge_abandon'), ref }),
 ]);
 
@@ -39,6 +45,7 @@ export type ChallengeServerMessage =
   | Reply<'challenge', IssueResult>
   | Reply<'challenge_preview', RunResult>
   | Reply<'challenge_result', SubmitResult>
+  | Reply<'challenge_hint', HintResult>
   | { readonly t: 'challenge_abandoned'; readonly ref: number; readonly now: number }
   | {
       readonly t: 'challenge_error';

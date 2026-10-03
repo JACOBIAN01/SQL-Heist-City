@@ -20,7 +20,8 @@ const challenge: PublicChallenge = {
       rowCount: 40,
     },
   ],
-  hintCount: 2,
+  hintCosts: [0.05, 0.1],
+  hintCostMode: 'fraction',
   expiresAt: 0,
 };
 

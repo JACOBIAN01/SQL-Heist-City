@@ -12,7 +12,8 @@ export function sampleChallenge(over: Partial<PublicChallenge> = {}): PublicChal
     tables: [
       { name: 'employees', columns: ['id', 'name'], sampleRows: [[1, 'Ana']], rowCount: 10 },
     ],
-    hintCount: 2,
+    hintCosts: [0.05, 0.1],
+    hintCostMode: 'fraction',
     expiresAt: 1_300_000,
     ...over,
   };

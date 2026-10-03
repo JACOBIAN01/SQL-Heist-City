@@ -70,6 +70,13 @@ export class ChallengeMessageHandler {
           now: this.now(),
           result: await this.service.submit(player, msg.challengeId, msg.sql),
         };
+      case 'challenge_hint':
+        return {
+          t: 'challenge_hint',
+          ref: msg.ref,
+          now: this.now(),
+          result: this.service.hint(player, msg.challengeId, msg.index),
+        };
       case 'challenge_abandon':
         this.service.abandon(player);
         return { t: 'challenge_abandoned', ref: msg.ref, now: this.now() };

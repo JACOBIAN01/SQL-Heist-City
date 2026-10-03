@@ -2,6 +2,8 @@ import { randomUUID } from 'node:crypto';
 import {
   SeededRng,
   seedOf,
+  type Hint,
+  type HintResult,
   type IssueResult,
   type PublicChallenge,
   type RunResult,
@@ -51,6 +53,11 @@ interface ActiveChallenge {
   readonly variant: Variant;
   readonly expected: QueryResult;
   readonly expiresAt: number;
+  /** Hints of the question version this challenge was issued from. */
+  readonly hints: readonly Hint[];
+  readonly hintCostMode: 'fraction' | 'absolute';
+  /** How many hints (in order) the player has revealed and been charged for. */
+  hintsRevealed: number;
   lockedUntil: number;
   lastRunAt: number;
   lastSubmitAt: number;
@@ -132,6 +139,9 @@ export class ChallengeService {
         variant,
         expected,
         expiresAt: now + settings.ttlSec * 1000,
+        hints: question.template.hints,
+        hintCostMode: settings.hintCostMode,
+        hintsRevealed: 0,
         lockedUntil: 0,
         lastRunAt: Number.NEGATIVE_INFINITY,
         lastSubmitAt: Number.NEGATIVE_INFINITY,
@@ -140,7 +150,7 @@ export class ChallengeService {
       this.byPlayer.set(request.player, challenge);
       return {
         ok: true,
-        challenge: toPublic(challenge, question.template.hints.length, settings.sampleRows),
+        challenge: toPublic(challenge, settings.sampleRows),
       };
     }
     return { ok: false, reason: 'unavailable' };
@@ -202,6 +212,25 @@ export class ChallengeService {
     }
   }
 
+  /**
+   * Reveals hint `index`. Hints open in order; the first reveal is `charged`
+   * (the game deducts the cost once), asking again is free and idempotent.
+   */
+  hint(player: string, challengeId: string, index: number): HintResult {
+    const found = this.find(player, challengeId);
+    if ('reason' in found) return { ok: false, reason: found.reason };
+    const challenge = found.challenge;
+    const hint = challenge.hints[index];
+    if (!hint) return { ok: false, reason: 'no_such_hint' };
+    if (index > challenge.hintsRevealed) return { ok: false, reason: 'out_of_order' };
+    const charged = index === challenge.hintsRevealed;
+    if (charged) challenge.hintsRevealed++;
+    return {
+      ok: true,
+      hint: { index, text: hint.text, cost: hint.cost, costMode: challenge.hintCostMode, charged },
+    };
+  }
+
   /** Player closed the task or left; drops their challenge and rate-limit state. */
   abandon(player: string): void {
     this.byPlayer.delete(player);
@@ -238,7 +267,7 @@ export class ChallengeService {
   }
 }
 
-function toPublic(c: ActiveChallenge, hintCount: number, sampleRows: number): PublicChallenge {
+function toPublic(c: ActiveChallenge, sampleRows: number): PublicChallenge {
   return {
     id: c.id,
     rewardKey: c.rewardKey,
@@ -252,7 +281,8 @@ function toPublic(c: ActiveChallenge, hintCount: number, sampleRows: number): Pu
       sampleRows: table.rows.slice(0, sampleRows),
       rowCount: table.rows.length,
     })),
-    hintCount,
+    hintCosts: c.hints.map((h) => h.cost),
+    hintCostMode: c.hintCostMode,
     expiresAt: c.expiresAt,
   };
 }

@@ -62,7 +62,8 @@ describe('ChallengeService.issue', () => {
       rewardKey: 'heal:small',
       tier: 1,
       title: base.title,
-      hintCount: 1,
+      hintCosts: [0.05],
+      hintCostMode: 'fraction',
     });
     expect(c.expiresAt).toBe(clock + settings.ttlSec * 1000);
     expect(c.tables[0]?.sampleRows).toHaveLength(settings.sampleRows);
@@ -224,6 +225,65 @@ describe('ChallengeService.submit', () => {
       tiers: { min: 3, max: 3 },
     });
     expect(c.ok && c.challenge.tier).toBe(3);
+  });
+});
+
+describe('ChallengeService.hint', () => {
+  const twoHints = () =>
+    repo.update(
+      1,
+      {
+        ...base,
+        hints: [
+          { text: 'First nudge', cost: 0.05 },
+          { text: 'Bigger nudge', cost: 0.1 },
+        ],
+      },
+      null,
+    );
+
+  it('publishes hint costs but never the hint text', async () => {
+    twoHints();
+    const c = await issue();
+    expect(c.hintCosts).toEqual([0.05, 0.1]);
+    expect(JSON.stringify(c)).not.toContain('First nudge');
+  });
+
+  it('reveals hints in order and charges each one once', async () => {
+    twoHints();
+    const c = await issue();
+    expect(service.hint('p1', c.id, 0)).toEqual({
+      ok: true,
+      hint: { index: 0, text: 'First nudge', cost: 0.05, costMode: 'fraction', charged: true },
+    });
+    // Asking again is free (safe to retry after a lost reply).
+    expect(service.hint('p1', c.id, 0)).toMatchObject({ ok: true, hint: { charged: false } });
+    expect(service.hint('p1', c.id, 1)).toMatchObject({
+      ok: true,
+      hint: { text: 'Bigger nudge', charged: true },
+    });
+  });
+
+  it('refuses to skip ahead or to reveal hints that do not exist', async () => {
+    twoHints();
+    const c = await issue();
+    expect(service.hint('p1', c.id, 1)).toEqual({ ok: false, reason: 'out_of_order' });
+    expect(service.hint('p1', c.id, 2)).toEqual({ ok: false, reason: 'no_such_hint' });
+  });
+
+  it('is bound to the player and to a live challenge', async () => {
+    twoHints();
+    const c = await issue();
+    expect(service.hint('p2', c.id, 0)).toEqual({ ok: false, reason: 'not_found' });
+    clock += settings.ttlSec * 1000;
+    expect(service.hint('p1', c.id, 0)).toEqual({ ok: false, reason: 'expired' });
+  });
+
+  it('uses the question version the challenge was issued from', async () => {
+    twoHints();
+    const c = await issue();
+    repo.update(1, { ...base, hints: [{ text: 'Edited later', cost: 0.9 }] }, null);
+    expect(service.hint('p1', c.id, 0)).toMatchObject({ ok: true, hint: { text: 'First nudge' } });
   });
 });
 
