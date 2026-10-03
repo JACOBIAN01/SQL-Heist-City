@@ -4,6 +4,10 @@ import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { thresholdsFor } from './entities/animation';
 import { FixedStepLoop } from './game/FixedStepLoop';
 import { LocalPlayer } from './game/LocalPlayer';
+import { PredictedPlayer } from './game/PredictedPlayer';
+import { GameClient } from './net/GameClient';
+import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
+import { InputBatcher } from './net/InputBatcher';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
 import { CameraRig } from './render/CameraRig';
@@ -13,6 +17,8 @@ import { computeViewport } from './render/viewport';
 import { buildMapObject } from './world/MapRenderer';
 
 // Composition root for the client.
+/** Remote players are drawn this far in the past (smooth interpolation); shots are rewound by it too. */
+const INTERP_DELAY_MS = 100;
 const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
@@ -34,6 +40,7 @@ window.addEventListener('resize', resize);
 
 const spawn = TEST_MAP.spawns[0] ?? { x: 0, z: 0, yaw: 0 };
 const player = new LocalPlayer(TEST_MAP, DEFAULT_MOVEMENT_SETTINGS, spawn);
+const predicted = new PredictedPlayer(player);
 const input = new InputSampler();
 input.setLook(spawn.yaw);
 const hint = document.createElement('div');
@@ -46,7 +53,27 @@ new PointerLock(renderer.domElement, input, (locked) => {
   hint.hidden = locked;
 });
 const rig = new CameraRig(camera, TEST_MAP);
-const loop = new FixedStepLoop(SIM_DT, () => player.apply(input.sample()));
+
+// Network: ?server=<port> (default 8080), ?name=, ?lag=<one-way ms> to simulate latency.
+const params = new URLSearchParams(location.search);
+const port = params.get('server') ?? '8080';
+const lag = Number(params.get('lag') ?? 0);
+let transport: GameTransport = new WebSocketGameTransport(
+  `ws://${location.hostname}:${port}/ws/game`,
+);
+if (lag > 0) transport = new DelayedTransport(transport, lag);
+const client = new GameClient(transport, { name: params.get('name') ?? 'Player' });
+client.subscribe({
+  snapshot: (snapshot) => predicted.reconcile(snapshot.self, snapshot.ackSeq),
+});
+const batcher = new InputBatcher((commands) => client.sendInput(commands));
+
+// Move now (prediction); the server confirms or corrects later. Offline play still works.
+const loop = new FixedStepLoop(SIM_DT, () => {
+  const command = input.sample();
+  predicted.predict(command);
+  batcher.push(command);
+});
 
 const model = new CharacterModel(
   PALETTES[0] ?? { shirt: 0xd4a017, trousers: 0x222222, skin: 0xe0b48a },
@@ -67,9 +94,12 @@ renderer.setAnimationLoop((now) => {
   const frameMs = now - last;
   last = now;
   stats.push(frameMs);
+  input.setViewLag(client.rttMs / 2 + INTERP_DELAY_MS);
   loop.advance(frameMs / 1000);
+  batcher.flush(now);
+  predicted.smooth(frameMs / 1000);
 
-  player.drawPosition(loop.alpha, drawPos);
+  predicted.drawPosition(loop.alpha, drawPos);
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
   model.object.rotation.y = input.currentYaw;
   model.update(
@@ -96,6 +126,6 @@ renderer.setAnimationLoop((now) => {
   if (now - lastOverlay > 500) {
     lastOverlay = now;
     const { calls, triangles } = renderer.info.render;
-    overlay.textContent = `${stats.fps.toFixed(0)} fps · worst ${stats.worstMs.toFixed(0)} ms · ${calls} calls · ${(triangles / 1000).toFixed(1)}k tris`;
+    overlay.textContent = `${client.status} · rtt ${client.rttMs.toFixed(0)} ms · pending ${predicted.pendingCount} · corr ${predicted.lastCorrection.toFixed(3)} m · ${stats.fps.toFixed(0)} fps · worst ${stats.worstMs.toFixed(0)} ms · ${calls} calls · ${(triangles / 1000).toFixed(1)}k tris`;
   }
 });

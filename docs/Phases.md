@@ -137,7 +137,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 5.5 | Binary protocol codec (`shared/`) | encode/decode tests pass | ✅ Done |
 | 5.6 | Server tick loop + join/leave | two clients connect | ✅ Done |
 | 5.7 | Server-side movement + collisions | no wall-walking | ✅ Done |
-| 5.8 | Client prediction + reconciliation | no rubber-band at 100 ms | ⬜ |
+| 5.8 | Client prediction + reconciliation | no rubber-band at 100 ms | ✅ Done |
 | 5.9 | Remote player interpolation | smooth other players | ⬜ |
 | 5.10 | Weapon fire (hitscan) + hit validation | hits registered by server | ⬜ |
 | 5.11 | Lag compensation | hits land at 100 ms latency | ⬜ |

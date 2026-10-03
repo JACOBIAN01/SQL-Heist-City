@@ -40,6 +40,12 @@ export class LocalPlayer {
     out.z = this.previous.z + (this.body.z - this.previous.z) * alpha;
   }
 
+  /** Overwrites physical state, e.g. from a server snapshot. Keeps the blend start in sync. */
+  loadState(state: Partial<BodyState>): void {
+    Object.assign(this.body, state);
+    copyBody(this.body, this.previous);
+  }
+
   teleport(x: number, y: number, z: number): void {
     for (const b of [this.body, this.previous]) {
       b.x = x;
