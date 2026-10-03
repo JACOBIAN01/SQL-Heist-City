@@ -2,6 +2,8 @@ import { h } from '../dom';
 import { ResultView } from './ResultView';
 import { SqlEditor } from './SqlEditor';
 
+const SUBMIT_LABEL = 'Submit ✔';
+
 export interface WorkPaneOptions {
   readonly onRun: () => void;
   /** Absent until submitting is wired; the button stays disabled. */
@@ -30,7 +32,7 @@ export class WorkPane {
     });
     this.submit = h('button', {
       class: 'sqlp-btn primary',
-      text: 'Submit ✔',
+      text: SUBMIT_LABEL,
       attrs: {
         type: 'button',
         title: 'Get graded. A wrong answer locks you out for a while. (Ctrl/⌘+Shift+Enter)',
@@ -73,6 +75,11 @@ export class WorkPane {
   setSubmitLocked(locked: boolean): void {
     this.submitLocked = locked;
     this.refreshButtons();
+  }
+
+  /** Button text, e.g. "Locked 8 s" during a lockout. Pass nothing to restore the default. */
+  setSubmitLabel(label?: string): void {
+    this.submit.textContent = label ?? SUBMIT_LABEL;
   }
 
   private refreshButtons(): void {

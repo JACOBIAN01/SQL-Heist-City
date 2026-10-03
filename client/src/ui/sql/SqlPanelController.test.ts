@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChallengeConnectionError } from '../../net/ChallengeApi';
 import { FakeChallengeApi, sampleChallenge } from '../../testing/FakeChallengeApi';
 import { SqlPanel } from './SqlPanel';
@@ -194,6 +194,8 @@ describe('SqlPanelController: Submit (graded)', () => {
     api.onSubmit = async () => ({ status: 'locked', lockedUntil: api.clock + 4_200 });
     await controller.submit();
     expect($('.sqlp-msg.wrong').textContent).toBe('Locked out — try again in 5 s.');
+    // A fresh task has no lockout; the server may still refuse (here: expired).
+    await started('SELECT 1');
     api.onSubmit = async () => ({ status: 'rejected', reason: 'expired' });
     await controller.submit();
     expect($('.sqlp-msg.error').textContent).toMatch(/expired/);
@@ -210,6 +212,71 @@ describe('SqlPanelController: Submit (graded)', () => {
     await controller.submit();
     expect($('.sqlp-msg.error').textContent).toMatch(/Cannot reach the game server/);
     expect(button(/Submit/).disabled).toBe(false);
+  });
+});
+
+describe('SqlPanelController: lockout countdown', () => {
+  const wrong = (until: number) => async () => ({
+    status: 'wrong' as const,
+    feedback: { code: 'row_count', message: 'Off.' },
+    lockedUntil: until,
+  });
+
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  const advance = (ms: number) => {
+    api.clock += ms;
+    vi.advanceTimersByTime(ms);
+  };
+
+  it("locks Submit for the server's time, counts down, then unlocks", async () => {
+    await started('SELECT 1');
+    api.onSubmit = wrong(api.clock + 10_000);
+    await controller.submit();
+    expect(button(/Locked/).textContent).toBe('Locked 10 s');
+    expect(button(/Locked/).disabled).toBe(true);
+
+    advance(3_000);
+    expect(button(/Locked/).textContent).toBe('Locked 7 s');
+    advance(7_000);
+    expect(button(/Submit/).textContent).toBe('Submit ✔');
+    expect(button(/Submit/).disabled).toBe(false);
+  });
+
+  it('does not bother the server while locked locally', async () => {
+    await started('SELECT 1');
+    api.onSubmit = wrong(api.clock + 10_000);
+    await controller.submit();
+    await controller.submit();
+    expect(api.calls.filter((c) => c.method === 'submit')).toHaveLength(1);
+    expect($('.sqlp-msg.wrong').textContent).toBe('Locked out — try again in 10 s.');
+  });
+
+  it('Run still works during a lockout (you can fix your query)', async () => {
+    await started('SELECT 1');
+    api.onSubmit = wrong(api.clock + 10_000);
+    await controller.submit();
+    await controller.run();
+    expect(api.calls.filter((c) => c.method === 'run')).toHaveLength(1);
+    expect(button(/Locked/).disabled).toBe(true);
+    expect(button(/Run/).disabled).toBe(false);
+  });
+
+  it('follows a server-reported lockout (e.g. after reconnecting)', async () => {
+    await started('SELECT 1');
+    api.onSubmit = async () => ({ status: 'locked', lockedUntil: api.clock + 4_000 });
+    await controller.submit();
+    expect(button(/Locked/).textContent).toBe('Locked 4 s');
+  });
+
+  it('a new task clears the lockout and stops the timer', async () => {
+    await started('SELECT 1');
+    api.onSubmit = wrong(api.clock + 10_000);
+    await controller.submit();
+    await controller.start('heal:small');
+    expect(button(/Submit/).disabled).toBe(false);
+    expect(controller['ticker']).toBeUndefined();
   });
 });
 

@@ -27,6 +27,9 @@ export class SqlPanelController {
   private readonly work: WorkPane;
   private challenge: PublicChallenge | null = null;
   private busy = false;
+  /** End of the server's wrong-answer lockout (server clock, epoch ms); 0 = not locked. */
+  private lockedUntil = 0;
+  private ticker: ReturnType<typeof setInterval> | undefined;
 
   constructor(private readonly deps: SqlPanelControllerDeps) {
     this.problem = new ProblemPane(deps.panel.slots.problem);
@@ -41,6 +44,7 @@ export class SqlPanelController {
   async start(rewardKey: string, target?: string): Promise<void> {
     const { panel, api } = this.deps;
     this.challenge = null;
+    this.clearLockout();
     this.work.editor.setReadOnly(false);
     this.problem.showMessage('Getting your task…');
     this.work.result.showIdle();
@@ -92,6 +96,13 @@ export class SqlPanelController {
       this.work.result.showMessage('Write a query first.');
       return;
     }
+    if (this.lockoutSeconds() > 0) {
+      this.work.result.showMessage(
+        `Locked out — try again in ${this.lockoutSeconds()} s.`,
+        'wrong',
+      );
+      return;
+    }
     this.setBusy(true);
     this.work.result.showMessage('Checking your answer…');
     try {
@@ -104,6 +115,7 @@ export class SqlPanelController {
   }
 
   destroy(): void {
+    this.stopTicker();
     this.work.destroy();
   }
 
@@ -112,6 +124,7 @@ export class SqlPanelController {
     switch (result.status) {
       case 'correct':
         this.challenge = null;
+        this.clearLockout();
         this.work.editor.setReadOnly(true);
         view.showWith(
           `✔ Correct! ${rewardLabel(result.rewardKey)} unlocked.`,
@@ -131,10 +144,11 @@ export class SqlPanelController {
         return;
       case 'wrong':
         view.showMessage(`✘ Not quite. ${result.feedback.message}`, 'wrong');
+        this.lockOut(result.lockedUntil);
         return;
       case 'locked': {
-        const seconds = this.secondsUntil(result.lockedUntil) ?? 0;
-        view.showMessage(`Locked out — try again in ${seconds} s.`, 'wrong');
+        this.lockOut(result.lockedUntil);
+        view.showMessage(`Locked out — try again in ${this.lockoutSeconds()} s.`, 'wrong');
         return;
       }
       case 'rejected':
@@ -159,6 +173,47 @@ export class SqlPanelController {
     slots.title.textContent = challenge.title;
     slots.tier.textContent = `T${challenge.tier}`;
     this.deps.panel.setBarText(challenge.title, '');
+  }
+
+  // --- wrong-answer lockout: the server decides the end time; we count down to it.
+
+  private lockOut(until: number): void {
+    this.lockedUntil = until;
+    this.work.setSubmitLocked(true);
+    this.startTicker();
+    this.tick();
+  }
+
+  private clearLockout(): void {
+    this.lockedUntil = 0;
+    this.work.setSubmitLocked(false);
+    this.work.setSubmitLabel();
+    this.stopTicker();
+  }
+
+  private lockoutSeconds(): number {
+    return this.lockedUntil === 0
+      ? 0
+      : Math.max(0, Math.ceil((this.lockedUntil - this.deps.api.serverNow()) / 1000));
+  }
+
+  private tick(): void {
+    if (this.lockedUntil === 0) return;
+    const seconds = this.lockoutSeconds();
+    if (seconds > 0) {
+      this.work.setSubmitLabel(`Locked ${seconds} s`);
+      return;
+    }
+    this.clearLockout();
+  }
+
+  private startTicker(): void {
+    this.ticker ??= setInterval(() => this.tick(), 250);
+  }
+
+  private stopTicker(): void {
+    clearInterval(this.ticker);
+    this.ticker = undefined;
   }
 
   private setBusy(busy: boolean): void {
