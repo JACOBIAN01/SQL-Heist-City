@@ -20,8 +20,8 @@
 | 0 | Docs & scaffold | ✅ Done |
 | 1 | Question engine | ✅ Done |
 | 2 | Admin backend + UI | ✅ Done |
-| 3 | Seed content (150 questions) | 🟨 In review |
-| 4 | SQL pop-up UI | ⬜ |
+| 3 | Seed content (150 questions) | ✅ Done |
+| 4 | SQL pop-up UI | 🟦 In progress |
 | 5 | Walk & shoot sandbox | ⬜ |
 | 6 | Scale core (60/100/200) | ⬜ |
 | 7 | Heist loop v1 | ⬜ |
@@ -93,7 +93,7 @@ Goal: teachers configure everything about questions.
 | 2.19 | UI: pools, versions/diff, audit, users (analytics deferred — needs game attempt data) | each page renders real data | ✅ Done |
 
 ---
-## Phase 3 — Seed content: 150 questions  🟨
+## Phase 3 — Seed content: 150 questions  ✅
 Goal: ship 150 curated, editable questions.
 
 | # | Subphase | Done when | Status |
@@ -106,10 +106,10 @@ Goal: ship 150 curated, editable questions.
 | 3.6 | Tier 4 — 30 questions | validator green | ✅ Done |
 | 3.7 | Tier 5 — 30 questions | validator green | ✅ Done |
 | 3.8 | `db:seed` (first admin + import via admin path) | fresh DB has 150 questions | ✅ Done |
-| 3.9 | User spot-check in admin UI | user approves content | 🟨 In review |
+| 3.9 | User spot-check in admin UI | user approves content | ✅ Done |
 
 ---
-## Phase 4 — SQL pop-up UI  ⬜
+## Phase 4 — SQL pop-up UI  🟦
 Goal: LeetCode-style, non-blocking panel, demo against real server.
 
 | # | Subphase | Done when | Status |
