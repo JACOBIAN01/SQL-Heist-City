@@ -1,6 +1,7 @@
 import type { AnimationAction } from 'three';
 import {
   AnimationMixer,
+  LoopOnce,
   Color,
   Group,
   MeshStandardMaterial,
@@ -18,6 +19,7 @@ import {
   type AnimationThresholds,
   type MotionState,
 } from './animation';
+import { splitClip } from './aimLayers';
 import type { CharacterRig } from './CharacterRig';
 
 /** What makes one player look different from another. */
@@ -54,6 +56,36 @@ const MIN_SCALE = 0.6;
 const MAX_SCALE = 1.6;
 const CROSSFADE_SECONDS = 0.15;
 
+/** How long a soldier stays at the ready after the last shot before lowering the gun. */
+const AIM_HOLD_SECONDS = 1.4;
+const DRAW_FADE_SECONDS = 0.2;
+const LOWER_FADE_SECONDS = 0.3;
+/** The gun changes hands at the middle of the draw, and goes back to the sling once the arms are down. */
+const DRAW_SWAP_SECONDS = 0.1;
+const HOLSTER_SWAP_SECONDS = 0.28;
+/** The recoil clip is blended over the aim pose with extra weight so it reads as a kick, not a 50/50 mix. */
+const KICK_WEIGHT = 4;
+
+/** Where the gun sits in each bone's own space: slung across the back, and held at the ready. */
+export const GUN_ON_BACK = {
+  bone: 'spine_03',
+  position: [0, 0.1, -0.14],
+  rotation: [1.57, 0, 0.3],
+} as const;
+/** Debug: overrides for the in-hand pose, set from the URL while tuning (?grot=x,y,z&gpos=x,y,z). */
+export const gunTuning: {
+  rotation?: [number, number, number];
+  position?: [number, number, number];
+  backRotation?: [number, number, number];
+  backPosition?: [number, number, number];
+} = {};
+
+export const GUN_IN_HAND = {
+  bone: 'hand_r',
+  position: [0, 0.05, 0],
+  rotation: [-1.57, 0, 0],
+} as const;
+
 /**
  * A rigged human (Quaternius, CC0) driven by shared animation clips.
  * The body arrives as separate skin / shirt / trousers / shoes parts, so each
@@ -68,6 +100,7 @@ export class GltfCharacter implements CharacterRig {
   private current: AnimationAction | undefined;
   private started = false;
   private readonly actions = new Map<string, AnimationAction>();
+  private readonly splits = new Map<string, ReturnType<typeof splitClip>>();
 
   constructor(
     template: Object3D,
@@ -79,6 +112,9 @@ export class GltfCharacter implements CharacterRig {
     const model = clone(template);
     model.rotation.y = Math.PI;
     this.object.add(model);
+    model.traverse((n) => {
+      if (n.name) this.bones.set(n.name, n);
+    });
     this.mixer = new AnimationMixer(model);
 
     const own = new Map<Material, Material>();
@@ -93,16 +129,83 @@ export class GltfCharacter implements CharacterRig {
   }
 
   private held: Object3D | undefined;
+  private readonly bones = new Map<string, Object3D>();
+  private aimIdle: AnimationAction | undefined;
+  private kick: AnimationAction | undefined;
+  private aiming = false;
+  private aimTimer = 0;
+  /** Where the gun is going and when (seconds from now), so the swap lands mid-draw. */
+  private pending: { slot: 'back' | 'hand'; in: number } | undefined;
+  private gunSlot: 'back' | 'hand' = 'back';
+
+  /** True while the gun is drawn (for tests and debugging). */
+  get isAiming(): boolean {
+    return this.aiming;
+  }
+
+  get gunIn(): 'back' | 'hand' {
+    return this.gunSlot;
+  }
 
   holdItem(item: Object3D | undefined): void {
     this.held?.removeFromParent();
     this.held = item;
+    if (!item) {
+      if (this.aiming) this.setAiming(false);
+      this.pending = undefined;
+      return;
+    }
+    this.place(this.aiming ? 'hand' : 'back');
+  }
+
+  /** The player just fired: draw the gun if it is slung, aim, and kick. Does nothing without a gun. */
+  fired(): void {
+    if (!this.held) return;
+    this.aimTimer = AIM_HOLD_SECONDS;
+    if (!this.aiming) this.setAiming(true);
+    if (!this.kick) {
+      this.kick = this.upperAction('Pistol_Shoot');
+      this.kick?.setLoop(LoopOnce, 1);
+    }
+    this.kick?.reset().setEffectiveWeight(KICK_WEIGHT).play();
+  }
+
+  private setAiming(on: boolean): void {
+    if (on === this.aiming) return;
+    this.aiming = on;
+    // Legs keep their locomotion; arms and torso come from (or leave) the aiming clip.
+    this.play(this.animation);
+    this.aimIdle ??= this.upperAction('Pistol_Idle_Loop');
+    if (on) this.aimIdle?.reset().fadeIn(DRAW_FADE_SECONDS).play();
+    else this.aimIdle?.fadeOut(LOWER_FADE_SECONDS);
+    this.pending = on
+      ? { slot: 'hand', in: DRAW_SWAP_SECONDS }
+      : { slot: 'back', in: HOLSTER_SWAP_SECONDS };
+  }
+
+  /** An action that plays only the upper-body tracks of a clip; undefined if the clip is missing. */
+  private upperAction(clipName: string): AnimationAction | undefined {
+    const clip = this.clips.get(clipName);
+    return clip ? this.mixer.clipAction(this.splitOf(clip).upper) : undefined;
+  }
+
+  private splitOf(clip: AnimationClip) {
+    let pair = this.splits.get(clip.name);
+    if (!pair) this.splits.set(clip.name, (pair = splitClip(clip)));
+    return pair;
+  }
+
+  private place(slot: 'back' | 'hand'): void {
+    const item = this.held;
     if (!item) return;
-    // Held out in front at chest height, barrel forward: the clips have no aiming pose, and a gun
-    // parented to the hanging hand points at the ground.
-    item.position.set(0.2, 1.2, -0.3);
-    item.rotation.set(0, 0, 0);
-    this.object.add(item);
+    const spec = slot === 'hand' ? GUN_IN_HAND : GUN_ON_BACK;
+    const bone = this.bones.get(spec.bone) ?? this.object;
+    const pos = (slot === 'hand' ? gunTuning.position : gunTuning.backPosition) || spec.position;
+    const rot = (slot === 'hand' ? gunTuning.rotation : gunTuning.backRotation) || spec.rotation;
+    item.position.fromArray(pos);
+    item.rotation.set(rot[0], rot[1], rot[2]);
+    bone.add(item);
+    this.gunSlot = slot;
   }
 
   update(motion: MotionState, dtSeconds: number): void {
@@ -115,12 +218,25 @@ export class GltfCharacter implements CharacterRig {
         Math.min(MAX_SCALE, Math.max(MIN_SCALE, motion.speed / nominal)),
       );
     }
+    if (this.aiming) {
+      this.aimTimer -= dtSeconds;
+      if (this.aimTimer <= 0) this.setAiming(false);
+    }
+    if (this.pending) {
+      this.pending.in -= dtSeconds;
+      if (this.pending.in <= 0) {
+        this.place(this.pending.slot);
+        this.pending = undefined;
+      }
+    }
     this.mixer.update(dtSeconds);
   }
 
   private play(name: AnimationName): void {
-    const clip = this.clips.get(CLIP_FOR[name]);
-    if (!clip) return;
+    const full = this.clips.get(CLIP_FOR[name]);
+    if (!full) return;
+    // While aiming only the legs come from locomotion; the aim clip owns the upper body.
+    const clip = this.aiming ? this.splitOf(full).lower : full;
     let action = this.actions.get(clip.name);
     if (!action) {
       action = this.mixer.clipAction(clip);

@@ -33,6 +33,7 @@ import { ScoreboardView } from './ui/hud/ScoreboardView';
 import { BankingProgress } from './heist/BankingProgress';
 import { LootRenderer } from './heist/LootRenderer';
 import { HeistWorld } from './heist/HeistWorld';
+import { gunTuning } from './entities/GltfCharacter';
 import { createGun } from './entities/GunModel';
 import { createCashBag } from './entities/CashBag';
 import { Interactions } from './heist/Interactions';
@@ -54,6 +55,17 @@ import { buildMapObject, setClosedDoors } from './world/MapRenderer';
 // Composition root for the client.
 // ?map=heist loads the bank map (the server must run MATCH_MAP=heist); the sandbox yard is the default.
 const params = new URLSearchParams(location.search);
+// ?grot / ?gpos tune the in-hand gun pose while developing.
+const triple = (v: string | null) =>
+  v ? (v.split(',').map(Number) as [number, number, number]) : undefined;
+const grot = triple(params.get('grot'));
+if (grot) gunTuning.rotation = grot;
+const brot = triple(params.get('brot'));
+if (brot) gunTuning.backRotation = brot;
+const bpos = triple(params.get('bpos'));
+if (bpos) gunTuning.backPosition = bpos;
+const gpos = triple(params.get('gpos'));
+if (gpos) gunTuning.position = gpos;
 const MAP = mapById(params.get('map')) ?? TEST_MAP;
 /** Remote players are drawn this far in the past (smooth interpolation); shots are rewound by it too. */
 const INTERP_DELAY_MS = 100;
@@ -138,6 +150,7 @@ const feedback = new CombatFeedback({
   map: MAP,
   movement: DEFAULT_MOVEMENT_SETTINGS,
   combat: DEFAULT_COMBAT_SETTINGS,
+  onLocalShot: () => model.fired(),
   myId: () => client.playerId,
   myName: () => playerName,
   nameOf: (id) => remotes.nameOf(id),
@@ -155,6 +168,13 @@ client.subscribe({
       heldWeapon = snapshot.self.weapon;
       const id = WEAPON_IDS[heldWeapon - 1];
       model.holdItem(id ? createGun(id) : undefined);
+      if (params.get('pose') === 'back') model.holdItem(createGun(params.get('gun') ?? 'rifle'));
+      if (params.get('pose') === 'aim') {
+        // Preview: draw, aim and let the pose settle at once (headless screenshots render too few frames to wait for it).
+        model.fired();
+        for (let i = 0; i < 40; i++)
+          model.update({ speed: 0, crouching: false, onGround: true }, 0.03);
+      }
     }
     predicted.reconcile(snapshot.self, snapshot.ackSeq);
     feedback.onSnapshot(snapshot.self, performance.now() / 1000, snapshot.ackSeq);
@@ -285,6 +305,18 @@ ownBag.scale.setScalar(0.75);
 ownBag.visible = params.has('bag'); // ?bag previews the bag without carrying cash
 model.object.add(ownBag);
 
+// ?pose=aim keeps the drawn-gun pose on screen for checking the animation without shooting.
+if (params.get('pose') === 'aim') {
+  // Preview without a server: equip a rifle and settle into the drawn pose straight away.
+  model.holdItem(createGun(params.get('gun') ?? 'rifle'));
+  model.fired();
+  for (let i = 0; i < 40; i++) model.update({ speed: 0, crouching: false, onGround: true }, 0.03);
+  setInterval(() => model.fired(), 400);
+}
+
+/** ?turn=<radians> turns the model away from the camera, to inspect poses from the side or front. */
+const debugTurn = Number(params.get('turn') ?? 0);
+
 const stats = new FrameStats();
 const overlay = document.createElement('div');
 overlay.style.cssText =
@@ -314,7 +346,7 @@ renderer.setAnimationLoop((now) => {
   interactions.update(player.body.x, player.body.y, player.body.z, feedback.isAlive);
   model.object.visible = feedback.isAlive;
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
-  model.object.rotation.y = input.currentYaw;
+  model.object.rotation.y = input.currentYaw + debugTurn;
   model.update(
     {
       speed: Math.hypot(player.body.vx, player.body.vz),

@@ -109,6 +109,8 @@ export class CharacterModel implements CharacterRig {
 
   private held: Object3D | undefined;
 
+  fired(): void {}
+
   holdItem(item: Object3D | undefined): void {
     this.held?.removeFromParent();
     this.held = item;

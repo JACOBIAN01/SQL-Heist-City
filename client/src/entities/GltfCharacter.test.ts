@@ -5,6 +5,7 @@ import {
   BoxGeometry,
   Group,
   Mesh,
+  Object3D,
   MeshStandardMaterial,
   NumberKeyframeTrack,
   Texture,
@@ -151,5 +152,102 @@ describe('GltfCharacter: animation', () => {
   it('copes with a missing clip without throwing', () => {
     const c = new GltfCharacter(template().root, new Map(), look, thresholds);
     expect(() => c.update({ ...still, speed: 4.2 }, 0.016)).not.toThrow();
+  });
+});
+
+describe('GltfCharacter gun handling', () => {
+  /** A body with the two bones the gun moves between, and the aim clips. */
+  function armed() {
+    const t = template();
+    for (const name of ['spine_03', 'hand_r']) {
+      const bone = new Object3D();
+      bone.name = name;
+      t.root.add(bone);
+    }
+    const withAim = new Map(clips);
+    for (const name of ['Pistol_Idle_Loop', 'Pistol_Shoot'])
+      withAim.set(
+        name,
+        new AnimationClip(name, 1, [
+          new NumberKeyframeTrack('hand_r.rotation[x]', [0, 1], [0, 1]),
+          new NumberKeyframeTrack('thigh_l.rotation[x]', [0, 1], [0, 1]),
+        ]),
+      );
+    const c = new GltfCharacter(t.root, withAim, look, thresholds);
+    const gun = new Group();
+    c.holdItem(gun);
+    return {
+      c,
+      gun,
+      // The character clones the template, so its bones are the clone's.
+      back: c.object.getObjectByName('spine_03'),
+      hand: c.object.getObjectByName('hand_r'),
+    };
+  }
+
+  it('carries the gun slung on the back until the player fires', () => {
+    const { c, gun, back } = armed();
+    expect(gun.parent).toBe(back);
+    expect(c.isAiming).toBe(false);
+    c.update(still, 0.5);
+    expect(c.gunIn).toBe('back');
+  });
+
+  it('draws on the first shot: aims at once, and the gun reaches the hand mid-draw', () => {
+    const { c, gun, hand } = armed();
+    c.fired();
+    expect(c.isAiming).toBe(true);
+    expect(c.gunIn).toBe('back'); // the arm is still on its way up
+    c.update(still, 0.05);
+    expect(c.gunIn).toBe('back');
+    c.update(still, 0.1);
+    expect(c.gunIn).toBe('hand');
+    expect(gun.parent).toBe(hand);
+  });
+
+  it('stays at the ready while shooting, then lowers and slings the gun after a pause', () => {
+    const { c, gun, back } = armed();
+    c.fired();
+    c.update(still, 0.3);
+    for (let i = 0; i < 4; i++) {
+      c.fired(); // a burst keeps resetting the timer
+      c.update(still, 0.5);
+    }
+    expect(c.isAiming).toBe(true);
+    c.update(still, 1.5); // no more shots
+    expect(c.isAiming).toBe(false);
+    c.update(still, 0.4);
+    expect(c.gunIn).toBe('back');
+    expect(gun.parent).toBe(back);
+  });
+
+  it('keeps walking with the legs while the arms aim', () => {
+    const { c } = armed();
+    c.fired();
+    const run = { speed: 4, crouching: false, onGround: true };
+    c.update(run, 0.3);
+    expect(c.animation).toBe('jog');
+    expect(c.isAiming).toBe(true);
+  });
+
+  it('ignores a shot when there is no gun, and puts the arms down if the gun is taken away', () => {
+    const t = template();
+    const c = new GltfCharacter(t.root, clips, look, thresholds);
+    c.fired();
+    expect(c.isAiming).toBe(false);
+    const { c: armedChar } = armed();
+    armedChar.fired();
+    armedChar.holdItem(undefined);
+    expect(armedChar.isAiming).toBe(false);
+  });
+
+  it('copes with a rig that has no aim clips', () => {
+    const t = template();
+    const c = new GltfCharacter(t.root, clips, look, thresholds);
+    c.holdItem(new Group());
+    expect(() => {
+      c.fired();
+      c.update(still, 0.5);
+    }).not.toThrow();
   });
 });

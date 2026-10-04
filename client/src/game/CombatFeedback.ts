@@ -28,6 +28,8 @@ export interface CombatFeedbackDeps {
   readonly map: GameMap;
   readonly movement: MovementSettings;
   readonly combat: CombatSettings;
+  /** The local player fired a shot (to play the aim and recoil animation). */
+  readonly onLocalShot?: () => void;
   readonly myId: () => number;
   readonly myName: () => string;
   readonly nameOf: (id: number) => string;
@@ -93,6 +95,7 @@ export class CombatFeedback {
     // Rounds the server will have left once the shots still on their way arrive: none, no trail.
     if (this.ammo - this.inFlight.length <= 0) return;
     this.inFlight.push(command.seq);
+    this.deps.onLocalShot?.();
     this.cooldown += 60 / weapon.rpm;
 
     const origin = aimOrigin(body, command.yaw, this.deps.movement);

@@ -13,6 +13,8 @@ export interface CharacterRig {
   readonly animation: AnimationName;
   /** Puts an object in the right hand (a gun), replacing what was there; undefined empties the hand. */
   holdItem(item: Object3D | undefined): void;
+  /** This player just fired: a soldier draws, aims and kicks (rigs without the animation ignore it). */
+  fired(): void;
   update(motion: MotionState, dtSeconds: number): void;
 }
 

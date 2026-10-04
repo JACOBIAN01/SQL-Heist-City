@@ -98,6 +98,8 @@ export class RemotePlayers {
     } else if (event.e === 'left') {
       this.names.delete(event.id);
       this.remove(event.id);
+    } else if (event.e === 'shot') {
+      this.remotes.get(event.shooter)?.model.fired();
     }
   }
 
