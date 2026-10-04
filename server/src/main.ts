@@ -25,7 +25,7 @@ if (existsSync(dbPath)) {
 }
 
 // The HTTP server is created first (the game attaches to it), so metrics look the game up lazily.
-// MATCH_MAP=sandbox|heist|bench. Load tests: MATCH_MAX_PLAYERS=200, MATCH_DUMMIES=0, MATCH_MAP=bench (640 m).
+// MATCH_MAP=sandbox|heist|city|city:<seed>|bench. Load tests: MATCH_MAX_PLAYERS=200, MATCH_DUMMIES=0, MATCH_MAP=bench (640 m).
 const mapName = parseMapName(process.env.MATCH_MAP);
 const matchSettings = {
   ...DEFAULT_MATCH_SETTINGS,
