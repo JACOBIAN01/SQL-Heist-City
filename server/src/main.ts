@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { attachChallengeSocket } from './challenges/ChallengeSocket';
 import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
-import { startGame } from './game/startGame';
+import { startGame, type RunningGame } from './game/startGame';
 import { createHttpServer } from './http/httpServer';
 
 // Entry point: reads the environment, then wires concrete dependencies.
@@ -21,7 +21,10 @@ if (existsSync(dbPath)) {
   console.warn(`no database at ${dbPath} yet — start the admin and run db:seed first`);
 }
 
+// The HTTP server is created first (the game attaches to it), so metrics look the game up lazily.
+const running: { game?: RunningGame } = {};
 const server = createHttpServer({
+  metrics: () => running.game?.metrics() ?? {},
   now: Date.now,
   startedAt: Date.now(),
   ...(process.env.INTERNAL_SECRET ? { internalSecret: process.env.INTERNAL_SECRET } : {}),
@@ -31,7 +34,7 @@ const server = createHttpServer({
   },
 });
 if (challenges) attachChallengeSocket(server, challenges.handler);
-startGame(server);
+running.game = startGame(server);
 
 server.listen(port, () => {
   console.log(`game server listening on http://localhost:${port}`);

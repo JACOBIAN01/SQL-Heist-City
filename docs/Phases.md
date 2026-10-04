@@ -148,7 +148,7 @@ Goal: movement and combat feel good with 2+ real players.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 6.1 | Bot harness (`load:bots`) | spawns N scripted players | ✅ Done |
-| 6.2 | Metrics (tick ms, bytes/s) + `/metrics` | visible numbers | ⬜ |
+| 6.2 | Metrics (tick ms, bytes/s) + `/metrics` | visible numbers | ✅ Done |
 | 6.3 | Baseline measurement (no optimisation) | numbers recorded in docs | ⬜ |
 | 6.4 | Spatial hash grid for players **and static colliders** (cell = 64 m chunk for AOI, 8 m for colliders; see city-kit.md §5) | neighbour and box queries tested; stepBody/rays only test nearby boxes | ⬜ |
 | 6.5 | AOI snapshots with tiered rates | bandwidth drops | ⬜ |

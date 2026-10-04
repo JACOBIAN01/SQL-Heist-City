@@ -247,3 +247,17 @@ describe('Match: server-side movement', () => {
     expect(player.body.z).toBe(before);
   });
 });
+
+describe('Match: traffic counters', () => {
+  it('counts bytes, snapshots and events sent', () => {
+    const { match } = make();
+    const a = join(match, 'Ana');
+    join(match, 'Ben');
+    expect(match.traffic.events).toBeGreaterThan(0);
+    const before = match.traffic.bytes;
+    match.step();
+    expect(match.traffic.snapshots).toBe(2);
+    const snapBytes = a.connection.of('snapshot').length > 0 ? match.traffic.bytes - before : 0;
+    expect(snapBytes).toBeGreaterThan(0);
+  });
+});

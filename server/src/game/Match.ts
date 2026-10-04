@@ -60,6 +60,8 @@ const MAX_ID = 0xffff;
 export class Match {
   readonly players = new Map<number, Player>();
   tick = 0;
+  /** Everything the server has tried to send, for `/metrics` and the load tests. */
+  readonly traffic = { bytes: 0, snapshots: 0, events: 0 };
   private nextId = 1;
   private readonly spawnPolicy: SpawnPolicy;
   private readonly now: () => number;
@@ -361,11 +363,20 @@ export class Match {
 
   private broadcast(event: GameEvent, exceptId?: number): void {
     const bytes = encodeServerMessage({ t: 'event', event });
-    for (const p of this.players.values()) if (p.id !== exceptId) p.connection.send(bytes);
+    for (const p of this.players.values()) {
+      if (p.id === exceptId) continue;
+      p.connection.send(bytes);
+      this.traffic.bytes += bytes.length;
+      this.traffic.events++;
+    }
   }
 
   private sendTo(player: Player, message: ServerMessage): void {
-    player.connection.send(encodeServerMessage(message));
+    const bytes = encodeServerMessage(message);
+    player.connection.send(bytes);
+    this.traffic.bytes += bytes.length;
+    if (message.t === 'snapshot') this.traffic.snapshots++;
+    else this.traffic.events++;
   }
 
   private allocateId(): number {

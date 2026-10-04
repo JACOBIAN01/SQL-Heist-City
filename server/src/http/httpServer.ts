@@ -10,6 +10,8 @@ export interface HttpServerDeps {
   startedAt: number;
   /** Shared secret for /internal/* (admin → game). Unset = internal routes disabled. */
   internalSecret?: string;
+  /** Source of numbers for `GET /metrics` (tick time, players, bandwidth). Absent = route disabled. */
+  metrics?: () => unknown;
   /** Called on POST /internal/reload, e.g. to drop question/settings caches. */
   onReload?: () => void;
 }
@@ -25,6 +27,10 @@ export function createHttpServer(deps: HttpServerDeps): Server {
         protocolVersion: PROTOCOL_VERSION,
         uptimeMs: deps.now() - deps.startedAt,
       });
+      return;
+    }
+    if (req.method === 'GET' && req.url === '/metrics' && deps.metrics) {
+      sendJson(res, 200, deps.metrics());
       return;
     }
     if (req.method === 'POST' && req.url === '/internal/reload' && deps.internalSecret) {
