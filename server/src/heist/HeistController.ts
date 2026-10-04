@@ -12,6 +12,7 @@ import {
 import type { Player } from '../game/Player';
 import { BankingService } from './BankingService';
 import type { ChallengeGateway } from './ChallengeGateway';
+import { HealRule } from './HealRule';
 import { LootManager } from './LootManager';
 import { ElevatorHandler } from './ElevatorHandler';
 import { InteractionService } from './InteractionService';
@@ -64,6 +65,7 @@ export class HeistController {
         },
       }),
     );
+    this.tasks.add(new HealRule(match, settings));
     this.refreshDoors();
   }
 

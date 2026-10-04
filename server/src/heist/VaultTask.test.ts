@@ -10,27 +10,7 @@ import {
 import { Match } from '../game/Match';
 import { FakeConnection } from '../game/testing';
 import type { ChallengeGateway } from './ChallengeGateway';
-
-/** A gateway that records calls and answers from a script. */
-class ScriptedGateway implements ChallengeGateway {
-  readonly calls: { player: string; raw: unknown }[] = [];
-  readonly left: string[] = [];
-  /** What the next call returns (set by the test). */
-  answer: (raw: { t: string; ref: number }) => ChallengeServerMessage = (raw) => ({
-    t: 'challenge_abandoned',
-    ref: raw.ref,
-    now: 0,
-  });
-
-  handle(player: string, raw: unknown): Promise<ChallengeServerMessage> {
-    this.calls.push({ player, raw });
-    return Promise.resolve(this.answer(raw as { t: string; ref: number }));
-  }
-
-  playerLeft(player: string): void {
-    this.left.push(player);
-  }
-}
+import { ScriptedGateway } from './testing';
 
 const correct = (ref: number, lock: number): ChallengeServerMessage => ({
   t: 'challenge_result',

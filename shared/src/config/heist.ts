@@ -14,6 +14,10 @@ export const heistSettingsSchema = z.object({
     .default({ '1': 50_000, '2': 100_000, '3': 200_000, '4': 400_000, '5': 800_000 }),
   /** How close (m) a player must be to a bag to pick it up. */
   bagPickupRadius: z.number().positive().default(1.4),
+  /** Hit points a heal task restores, by tier name (`heal:<tier>`); capped at max HP, so a big number means "full". */
+  healByTier: z
+    .record(z.string(), z.number().int().positive())
+    .default({ small: 20, medium: 50, full: 1000 }),
   /** Seconds a player must stay at a safehouse, unhurt, to bank what they carry. */
   bankingSeconds: z.number().positive().default(4),
   /** Top speed lost per $100k carried (0.1 = 10%), up to `carrySlowMax`. */

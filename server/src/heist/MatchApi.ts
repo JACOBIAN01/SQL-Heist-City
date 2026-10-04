@@ -9,6 +9,7 @@ import type { Player } from '../game/Player';
 export interface MatchApi {
   readonly tick: number;
   readonly tickRate: number;
+  readonly maxHp: number;
   readonly map: GameMap;
   getPlayer(id: number): Player | undefined;
   playerList(): Iterable<Player>;

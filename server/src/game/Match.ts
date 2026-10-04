@@ -146,6 +146,10 @@ export class Match implements MatchApi {
     return this.deps.settings.tickRate;
   }
 
+  get maxHp(): number {
+    return this.combat.maxHp;
+  }
+
   getPlayer(id: number): Player | undefined {
     return this.players.get(id);
   }
