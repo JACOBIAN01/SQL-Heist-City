@@ -40,7 +40,7 @@ Every other building is a solid shell with a fake-interior window texture: cheap
 ### 4. Rendering budget (hard numbers)
 | Item | Budget | How |
 |---|---|---|
-| Draw calls | < 200 total | merge each chunk's pieces **per material** at load; ≤ 6 materials after atlasing; players ≈ 3 calls each (visible ≤ 30) |
+| Draw calls | < 200 total | merge each chunk's pieces **per material** at load; 2 kit materials (opaque texture array + decals); players ≈ 3 calls each (visible ≤ 30) |
 | Triangles | < 400k on screen | choose the light window/column variants; far chunks drawn as box impostors with a facade texture; characters get a ~1.5k-triangle LOD beyond 25 m |
 | Texture download | ≤ 3 MB | merge the kit's 21 materials into ≤ 6 texture sets (brick, trim/concrete, glass+fake interiors, roof, asphalt+decals, interior floor/wall); base colour 512–1024 px WebP; drop ORM/normal where they do not show |
 | Total first load | < 8 MB | characters ~1 MB + kit ≤ 3 MB + code ~0.3 MB |
@@ -48,8 +48,27 @@ Every other building is a solid shell with a fake-interior window texture: cheap
 ### 5. Colliders must stay cheap
 A bank with several floors is roughly 20–40 boxes; 25 buildings ≈ 500–1000 boxes. `stepBody` currently tests every box. Phase 6 adds a **static collision grid** (boxes indexed by 8 m cell) so a body or ray only tests nearby boxes. This is also what makes bigger maps possible.
 
-### 6. Build pipeline (Phase 8.1)
-Like `tools/characters/`, an offline `tools/city/` script: pick ~60 light pieces → atlas textures → WebP → one `kit.glb` plus `kit.json` (piece id → size on the 2 m grid, material, triangle count). The game loads one file, not 150. The raw 223 MB download stays out of git.
+### 6. Build pipeline (Phase 8.1, built)
+Like `tools/characters/`, `tools/city/build-kit.mjs` is an offline script (usage in `tools/city/README.md`). It turns the raw 223 MB download (kept out of git in `tools/city/inbox/`) into four files in `client/public/city/`:
+
+- **`kit.glb`** holds the geometry of the 66 chosen pieces, one node each, at the origin. Each piece has at most two primitives: `kit` (opaque) and `decal`. Positions and normals are quantised.
+- **`kit-layers.webp`** is 16 texture layers of 512 px, stacked into one image. The game uploads them as a **texture array**, and each vertex carries a `_LAYER` byte choosing its layer. Since every layer tiles on its own, this replaces the planned atlas without atlas bleeding, and the whole opaque kit is **one material**. The kit's engine-tinted variants (pale brick, dark and green trim) are pre-tinted layers. AO is baked into the colour; normal/ORM maps are not shipped. Glass panes are dropped, so windows show the fake-interior layer (3 interior layers that the chunk builder can vary per window).
+- **`kit-decals.webp`** is the road-marking sheet (1024 px, alpha), used by the second material, `decal` (alpha-tested, polygon offset).
+- **`kit.json`** maps each piece id to its bounds, triangle count, layers and whether it has decals. The client validates it on load (`parseKitManifest`).
+
+Piece frame: y is up, the base is at y = 0, the facade face is at z = 0 and the wall runs into −z. Street surfaces are at y = −0.15, with the kerb and sidewalk top at y = 0. The kit's intersection crosswalks extend past its 18 m asphalt square onto the approach roads.
+
+**Size report (Phase 8.1):**
+
+| File | Size |
+|---|---|
+| kit.glb (66 pieces, 8,561 triangles) | 392 KB |
+| kit-layers.webp (16 × 512² layers) | 188 KB |
+| kit-decals.webp (1024², alpha) | 486 KB |
+| kit.json | 17 KB |
+| **Total** | **≈ 1.06 MB** (budget 3 MB) |
+
+The result is **2 materials** (budget ≤ 6) and **2 textures** (budget ≤ 6 texture sets). A test (`client/src/world/city/CityKit.test.ts`) parses the real `kit.glb`, checks that it matches the manifest, and fails if the files go over 3 MB. Preview: `kit.html` in the dev client.
 
 ## Phase impact (summary; the plan itself is in Phases.md)
 | Phase | Change because of the kit |

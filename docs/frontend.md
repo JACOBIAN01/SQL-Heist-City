@@ -9,7 +9,7 @@ Stack: TypeScript, Vite, Three.js, CodeMirror 6 (SQL). No UI framework for the H
 | Frame rate | 60 fps integrated GPU, 30 fps floor on low-end |
 | Draw calls | < 200 |
 | Triangles on screen | < 400k |
-| Textures | atlas + KTX2/Basis; max 2k |
+| Textures | city: one texture array (512 px layers, WebP) + a decal sheet; max 2k |
 | Audio | sprite sheets < 1 MB total |
 
 ## Modules
@@ -38,7 +38,7 @@ src/
 
 ## Rendering approach ("real-life look, light cost")
 - Art direction: stylised-realistic, muted palette, strong lighting, fog depth.
-- City from the Quaternius kit (`city-kit.md`): kit pieces merged per chunk per material (≤ 6 atlas materials), fake-interior windows on non-bank buildings, far chunks as impostors. Gameplay never reads art meshes: the layout's boxes do.
+- City from the Quaternius kit (`city-kit.md`): kit pieces merged per chunk per material (2 materials: opaque texture array chosen per vertex, and decals; `world/city/CityKit.ts`, preview page `kit.html`), fake-interior windows on non-bank buildings, far chunks as impostors. Gameplay never reads art meshes: the layout's boxes do.
 - Baked AO/lightmaps on banks; one dynamic sun; shadows only within ~60 m of player.
 - Sky gradient + sun disc; day/night by lerping light, fog, emissive windows/streetlights.
 - Wet roads at night via cheap env-probe reflection.

@@ -25,7 +25,7 @@
 | 5 | Walk & shoot sandbox | ✅ Done |
 | 6 | Scale core (60/100/200) | ✅ Done |
 | 7 | Heist loop v1 | ✅ Done |
-| 8 | City, vehicles, atmosphere | ⬜ |
+| 8 | City, vehicles, atmosphere | 🟨 In progress |
 | 9 | Banks 2–5, weapons, UX | ⬜ |
 | 10 | Harden & ship | ⬜ |
 
@@ -175,12 +175,12 @@ Goal: movement and combat feel good with 2+ real players.
 | 7.12 | Scoreboard + round timer + win condition | round ends with winner | ✅ |
 
 ---
-## Phase 8 — City, vehicles, atmosphere  ⬜
+## Phase 8 — City, vehicles, atmosphere  🟨
 Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 8.1 | Kit build pipeline (`tools/city/`): ~60 light pieces, ≤ 6 atlas texture sets, WebP ≤ 3 MB, `kit.glb` + `kit.json` | one file loads; size report in docs | ⬜ |
+| 8.1 | Kit build pipeline (`tools/city/`): ~60 light pieces, ≤ 6 atlas texture sets, WebP ≤ 3 MB, `kit.glb` + `kit.json` | one file loads; size report in docs | ✅ 66 pieces, 1 texture array + decals, 1.06 MB (city-kit.md §6) |
 | 8.2 | Seeded `CityLayout` in `shared/` (roads, 64 m blocks, lots, bank/safehouse sites) → `GameMap` colliders | same seed = same city on server and client | ⬜ |
 | 8.3 | Facade grammar → kit placements, merged per chunk per material, fake-interior windows | a block renders with the kit | ⬜ |
 | 8.4 | Chunk streaming + LOD (box impostors far, character LOD) | smooth traversal, draw calls < 200 | ⬜ |
