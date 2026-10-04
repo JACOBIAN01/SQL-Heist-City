@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Scene } from 'three';
-import { Flag, type EntityState } from '@heist/shared';
+import { Flag, flagsWithWeapon, type EntityState } from '@heist/shared';
 import { RemotePlayers } from './RemotePlayers';
 import { CharacterModel, PALETTES } from './CharacterModel';
 import { thresholdsFor } from './animation';
@@ -123,5 +123,21 @@ describe('RemotePlayers', () => {
     remotes.onSnapshot(150, [entity(2, 0)]);
     remotes.update(400, 0.016, 0);
     expect(bag?.visible).toBe(false);
+  });
+});
+
+describe('RemotePlayers guns', () => {
+  it('puts the gun a player holds in their hands, from the snapshot flags', () => {
+    const { scene, remotes } = make();
+    const armed = flagsWithWeapon(Flag.Alive | Flag.OnGround, 4); // rifle
+    remotes.onSnapshot(0, [entity(2, 0, { flags: armed })]);
+    remotes.onSnapshot(50, [entity(2, 0, { flags: armed })]);
+    remotes.update(200, 0.016, 0);
+    expect(scene.getObjectByName('gun-rifle')).toBeDefined();
+    const unarmed = Flag.Alive | Flag.OnGround;
+    remotes.onSnapshot(100, [entity(2, 0, { flags: unarmed })]);
+    remotes.onSnapshot(150, [entity(2, 0, { flags: unarmed })]);
+    remotes.update(400, 0.016, 0);
+    expect(scene.getObjectByName('gun-rifle')).toBeUndefined();
   });
 });

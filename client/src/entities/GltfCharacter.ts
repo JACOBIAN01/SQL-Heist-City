@@ -92,6 +92,19 @@ export class GltfCharacter implements CharacterRig {
     });
   }
 
+  private held: Object3D | undefined;
+
+  holdItem(item: Object3D | undefined): void {
+    this.held?.removeFromParent();
+    this.held = item;
+    if (!item) return;
+    // Held out in front at chest height, barrel forward: the clips have no aiming pose, and a gun
+    // parented to the hanging hand points at the ground.
+    item.position.set(0.2, 1.2, -0.3);
+    item.rotation.set(0, 0, 0);
+    this.object.add(item);
+  }
+
   update(motion: MotionState, dtSeconds: number): void {
     const next = selectAnimation(motion, this.thresholds);
     if (next !== this.animation || !this.started) this.play(next);

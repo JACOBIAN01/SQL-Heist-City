@@ -107,6 +107,17 @@ export class CharacterModel implements CharacterRig {
     return this.root;
   }
 
+  private held: Object3D | undefined;
+
+  holdItem(item: Object3D | undefined): void {
+    this.held?.removeFromParent();
+    this.held = item;
+    if (!item) return;
+    item.position.set(0.2, 1.2, -0.3);
+    item.rotation.set(0, 0, 0);
+    this.root.add(item);
+  }
+
   update(motion: MotionState, dtSeconds: number): void {
     this.animation = selectAnimation(motion, this.thresholds);
     this.phase = (this.phase + (motion.speed * dtSeconds * TAU) / STRIDE_METRES) % TAU;

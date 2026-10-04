@@ -1,8 +1,9 @@
 import type { Object3D, Scene } from 'three';
 import type { EntityState, GameEvent } from '@heist/shared';
-import { Flag } from '@heist/shared';
+import { Flag, WEAPON_IDS, weaponOfFlags } from '@heist/shared';
 import { SnapshotInterpolator } from '../net/SnapshotInterpolator';
 import { createCashBag } from './CashBag';
+import { createGun } from './GunModel';
 import type { CharacterFactory, CharacterRig } from './CharacterRig';
 
 interface Remote {
@@ -10,6 +11,8 @@ interface Remote {
   readonly model: CharacterRig;
   /** The bag on this player's back, shown while they carry cash. */
   readonly bag: Object3D;
+  /** Wire index of the gun currently drawn in the hand (0 = none). */
+  weapon: number;
   name: string;
   /** Where the model was last drawn; shot trails start here. */
   position: { x: number; y: number; z: number };
@@ -117,6 +120,12 @@ export class RemotePlayers {
       remote.hp = pose.hp;
       remote.model.object.rotation.y = pose.yaw;
       remote.bag.visible = (pose.flags & Flag.Carrying) !== 0;
+      const weapon = weaponOfFlags(pose.flags);
+      if (weapon !== remote.weapon) {
+        remote.weapon = weapon;
+        const id = WEAPON_IDS[weapon - 1];
+        remote.model.holdItem(id ? createGun(id) : undefined);
+      }
       remote.model.update(
         {
           speed: pose.speed,
@@ -140,6 +149,7 @@ export class RemotePlayers {
       buffer: new SnapshotInterpolator(),
       model,
       bag,
+      weapon: 0,
       name: this.names.get(id) ?? `Player ${id}`,
       position: { x: 0, y: 0, z: 0 },
       flags: 0,

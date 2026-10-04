@@ -111,3 +111,15 @@ describe('InputSampler', () => {
     expect(input.sample().buttons & Button.Fire).toBeFalsy();
   });
 });
+
+describe('InputSampler: K fires', () => {
+  it('holds the fire button while K is down', () => {
+    const target = new EventTarget();
+    const input = new InputSampler(target);
+    expect(input.sample().buttons & Button.Fire).toBe(0);
+    target.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyK' }));
+    expect(input.sample().buttons & Button.Fire).toBe(Button.Fire);
+    target.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyK' }));
+    expect(input.sample().buttons & Button.Fire).toBe(0);
+  });
+});

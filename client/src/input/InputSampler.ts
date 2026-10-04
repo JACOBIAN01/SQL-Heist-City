@@ -75,7 +75,7 @@ export class InputSampler {
     if (held('Space')) buttons |= Button.Jump;
     if (held('ControlLeft', 'KeyC')) buttons |= Button.Crouch;
     if (held('ShiftLeft', 'ShiftRight')) buttons |= Button.Sprint;
-    if (this.down.has('Mouse0')) buttons |= Button.Fire;
+    if (this.down.has('Mouse0') || held('KeyK')) buttons |= Button.Fire;
     this.seq = (this.seq + 1) & 0xffff;
     return {
       seq: this.seq,

@@ -33,6 +33,7 @@ import { ScoreboardView } from './ui/hud/ScoreboardView';
 import { BankingProgress } from './heist/BankingProgress';
 import { LootRenderer } from './heist/LootRenderer';
 import { HeistWorld } from './heist/HeistWorld';
+import { createGun } from './entities/GunModel';
 import { createCashBag } from './entities/CashBag';
 import { Interactions } from './heist/Interactions';
 import { HitboxDebug } from './entities/HitboxDebug';
@@ -85,7 +86,7 @@ const input = new InputSampler();
 input.setLook(spawn.yaw);
 const hint = document.createElement('div');
 hint.textContent =
-  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · F use · Tab tasks · hold B scoreboard · 1–5 guns · Esc release mouse';
+  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · 1–5 guns · Esc release mouse';
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
@@ -150,6 +151,11 @@ const client = new GameClient(transport, { name: params.get('name') ?? 'Player' 
 client.subscribe({
   snapshot: (snapshot) => {
     latestSelf = snapshot.self;
+    if (snapshot.self.weapon !== heldWeapon) {
+      heldWeapon = snapshot.self.weapon;
+      const id = WEAPON_IDS[heldWeapon - 1];
+      model.holdItem(id ? createGun(id) : undefined);
+    }
     predicted.reconcile(snapshot.self, snapshot.ackSeq);
     feedback.onSnapshot(snapshot.self, performance.now() / 1000, snapshot.ackSeq);
     serverClock.observe(snapshot.tick, client.tickRate, performance.now());
@@ -190,6 +196,7 @@ client.subscribe({
 const challengeApi = new ChannelChallengeApi({ send: (message) => client.sendJson(message) });
 const sqlPanel = new SqlPanel(document.body);
 let ownedWeapons: readonly string[] = [];
+let heldWeapon = 0;
 // What the player can ask for depends on their situation; this is rebuilt each time the menu opens.
 let latestSelf: SelfState | undefined;
 const taskContext = () => {

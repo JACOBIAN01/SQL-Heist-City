@@ -9,7 +9,13 @@ import {
   encodeClientMessage,
   encodeServerMessage,
 } from './codec';
-import { Flag, type GameEvent, type ServerMessage } from './gameMessages';
+import {
+  Flag,
+  flagsWithWeapon,
+  weaponOfFlags,
+  type GameEvent,
+  type ServerMessage,
+} from './gameMessages';
 import { SnapshotDecoder, SnapshotEncoder } from './snapshotCodec';
 
 const command = (seq: number, over = {}) => ({
@@ -289,5 +295,17 @@ describe('json messages', () => {
 
   it('rejects invalid UTF-8', () => {
     expect(() => decodeClientMessage(new Uint8Array([0x04, 0xff, 0xfe]))).toThrow(CodecError);
+  });
+});
+
+describe('weapon flag bits', () => {
+  it('round-trips every weapon index through the spare flag bits without touching the others', () => {
+    for (let w = 0; w <= 5; w++) {
+      const flags = flagsWithWeapon(Flag.Alive | Flag.OnGround | Flag.Carrying, w);
+      expect(weaponOfFlags(flags)).toBe(w);
+      expect(flags & (Flag.Alive | Flag.OnGround | Flag.Carrying)).toBe(
+        Flag.Alive | Flag.OnGround | Flag.Carrying,
+      );
+    }
   });
 });

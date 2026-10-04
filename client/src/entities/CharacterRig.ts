@@ -11,6 +11,8 @@ export interface CharacterRig {
   readonly object: Object3D;
   /** Clip currently chosen (debugging and tests). */
   readonly animation: AnimationName;
+  /** Puts an object in the right hand (a gun), replacing what was there; undefined empties the hand. */
+  holdItem(item: Object3D | undefined): void;
   update(motion: MotionState, dtSeconds: number): void;
 }
 

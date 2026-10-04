@@ -58,12 +58,30 @@ export const Flag = {
   Crouching: 1,
   OnGround: 2,
   Alive: 4,
-  Firing: 8,
   /** Spawn protection: cannot be hurt. */
   Protected: 16,
   /** Carrying cash: others see a bag on the back. */
   Carrying: 32,
 } as const;
+
+/** Spare flag bits that carry which gun a player holds (0 = none, 1–5 = WEAPON_IDS order) so others can draw it. */
+const WEAPON_BITS = [8, 64, 128] as const;
+
+export function flagsWithWeapon(flags: number, weaponWire: number): number {
+  let out = flags;
+  WEAPON_BITS.forEach((bit, i) => {
+    if ((weaponWire >> i) & 1) out |= bit;
+  });
+  return out;
+}
+
+export function weaponOfFlags(flags: number): number {
+  let wire = 0;
+  WEAPON_BITS.forEach((bit, i) => {
+    if (flags & bit) wire |= 1 << i;
+  });
+  return wire;
+}
 
 /** The receiving player's own full state: enough to rewind and replay prediction. */
 export interface SelfState {

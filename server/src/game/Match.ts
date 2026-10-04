@@ -12,6 +12,7 @@ import {
   createBody,
   encodeBundle,
   encodeServerMessage,
+  flagsWithWeapon,
   hasButton,
   resolveShotInto,
   stepBody,
@@ -700,7 +701,7 @@ export function flagsOf(player: Player, isProtected = false): number {
   if (player.body.onGround) flags |= Flag.OnGround;
   if (player.alive) flags |= Flag.Alive;
   if (player.cash > 0) flags |= Flag.Carrying;
-  return flags;
+  return flagsWithWeapon(flags, player.weaponWire);
 }
 
 /** Printable, trimmed, never empty. Names are shown to other players, so no control characters. */
