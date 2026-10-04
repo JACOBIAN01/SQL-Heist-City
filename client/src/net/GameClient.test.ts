@@ -14,6 +14,7 @@ const snapshot: SnapshotMessage = {
   ackSeq: 0,
   self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: Flag.Alive, hp: 100 },
   entities: [],
+  removed: [],
 };
 const command = { seq: 1, moveX: 0, moveY: 127, yaw: 0, pitch: 0, buttons: 0, viewLagMs: 0 };
 

@@ -79,8 +79,14 @@ export interface SnapshotMessage {
   /** Last of *your* input sequence numbers the server has applied. */
   readonly ackSeq: number;
   readonly self: SelfState;
-  /** Everyone else (Phase 6 filters this by area of interest). */
+  /**
+   * Other players whose state changed since the last snapshot *this client* got
+   * (area of interest + change detection decide who is listed). Anyone not
+   * listed and not removed is unchanged.
+   */
   readonly entities: readonly EntityState[];
+  /** Players that left this client's area of interest: forget them. */
+  readonly removed: readonly number[];
 }
 
 export type HitKind = 'miss' | 'body' | 'head';

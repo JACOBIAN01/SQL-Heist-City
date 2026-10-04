@@ -3,6 +3,7 @@ import {
   Button,
   PROTOCOL_VERSION,
   SIM_DT,
+  SnapshotDecoder,
   decodeServerMessage,
   encodeClientMessage,
   quantiseYaw,
@@ -19,13 +20,14 @@ const url = process.argv[3] ?? 'ws://localhost:8080/ws/game';
 
 for (let n = 0; n < count; n++) {
   const ws = new WebSocket(url);
+  const snapshots = new SnapshotDecoder(); // snapshots are deltas: every one must be decoded, in order
   let seq = 0;
   let tick = 0;
   ws.on('open', () =>
     ws.send(encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: `Bot ${n + 1}` })),
   );
   ws.on('message', (data: Buffer) => {
-    if (decodeServerMessage(new Uint8Array(data)).t !== 'welcome') return;
+    if (decodeServerMessage(new Uint8Array(data), snapshots).t !== 'welcome') return;
     console.log(`bot ${n + 1} joined`);
     setInterval(
       () => {

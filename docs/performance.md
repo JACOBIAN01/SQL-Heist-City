@@ -48,3 +48,13 @@ Each client now gets itself every tick plus only the other players its interest 
 | 200 | 81.0 → **11.3** | 2.30 → 4.03 ms |
 
 Bandwidth falls ~7×; the tick cost rises a little (distance sorting per viewer), which 6.7 will claw back.
+
+## Phase 6.6 — delta compression and quantisation
+Snapshots carry only what changed for that client: positions as 2 cm int16 (or 3 signed bytes as a delta from the last value that client received), yaw/pitch one byte, flags/hp only when they change, and a standing player costs nothing. The client keeps the same baseline (`SnapshotDecoder`), so no acknowledgements are needed over WebSocket. Removed-from-interest players are listed explicitly instead of timing out. Protocol version 2.
+
+| players | KB/s per client before → after | notes |
+|---|---|---|
+| 100 | 5.8 → **2.7** | under the 4 KB/s target |
+| 200 | 11.3 → **4.4** | close; tuning in 6.9 |
+
+(Compared with the original, 41 → 2.7 KB/s at 100 players.) Tick cost is ~1.4 ms at 100: encoding now compares against baselines, and 6.7 removes the allocation overhead.

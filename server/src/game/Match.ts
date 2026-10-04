@@ -347,16 +347,19 @@ export class Match {
    */
   private sendSnapshots(): void {
     const ids: number[] = [];
+    const removed: number[] = [];
     const positionOf = (id: number) => this.players.get(id)?.body;
     for (const player of this.players.values()) {
       if (player.isDummy) continue; // nobody is listening
       const b = player.body;
       ids.length = 0;
+      removed.length = 0;
       this.interest.select(
         { id: player.id, x: b.x, z: b.z, lastSent: player.lastSent },
         this.tick,
         positionOf,
         ids,
+        removed,
       );
       const entities: EntityState[] = [];
       for (const id of ids) {
@@ -378,6 +381,7 @@ export class Match {
           hp: player.hp,
         },
         entities,
+        removed: [...removed],
       };
       this.sendTo(player, snapshot);
     }
@@ -416,7 +420,8 @@ export class Match {
   }
 
   private sendTo(player: Player, message: ServerMessage): void {
-    const bytes = encodeServerMessage(message);
+    // Snapshots go through this client's own encoder: it sends only what changed since the last one.
+    const bytes = encodeServerMessage(message, player.snapshots);
     player.connection.send(bytes);
     this.traffic.bytes += bytes.length;
     if (message.t === 'snapshot') this.traffic.snapshots++;

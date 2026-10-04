@@ -19,6 +19,7 @@ interface Sample {
 }
 
 const TAU = Math.PI * 2;
+const MAX_INTERVAL_MS = 1000;
 
 /** Shortest-way blend between two angles in radians, so 359° → 1° does not spin the long way round. */
 export function lerpAngle(from: number, to: number, t: number): number {
@@ -55,10 +56,16 @@ export class SnapshotInterpolator {
     return this.interval;
   }
 
+  /** The newest pose recorded, if any. */
+  get latestPose(): Pose | undefined {
+    return this.samples.at(-1)?.pose;
+  }
+
   push(time: number, pose: Pose): void {
     const last = this.samples.at(-1);
     if (last && time <= last.time) return; // late or duplicate: ignore
-    if (last) {
+    // Long silences (a stationary player) are not an update rate: ignore them.
+    if (last && time - last.time <= MAX_INTERVAL_MS) {
       const gap = time - last.time;
       this.interval = this.interval === 0 ? gap : this.interval + (gap - this.interval) * 0.3;
     }

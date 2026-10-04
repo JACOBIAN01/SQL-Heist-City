@@ -121,7 +121,11 @@ client.subscribe({
     predicted.reconcile(snapshot.self, snapshot.ackSeq);
     feedback.onSnapshot(snapshot.self, performance.now() / 1000);
     serverClock.observe(snapshot.tick, client.tickRate, performance.now());
-    remotes.onSnapshot((snapshot.tick * 1000) / client.tickRate, snapshot.entities);
+    remotes.onSnapshot(
+      (snapshot.tick * 1000) / client.tickRate,
+      snapshot.entities,
+      snapshot.removed,
+    );
   },
   event: (event) => {
     remotes.onEvent(event);

@@ -12,12 +12,16 @@ interface Remote {
   position: { x: number; y: number; z: number };
   flags: number;
   hp: number;
-  /** Snapshots since this player was last listed. */
-  missed: number;
 }
 
-/** Drop a player's model after this many snapshots without them (left, or out of range in Phase 6). */
-const MAX_MISSED = 20;
+/**
+ * The server sends only what changed, so a player who stood still then moves
+ * arrives after a long silence (longer than any normal update gap: even the slowest tier sends every 200 ms). Without help the blend would glide from the old
+ * spot across the whole silence. If the gap exceeds this (or three of that player's usual update intervals), a "still standing"
+ * sample is recorded just before the new one.
+ */
+const SILENCE_MS = 500;
+const HOLD_BEFORE_MS = 50;
 
 /**
  * Everyone else. Server states are buffered per player and drawn slightly in
@@ -56,22 +60,28 @@ export class RemotePlayers {
     return this.remotes.get(id)?.name ?? this.names.get(id) ?? `Player ${id}`;
   }
 
-  /** `serverTimeMs` is the snapshot's own timestamp (tick × tick length). */
-  onSnapshot(serverTimeMs: number, entities: readonly EntityState[]): void {
-    const seen = new Set<number>();
+  /**
+   * `serverTimeMs` is the snapshot's own timestamp (tick × tick length). `entities`
+   * are the players whose state changed; `removed` left this client's area of interest.
+   */
+  onSnapshot(
+    serverTimeMs: number,
+    entities: readonly EntityState[],
+    removed: readonly number[] = [],
+  ): void {
     for (const e of entities) {
-      seen.add(e.id);
-      let remote = this.remotes.get(e.id);
-      if (!remote) {
-        remote = this.spawn(e.id);
+      const remote = this.remotes.get(e.id) ?? this.spawn(e.id);
+      const before = remote.buffer.latestPose;
+      if (
+        before &&
+        serverTimeMs - remote.buffer.latest >
+          Math.max(SILENCE_MS, 3 * remote.buffer.averageIntervalMs)
+      ) {
+        remote.buffer.push(serverTimeMs - HOLD_BEFORE_MS, before);
       }
-      remote.missed = 0;
       remote.buffer.push(serverTimeMs, e);
     }
-    for (const [id, remote] of this.remotes) {
-      if (seen.has(id)) continue;
-      if (++remote.missed > MAX_MISSED) this.remove(id);
-    }
+    for (const id of removed) this.remove(id);
   }
 
   onEvent(event: GameEvent): void {
@@ -122,7 +132,6 @@ export class RemotePlayers {
       position: { x: 0, y: 0, z: 0 },
       flags: 0,
       hp: 0,
-      missed: 0,
     };
     this.scene.add(remote.model.object);
     this.remotes.set(id, remote);

@@ -42,13 +42,15 @@ export class InterestManager {
 
   /**
    * Appends to `out` the ids that should be sent to `viewer` on `tick`, nearest
-   * first, and updates what the viewer is known to have.
+   * first, and to `removed` the ids that just left the viewer's range (the client
+   * must forget them). Updates what the viewer is known to have.
    */
   select(
     viewer: Viewer,
     tick: number,
     positionOf: (id: number) => { x: number; z: number } | undefined,
     out: number[],
+    removed: number[],
   ): void {
     const { cfg } = this;
     const far2 = cfg.farRange * cfg.farRange;
@@ -80,7 +82,11 @@ export class InterestManager {
       }
     }
     // Anyone who left range is forgotten, so they are sent immediately if they come back.
-    for (const id of viewer.lastSent.keys()) if (!inRange.has(id)) viewer.lastSent.delete(id);
+    for (const id of viewer.lastSent.keys()) {
+      if (inRange.has(id)) continue;
+      viewer.lastSent.delete(id);
+      removed.push(id);
+    }
   }
 
   /** Visits everyone within `range` of a point (exact distance is up to the caller). */

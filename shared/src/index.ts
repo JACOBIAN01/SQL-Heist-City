@@ -1,5 +1,5 @@
 /** Bumped whenever the client/server wire protocol changes incompatibly. */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 export * from './questions/template';
 export * from './random/Rng';
@@ -22,3 +22,4 @@ export * from './config/combat';
 export * from './sim/combat';
 export * from './world/ColliderGrid';
 export * from './world/SpatialGrid';
+export * from './net/snapshotCodec';

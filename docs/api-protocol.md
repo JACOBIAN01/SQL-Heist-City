@@ -50,11 +50,11 @@ Little-endian. The first byte is the type. Decoders throw `CodecError` on trunca
 | Server → client | Type | Layout |
 |---|---|---|
 | welcome | 0x81 | playerId u16, tick u32, tickRate u8, mapId (string) |
-| snapshot | 0x82 | tick u32, ackSeq u16, self (x y z vx vy vz f32, flags u8, hp u8), count u16, then 20 B per entity: id u16, x y z f32, yaw u16, pitch i16, flags u8, hp u8 |
+| snapshot | 0x82 | tick u32, ackSeq u16, self (x y z f32, vx vy vz i16 in mm/s, flags u8, hp u8), changed count u8, removed count u8, then per changed entity: id u16, change mask u8 (1 pos delta, 2 pos absolute, 4 yaw, 8 pitch, 16 flags, 32 hp) + only the fields in the mask — pos delta = 3 × i8, absolute = 3 × i16, both in 2 cm units; yaw u8 (1.4°), pitch i8 (1.2°), flags u8, hp u8 — then the removed ids u16 |
 | event | 0x83 | sub-type u8 (1 shot, 2 kill, 3 joined, 4 left) + fields |
 | pong | 0x84 | clientTime f64, tick u32 |
 
-Buttons: jump 1, crouch 2, sprint 4, fire 8. Flags: crouching 1, onGround 2, alive 4, firing 8. Positions are plain float32 for now; Phase 6 replaces them with chunk-relative 16-bit values and deltas.
+Buttons: jump 1, crouch 2, sprint 4, fire 8. Flags: crouching 1, onGround 2, alive 4, firing 8. Other players are sent as changes against what *that client* already has (reliable ordered delivery, so no acks): a standing player costs nothing, a walking one ~7 bytes. A new player in range arrives as a full record; `removed` lists players who left the client's area of interest. Positions are int16 × 2 cm (world ≤ ±650 m); both sides keep the quantised values as the baseline. Protocol version 2.
 
 Both sides simulate with the *quantised* yaw/pitch (the client rounds before simulating), so the server replays exactly what the client predicted.
 

@@ -3,6 +3,7 @@ import {
   PROTOCOL_VERSION,
   SIM_DT,
   SeededRng,
+  SnapshotDecoder,
   decodeServerMessage,
   encodeClientMessage,
   seedOf,
@@ -53,6 +54,7 @@ export async function runSocketBots(options: SocketBotOptions): Promise<SocketBo
         fireRate: options.fireRate ?? 0,
       });
       let measuring = false;
+      const snapshotState = new SnapshotDecoder();
       ws.on('open', () =>
         ws.send(
           encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: `bot-${index}` }),
@@ -60,7 +62,7 @@ export async function runSocketBots(options: SocketBotOptions): Promise<SocketBo
       );
       ws.on('message', (data: Buffer) => {
         if (measuring) bytes += data.length;
-        const message = decodeServerMessage(new Uint8Array(data));
+        const message = decodeServerMessage(new Uint8Array(data), snapshotState);
         if (message.t === 'welcome') {
           joined++;
           measuring = true;

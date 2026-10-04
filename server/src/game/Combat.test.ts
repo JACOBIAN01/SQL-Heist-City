@@ -447,6 +447,8 @@ describe('Interest management in a match', () => {
     const counts = { near: 0, far: 0, gone: 0 };
     for (let t = 0; t < 8; t++) {
       a.connection.clear();
+      // Everyone keeps moving: unchanged players are (rightly) not sent at all.
+      for (const p of [near, far, gone]) p.player.body.z += 0.2;
       match.step();
       const seen = entitiesSeenBy(a.connection);
       if (seen.includes(near.player.id)) counts.near++;

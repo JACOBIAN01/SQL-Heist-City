@@ -12,12 +12,14 @@ function setup() {
     manager.update(id, x, z);
   };
   const viewer: Viewer = { id: 1, x: 0, z: 0, lastSent: new Map() };
+  let lastRemoved: number[] = [];
   const pick = (tick: number) => {
     const out: number[] = [];
-    manager.select(viewer, tick, (id) => positions.get(id), out);
+    lastRemoved = [];
+    manager.select(viewer, tick, (id) => positions.get(id), out, lastRemoved);
     return out;
   };
-  return { manager, place, viewer, pick, positions };
+  return { manager, place, viewer, pick, positions, removed: () => lastRemoved };
 }
 
 describe('InterestManager', () => {
@@ -51,11 +53,12 @@ describe('InterestManager', () => {
   });
 
   it('forgets players who leave range, and re-sends them at once if they return', () => {
-    const { place, pick, viewer } = setup();
+    const { place, pick, viewer, removed } = setup();
     place(4, 200, 0);
     expect(pick(1)).toEqual([4]);
     place(4, 600, 0);
     expect(pick(2)).toEqual([]);
+    expect(removed()).toEqual([4]); // the client is told to forget them
     expect(viewer.lastSent.has(4)).toBe(false);
     place(4, 200, 0);
     expect(pick(3)).toEqual([4]);
@@ -69,7 +72,13 @@ describe('InterestManager', () => {
       manager.update(id, id * 5, 0);
     }
     const out: number[] = [];
-    manager.select({ id: 1, x: 0, z: 0, lastSent: new Map() }, 1, (id) => positions.get(id), out);
+    manager.select(
+      { id: 1, x: 0, z: 0, lastSent: new Map() },
+      1,
+      (id) => positions.get(id),
+      out,
+      [],
+    );
     expect(out).toEqual([2, 3, 4]);
   });
 

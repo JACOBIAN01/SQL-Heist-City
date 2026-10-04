@@ -54,11 +54,29 @@ describe('RemotePlayers', () => {
     expect(scene.children).toHaveLength(0);
   });
 
-  it('forgets players who stop appearing in snapshots', () => {
+  it('removes players the server says left the area of interest', () => {
+    const { scene, remotes } = make();
+    remotes.onSnapshot(0, [entity(2, 0), entity(3, 5)]);
+    remotes.onSnapshot(50, [], [2]);
+    expect(remotes.count).toBe(1);
+    expect(scene.children).toHaveLength(1);
+  });
+
+  it('keeps players the server has simply not mentioned (they have not changed)', () => {
     const { remotes } = make();
     remotes.onSnapshot(0, [entity(2, 0)]);
-    for (let i = 1; i <= 25; i++) remotes.onSnapshot(i * 50, []);
-    expect(remotes.count).toBe(0);
+    for (let i = 1; i <= 100; i++) remotes.onSnapshot(i * 50, []);
+    expect(remotes.count).toBe(1);
+  });
+
+  it('does not glide a long-stationary player across the silence when they start moving', () => {
+    const { scene, remotes } = make();
+    remotes.onSnapshot(0, [entity(2, 0)]);
+    remotes.onSnapshot(10_000, [entity(2, 5)]); // stood still 10 s, then moved
+    remotes.update(9_900, 0.016, 0); // 100 ms before the move: still at the old spot
+    expect(scene.children[0]?.position.x).toBeCloseTo(0, 1);
+    remotes.update(10_100, 0.016, 0);
+    expect(scene.children[0]?.position.x).toBeGreaterThan(4);
   });
 
   it('hides players who are dead', () => {

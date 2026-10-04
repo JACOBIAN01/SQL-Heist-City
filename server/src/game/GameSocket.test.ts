@@ -9,6 +9,7 @@ import {
   Flag,
   PROTOCOL_VERSION,
   TEST_MAP,
+  SnapshotDecoder,
   decodeServerMessage,
   encodeClientMessage,
   type ServerMessage,
@@ -40,10 +41,11 @@ async function connect() {
   const ws = new WebSocket(url);
   clients.push(ws);
   const messages: ServerMessage[] = [];
+  const snapshotState = new SnapshotDecoder();
   const waiters: (() => void)[] = [];
   ws.on('message', (data: Buffer, isBinary: boolean) => {
     if (!isBinary) return;
-    messages.push(decodeServerMessage(new Uint8Array(data)));
+    messages.push(decodeServerMessage(new Uint8Array(data), snapshotState));
     for (const w of waiters.splice(0)) w();
   });
   const closed = new Promise<number>((resolve) => ws.on('close', (code) => resolve(code)));

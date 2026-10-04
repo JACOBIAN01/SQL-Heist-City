@@ -1,4 +1,5 @@
 import {
+  SnapshotEncoder,
   createBody,
   seqNewer,
   type BodyState,
@@ -34,6 +35,8 @@ export class Player {
   /** Sandbox target: has no client, never moves, respawns at `home`. */
   isDummy = false;
   home: SpawnPoint | undefined;
+  /** What this client already knows about other players, so snapshots carry only changes. */
+  readonly snapshots = new SnapshotEncoder();
   /** Tick at which each other player was last sent to this client (area-of-interest bookkeeping). */
   readonly lastSent = new Map<number, number>();
   kills = 0;

@@ -1,6 +1,7 @@
 import {
   CodecError,
   PROTOCOL_VERSION,
+  SnapshotDecoder,
   decodeServerMessage,
   encodeClientMessage,
   type GameEvent,
@@ -40,6 +41,8 @@ export class GameClient {
   /** Smoothed round-trip time, ms (0 until the first pong). */
   rttMs = 0;
   private readonly listeners = new Set<GameClientListener>();
+  /** Rebuilds absolute player states from the server's change-only snapshots. */
+  private readonly snapshots = new SnapshotDecoder();
   private readonly now: () => number;
   private pingTimer: ReturnType<typeof setInterval> | undefined;
 
@@ -78,7 +81,7 @@ export class GameClient {
   private handleMessage(bytes: Uint8Array): void {
     let message;
     try {
-      message = decodeServerMessage(bytes);
+      message = decodeServerMessage(bytes, this.snapshots);
     } catch (error) {
       if (!(error instanceof CodecError)) throw error;
       this.transport.close();

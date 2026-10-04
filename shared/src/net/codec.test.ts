@@ -119,7 +119,7 @@ describe('server messages', () => {
     id,
     x: 1.5,
     y: 0,
-    z: -3.25,
+    z: -3.26,
     yaw: quantiseYaw(2),
     pitch: quantisePitch(0.1),
     flags: Flag.Alive | Flag.OnGround,
@@ -137,17 +137,28 @@ describe('server messages', () => {
     expect(decodeServerMessage(encodeServerMessage(m))).toEqual(m);
   });
 
-  it('round-trips a snapshot with many entities', () => {
+  it('round-trips a snapshot (positions on the 2 cm grid, velocities to 1 mm/s)', () => {
     const m: ServerMessage = {
       t: 'snapshot',
       tick: 99,
       ackSeq: 4242,
-      self: { x: 1, y: 2, z: 3, vx: 0.5, vy: -1, vz: 0, flags: Flag.Alive, hp: 100 },
+      self: { x: 1.5, y: 2, z: 3.25, vx: 0.5, vy: -1, vz: 0, flags: Flag.Alive, hp: 100 },
       entities: Array.from({ length: 50 }, (_, i) => entity(i + 1)),
+      removed: [900, 901],
     };
-    const bytes = encodeServerMessage(m);
-    expect(decodeServerMessage(bytes)).toEqual(m);
-    expect(bytes.length).toBe(1 + 4 + 2 + 26 + 2 + 50 * 20);
+    const decoded = decodeServerMessage(encodeServerMessage(m));
+    if (decoded.t !== 'snapshot' || m.t !== 'snapshot') throw new Error('not a snapshot');
+    expect(decoded).toMatchObject({ tick: 99, ackSeq: 4242, removed: [900, 901], self: m.self });
+    expect(decoded.entities).toHaveLength(50);
+    decoded.entities.forEach((e, i) => {
+      const sent = m.entities[i];
+      expect(e.id).toBe(sent?.id);
+      expect(e.x).toBeCloseTo(sent?.x ?? 0, 1);
+      expect(e.z).toBeCloseTo(sent?.z ?? 0, 1);
+      expect(e.yaw).toBeCloseTo(sent?.yaw ?? 0, 1);
+      expect(e.pitch).toBeCloseTo(sent?.pitch ?? 0, 1);
+      expect([e.flags, e.hp]).toEqual([sent?.flags, sent?.hp]);
+    });
   });
 
   it('rejects a snapshot whose entity count lies', () => {
@@ -157,8 +168,9 @@ describe('server messages', () => {
       ackSeq: 1,
       self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 0, hp: 0 },
       entities: [],
+      removed: [],
     });
-    new DataView(bytes.buffer).setUint16(bytes.length - 2, 60000, true);
+    bytes[1 + 4 + 2 + 20] = 200; // claim 200 entities that are not there
     expect(() => decodeServerMessage(bytes)).toThrow(CodecError);
   });
 

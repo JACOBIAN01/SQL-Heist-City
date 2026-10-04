@@ -70,6 +70,14 @@ describe('SnapshotInterpolator', () => {
     expect(i.averageIntervalMs).toBeCloseTo(200);
   });
 
+  it('does not mistake a long silence for a slow update rate', () => {
+    const i = new SnapshotInterpolator();
+    i.push(0, pose(0));
+    i.push(50, pose(1));
+    i.push(60_000, pose(2));
+    expect(i.averageIntervalMs).toBeCloseTo(50);
+  });
+
   it('ignores out-of-order and duplicate snapshots', () => {
     const i = new SnapshotInterpolator();
     i.push(100, pose(1));
