@@ -37,6 +37,14 @@ export interface WallQuad {
   readonly tile: number;
 }
 
+/** A building as a plain textured box: what a far chunk (impostor) draws instead of its facades. */
+export interface Mass {
+  readonly rect: Rect;
+  readonly height: number;
+  /** Wall texture; the roof uses the roof layer. */
+  readonly layer: string;
+}
+
 export interface ChunkPlan {
   readonly id: string;
   /** The ground this chunk owns: its block and the streets to its north and west (and the outer ring at the edge). */
@@ -44,6 +52,7 @@ export interface ChunkPlan {
   readonly placements: readonly Placement[];
   readonly ground: readonly GroundQuad[];
   readonly walls: readonly WallQuad[];
+  readonly masses: readonly Mass[];
 }
 
 /** Outward normal of a piece turned by `turn`. */

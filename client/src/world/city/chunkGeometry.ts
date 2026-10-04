@@ -1,6 +1,13 @@
 import { BufferAttribute, BufferGeometry } from 'three';
 import type { CityKit } from './CityKit';
-import { wallNormal, type ChunkPlan, type GroundQuad, type Placement, type WallQuad } from './plan';
+import {
+  wallNormal,
+  type ChunkPlan,
+  type GroundQuad,
+  type Mass,
+  type Placement,
+  type WallQuad,
+} from './plan';
 
 /** One chunk's art, merged: one geometry per kit material. */
 export interface ChunkGeometry {
@@ -9,7 +16,9 @@ export interface ChunkGeometry {
   readonly triangles: number;
 }
 
-/** Grows flat arrays of vertex data and turns them into a geometry at the end. */
+/** Metres per texture repeat on an impostor's walls: one storey, so trim bands read as floors. */
+const MASS_TILE = 3;
+const MASS_ROOF = { layer: 'asphalt', tile: 4 };
 class GeometryBuilder {
   readonly position: number[] = [];
   readonly normal: number[] = [];
@@ -53,6 +62,43 @@ class GeometryBuilder {
     g.computeBoundingSphere();
     return g;
   }
+}
+
+/**
+ * The cheap stand-in for a far chunk: its ground and kerbs as usual, and each
+ * building as a textured box (four walls and a roof, ~10 triangles) instead
+ * of hundreds of facade pieces.
+ */
+export function buildImpostorGeometry(kit: CityKit, plan: ChunkPlan): ChunkGeometry {
+  const out = new GeometryBuilder();
+  for (const q of plan.ground.filter((g) => g.y <= 0.5)) appendGround(out, q, kit.layer(q.layer));
+  for (const w of plan.walls) appendWall(out, w, kit.layer(w.layer));
+  for (const m of plan.masses) appendMass(out, m, kit);
+  return { opaque: out.build(true) ?? new BufferGeometry(), triangles: out.index.length / 3 };
+}
+
+function appendMass(out: GeometryBuilder, m: Mass, kit: CityKit): void {
+  const r = m.rect;
+  const layer = kit.layer(m.layer);
+  // NW → SW → SE → NE: the right-hand side of each edge (wallNormal) is outside the box.
+  const c = [
+    { x: r.minX, z: r.minZ },
+    { x: r.minX, z: r.maxZ },
+    { x: r.maxX, z: r.maxZ },
+    { x: r.maxX, z: r.minZ },
+  ] as const;
+  for (let k = 0; k < 4; k++) {
+    const wall: WallQuad = {
+      from: c[k] ?? c[0],
+      to: c[(k + 1) % 4] ?? c[0],
+      bottom: 0,
+      top: m.height,
+      layer: m.layer,
+      tile: MASS_TILE,
+    };
+    appendWall(out, wall, layer);
+  }
+  appendGround(out, { rect: r, y: m.height, ...MASS_ROOF }, kit.layer(MASS_ROOF.layer));
 }
 
 /**

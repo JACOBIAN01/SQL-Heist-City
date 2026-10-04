@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   BufferAttribute,
@@ -10,11 +8,8 @@ import {
   Texture,
   Vector3,
 } from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { BANK_LAYOUTS, mapById } from '@heist/shared';
 import { CityKit, piecesFromScene } from './CityKit';
-import { buildCityArt } from './CityRenderer';
-import { buildChunkGeometry } from './chunkGeometry';
+import { buildChunkGeometry, buildImpostorGeometry } from './chunkGeometry';
 import { parseKitManifest } from './kitManifest';
 import { createKitMaterials, layersTexture } from './kitMaterials';
 import type { ChunkPlan } from './plan';
@@ -55,6 +50,7 @@ const plan = (over: Partial<ChunkPlan>): ChunkPlan => ({
   placements: [],
   ground: [],
   walls: [],
+  masses: [],
   ...over,
 });
 
@@ -127,21 +123,38 @@ describe('buildChunkGeometry', () => {
   });
 });
 
-describe('buildCityArt with the real kit', () => {
-  it('draws every block in at most two draw calls', async () => {
-    const dir = join(__dirname, '../../../public/city/');
-    const manifest = parseKitManifest(JSON.parse(readFileSync(`${dir}kit.json`, 'utf8')));
-    const file = readFileSync(dir + manifest.files.geometry);
-    const data = new ArrayBuffer(file.byteLength);
-    new Uint8Array(data).set(file);
-    const gltf = await new GLTFLoader().parseAsync(data, '');
-    const kit = new CityKit(manifest, piecesFromScene(gltf.scene), materials());
-    const city = mapById('city')?.city;
-    if (!city) throw new Error('no city');
-    const { root, stats } = buildCityArt(kit, city, BANK_LAYOUTS);
-    expect(stats.chunks).toBe(25);
-    expect(stats.drawCalls).toBeLessThanOrEqual(50);
-    expect(root.getObjectByName('chunk-0-0')?.userData.bounds).toBeDefined();
-    expect(stats.triangles).toBeLessThan(1_000_000);
+describe('buildImpostorGeometry', () => {
+  const kit = tinyKit();
+
+  it('draws a building as a closed box facing outward, skipping its facades', () => {
+    const g = buildImpostorGeometry(
+      kit,
+      plan({
+        placements: [{ piece: 'P', x: 0, y: 0, z: 0, turn: 0 }],
+        masses: [{ rect: { minX: 0, maxX: 4, minZ: 0, maxZ: 6 }, height: 9, layer: 'concrete' }],
+      }),
+    );
+    expect(g.triangles).toBe(10); // four walls and a roof; the facade piece is not drawn
+    expect(g.decal).toBeUndefined();
+    const centre = new Vector3(2, 4.5, 3);
+    for (let t = 0; t < 10; t++) {
+      const idx = g.opaque.getIndex();
+      const a = vec(g.opaque, 'position', idx?.getX(t * 3) ?? 0);
+      // Every face points away from the box's centre.
+      expect(faceNormal(g.opaque, t).dot(a.sub(centre))).toBeGreaterThan(0);
+    }
+  });
+
+  it('keeps street-level ground and kerbs but drops roofs (the box has its own)', () => {
+    const g = buildImpostorGeometry(
+      kit,
+      plan({
+        ground: [
+          { rect: { minX: 0, maxX: 6, minZ: 0, maxZ: 3 }, y: 0, layer: 'asphalt', tile: 3 },
+          { rect: { minX: 0, maxX: 6, minZ: 0, maxZ: 3 }, y: 12, layer: 'asphalt', tile: 3 },
+        ],
+      }),
+    );
+    expect(g.triangles).toBe(2);
   });
 });

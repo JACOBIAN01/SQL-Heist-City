@@ -12,6 +12,8 @@ export interface FacadeStyle {
   readonly cornice: string;
   /** Window rhythms this style may use: W window, P plain wall. Heavy windows get sparser ones. */
   readonly rhythms: readonly string[];
+  /** Texture layer a far-away box of this building is painted with. */
+  readonly massLayer: string;
 }
 
 /**
@@ -27,6 +29,7 @@ export const FACADE_STYLES: Readonly<Record<'brick' | 'metal' | 'trim', FacadeSt
     shop: 'Trim_FirstFloor_Window_001',
     cornice: 'Cornice_Brick_Center',
     rhythms: ['WP', 'WWP'],
+    massLayer: 'brick',
   },
   metal: {
     wall: 'Metal_Plain_3',
@@ -35,6 +38,7 @@ export const FACADE_STYLES: Readonly<Record<'brick' | 'metal' | 'trim', FacadeSt
     shop: 'Metal_FirstFloor_Window',
     cornice: 'Cornice_Metal_Center',
     rhythms: ['WP', 'WWP'],
+    massLayer: 'concrete',
   },
   trim: {
     wall: 'Trim_Plain_3',
@@ -44,6 +48,7 @@ export const FACADE_STYLES: Readonly<Record<'brick' | 'metal' | 'trim', FacadeSt
     shop: 'Trim_FirstFloor_Window_001',
     cornice: 'Cornice_Metal_Center',
     rhythms: ['WP', 'WPP'],
+    massLayer: 'trim',
   },
 };
 

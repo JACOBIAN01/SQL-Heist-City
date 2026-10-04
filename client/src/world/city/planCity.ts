@@ -20,6 +20,7 @@ import {
   subtractRects,
   type ChunkPlan,
   type GroundQuad,
+  type Mass,
   type Placement,
   type Turn,
   type WallQuad,
@@ -86,6 +87,7 @@ export function planChunk(
   const placements: Placement[] = [];
   const ground: GroundQuad[] = [];
   const walls: WallQuad[] = [];
+  const masses: Mass[] = [];
 
   // Asphalt around the block, the sidewalk ring (top and kerb faces), paving or plaza inside.
   for (const r of subtractRects(bounds, [block.outer])) ground.push({ rect: r, y: 0, ...ASPHALT });
@@ -154,6 +156,8 @@ export function planChunk(
       const top = b.storeys * s.storeyHeight;
       ground.push({ rect: b.rect, y: top, ...ROOF });
       placements.push(...roofClutter(b.rect, top, rng));
+      // A bank with a real interior keeps its collider boxes on screen, so it needs no mass.
+      masses.push({ rect: b.rect, height: top, layer: style.massLayer });
     }
   }
 
@@ -163,7 +167,74 @@ export function planChunk(
       if (rng.bool(0.6))
         placements.push({ piece: 'Prop_Planter_Single', ...corner, y: 0, turn: 0 });
 
-  return { id: `chunk-${block.ix}-${block.iz}`, bounds, placements, ground, walls };
+  return { id: `chunk-${block.ix}-${block.iz}`, bounds, placements, ground, walls, masses };
+}
+
+/** How deep the ring of buildings outside the city wall is, m. */
+export const OUTSKIRTS_DEPTH = 20;
+
+/**
+ * A ring of buildings just outside the city wall, facing in, so the edge of
+ * the map looks like more city instead of a bare wall. Art only: the wall
+ * collider stays where it is. One chunk per 64 m stretch of each side.
+ */
+export function planOutskirts(city: CityLayout): ChunkPlan[] {
+  const rng = new SeededRng(`city-outskirts:${city.settings.seed}`);
+  const s = city.settings;
+  const h = city.halfSize;
+  const d = OUTSKIRTS_DEPTH;
+  const plans: ChunkPlan[] = [];
+  // Each side: the turn its buildings face, and how to map (along, depth) to a footprint.
+  const sides: { name: string; turn: Turn; rect: (a: number, b: number, depth: number) => Rect }[] =
+    [
+      { name: 'n', turn: 0, rect: (a, b, k) => ({ minX: a, maxX: b, minZ: -h - k, maxZ: -h }) },
+      { name: 's', turn: 2, rect: (a, b, k) => ({ minX: a, maxX: b, minZ: h, maxZ: h + k }) },
+      { name: 'w', turn: 1, rect: (a, b, k) => ({ minX: -h - k, maxX: -h, minZ: a, maxZ: b }) },
+      { name: 'e', turn: 3, rect: (a, b, k) => ({ minX: h, maxX: h + k, minZ: a, maxZ: b }) },
+    ];
+  for (const side of sides) {
+    // North and south run the full width plus the corners; east and west fill in between.
+    const start = side.name === 'n' || side.name === 's' ? -h - d : -h;
+    const end = side.name === 'n' || side.name === 's' ? h + d : h;
+    for (let from = start; from < end; from += s.blockPitch) {
+      const to = Math.min(end, from + s.blockPitch);
+      const placements: Placement[] = [];
+      const ground: GroundQuad[] = [];
+      const masses: Mass[] = [];
+      for (let a = from; a < to;) {
+        const width = Math.min(to - a, 2 * rng.int(5, 12));
+        const depth = 2 * rng.int(7, d / 2);
+        const storeys = rng.int(3, s.maxStoreys + 2);
+        const rect = side.rect(a, a + width, depth);
+        const style = FACADE_STYLES[rng.pick(STYLE_IDS)];
+        placements.push(
+          ...placeFacade(
+            {
+              rect,
+              storeys,
+              storeyHeight: s.storeyHeight,
+              style,
+              sides: [{ turn: side.turn, street: true, hiddenStoreys: 0 }],
+            },
+            rng,
+          ),
+        );
+        const top = storeys * s.storeyHeight;
+        ground.push({ rect, y: top, ...ROOF });
+        masses.push({ rect, height: top, layer: style.massLayer });
+        a += width;
+      }
+      plans.push({
+        id: `outskirts-${side.name}-${Math.round(from)}`,
+        bounds: side.rect(from, to, d),
+        placements,
+        ground,
+        walls: [],
+        masses,
+      });
+    }
+  }
+  return plans;
 }
 
 /** How one side of a building is dressed: street-facing or not, and how much a neighbour hides. */
