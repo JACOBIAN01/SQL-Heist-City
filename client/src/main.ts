@@ -57,7 +57,8 @@ import { followServerMap } from './world/followServerMap';
 // Composition root for the client.
 // ?map=heist|city|city:<seed> picks the map; on joining, the page follows whatever map the server plays.
 const params = new URLSearchParams(location.search);
-const MAP = mapById(params.get('map')) ?? TEST_MAP;
+// Without ?map the page builds the default city (the server's default too, so no reload).
+const MAP = mapById(params.get('map') ?? 'city') ?? TEST_MAP;
 /** Remote players are drawn this far in the past (smooth interpolation); shots are rewound by it too. */
 const INTERP_DELAY_MS = 100;
 const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });

@@ -44,7 +44,7 @@ const until = async (check: () => boolean, ms = 8000) => {
 describe('MatchPool', () => {
   it('runs a match in its own thread that real clients can join', async () => {
     pool = new MatchPool();
-    const info = await pool.start(settings);
+    const info = await pool.start(settings, 0, 'sandbox');
     expect(info.port).toBeGreaterThan(0);
     const c = join(info.port);
     await until(() => c.messages.some((m) => m.t === 'welcome'));
@@ -54,7 +54,10 @@ describe('MatchPool', () => {
 
   it('keeps matches isolated: each has its own port and players', async () => {
     pool = new MatchPool();
-    const [a, b] = await Promise.all([pool.start(settings), pool.start(settings)]);
+    const [a, b] = await Promise.all([
+      pool.start(settings, 0, 'sandbox'),
+      pool.start(settings, 0, 'sandbox'),
+    ]);
     expect(a.port).not.toBe(b.port);
     expect(
       pool
@@ -75,7 +78,7 @@ describe('MatchPool', () => {
 
   it('reports player counts to the lobby and offers an open match', async () => {
     pool = new MatchPool();
-    const info = await pool.start({ ...settings, maxPlayers: 3 }); // 2 dummies + 1 slot
+    const info = await pool.start({ ...settings, maxPlayers: 3 }, 0, 'sandbox'); // 2 dummies + 1 slot
     const c = join(info.port);
     await until(() => c.messages.some((m) => m.t === 'welcome'));
     await until(() => (pool?.list()[0]?.players ?? 0) === 3, 10000);
@@ -122,7 +125,7 @@ describe('MatchPool', () => {
 
   it('stops cleanly', async () => {
     pool = new MatchPool();
-    await pool.start(settings);
+    await pool.start(settings, 0, 'sandbox');
     await pool.stop();
     expect(pool.list()).toEqual([]);
     pool = undefined;
