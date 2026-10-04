@@ -1,12 +1,15 @@
-import type { Scene } from 'three';
+import type { Object3D, Scene } from 'three';
 import type { EntityState, GameEvent } from '@heist/shared';
 import { Flag } from '@heist/shared';
 import { SnapshotInterpolator } from '../net/SnapshotInterpolator';
+import { createCashBag } from './CashBag';
 import type { CharacterFactory, CharacterRig } from './CharacterRig';
 
 interface Remote {
   readonly buffer: SnapshotInterpolator;
   readonly model: CharacterRig;
+  /** The bag on this player's back, shown while they carry cash. */
+  readonly bag: Object3D;
   name: string;
   /** Where the model was last drawn; shot trails start here. */
   position: { x: number; y: number; z: number };
@@ -113,6 +116,7 @@ export class RemotePlayers {
       remote.flags = pose.flags;
       remote.hp = pose.hp;
       remote.model.object.rotation.y = pose.yaw;
+      remote.bag.visible = (pose.flags & Flag.Carrying) !== 0;
       remote.model.update(
         {
           speed: pose.speed,
@@ -125,9 +129,16 @@ export class RemotePlayers {
   }
 
   private spawn(id: number): Remote {
+    const model = this.createRig(id);
+    const bag = createCashBag();
+    // On the back: the character faces −z at yaw 0, so behind is +z.
+    bag.position.set(0, 0.85, 0.28);
+    bag.visible = false;
+    model.object.add(bag);
     const remote: Remote = {
       buffer: new SnapshotInterpolator(),
-      model: this.createRig(id),
+      model,
+      bag,
       name: this.names.get(id) ?? `Player ${id}`,
       position: { x: 0, y: 0, z: 0 },
       flags: 0,

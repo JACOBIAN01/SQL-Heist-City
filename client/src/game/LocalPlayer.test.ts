@@ -27,4 +27,15 @@ describe('LocalPlayer', () => {
     p.teleport(5, 0, 5);
     expect([p.body.x, p.body.vz]).toEqual([5, 0]);
   });
+
+  it('slows down by the speed scale the server reports (cash carried)', () => {
+    const fast = new LocalPlayer(TEST_MAP, DEFAULT_MOVEMENT_SETTINGS, spawn);
+    const slow = new LocalPlayer(TEST_MAP, DEFAULT_MOVEMENT_SETTINGS, spawn);
+    slow.speedScale = 0.5;
+    for (let i = 0; i < 60; i++) {
+      fast.apply({ ...idleCommand(i), moveY: 127 });
+      slow.apply({ ...idleCommand(i), moveY: 127 });
+    }
+    expect(slow.body.z / fast.body.z).toBeCloseTo(0.5, 1);
+  });
 });

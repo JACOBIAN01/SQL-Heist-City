@@ -22,7 +22,9 @@ import { chooseGameUrl } from './net/lobby';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
 import { CombatFeedback } from './game/CombatFeedback';
+import { LootRenderer } from './heist/LootRenderer';
 import { HeistWorld } from './heist/HeistWorld';
+import { createCashBag } from './entities/CashBag';
 import { Interactions } from './heist/Interactions';
 import { HitboxDebug } from './entities/HitboxDebug';
 import { Tracers } from './render/Tracers';
@@ -54,6 +56,7 @@ const lighting = addLighting(scene);
 const mapObject = buildMapObject(MAP);
 scene.add(mapObject);
 const world = new HeistWorld(MAP);
+const loot = new LootRenderer(scene);
 
 const camera = new PerspectiveCamera(70, 1, 0.1, 220);
 const resize = (): void => {
@@ -87,9 +90,6 @@ const port = params.get('server') ?? '8080';
 const lag = Number(params.get('lag') ?? 0);
 // The lobby says which match (and which port, when matches run in their own threads) to join.
 const gameUrl = await chooseGameUrl(location.hostname, port);
-let transport: GameTransport = new WebSocketGameTransport(gameUrl);
-if (lag > 0) transport = new DelayedTransport(transport, lag);
-const client = new GameClient(transport, { name: params.get('name') ?? 'Player' });
 const thresholds = thresholdsFor(
   DEFAULT_MOVEMENT_SETTINGS.walkSpeed,
   DEFAULT_MOVEMENT_SETTINGS.sprintSpeed,
@@ -130,6 +130,11 @@ const feedback = new CombatFeedback({
   nameOf: (id) => remotes.nameOf(id),
   positionOf: (id) => remotes.positionOf(id),
 });
+// Connect only once everything that reacts to the server exists: the first messages (welcome, vault and
+// loot state) arrive right after joining and would be dropped if nobody were listening yet.
+let transport: GameTransport = new WebSocketGameTransport(gameUrl);
+if (lag > 0) transport = new DelayedTransport(transport, lag);
+const client = new GameClient(transport, { name: params.get('name') ?? 'Player' });
 client.subscribe({
   snapshot: (snapshot) => {
     predicted.reconcile(snapshot.self, snapshot.ackSeq);
@@ -148,7 +153,12 @@ client.subscribe({
   json: (message) => {
     if (challengeApi.handle(message) || interactions.handle(message)) return;
     if (message.t === 'vaults') world.applyVaults(message.vaults);
-    else if (message.t === 'notice') hud.toast(message.text);
+    else if (message.t === 'loot') loot.apply(message.add, message.remove);
+    else if (message.t === 'purse') {
+      hud.setPurse(message.carried, message.banked);
+      player.speedScale = message.speed;
+      ownBag.visible = message.carried > 0;
+    } else if (message.t === 'notice') hud.toast(message.text);
   },
 });
 // The SQL pop-up lives on the game connection: the server decides what each task is worth.
@@ -204,6 +214,11 @@ const loop = new FixedStepLoop(SIM_DT, () => {
 
 const model = createRig(0);
 scene.add(model.object);
+// Your own bag, on your back, while you carry cash (others see the same from the server's flag).
+const ownBag = createCashBag();
+ownBag.position.set(0, 0.85, 0.28);
+ownBag.visible = false;
+model.object.add(ownBag);
 
 const stats = new FrameStats();
 const overlay = document.createElement('div');
@@ -223,6 +238,7 @@ renderer.setAnimationLoop((now) => {
   batcher.flush(now);
   predicted.smooth(frameMs / 1000);
   tracers.update(frameMs / 1000);
+  loot.update(now / 1000);
   hitboxes?.update(remotes.poses());
   if (serverClock.ready)
     remotes.update(serverClock.serverTimeAt(now), frameMs / 1000, INTERP_DELAY_MS);

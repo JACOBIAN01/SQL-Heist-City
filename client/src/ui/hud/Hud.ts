@@ -9,11 +9,17 @@ export interface HudView {
   showHitMarker(head: boolean): void;
   addKill(killer: string, victim: string, involvesYou: boolean): void;
   setDead(dead: boolean, secondsLeft?: number): void;
+  /** Cash on you and cash that is safe. */
+  setPurse(carried: number, banked: number): void;
   /** The "F — …" hint for whatever is in reach (undefined hides it). */
   setPrompt(text: string | undefined): void;
   /** A short message in the middle of the screen. */
   toast(text: string): void;
 }
+
+/** $1,234 */
+export const formatMoney = (amount: number): string =>
+  `$${Math.round(amount).toLocaleString('en-US')}`;
 
 const MAX_FEED = 5;
 const FEED_MS = 5000;
@@ -29,6 +35,8 @@ export class Hud implements HudView {
   private readonly feed: HTMLElement;
   private readonly dead: HTMLElement;
   private readonly deadSub: HTMLElement;
+  private readonly carriedText: HTMLElement;
+  private readonly bankedText: HTMLElement;
   private readonly prompt: HTMLElement;
   private readonly toastBox: HTMLElement;
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -46,6 +54,8 @@ export class Hud implements HudView {
     this.deadSub = h('div');
     this.dead = h('div', { class: 'hud-dead' }, h('h1', { text: 'YOU DIED' }), this.deadSub);
     this.dead.hidden = true;
+    this.carriedText = h('b', { text: '$0' });
+    this.bankedText = h('b', { text: '$0' });
     this.prompt = h('div', { class: 'hud-prompt' });
     this.prompt.hidden = true;
     this.toastBox = h('div', { class: 'hud-toast', attrs: { 'aria-live': 'polite' } });
@@ -58,6 +68,12 @@ export class Hud implements HudView {
       h('div', { class: 'hud-crosshair' }),
       this.marker,
       this.feed,
+      h(
+        'div',
+        { class: 'hud-purse' },
+        h('div', {}, 'CARRYING ', this.carriedText),
+        h('div', {}, 'BANKED ', this.bankedText),
+      ),
       this.prompt,
       this.toastBox,
       h(
@@ -115,6 +131,11 @@ export class Hud implements HudView {
       dead && secondsLeft !== undefined
         ? `Respawning in ${Math.max(0, Math.ceil(secondsLeft))}…`
         : '';
+  }
+
+  setPurse(carried: number, banked: number): void {
+    this.carriedText.textContent = formatMoney(carried);
+    this.bankedText.textContent = formatMoney(banked);
   }
 
   setPrompt(text: string | undefined): void {

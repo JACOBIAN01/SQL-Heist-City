@@ -137,7 +137,7 @@ describe('picking up and carrying', () => {
     const a = join('A', { x: first.x, y: 6, z: first.z });
     match.step();
     const purse = a.connection.jsonOf('purse').at(-1);
-    expect(purse).toEqual({ t: 'purse', carried: 10_000, banked: 0 });
+    expect(purse).toEqual({ t: 'purse', carried: 10_000, banked: 0, speed: 0.99 });
     expect(flagsOf(a.player) & Flag.Carrying).toBe(Flag.Carrying);
     expect(flagsOf(join('B').player) & Flag.Carrying).toBe(0);
   });

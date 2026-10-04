@@ -20,6 +20,7 @@ function setup() {
     addKill: vi.fn(),
     setDead: vi.fn(),
     setPrompt: vi.fn(),
+    setPurse: vi.fn(),
     toast: vi.fn(),
   };
   const tracers: { from: Vec3; to: Vec3 }[] = [];

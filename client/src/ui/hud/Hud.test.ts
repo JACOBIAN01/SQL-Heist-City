@@ -87,3 +87,12 @@ describe('Hud prompts', () => {
     expect(q('.hud-toast').hidden).toBe(true);
   });
 });
+
+describe('Hud purse', () => {
+  it('shows carried and banked cash with thousands separators', () => {
+    hud.setPurse(12_500, 1_000_000);
+    const text = q('.hud-purse').textContent;
+    expect(text).toContain('$12,500');
+    expect(text).toContain('$1,000,000');
+  });
+});

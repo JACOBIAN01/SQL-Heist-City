@@ -72,6 +72,8 @@ export interface PurseMessage {
   readonly t: 'purse';
   readonly carried: number;
   readonly banked: number;
+  /** Top-speed multiplier the server applies for the cash carried; the client predicts with the same. */
+  readonly speed: number;
 }
 
 /** A short message for the player ("Someone beat you to the lock"). */

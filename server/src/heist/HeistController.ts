@@ -93,7 +93,12 @@ export class HeistController {
   }
 
   private sendPurse(player: Player): void {
-    this.match.sendJson(player, { t: 'purse', carried: player.cash, banked: player.banked });
+    this.match.sendJson(player, {
+      t: 'purse',
+      carried: player.cash,
+      banked: player.banked,
+      speed: player.speedScale,
+    });
   }
 
   /**

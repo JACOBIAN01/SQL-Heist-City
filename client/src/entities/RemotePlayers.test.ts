@@ -107,4 +107,21 @@ describe('RemotePlayers', () => {
   it('falls back to a generic name', () => {
     expect(make().remotes.nameOf(9)).toBe('Player 9');
   });
+
+  it('shows a bag on the back of a player who is carrying cash', () => {
+    const { scene, remotes } = make();
+    const carrying = Flag.Alive | Flag.OnGround | Flag.Carrying;
+    remotes.onSnapshot(0, [entity(2, 0, { flags: carrying })]);
+    remotes.onSnapshot(50, [entity(2, 0, { flags: carrying })]);
+    remotes.update(200, 0.016, 0);
+    const model = scene.children[0];
+    const bag = model?.children.at(-1);
+    expect(bag?.visible).toBe(true);
+    expect(bag?.position.z).toBeGreaterThan(0); // behind: forward is −z
+
+    remotes.onSnapshot(100, [entity(2, 0)]);
+    remotes.onSnapshot(150, [entity(2, 0)]);
+    remotes.update(400, 0.016, 0);
+    expect(bag?.visible).toBe(false);
+  });
 });

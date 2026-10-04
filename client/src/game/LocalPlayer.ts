@@ -18,6 +18,8 @@ import {
 export class LocalPlayer {
   readonly body: BodyState;
   private readonly previous: BodyState;
+  /** Top-speed multiplier the server told us (cash carried slows you). */
+  speedScale = 1;
 
   constructor(
     private map: GameMap,
@@ -35,7 +37,7 @@ export class LocalPlayer {
 
   apply(command: InputCommand): void {
     copyBody(this.body, this.previous);
-    stepBody(this.body, command, SIM_DT, this.map, this.settings);
+    stepBody(this.body, command, SIM_DT, this.map, this.settings, this.speedScale);
   }
 
   /** Where to draw, `alpha` (0..1) of the way from the last tick to this one. */
