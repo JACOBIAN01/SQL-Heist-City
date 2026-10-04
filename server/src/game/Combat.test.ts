@@ -424,3 +424,60 @@ describe('Combat: sandbox dummies', () => {
     ).toBe(true);
   });
 });
+
+describe('Interest management in a match', () => {
+  const wide: GameMap = {
+    id: 'wide',
+    halfSize: 600,
+    boxes: [],
+    spawns: [{ x: 500, z: 500, yaw: 0 }],
+  };
+  const entitiesSeenBy = (c: FakeConnection) =>
+    c
+      .of('snapshot')
+      .at(-1)
+      ?.entities.map((e) => e.id) ?? [];
+
+  it('sends nearby players every tick and distant ones rarely or never', () => {
+    const { match, spawn } = arena(wide);
+    const a = spawn('A', 0, 0);
+    const near = spawn('Near', 30, 0);
+    const far = spawn('Far', 200, 0);
+    const gone = spawn('Gone', 450, 0);
+    const counts = { near: 0, far: 0, gone: 0 };
+    for (let t = 0; t < 8; t++) {
+      a.connection.clear();
+      match.step();
+      const seen = entitiesSeenBy(a.connection);
+      if (seen.includes(near.player.id)) counts.near++;
+      if (seen.includes(far.player.id)) counts.far++;
+      if (seen.includes(gone.player.id)) counts.gone++;
+    }
+    expect(counts).toEqual({ near: 8, far: 2, gone: 0 });
+  });
+
+  it('delivers shots only to players who can see or hear them', () => {
+    const { match, spawn } = arena(wide);
+    const a = spawn('A', 0, 0);
+    const watcher = spawn('Watcher', 100, 100);
+    const faraway = spawn('Faraway', 500, 500);
+    a.player.protectedUntilTick = 0;
+    match.receiveInput(a.player.id, [fire()]);
+    match.step();
+    expect(shots(a.connection)).toHaveLength(1);
+    expect(shots(watcher.connection)).toHaveLength(1);
+    expect(shots(faraway.connection)).toHaveLength(0);
+  });
+
+  it('still tells everyone about kills (they are rare and fill the kill feed)', () => {
+    const { match, spawn } = arena(wide);
+    const a = spawn('A', 0, 0);
+    const b = spawn('B', 0.55, -10);
+    const faraway = spawn('Faraway', 500, 500);
+    b.player.protectedUntilTick = 0;
+    b.player.hp = 1;
+    match.receiveInput(a.player.id, [fire()]);
+    match.step();
+    expect(kills(faraway.connection)).toHaveLength(1);
+  });
+});

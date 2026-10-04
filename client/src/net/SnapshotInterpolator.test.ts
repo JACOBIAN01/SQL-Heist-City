@@ -63,6 +63,13 @@ describe('SnapshotInterpolator', () => {
     expect(i.sample(60)).toMatchObject({ flags: 2, hp: 60 });
   });
 
+  it('tracks how often updates arrive', () => {
+    const i = new SnapshotInterpolator();
+    expect(i.averageIntervalMs).toBe(0);
+    for (let t = 0; t <= 1000; t += 200) i.push(t, pose(t));
+    expect(i.averageIntervalMs).toBeCloseTo(200);
+  });
+
   it('ignores out-of-order and duplicate snapshots', () => {
     const i = new SnapshotInterpolator();
     i.push(100, pose(1));

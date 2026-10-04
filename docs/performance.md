@@ -38,3 +38,13 @@ Static colliders are bucketed in an 8 m grid (`shared/src/world/ColliderGrid.ts`
 | 200 | 3.28 → **2.30 ms** | 4.21 → 3.34 ms |
 
 The gain grows with the number of boxes: this bench map has ~270; the real city will have 500–1000.
+
+## Phase 6.5 — area of interest and tiered rates
+Each client now gets itself every tick plus only the other players its interest policy says are due: within 60 m every tick (20 Hz), within 150 m every 2nd (10 Hz), within 250 m every 4th (5 Hz), beyond that nobody; at most 40 others, nearest first. Newcomers in range are sent immediately. Shots are delivered only to players within 250 m of the shooter or the impact; kills, joins and leaves stay global. Ranges and rates are settings (`interestSettingsSchema`). The client draws players it hears about less often further behind (1.5 update intervals) so they still move smoothly.
+
+| players | KB/s per client before → after | tick mean |
+|---|---|---|
+| 100 | 40.8 → **5.8** | 0.67 → 1.28 ms |
+| 200 | 81.0 → **11.3** | 2.30 → 4.03 ms |
+
+Bandwidth falls ~7×; the tick cost rises a little (distance sorting per viewer), which 6.7 will claw back.

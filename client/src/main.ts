@@ -164,7 +164,7 @@ renderer.setAnimationLoop((now) => {
   tracers.update(frameMs / 1000);
   hitboxes?.update(remotes.poses());
   if (serverClock.ready)
-    remotes.update(serverClock.serverTimeAt(now) - INTERP_DELAY_MS, frameMs / 1000);
+    remotes.update(serverClock.serverTimeAt(now), frameMs / 1000, INTERP_DELAY_MS);
 
   predicted.drawPosition(loop.alpha, drawPos);
   model.object.visible = feedback.isAlive;

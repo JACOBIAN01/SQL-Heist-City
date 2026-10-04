@@ -85,10 +85,16 @@ export class RemotePlayers {
     }
   }
 
-  /** Poses every remote at `renderTimeMs` (server time) and advances animation. */
-  update(renderTimeMs: number, dtSeconds: number): void {
+  /**
+   * Poses every remote and advances animation. `serverTimeMs` is the estimated
+   * server clock now; each player is drawn `baseDelayMs` behind it, or 1.5 update
+   * intervals if the server updates that player less often (distant ones), so
+   * they still have two snapshots to blend between instead of freezing.
+   */
+  update(serverTimeMs: number, dtSeconds: number, baseDelayMs: number): void {
     for (const remote of this.remotes.values()) {
-      const pose = remote.buffer.sample(renderTimeMs);
+      const delay = Math.max(baseDelayMs, remote.buffer.averageIntervalMs * 1.5);
+      const pose = remote.buffer.sample(serverTimeMs - delay);
       if (!pose) continue;
       const alive = (pose.flags & Flag.Alive) !== 0;
       remote.model.object.visible = alive;

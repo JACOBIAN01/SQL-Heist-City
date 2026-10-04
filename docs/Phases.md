@@ -151,7 +151,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 6.2 | Metrics (tick ms, bytes/s) + `/metrics` | visible numbers | ✅ Done |
 | 6.3 | Baseline measurement (no optimisation) | numbers recorded in docs | ✅ Done |
 | 6.4 | Spatial hash grid for players **and static colliders** (cell = 64 m chunk for AOI, 8 m for colliders; see city-kit.md §5) | neighbour and box queries tested; stepBody/rays only test nearby boxes | ✅ Done |
-| 6.5 | AOI snapshots with tiered rates | bandwidth drops | ⬜ |
+| 6.5 | AOI snapshots with tiered rates | bandwidth drops | ✅ Done |
 | 6.6 | Delta compression + quantisation (int16 × 2 cm positions, world ≤ ±650 m) | <4 KB/s/client | ⬜ |
 | 6.7 | Object pools (no per-tick allocation) | GC pauses gone | ⬜ |
 | 6.8 | Match worker threads | one match per thread | ⬜ |

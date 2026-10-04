@@ -1,6 +1,22 @@
 import { z } from 'zod';
 
 /** Match-level numbers. Defaults only; the admin settings table can override them (docs/gameplay.md). */
+/** Which other players a client hears about, and how often (area of interest). */
+export const interestSettingsSchema = z.object({
+  /** Within this distance (m) a player is sent every tick (20 Hz). */
+  nearRange: z.number().positive().default(60),
+  /** Within this, every `midEvery` ticks (10 Hz by default). */
+  midRange: z.number().positive().default(150),
+  /** Within this, every `farEvery` ticks (5 Hz); beyond it a player is not sent at all. */
+  farRange: z.number().positive().default(250),
+  midEvery: z.number().int().min(1).default(2),
+  farEvery: z.number().int().min(1).default(4),
+  /** Hard cap on other players per snapshot; the nearest win. */
+  maxEntities: z.number().int().min(1).default(40),
+});
+
+export type InterestSettings = z.infer<typeof interestSettingsSchema>;
+
 export const matchSettingsSchema = z.object({
   /** Authoritative simulation/snapshot rate (Hz). */
   tickRate: z.number().int().min(5).max(60).default(20),
@@ -20,6 +36,7 @@ export const matchSettingsSchema = z.object({
    * where they stand. Set 0 to disable (Phase 7 removes them).
    */
   sandboxDummies: z.number().int().min(0).max(20).default(2),
+  interest: interestSettingsSchema.default(interestSettingsSchema.parse({})),
   /** Disconnect a client that sends nothing for this long (ms). */
   idleTimeoutMs: z.number().int().min(1000).default(15_000),
 });

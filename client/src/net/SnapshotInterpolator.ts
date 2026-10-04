@@ -37,6 +37,7 @@ export function lerpAngle(from: number, to: number, t: number): number {
  */
 export class SnapshotInterpolator {
   private samples: Sample[] = [];
+  private interval = 0;
 
   constructor(private readonly keepMs = 1000) {}
 
@@ -49,9 +50,18 @@ export class SnapshotInterpolator {
     return this.samples.at(-1)?.time ?? Number.NEGATIVE_INFINITY;
   }
 
+  /** Smoothed gap between updates (ms): ~50 for nearby players, larger for ones the server updates less often. */
+  get averageIntervalMs(): number {
+    return this.interval;
+  }
+
   push(time: number, pose: Pose): void {
     const last = this.samples.at(-1);
     if (last && time <= last.time) return; // late or duplicate: ignore
+    if (last) {
+      const gap = time - last.time;
+      this.interval = this.interval === 0 ? gap : this.interval + (gap - this.interval) * 0.3;
+    }
     this.samples.push({ time, pose });
     const cutoff = time - this.keepMs;
     while (this.samples.length > 2 && (this.samples[0]?.time ?? 0) < cutoff) this.samples.shift();

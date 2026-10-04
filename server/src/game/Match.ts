@@ -27,6 +27,7 @@ import {
   type SnapshotMessage,
   type SpawnPoint,
 } from '@heist/shared';
+import { InterestManager } from './InterestManager';
 import { LagCompensator } from './LagCompensator';
 import { Player, type PlayerConnection } from './Player';
 import { FarthestSpawnPolicy, type SpawnPolicy } from './SpawnPolicy';
@@ -68,10 +69,12 @@ export class Match {
   private readonly movement: MovementSettings;
   private readonly combat: CombatSettings;
   private readonly lagComp: LagCompensator;
+  private readonly interest: InterestManager;
 
   constructor(private readonly deps: MatchDeps) {
     this.movement = deps.movement ?? DEFAULT_MOVEMENT_SETTINGS;
     this.combat = deps.combat ?? DEFAULT_COMBAT_SETTINGS;
+    this.interest = new InterestManager(deps.settings.interest);
     // A bit more history than the rewind cap, so the oldest legal rewind is always covered.
     this.lagComp = new LagCompensator(
       Math.ceil((this.combat.maxLagCompMs / 1000) * deps.settings.tickRate) + 4,
@@ -150,6 +153,7 @@ export class Match {
   leave(id: number): void {
     if (!this.players.delete(id)) return;
     this.lagComp.forget(id);
+    this.interest.remove(id);
     this.broadcast({ e: 'left', id });
   }
 
@@ -172,6 +176,8 @@ export class Match {
     this.tick++;
     this.dropIdlePlayers();
     this.respawnDue();
+    // Positions can change outside movement (respawns, joins): refresh the grid before shots use it.
+    for (const p of this.players.values()) this.interest.update(p.id, p.body.x, p.body.z);
     for (const player of this.players.values()) this.applyInput(player);
     this.recordHistory();
     this.sendSnapshots();
@@ -231,7 +237,7 @@ export class Match {
         command.pitch + radius * Math.sin(angle),
       );
       const result = resolveShot(this.deps.map, origin, dir, weapon.range, targets, this.combat);
-      this.broadcast({
+      this.broadcastShot({
         e: 'shot',
         shooter: shooter.id,
         endX: result.end.x,
@@ -273,6 +279,7 @@ export class Match {
 
   private recordHistory(): void {
     for (const p of this.players.values()) {
+      this.interest.update(p.id, p.body.x, p.body.z);
       if (!p.alive) continue;
       this.lagComp.record(this.tick, p.id, {
         x: p.body.x,
@@ -334,13 +341,28 @@ export class Match {
     }
   }
 
+  /**
+   * Each client gets itself in full every tick, plus only the other players
+   * its interest policy says are due (near often, far rarely, out of range never).
+   */
   private sendSnapshots(): void {
-    const entities: EntityState[] = [];
-    for (const p of this.players.values()) entities.push(entityOf(p, this.isProtected(p)));
+    const ids: number[] = [];
+    const positionOf = (id: number) => this.players.get(id)?.body;
     for (const player of this.players.values()) {
       if (player.isDummy) continue; // nobody is listening
-      const others = entities.filter((e) => e.id !== player.id);
       const b = player.body;
+      ids.length = 0;
+      this.interest.select(
+        { id: player.id, x: b.x, z: b.z, lastSent: player.lastSent },
+        this.tick,
+        positionOf,
+        ids,
+      );
+      const entities: EntityState[] = [];
+      for (const id of ids) {
+        const other = this.players.get(id);
+        if (other) entities.push(entityOf(other, this.isProtected(other)));
+      }
       const snapshot: SnapshotMessage = {
         t: 'snapshot',
         tick: this.tick,
@@ -355,10 +377,32 @@ export class Match {
           flags: flagsOf(player, this.isProtected(player)),
           hp: player.hp,
         },
-        entities: others,
+        entities,
       };
       this.sendTo(player, snapshot);
     }
+  }
+
+  /** Sends a shot only to players close enough to see or hear it (shooter or impact within range). */
+  private broadcastShot(event: Extract<GameEvent, { e: 'shot' }>): void {
+    const shooter = this.players.get(event.shooter);
+    const range = this.deps.settings.interest.farRange;
+    const bytes = encodeServerMessage({ t: 'event', event });
+    const sent = new Set<number>();
+    const deliver = (id: number) => {
+      if (sent.has(id)) return;
+      const p = this.players.get(id);
+      if (!p) return;
+      const near = (x: number, z: number) => Math.hypot(p.body.x - x, p.body.z - z) <= range;
+      if (!(shooter && near(shooter.body.x, shooter.body.z)) && !near(event.endX, event.endZ))
+        return;
+      sent.add(id);
+      p.connection.send(bytes);
+      this.traffic.bytes += bytes.length;
+      this.traffic.events++;
+    };
+    if (shooter) this.interest.forEachNear(shooter.body.x, shooter.body.z, range, deliver);
+    this.interest.forEachNear(event.endX, event.endZ, range, deliver);
   }
 
   private broadcast(event: GameEvent, exceptId?: number): void {
