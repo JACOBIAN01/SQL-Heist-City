@@ -1,4 +1,4 @@
-import type { MapBoxKind } from '../map';
+import type { AnchorKind, MapBoxKind } from '../map';
 
 /**
  * Bank layout format (docs/city-kit.md rule 1): a bank is described once, as
@@ -69,6 +69,18 @@ export interface StairSpec {
   readonly tread: number;
 }
 
+/** A usable spot inside the bank (local coordinates). */
+export interface AnchorSpec {
+  /** Unique within the bank; the map id becomes `<bank id>:<id>`. */
+  readonly id: string;
+  readonly kind: AnchorKind;
+  readonly storey: number;
+  readonly x: number;
+  readonly z: number;
+  /** Defaults to 1.5 m. */
+  readonly radius?: number;
+}
+
 export interface BankLayout {
   readonly id: string;
   readonly name: string;
@@ -86,7 +98,11 @@ export interface BankLayout {
   readonly floors: readonly FloorPlan[];
   /** Flights between storeys. Floors above the ground get slabs with holes where these arrive. */
   readonly stairs?: readonly StairSpec[];
+  /** Elevators, the vault console… */
+  readonly anchors?: readonly AnchorSpec[];
 }
+
+export const DEFAULT_ANCHOR_RADIUS = 1.5;
 
 export const EXTERIOR_THICKNESS = 0.4;
 export const DEFAULT_WALL_THICKNESS = 0.2;

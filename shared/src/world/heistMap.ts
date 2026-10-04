@@ -1,5 +1,5 @@
 import { box, type GameMap, type SpawnPoint } from './map';
-import { compileBank } from './bank/compileBank';
+import { compileAnchors, compileBank } from './bank/compileBank';
 import { BANK_1 } from './bank/bank1';
 
 const HALF = 60;
@@ -30,4 +30,5 @@ export const HEIST_MAP: GameMap = {
     box('cover', 12, 24, 0.4, 1.1, 5),
   ],
   spawns: ring(12, 48),
+  anchors: compileAnchors(BANK_1, { x: 0, z: 0 }),
 };

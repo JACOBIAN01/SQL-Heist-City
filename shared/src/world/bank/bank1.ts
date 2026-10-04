@@ -20,6 +20,12 @@ export const BANK_1: BankLayout = {
     { storey: 0, x: -10, z: -4.4, width: 2, heading: '-z', steps: 12, tread: 0.4 },
     { storey: 1, x: -7.5, z: -5.4, width: 2, heading: '+z', steps: 12, tread: 0.4 },
   ],
+  // One lift per storey at the east end of the lobby; F rides to the next storey up (top → ground).
+  anchors: [
+    { id: 'lift:0', kind: 'elevator', storey: 0, x: 9.5, z: 5 },
+    { id: 'lift:1', kind: 'elevator', storey: 1, x: 9.5, z: 5 },
+    { id: 'lift:2', kind: 'elevator', storey: 2, x: 9.5, z: 5 },
+  ],
   floors: [
     {
       walls: [

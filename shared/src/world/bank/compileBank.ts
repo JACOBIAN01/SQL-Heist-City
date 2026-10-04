@@ -1,5 +1,6 @@
-import { box, type MapBox, type MapBoxKind } from '../map';
+import { box, type MapAnchor, type MapBox, type MapBoxKind } from '../map';
 import {
+  DEFAULT_ANCHOR_RADIUS,
   DEFAULT_WALL_THICKNESS,
   EXTERIOR_THICKNESS,
   MAX_STEP_RISE,
@@ -35,6 +36,13 @@ export function validateBank(layout: BankLayout): void {
     const f = stairFootprint(st);
     if (f.minX < -hw || f.maxX > hw || f.minZ < -hd || f.maxZ > hd)
       fail(`${where} leaves the footprint`);
+  }
+  const seen = new Set<string>();
+  for (const a of layout.anchors ?? []) {
+    if (seen.has(a.id)) fail(`duplicate anchor ${a.id}`);
+    seen.add(a.id);
+    if (a.storey < 0 || a.storey >= layout.storeys) fail(`anchor ${a.id} is on a missing storey`);
+    if (Math.abs(a.x) > hw || Math.abs(a.z) > hd) fail(`anchor ${a.id} leaves the footprint`);
   }
   layout.floors.forEach((plan, storey) => {
     for (const wall of plan.walls) {
@@ -182,6 +190,20 @@ function wallBoxes(
   }
   out.push(...piece(cursor, length, 0, height));
   return out;
+}
+
+/** The bank's usable spots in world coordinates. */
+export function compileAnchors(layout: BankLayout, at: Point2): MapAnchor[] {
+  return (layout.anchors ?? []).map((a) => ({
+    id: `${layout.id}:${a.id}`,
+    kind: a.kind,
+    x: at.x + a.x,
+    y: a.storey * layout.storeyHeight,
+    z: at.z + a.z,
+    radius: a.radius ?? DEFAULT_ANCHOR_RADIUS,
+    bank: layout.id,
+    storey: a.storey,
+  }));
 }
 
 /**

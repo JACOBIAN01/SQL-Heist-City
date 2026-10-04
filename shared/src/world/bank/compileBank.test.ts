@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_MOVEMENT_SETTINGS } from '../../config/movement';
 import { SIM_DT } from '../../sim/input';
 import { createBody, stepBody } from '../../sim/movement';
+import { anchorInReach, nearestAnchor } from '../map';
 import { HEIST_MAP } from '../heistMap';
 import type { BankLayout } from './BankLayout';
 import { BANK_1 } from './bank1';
-import { compileBank, validateBank } from './compileBank';
+import { compileAnchors, compileBank, validateBank } from './compileBank';
 
 const forward = (seq: number, yaw: number, strafe = 0) => ({
   seq,
@@ -209,6 +210,57 @@ describe('Bank 1 stairs', () => {
     expect(() => validateBank({ ...tiny, storeys: 2, stairs: [flight] })).toThrow(/too tall/);
     expect(() => validateBank({ ...tiny, storeys: 1, stairs: [{ ...flight, steps: 12 }] })).toThrow(
       /no storey above/,
+    );
+  });
+});
+
+describe('anchors', () => {
+  it('places each anchor on its storey in world coordinates', () => {
+    const anchors = compileAnchors(BANK_1, { x: 100, z: 20 });
+    const lift2 = anchors.find((a) => a.id === 'bank-1:lift:2');
+    expect(lift2).toMatchObject({
+      kind: 'elevator',
+      x: 109.5,
+      z: 25,
+      y: 6,
+      storey: 2,
+      bank: 'bank-1',
+    });
+  });
+
+  it('is usable only on its own floor and within reach', () => {
+    const lift = HEIST_MAP.anchors?.find((a) => a.id === 'bank-1:lift:0');
+    expect(lift && anchorInReach(lift, 9.5, 0, 5)).toBe(true);
+    expect(lift && anchorInReach(lift, 9.5, 3, 5)).toBe(false); // the floor above
+    expect(lift && anchorInReach(lift, 12, 0, 5)).toBe(false); // 2.5 m away
+    expect(nearestAnchor(HEIST_MAP, 9, 0, 5)?.id).toBe('bank-1:lift:0');
+    expect(nearestAnchor(HEIST_MAP, -20, 0, -20)).toBeUndefined();
+  });
+
+  it('keeps every lift pad clear of walls and blocks', () => {
+    const boxes = compileBank(BANK_1, { x: 0, z: 0 });
+    for (const a of compileAnchors(BANK_1, { x: 0, z: 0 })) {
+      const inside = boxes.some(
+        (b) =>
+          a.x > b.minX &&
+          a.x < b.maxX &&
+          a.z > b.minZ &&
+          a.z < b.maxZ &&
+          a.y + 1 > b.minY &&
+          a.y + 1 < b.maxY,
+      );
+      expect(inside, a.id).toBe(false);
+    }
+  });
+
+  it('rejects duplicate or misplaced anchors', () => {
+    const lift = { id: 'a', kind: 'elevator' as const, storey: 0, x: 0, z: 0 };
+    expect(() => validateBank({ ...tiny, anchors: [lift, lift] })).toThrow(/duplicate/);
+    expect(() => validateBank({ ...tiny, anchors: [{ ...lift, storey: 3 }] })).toThrow(
+      /missing storey/,
+    );
+    expect(() => validateBank({ ...tiny, anchors: [{ ...lift, x: 9 }] })).toThrow(
+      /leaves the footprint/,
     );
   });
 });
