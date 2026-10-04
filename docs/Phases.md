@@ -185,7 +185,7 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 8.3 | Facade grammar → kit placements, merged per chunk per material, fake-interior windows | a block renders with the kit | ✅ 25 chunks, ≤ 2 draw calls each (frontend.md "City art") |
 | 8.4 | Chunk streaming + LOD (box impostors far, character LOD) | smooth traversal, draw calls < 200 | ✅ city ≈ 60 calls; detail built a chunk per frame (frontend.md "Streaming") |
 | 8.5 | Day/night + fog + sky | cycle works | ✅ a 30-minute day from the match clock; lit windows at night (frontend.md "Day and night") |
-| 8.6 | Post-FX (FXAA + bloom) | fps budget kept | ⬜ |
+| 8.6 | Post-FX (FXAA + bloom) | fps budget kept | ✅ steps down automatically when frames stay over 18 ms (frontend.md "Post-processing") |
 | 8.7 | Vehicle physics (sedan; car models hand-downloaded or procedural) | drive and collide | ⬜ |
 | 8.8 | Vehicle enter/exit + networking | other players see it | ⬜ |
 | 8.9 | Sports car + bike | all 3 drivable | ⬜ |

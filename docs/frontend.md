@@ -145,3 +145,12 @@ Preview: `kit.html?city&lod` shows the city as streamed from its centre, with fo
 - **Cost:** the game re-applies the sky only when the hour has moved by 0.005 h (about 10 s of a 30-minute day).
 
 `?hour=22` pins the time of day in the game (and in `kit.html`) for screenshots. Overriding `dayMinutes` from the admin is deferred: the client would need to receive it, like the city seed.
+
+## Post-processing (Phase 8.6)
+`PostFx` (`render/PostFx.ts`) chains render → bloom (`UnrealBloomPass`) → output (tone mapping and colour space) → FXAA.
+- **Bloom:** works at half resolution with a high threshold (0.82), so only really bright things glow: the sun, lit windows at night, muzzle flashes. Its strength follows the sky's `night` factor, 0.22 by day and 0.75 at night.
+- **Quality levels:** `high` (bloom + FXAA), `fxaa`, `off` (plain render, where the canvas's MSAA does the edges).
+- **Frame budget:** `FrameBudget` averages frame times over 3 s windows. If a window averages over 18 ms (60 fps plus a little slack), the game steps down one level and logs it. Single spikes, such as a chunk being built, do not count.
+- **Pinning:** `?fx=high|fxaa|off` pins a level and turns the automatic step-down off.
+
+The overlay shows the current level, and its draw-call and triangle counts now cover every pass (`renderer.info.autoReset` is off and is reset once per frame). Bundle cost: about 4 kB gzipped.
