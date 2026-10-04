@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { DataArrayTexture, SRGBColorSpace, Texture } from 'three';
-import { createKitMaterials, layersTexture } from './kitMaterials';
+import { createKitMaterials, layersTexture, setNightGlow } from './kitMaterials';
 
 /** Runs the material's shader hook on a minimal fake shader and returns what it produced. */
 function compile(material: { onBeforeCompile: (s: never, r: never) => void }) {
   const shader = {
     uniforms: {} as Record<string, { value: unknown }>,
     vertexShader: '#include <common>\n#include <begin_vertex>',
-    fragmentShader: '#include <common>\n#include <map_fragment>',
+    fragmentShader: '#include <common>\n#include <map_fragment>\n#include <emissivemap_fragment>',
   };
   material.onBeforeCompile(shader as never, undefined as never);
   return shader;
@@ -38,9 +38,8 @@ describe('createKitMaterials', () => {
     expect(shader.vertexShader).toContain('attribute float _layer');
     expect(shader.vertexShader).toContain('vKitLayer = _layer');
     expect(shader.fragmentShader).toContain('sampler2DArray uKitLayers');
-    expect(shader.fragmentShader).toContain(
-      'texture(uKitLayers, vec3(vKitUv, floor(vKitLayer + 0.5)))',
-    );
+    expect(shader.fragmentShader).toContain('texture(uKitLayers, vec3(vKitUv, kitLayer))');
+    expect(shader.fragmentShader).toContain('float kitLayer = floor(vKitLayer + 0.5);');
     expect(shader.fragmentShader).not.toContain('#include <map_fragment>');
   });
 
@@ -54,5 +53,27 @@ describe('createKitMaterials', () => {
     expect(decal.polygonOffset).toBe(true);
     expect(decal.polygonOffsetFactor).toBeLessThan(0);
     expect(decal.map?.flipY).toBe(false);
+  });
+});
+
+describe('night glow', () => {
+  const layers = layersTexture(new Uint8Array(4 * 4 * 4), 4, 1);
+
+  it('lets only the lit interior layers glow, by the night factor', () => {
+    const kit = createKitMaterials(layers, new Texture(), [13, 14]);
+    const shader = compile(kit.opaque);
+    const lit = shader.uniforms.uLitLayers?.value as { x: number; y: number; z: number; w: number };
+    expect([lit.x, lit.y, lit.z, lit.w]).toEqual([13, 14, -1, -1]);
+    expect(shader.fragmentShader).toContain(
+      'totalEmissiveRadiance += kitTex.rgb * kitLit * uNightGlow',
+    );
+    setNightGlow(kit, 0.7);
+    expect((shader.uniforms.uNightGlow as { value: number }).value).toBe(0.7);
+    setNightGlow(kit, 3);
+    expect(kit.nightGlow.value).toBe(1);
+  });
+
+  it('refuses more lit layers than the shader has slots for', () => {
+    expect(() => createKitMaterials(layers, new Texture(), [1, 2, 3, 4, 5])).toThrow(/lit layers/);
   });
 });

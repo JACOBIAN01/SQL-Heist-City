@@ -4,6 +4,7 @@ import {
   MeshStandardMaterial,
   RepeatWrapping,
   SRGBColorSpace,
+  Vector4,
   type Texture,
   type WebGLProgramParametersWithUniforms,
 } from 'three';
@@ -11,6 +12,8 @@ import {
 export interface KitMaterials {
   /** Every opaque piece: one texture array, the layer chosen per vertex. */
   readonly opaque: MeshStandardMaterial;
+  /** How strongly lit windows glow: 0 by day, 1 at night (see setNightGlow). */
+  readonly nightGlow: { value: number };
   /** Road markings: cut out by alpha, drawn just above the asphalt. */
   readonly decal: MeshStandardMaterial;
 }
@@ -46,9 +49,14 @@ export function layersTexture(
  * chunk; a chunk merges its pieces per material, so a whole city block costs
  * two draw calls however many pieces it has.
  */
-export function createKitMaterials(layers: DataArrayTexture, decals: Texture): KitMaterials {
+export function createKitMaterials(
+  layers: DataArrayTexture,
+  decals: Texture,
+  litLayers: readonly number[] = [],
+): KitMaterials {
   const opaque = new MeshStandardMaterial({ name: 'kit', roughness: 0.85, metalness: 0 });
-  applyLayerSampling(opaque, layers);
+  const nightGlow = { value: 0 };
+  applyLayerSampling(opaque, layers, litLayers, nightGlow);
   decals.colorSpace = SRGBColorSpace;
   decals.flipY = false; // glTF UV convention
   decals.wrapS = decals.wrapT = RepeatWrapping;
@@ -63,12 +71,35 @@ export function createKitMaterials(layers: DataArrayTexture, decals: Texture): K
     polygonOffsetFactor: -1,
     polygonOffsetUnits: -1,
   });
-  return { opaque, decal };
+  return { opaque, decal, nightGlow };
 }
 
-/** Shader hook: sample the texture array at (uv, layer) instead of a plain map. Exported for tests. */
-export function applyLayerSampling(material: MeshStandardMaterial, layers: DataArrayTexture): void {
-  const uniforms = { uKitLayers: { value: layers } };
+/** Lit windows glow at night: 0 (day) to 1 (night), from the sky state. */
+export function setNightGlow(materials: KitMaterials, night: number): void {
+  materials.nightGlow.value = Math.min(1, Math.max(0, night));
+}
+
+/** Up to this many layers can glow at night (the lit fake interiors). */
+const MAX_LIT_LAYERS = 4;
+
+/**
+ * Shader hook: sample the texture array at (uv, layer) instead of a plain map,
+ * and let the lit-interior layers glow by `nightGlow`. Exported for tests.
+ */
+export function applyLayerSampling(
+  material: MeshStandardMaterial,
+  layers: DataArrayTexture,
+  litLayers: readonly number[] = [],
+  nightGlow: { value: number } = { value: 0 },
+): void {
+  if (litLayers.length > MAX_LIT_LAYERS) throw new Error(`at most ${MAX_LIT_LAYERS} lit layers`);
+  // Unused slots hold −1, which no layer index equals.
+  const lit = [...litLayers, -1, -1, -1, -1].slice(0, MAX_LIT_LAYERS);
+  const uniforms = {
+    uKitLayers: { value: layers },
+    uLitLayers: { value: new Vector4(...lit) },
+    uNightGlow: nightGlow,
+  };
   material.customProgramCacheKey = () => 'heist-city-kit';
   material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
     Object.assign(shader.uniforms, uniforms);
@@ -84,12 +115,21 @@ export function applyLayerSampling(material: MeshStandardMaterial, layers: DataA
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform highp sampler2DArray uKitLayers;\nvarying vec2 vKitUv;\nvarying float vKitLayer;',
+        '#include <common>\nuniform highp sampler2DArray uKitLayers;\nuniform vec4 uLitLayers;\nuniform float uNightGlow;\nvarying vec2 vKitUv;\nvarying float vKitLayer;',
       )
       .replace(
         '#include <map_fragment>',
         // Every vertex of a triangle has the same layer; rounding guards against interpolation noise.
-        'diffuseColor *= texture(uKitLayers, vec3(vKitUv, floor(vKitLayer + 0.5)));',
+        [
+          'float kitLayer = floor(vKitLayer + 0.5);',
+          'vec4 kitTex = texture(uKitLayers, vec3(vKitUv, kitLayer));',
+          'diffuseColor *= kitTex;',
+          'float kitLit = any(equal(vec4(kitLayer), uLitLayers)) ? 1.0 : 0.0;',
+        ].join('\n'),
+      )
+      .replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\ntotalEmissiveRadiance += kitTex.rgb * kitLit * uNightGlow;',
       );
   };
 }

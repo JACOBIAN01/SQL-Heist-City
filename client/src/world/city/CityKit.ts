@@ -148,5 +148,13 @@ export async function loadCityKit(baseUrl = '/city/'): Promise<CityKit> {
     new TextureLoader().loadAsync(baseUrl + manifest.files.decals),
   ]);
   const layers = layersTexture(strip.data, manifest.layerSize, manifest.layers.length);
-  return new CityKit(manifest, piecesFromScene(gltf.scene), createKitMaterials(layers, decals));
+  // Lit offices glow at night; the dark-office interior stays dark.
+  const lit = manifest.interiorLayers
+    .filter((id) => !/dark/i.test(id))
+    .map((id) => manifest.layers.indexOf(id));
+  return new CityKit(
+    manifest,
+    piecesFromScene(gltf.scene),
+    createKitMaterials(layers, decals, lit),
+  );
 }
