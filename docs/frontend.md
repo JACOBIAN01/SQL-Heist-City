@@ -115,4 +115,17 @@ The generated city (`map.city`, see backend.md "The city") is drawn from kit pie
    - **Triangle choices:** the kit's own trim window (556 triangles) and trim cornice (112) are swapped for the metal ones (210, 30).
 3. **Merge (`buildChunkGeometry`, Builder):** every placement is copied into one opaque geometry (texture-array layer per vertex) and one decal geometry per chunk. `buildCityArt` puts each chunk in a group named `chunk-ix-iz` whose `userData.bounds` holds the ground it covers (used by 8.4 streaming).
 
-Default city: 25 chunks, 50 draw calls, about 0.9M triangles in total. That is above the 400k on-screen budget, which is why 8.4 (streaming, far-chunk impostors, near-only shadows) comes next. The game starts with the box stand-ins and swaps in the kit art when it loads (`hideKitCovered` hides `shell`/`kerb` boxes and the plain ground). If the kit fails to load, the boxes stay. Preview: `kit.html?city` (whole city) or `kit.html?block=0,0` (one block; Bank 1 is in block 0,0 of the default seed).
+Default city: 25 chunks, about 0.9M triangles if every chunk were drawn in detail, which is why it is streamed (below). The game starts with the box stand-ins and swaps in the kit art when it loads (`hideKitCovered` hides `shell`/`kerb` boxes and the plain ground). If the kit fails to load, the boxes stay. Preview: `kit.html?city` (whole city) or `kit.html?block=0,0` (one block; Bank 1 is in block 0,0 of the default seed).
+
+## Streaming and LOD (Phase 8.4)
+`CityStreamer` (`CityRenderer.ts`, Proxy) draws only what the camera needs:
+- **Detail range:** a chunk within 72 m of the camera (measured to the chunk's nearest edge) shows its full kit geometry. It stays detailed until it is 86 m away; the gap stops chunks flickering at the boundary.
+- **Impostors:** other chunks show an impostor, which is their ground and kerbs plus each building as a textured box with a roof (about 10 triangles, wall layer from the style's `massLayer`). Impostors cast no shadows; the shadow map only covers about 45 m anyway.
+- **Draw range:** past 230 m nothing is drawn, because the fog has already hidden it.
+- **Building detail:** a chunk's detail is built on demand, at most one per frame, and kept afterwards. `prime()` builds everything around the spawn before the first frame.
+
+Measured on the default city from the centre: 9 detailed and 40 impostor chunks, 58 draw calls for the whole city. That count includes the **outskirts**, a ring of facade buildings 20 m deep just outside the city wall, facing in (`planOutskirts`). With them in place, the wall boxes are hidden (`hideKitCovered` hides `map-wall` too); the wall collider is still there.
+
+**Character LOD:** each character file carries a light `*_LOD` copy of body and hair on the same skeleton (`tools/characters/build-lod.mjs`): 1.5k/1.9k triangles instead of 4.9k/5.7k, with no eyes. `RemotePlayers` switches a player to it beyond 26 m from the camera, and back inside 24 m. `?lowpoly` shows your own player with it.
+
+Preview: `kit.html?city&lod` shows the city as streamed from its centre, with fog off.
