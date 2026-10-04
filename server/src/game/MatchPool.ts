@@ -1,5 +1,5 @@
 import { Worker } from 'node:worker_threads';
-import type { MatchSettings } from '@heist/shared';
+import type { HeistSettings, MatchSettings } from '@heist/shared';
 import type { MapName } from './maps';
 import type { MatchWorkerData, MatchWorkerMessage } from './matchWorker';
 
@@ -51,9 +51,20 @@ export class MatchPool {
   private stopping = false;
 
   /** Starts a match in a new thread and resolves when it is listening. */
-  start(settings: MatchSettings, port = 0, map?: MapName): Promise<MatchInfo> {
+  start(
+    settings: MatchSettings,
+    port = 0,
+    map?: MapName,
+    heist?: HeistSettings,
+  ): Promise<MatchInfo> {
     const id = this.nextId++;
-    const data: MatchWorkerData = { matchId: id, port, settings, ...(map ? { map } : {}) };
+    const data: MatchWorkerData = {
+      matchId: id,
+      port,
+      settings,
+      ...(map ? { map } : {}),
+      ...(heist ? { heist } : {}),
+    };
     const worker = new Worker(workerUrl, { execArgv: workerExecArgv, workerData: data });
     return new Promise((resolve, reject) => {
       worker.once('error', reject);

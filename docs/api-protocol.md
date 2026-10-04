@@ -103,3 +103,5 @@ Server → client: the challenge replies and
 - `interact_result { ref, anchor, result }` where `result` is `{action:'moved', storey}`, `{action:'open_task', rewardKey, target}` or `{action:'denied', reason}` (`unknown_anchor`, `too_far`, `dead`, `cooldown`, `not_available`).
 
 The server validates every use: the anchor exists, the player is alive and within its radius (+0.75 m slack) on the same storey, and a 0.75 s per-player cooldown has passed. Anything that fails the shape check is ignored.
+
+- `vaults { vaults: [{id, tier, locks, opened}] }` (server → client): progress of every vault, sent on join and whenever a lock opens. The vault door stops blocking once `opened == locks`; the client swaps its collision map and hides the door.

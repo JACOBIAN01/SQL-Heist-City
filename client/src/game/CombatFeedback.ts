@@ -44,7 +44,15 @@ export class CombatFeedback {
   private diedAt = 0;
   private cooldown = 0;
 
-  constructor(private readonly deps: CombatFeedbackDeps) {}
+  private map: GameMap;
+
+  constructor(private readonly deps: CombatFeedbackDeps) {
+    this.map = deps.map;
+  }
+
+  setMap(map: GameMap): void {
+    this.map = map;
+  }
 
   get isAlive(): boolean {
     return this.alive;
@@ -77,7 +85,7 @@ export class CombatFeedback {
     const origin = aimOrigin(body, command.yaw, this.deps.movement);
     const dir = aimDirection(command.yaw, command.pitch);
     const wall = raycastMap(
-      this.deps.map,
+      this.map,
       origin.x,
       origin.y,
       origin.z,

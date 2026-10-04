@@ -27,13 +27,17 @@ export class CameraRig {
 
   constructor(
     private readonly camera: PerspectiveCamera,
-    private readonly map: GameMap,
+    private map: GameMap,
     options: CameraRigOptions = {},
   ) {
     this.distance = options.distance ?? 3.6;
     this.shoulder = options.shoulder ?? 0.55;
     this.pivotHeight = options.pivotHeight ?? 1.55;
     this.current = this.distance;
+  }
+
+  setMap(map: GameMap): void {
+    this.map = map;
   }
 
   /** `standing` is false while crouched so the camera drops with the head. */

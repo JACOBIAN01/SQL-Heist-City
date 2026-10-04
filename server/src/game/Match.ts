@@ -19,6 +19,7 @@ import {
   type EntityState,
   type GameEvent,
   type GameMap,
+  type HeistSettings,
   type InputCommand,
   type JsonServerMessage,
   type MatchSettings,
@@ -53,6 +54,7 @@ export interface MatchDeps {
   readonly settings: MatchSettings;
   readonly movement?: MovementSettings;
   readonly combat?: CombatSettings;
+  readonly heist?: HeistSettings;
   /** Seeds bullet spread so a match is reproducible in tests. */
   readonly seed?: string;
   readonly spawnPolicy?: SpawnPolicy;
@@ -77,6 +79,8 @@ export class Match implements MatchApi {
   private readonly movement: MovementSettings;
   private readonly combat: CombatSettings;
   private readonly heist: HeistController;
+  /** The map as it stands (open vault doors change it); the base map is `deps.map`. */
+  private collisionMap: GameMap;
   private readonly lagComp: LagCompensator;
   private readonly interest: InterestManager;
   // Scratch space reused by every snapshot: nothing here is allocated per tick.
@@ -103,6 +107,7 @@ export class Match implements MatchApi {
   private shotRange = 0;
 
   constructor(private readonly deps: MatchDeps) {
+    this.collisionMap = deps.map;
     this.movement = deps.movement ?? DEFAULT_MOVEMENT_SETTINGS;
     this.combat = deps.combat ?? DEFAULT_COMBAT_SETTINGS;
     this.interest = new InterestManager(deps.settings.interest);
@@ -121,7 +126,7 @@ export class Match implements MatchApi {
     );
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
-    this.heist = new HeistController(this);
+    this.heist = new HeistController(this, deps.heist);
   }
 
   get map(): GameMap {
@@ -149,9 +154,23 @@ export class Match implements MatchApi {
     this.sendTo(player, { t: 'json', text: JSON.stringify(message) });
   }
 
+  setCollisionMap(map: GameMap): void {
+    this.collisionMap = map;
+  }
+
+  broadcastJson(message: JsonServerMessage): void {
+    const text = JSON.stringify(message);
+    for (const p of this.players.values()) if (!p.isDummy) this.sendTo(p, { t: 'json', text });
+  }
+
   teleport(player: Player, x: number, y: number, z: number): void {
     Object.assign(player.body, createBody(x, y, z));
     this.interest.update(player.id, x, z);
+  }
+
+  /** Opens a vault lock (the SQL reward does this); false if it was not the next lock. */
+  openVaultLock(vaultId: string, lock: number): boolean {
+    return this.heist.openLock(vaultId, lock);
   }
 
   /** A JSON frame from a client (SQL tasks, interactions); ignored if the player is gone. */
@@ -199,6 +218,7 @@ export class Match implements MatchApi {
       this.sendTo(player, { t: 'event', event: { e: 'joined', id: other.id, name: other.name } });
     }
     this.broadcast({ e: 'joined', id, name: player.name }, id);
+    this.heist.onJoin(player);
     return { ok: true, player };
   }
 
@@ -271,7 +291,7 @@ export class Match implements MatchApi {
     for (let i = 0; i < budget; i++) {
       const command = player.queue.shift();
       if (!command) break;
-      stepBody(player.body, command, SIM_DT, this.deps.map, this.movement);
+      stepBody(player.body, command, SIM_DT, this.collisionMap, this.movement);
       player.yaw = command.yaw;
       player.pitch = command.pitch;
       player.lastAppliedSeq = command.seq;
@@ -309,7 +329,7 @@ export class Match implements MatchApi {
       );
       const result = resolveShotInto(
         this.shotResult,
-        this.deps.map,
+        this.collisionMap,
         origin,
         dir,
         weapon.range,

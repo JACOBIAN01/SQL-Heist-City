@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { parentPort, workerData } from 'node:worker_threads';
-import type { MatchSettings } from '@heist/shared';
+import type { HeistSettings, MatchSettings } from '@heist/shared';
 import { mapByName, type MapName } from './maps';
 import { startGame } from './startGame';
 
@@ -12,6 +12,7 @@ export interface MatchWorkerData {
   readonly settings: MatchSettings;
   /** Which map to load (default: the sandbox yard). */
   readonly map?: MapName;
+  readonly heist?: HeistSettings;
 }
 
 /** Messages worker → pool. */
@@ -30,7 +31,9 @@ export type MatchWorkerMessage =
  */
 const data = workerData as MatchWorkerData;
 const http = createServer();
-const game = startGame(http, data.settings, mapByName(data.map));
+const game = startGame(http, data.settings, mapByName(data.map), {
+  ...(data.heist ? { heist: data.heist } : {}),
+});
 
 http.listen(data.port, () => {
   const address = http.address();

@@ -14,6 +14,10 @@ export interface MatchApi {
   playerList(): Iterable<Player>;
   /** One JSON message to one player. */
   sendJson(player: Player, message: JsonServerMessage): void;
+  /** Same message to every player. */
+  broadcastJson(message: JsonServerMessage): void;
+  /** The map movement and shots collide with right now (vault doors open and close). */
+  setCollisionMap(map: GameMap): void;
   /** Moves a player instantly (elevators); their velocity is cleared. */
   teleport(player: Player, x: number, y: number, z: number): void;
 }

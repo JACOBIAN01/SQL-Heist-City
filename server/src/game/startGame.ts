@@ -1,5 +1,11 @@
 import type { Server } from 'node:http';
-import { DEFAULT_MATCH_SETTINGS, TEST_MAP, type GameMap, type MatchSettings } from '@heist/shared';
+import {
+  DEFAULT_MATCH_SETTINGS,
+  TEST_MAP,
+  type GameMap,
+  type HeistSettings,
+  type MatchSettings,
+} from '@heist/shared';
 import { GameLoop } from './GameLoop';
 import { attachGameSocket, type GameSocket } from './GameSocket';
 import { Match } from './Match';
@@ -28,13 +34,18 @@ export interface RunningGame {
   stop(): Promise<void>;
 }
 
+export interface GameOptions {
+  readonly heist?: HeistSettings;
+}
+
 /** Wires one match to the HTTP server and starts ticking. Composition only, no rules. */
 export function startGame(
   http: Server,
   settings: MatchSettings = DEFAULT_MATCH_SETTINGS,
   map: GameMap = TEST_MAP,
+  options: GameOptions = {},
 ): RunningGame {
-  const match = new Match({ map, settings });
+  const match = new Match({ map, settings, ...(options.heist ? { heist: options.heist } : {}) });
   (map.dummies ?? [])
     .slice(0, settings.sandboxDummies)
     .forEach((spot, i) => match.addDummy(`Dummy ${i + 1}`, spot));

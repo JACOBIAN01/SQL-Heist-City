@@ -36,6 +36,21 @@ export interface InteractReply {
   readonly result: InteractResult;
 }
 
-export type HeistServerMessage = InteractReply;
+/** Lock progress of one vault. */
+export interface VaultView {
+  readonly id: string;
+  readonly tier: number;
+  readonly locks: number;
+  /** Locks opened so far; the vault is open when this reaches `locks`. */
+  readonly opened: number;
+}
+
+/** Every vault's progress: sent on join and whenever a lock opens. */
+export interface VaultsMessage {
+  readonly t: 'vaults';
+  readonly vaults: readonly VaultView[];
+}
+
+export type HeistServerMessage = InteractReply | VaultsMessage;
 
 export type JsonServerMessage = ChallengeServerMessage | HeistServerMessage;

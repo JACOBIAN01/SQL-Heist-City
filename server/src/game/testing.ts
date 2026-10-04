@@ -1,4 +1,9 @@
-import { SnapshotDecoder, decodeServerMessages, type ServerMessage } from '@heist/shared';
+import {
+  SnapshotDecoder,
+  decodeServerMessages,
+  type JsonServerMessage,
+  type ServerMessage,
+} from '@heist/shared';
 import type { PlayerConnection } from './Player';
 
 /** Records what the server sent, decoded, so tests assert on messages not bytes. */
@@ -24,8 +29,12 @@ export class FakeConnection implements PlayerConnection {
   }
 
   /** JSON messages received so far, parsed (tasks, interaction results…). */
-  json(): { t: string; [key: string]: unknown }[] {
-    return this.of('json').map((m) => JSON.parse(m.text) as { t: string });
+  json(): JsonServerMessage[] {
+    return this.of('json').map((m) => JSON.parse(m.text) as JsonServerMessage);
+  }
+
+  jsonOf<T extends JsonServerMessage['t']>(type: T): Extract<JsonServerMessage, { t: T }>[] {
+    return this.json().filter((m): m is Extract<JsonServerMessage, { t: T }> => m.t === type);
   }
 
   clear(): void {

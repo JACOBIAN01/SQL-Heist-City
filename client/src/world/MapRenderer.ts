@@ -20,6 +20,8 @@ const ANCHOR_COLOR: Readonly<Record<AnchorKind, number>> = {
   safehouse: 0x6bd36b,
 };
 
+const DOOR_COLOR = 0x9aa3ad;
+
 const KIND_COLOR: Readonly<Record<MapBoxKind, number>> = {
   wall: 0x3a3f47,
   building: 0x5d6571,
@@ -88,6 +90,19 @@ export function buildMapObject(map: GameMap): Object3D {
     root.add(mesh);
   }
 
+  // Vault doors are separate meshes so they can disappear when the vault opens.
+  for (const d of map.doors ?? []) {
+    const b = d.box;
+    const door = new Mesh(
+      new BoxGeometry(b.maxX - b.minX, b.maxY - b.minY, b.maxZ - b.minZ),
+      new MeshStandardMaterial({ color: DOOR_COLOR, metalness: 0.6, roughness: 0.4 }),
+    );
+    door.position.set((b.minX + b.maxX) / 2, (b.minY + b.maxY) / 2, (b.minZ + b.maxZ) / 2);
+    door.castShadow = true;
+    door.name = `door-${d.id}`;
+    root.add(door);
+  }
+
   // A glowing pad on the floor wherever F does something.
   for (const a of map.anchors ?? []) {
     const color = ANCHOR_COLOR[a.kind];
@@ -100,4 +115,11 @@ export function buildMapObject(map: GameMap): Object3D {
     root.add(pad);
   }
   return root;
+}
+
+/** Shows the door of every vault still closed and hides the rest. */
+export function setClosedDoors(root: Object3D, closedDoorIds: ReadonlySet<string>): void {
+  for (const child of root.children) {
+    if (child.name.startsWith('door-')) child.visible = closedDoorIds.has(child.name.slice(5));
+  }
 }

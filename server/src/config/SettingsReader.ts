@@ -1,8 +1,11 @@
 import type { DatabaseSync } from 'node:sqlite';
 import {
   DEFAULT_CHALLENGE_SETTINGS,
+  DEFAULT_HEIST_SETTINGS,
   DEFAULT_REWARD_TIERS,
   challengeSettingsSchema,
+  heistSettingsSchema,
+  type HeistSettings,
   type ChallengeSettings,
   type TierRange,
 } from '@heist/shared';
@@ -12,6 +15,7 @@ import {
 // the admin-backed SQLite source change without touching game code.
 export interface SettingsReader {
   challengeSettings(): ChallengeSettings;
+  heistSettings(): HeistSettings;
   /** Tier range for a reward key, or undefined if the reward is unknown. */
   rewardTiers(rewardKey: string): TierRange | undefined;
 }
@@ -21,7 +25,12 @@ export class StaticSettings implements SettingsReader {
   constructor(
     private readonly challenges: ChallengeSettings = DEFAULT_CHALLENGE_SETTINGS,
     private readonly tiers: Readonly<Record<string, TierRange>> = DEFAULT_REWARD_TIERS,
+    private readonly heist: HeistSettings = DEFAULT_HEIST_SETTINGS,
   ) {}
+
+  heistSettings(): HeistSettings {
+    return this.heist;
+  }
 
   challengeSettings(): ChallengeSettings {
     return this.challenges;
@@ -33,6 +42,7 @@ export class StaticSettings implements SettingsReader {
 }
 
 export const CHALLENGE_SETTINGS_KEY = 'challenges';
+export const HEIST_SETTINGS_KEY = 'heist';
 
 /**
  * Reads admin overrides from SQLite on top of the shared defaults. Invalid
@@ -48,6 +58,15 @@ export class SqliteSettingsReader implements SettingsReader {
     if (!row) return DEFAULT_CHALLENGE_SETTINGS;
     const parsed = challengeSettingsSchema.safeParse(safeJson(row.value_json));
     return parsed.success ? parsed.data : DEFAULT_CHALLENGE_SETTINGS;
+  }
+
+  heistSettings(): HeistSettings {
+    const row = this.db
+      .prepare('SELECT value_json FROM settings WHERE key = ?')
+      .get(HEIST_SETTINGS_KEY) as { value_json: string } | undefined;
+    if (!row) return DEFAULT_HEIST_SETTINGS;
+    const parsed = heistSettingsSchema.safeParse(safeJson(row.value_json));
+    return parsed.success ? parsed.data : DEFAULT_HEIST_SETTINGS;
   }
 
   rewardTiers(rewardKey: string): TierRange | undefined {

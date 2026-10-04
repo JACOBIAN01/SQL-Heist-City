@@ -59,11 +59,13 @@ const workers = Number(process.env.MATCH_WORKERS ?? 0);
 if (workers > 0) {
   running.pool = new MatchPool();
   for (let i = 0; i < workers; i++) {
-    const info = await running.pool.start(matchSettings, 0, mapName);
+    const info = await running.pool.start(matchSettings, 0, mapName, challenges?.heistSettings());
     console.log(`match ${info.id} listening on ws://localhost:${info.port}/ws/game`);
   }
 } else {
-  running.game = startGame(server, matchSettings, mapByName(mapName));
+  running.game = startGame(server, matchSettings, mapByName(mapName), {
+    ...(challenges ? { heist: challenges.heistSettings() } : {}),
+  });
 }
 
 server.listen(port, () => {

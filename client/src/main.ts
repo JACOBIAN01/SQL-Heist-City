@@ -22,6 +22,7 @@ import { chooseGameUrl } from './net/lobby';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
 import { CombatFeedback } from './game/CombatFeedback';
+import { HeistWorld } from './heist/HeistWorld';
 import { Interactions } from './heist/Interactions';
 import { HitboxDebug } from './entities/HitboxDebug';
 import { Tracers } from './render/Tracers';
@@ -30,7 +31,7 @@ import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
-import { buildMapObject } from './world/MapRenderer';
+import { buildMapObject, setClosedDoors } from './world/MapRenderer';
 
 // Composition root for the client.
 // ?map=heist loads the bank map (the server must run MATCH_MAP=heist); the sandbox yard is the default.
@@ -44,7 +45,9 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new Scene();
 const lighting = addLighting(scene);
-scene.add(buildMapObject(MAP));
+const mapObject = buildMapObject(MAP);
+scene.add(mapObject);
+const world = new HeistWorld(MAP);
 
 const camera = new PerspectiveCamera(70, 1, 0.1, 220);
 const resize = (): void => {
@@ -137,8 +140,16 @@ client.subscribe({
     feedback.onEvent(event);
   },
   json: (message) => {
-    interactions.handle(message);
+    if (message.t === 'vaults') world.applyVaults(message.vaults);
+    else interactions.handle(message);
   },
+});
+// A vault door opening changes what everyone collides with.
+world.onChange((map, closedDoors) => {
+  player.setMap(map);
+  rig.setMap(map);
+  feedback.setMap(map);
+  setClosedDoors(mapObject, closedDoors);
 });
 // F uses whatever is in reach (lift, vault console…); the server decides if it works.
 const interactions = new Interactions({

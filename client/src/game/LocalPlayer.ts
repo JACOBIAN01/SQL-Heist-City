@@ -20,12 +20,17 @@ export class LocalPlayer {
   private readonly previous: BodyState;
 
   constructor(
-    private readonly map: GameMap,
+    private map: GameMap,
     private readonly settings: MovementSettings,
     spawn: SpawnPoint,
   ) {
     this.body = createBody(spawn.x, 0, spawn.z);
     this.previous = createBody(spawn.x, 0, spawn.z);
+  }
+
+  /** Swaps the collision map (a vault door opened or closed). */
+  setMap(map: GameMap): void {
+    this.map = map;
   }
 
   apply(command: InputCommand): void {

@@ -28,6 +28,7 @@ describe('CachedSettingsReader', () => {
     const inner = new StaticSettings();
     const counting = {
       challengeSettings: () => (calls++, inner.challengeSettings()),
+      heistSettings: () => (calls++, inner.heistSettings()),
       rewardTiers: (k: string) => (calls++, inner.rewardTiers(k)),
     };
     const cached = new CachedSettingsReader(counting);
@@ -39,5 +40,8 @@ describe('CachedSettingsReader', () => {
     cached.invalidate();
     cached.challengeSettings();
     expect(calls).toBe(3);
+    cached.heistSettings();
+    cached.heistSettings();
+    expect(calls).toBe(4);
   });
 });

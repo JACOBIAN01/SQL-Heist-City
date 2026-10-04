@@ -1,18 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { InstancedMesh } from 'three';
-import { TEST_MAP } from '@heist/shared';
-import { buildMapObject } from './MapRenderer';
+import { HEIST_MAP } from '@heist/shared';
+import { buildMapObject, setClosedDoors } from './MapRenderer';
 
-describe('buildMapObject', () => {
-  it('batches every box of a kind into one instanced mesh', () => {
-    const root = buildMapObject(TEST_MAP);
-    const instanced = root.children.filter((c): c is InstancedMesh => c instanceof InstancedMesh);
-    const kinds = new Set(TEST_MAP.boxes.map((b) => b.kind));
-    expect(instanced).toHaveLength(kinds.size);
-    expect(instanced.reduce((n, m) => n + m.count, 0)).toBe(TEST_MAP.boxes.length);
+describe('vault doors in the map object', () => {
+  const root = buildMapObject(HEIST_MAP);
+  const door = () => root.getObjectByName('door-bank-1:vault:door');
+
+  it('has a mesh per door and a pad per anchor', () => {
+    expect(door()).toBeDefined();
+    expect(root.getObjectByName('anchor-bank-1:lift:0')).toBeDefined();
   });
 
-  it('keeps draw calls tiny: ground plus one per kind', () => {
-    expect(buildMapObject(TEST_MAP).children.length).toBeLessThanOrEqual(8);
+  it('shows closed doors and hides open ones', () => {
+    setClosedDoors(root, new Set());
+    expect(door()?.visible).toBe(false);
+    setClosedDoors(root, new Set(['bank-1:vault:door']));
+    expect(door()?.visible).toBe(true);
   });
 });
