@@ -20,3 +20,5 @@ export * from './net/codec';
 export * from './config/match';
 export * from './config/combat';
 export * from './sim/combat';
+export * from './world/ColliderGrid';
+export * from './world/SpatialGrid';

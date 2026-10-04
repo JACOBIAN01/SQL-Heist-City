@@ -1,3 +1,4 @@
+import { colliderGridFor } from '../world/ColliderGrid';
 import type { Aabb, GameMap } from '../world/map';
 import type { MovementSettings } from '../config/movement';
 import { Button, hasButton, type InputCommand } from './input';
@@ -28,6 +29,14 @@ export function copyBody(from: BodyState, to: BodyState): void {
   to.onGround = from.onGround;
   to.crouching = from.crouching;
 }
+
+/**
+ * Boxes near the body this step. Reused across calls (the simulation is
+ * single-threaded and synchronous), so stepping allocates nothing.
+ */
+const nearby: Aabb[] = [];
+/** Search radius (m) around the body: its half-width plus the furthest it can move in one step, with room to spare. */
+const NEARBY_RADIUS = 1.6;
 
 /** Gap left between the body and what it touches, so float error never leaves it "inside". */
 const EPS = 1e-4;
@@ -71,7 +80,14 @@ export function stepBody(
   map: GameMap,
   cfg: MovementSettings,
 ): void {
-  const boxes = map.boxes;
+  colliderGridFor(map).query(
+    body.x - NEARBY_RADIUS,
+    body.z - NEARBY_RADIUS,
+    body.x + NEARBY_RADIUS,
+    body.z + NEARBY_RADIUS,
+    nearby,
+  );
+  const boxes = nearby;
   const r = cfg.radius;
 
   // Crouch: standing back up needs headroom.

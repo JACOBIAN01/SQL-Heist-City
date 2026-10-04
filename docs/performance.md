@@ -28,3 +28,13 @@ Every client is sent every player at 20 Hz in float32 (20 B per entity), one all
 - **Simulation is cheap** (about 1 ms for 100 players). The expensive part is **sending**: with real sockets the tick is ~8 ms slower because ~2000 snapshots per second are written to 100 sockets from inside the tick.
 - **Bandwidth is 10× over target** (41 KB/s vs 4 KB/s) because everyone receives everyone at the full rate. This is what Phase 6's interest management, delta and quantisation (6.5, 6.6) attack, and it is also what brings the tick time down.
 - 200 players is ~4× the bytes of 100 per client (quadratic): hopeless without area-of-interest.
+
+## Phase 6.4 — spatial grids
+Static colliders are bucketed in an 8 m grid (`shared/src/world/ColliderGrid.ts`); `stepBody` and every ray (shots, camera) look only at nearby boxes. Players get a `SpatialGrid` for the interest management in 6.5. Property tests check the grid against a brute-force scan on thousands of random rectangles and rays.
+
+| players | tick mean before → after | p99 before → after |
+|---|---|---|
+| 100 | 1.15 → **0.67 ms** | 1.52 → 1.06 ms |
+| 200 | 3.28 → **2.30 ms** | 4.21 → 3.34 ms |
+
+The gain grows with the number of boxes: this bench map has ~270; the real city will have 500–1000.
