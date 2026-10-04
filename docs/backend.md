@@ -122,3 +122,25 @@ Banking (7.7): `SafehouseHandler` starts a `BankingService` channel (kept per pl
 Guns and ammo (7.9): heist maps set `unarmedStart`; a player owns an `arsenal` (gun → rounds in its magazine), holds one (`weaponId`/`weaponWire`) and loses them all on death. `GunRule` (`gun:<id>`, refused if held or unknown) and `AmmoRule` (`ammo:refill`, refused when full or unarmed) are `TaskRule`s; `fire()` spends one round per shot and refuses at zero (the sandbox rifle has `infiniteAmmo`). Snapshots carry the held weapon index and rounds in `self`; `arms` JSON carries the owned list. The client predicts trails with `ammo − shots not yet acknowledged`, so an empty gun draws no phantom trail.
 
 Rounds (7.12): on maps with vaults `HeistController` owns a `RoundController`. A round lasts `roundMinutes` (15); new players may join during the first `joinWindowMinutes` (3) and between rounds. Once every vault is open and no bag lies on the ground the round ends after `overtimeSeconds` (time to bank). At the end the winner (most banked, then kills, then earliest join; none if nobody banked) is announced, damage, interactions and tasks are refused and banking is cancelled for `intermissionSeconds`, then `resetWorld` starts a fresh round (vaults shut, bags gone, every player at full health, empty-handed, score zero, at a street spawn). All timing is in ticks on the match clock. `rankPlayers` is the one ranking function; the scoreboard broadcasts the top 10 and tells each player their rank only when it changes, so it costs a few hundred bytes per interval.
+
+## The city (Phase 8.2)
+The city is data too. `generateCity(settings, bankFootprint)` (`shared/src/world/city/`) builds a `CityLayout` from `CitySettings` (`shared/src/config/city.ts`): a `blocks × blocks` grid on a 64 m pitch (52 m block + 12 m street, 3 m sidewalks) with an outer ring street.
+- **Determinism:** it uses one seeded random stream, and each block forks its own stream, so the same settings always give the same city. No geometry is ever sent over the network.
+- **Lots:** each block's inner area splits into four lots with 4 m alleys between them, sized on the 2 m kit grid. A lot is one or two solid buildings (taller downtown) or an open plaza.
+- **Special sites:** these always take a block's front (+z) lot, so entrances face the street.
+  - **Banks:** 5 sites, tier 5 in the most central block and tier 1 on the outskirts. Each site reserves the footprint of its tier's `BankLayout` (`BANK_LAYOUTS`; tiers without a layout reserve Bank 1's size and stand as a closed building until Phase 9).
+  - **Safehouses:** 3, placed as far from the banks and from each other as the grid allows.
+  - **Hospital:** the most central free block, with an 8 m forecourt holding the beds.
+- **Spawns:** four per street segment, on the asphalt, one in each lane, facing along the street.
+
+`compileCity(id, layout, BANK_LAYOUTS)` turns the layout into a `GameMap`:
+- boundary walls;
+- a 0.15 m kerb ring per block (below `stepHeight`, so it is walked over);
+- building shells, plus Bank 1 compiled from its layout at its site (anchors, door, vault);
+- safehouse pads (`safehouse-1..3`), hospital beds as `respawns`, and street spawns.
+
+It also attaches the layout as `map.city`, which the client uses to build the art. The default city has 279 colliders, takes 9 ms to build, and is 332 m across.
+
+Map ids: `mapById('city')` builds the default seed and `mapById('city:<seed>')` builds any other seed (1–64 characters, `[A-Za-z0-9_-]`). Each id is built once and cached (Flyweight), so the collision grid cached per map object stays valid. To use it, set `MATCH_MAP=city` (or `city:<seed>`) on the server; the client either loads `?map=city` or, on `welcome`, reloads itself onto the server's map id (`followServerMap`). Tests sweep 4–8 blocks × several seeds for invariants: lots inside blocks, no overlaps, streets free of colliders, spawns and beds on free ground. They also check that regenerating a city gives identical colliders, and walk a body from the street over the kerb into Bank 1 and up to a safehouse pad.
+
+City settings are defaults only. Admin overrides of the size are deferred, because the client has to generate the same city: an override has to travel inside the map id the way the seed does.
