@@ -13,7 +13,7 @@ export interface Aabb {
 }
 
 /** Drives the client's material only; the server treats every kind the same. */
-export type MapBoxKind = 'wall' | 'building' | 'crate' | 'step' | 'cover';
+export type MapBoxKind = 'wall' | 'building' | 'interior' | 'crate' | 'step' | 'cover';
 
 export interface MapBox extends Aabb {
   readonly kind: MapBoxKind;

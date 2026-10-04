@@ -1,0 +1,170 @@
+import { box, type MapBox, type MapBoxKind } from '../map';
+import {
+  DEFAULT_WALL_THICKNESS,
+  EXTERIOR_THICKNESS,
+  ROOF_THICKNESS,
+  type BankLayout,
+  type Opening,
+  type Point2,
+  type WallSpec,
+} from './BankLayout';
+
+const EPS = 1e-6;
+
+/** Throws a readable error for a layout that could not be built or walked. */
+export function validateBank(layout: BankLayout): void {
+  const fail = (what: string): never => {
+    throw new Error(`bank ${layout.id}: ${what}`);
+  };
+  if (layout.width % 2 !== 0 || layout.depth % 2 !== 0) fail('footprint must be multiples of 2 m');
+  if (layout.storeys < 1) fail('needs at least one storey');
+  if (layout.floors.length > layout.storeys) fail('more floor plans than storeys');
+  const { entrance } = layout;
+  if (entrance.height >= layout.storeyHeight) fail('entrance must be lower than the storey');
+  if (Math.abs(entrance.x) + entrance.width / 2 > layout.width / 2)
+    fail('entrance lies outside the facade');
+  const hw = layout.width / 2;
+  const hd = layout.depth / 2;
+  layout.floors.forEach((plan, storey) => {
+    for (const wall of plan.walls) {
+      const where = `storey ${storey} wall (${wall.from.x},${wall.from.z})→(${wall.to.x},${wall.to.z})`;
+      if (wall.from.x !== wall.to.x && wall.from.z !== wall.to.z)
+        fail(`${where} is not axis-aligned`);
+      for (const p of [wall.from, wall.to])
+        if (Math.abs(p.x) > hw || Math.abs(p.z) > hd) fail(`${where} leaves the footprint`);
+      const length = wallLength(wall);
+      let end = 0;
+      for (const o of [...(wall.openings ?? [])].sort((a, b) => a.at - b.at)) {
+        if (o.at < end - EPS) fail(`${where} has overlapping openings`);
+        if (o.at + o.width > length + EPS) fail(`${where} has an opening past its end`);
+        if ((o.sill ?? 0) + o.height > layout.storeyHeight) fail(`${where} opening too tall`);
+        end = o.at + o.width;
+      }
+    }
+    for (const b of plan.blocks)
+      if (Math.abs(b.x) + b.width / 2 > hw || Math.abs(b.z) + b.depth / 2 > hd)
+        fail(`storey ${storey} block at (${b.x},${b.z}) leaves the footprint`);
+  });
+}
+
+const wallLength = (w: WallSpec): number =>
+  Math.abs(w.to.x - w.from.x) + Math.abs(w.to.z - w.from.z);
+
+/**
+ * Turns one wall into solid boxes around its openings: the runs between
+ * them, a lintel above each, and a sill block below raised openings.
+ */
+function wallBoxes(
+  kind: MapBoxKind,
+  from: Point2,
+  to: Point2,
+  thickness: number,
+  openings: readonly Opening[],
+  bottom: number,
+  height: number,
+  offset: Point2,
+): MapBox[] {
+  const alongX = from.z === to.z;
+  const length = Math.abs(alongX ? to.x - from.x : to.z - from.z);
+  const dir = (alongX ? Math.sign(to.x - from.x) : Math.sign(to.z - from.z)) || 1;
+  const startU = alongX ? from.x : from.z;
+  const fixed = alongX ? from.z : from.x;
+  // A piece covering [a, b) along the wall, between two heights.
+  const piece = (a: number, b: number, lo: number, hi: number): MapBox[] => {
+    if (b - a < EPS || hi - lo < EPS) return [];
+    const mid = startU + dir * ((a + b) / 2);
+    const size = b - a;
+    return alongX
+      ? [box(kind, offset.x + mid, offset.z + fixed, size, hi - lo, thickness, bottom + lo)]
+      : [box(kind, offset.x + fixed, offset.z + mid, thickness, hi - lo, size, bottom + lo)];
+  };
+  const out: MapBox[] = [];
+  let cursor = 0;
+  for (const o of [...openings].sort((a, b) => a.at - b.at)) {
+    out.push(...piece(cursor, o.at, 0, height));
+    out.push(...piece(o.at, o.at + o.width, 0, o.sill ?? 0));
+    out.push(...piece(o.at, o.at + o.width, (o.sill ?? 0) + o.height, height));
+    cursor = o.at + o.width;
+  }
+  out.push(...piece(cursor, length, 0, height));
+  return out;
+}
+
+/**
+ * Compiles a bank into collider boxes placed at `at` on the ground.
+ * Pattern: Builder — a declarative layout in, the geometry the simulation
+ * needs out. Why: server and client run this same function, so they cannot
+ * disagree about where a wall is, and new banks are data, not code.
+ */
+export function compileBank(layout: BankLayout, at: Point2): MapBox[] {
+  validateBank(layout);
+  const hw = layout.width / 2;
+  const hd = layout.depth / 2;
+  const total = layout.storeys * layout.storeyHeight;
+  const boxes: MapBox[] = [];
+
+  // Shell, once per storey so the street door only cuts the ground floor.
+  for (let s = 0; s < layout.storeys; s++) {
+    const bottom = s * layout.storeyHeight;
+    const h = layout.storeyHeight;
+    const e = EXTERIOR_THICKNESS;
+    const door: Opening[] =
+      s === 0
+        ? [
+            {
+              at: hw + layout.entrance.x - layout.entrance.width / 2,
+              width: layout.entrance.width,
+              height: layout.entrance.height,
+            },
+          ]
+        : [];
+    // Front runs west→east so openings measure from the west corner.
+    boxes.push(
+      ...wallBoxes('building', { x: -hw, z: hd }, { x: hw, z: hd }, e, door, bottom, h, at),
+      ...wallBoxes('building', { x: -hw, z: -hd }, { x: hw, z: -hd }, e, [], bottom, h, at),
+      ...wallBoxes('building', { x: -hw, z: -hd }, { x: -hw, z: hd }, e, [], bottom, h, at),
+      ...wallBoxes('building', { x: hw, z: -hd }, { x: hw, z: hd }, e, [], bottom, h, at),
+    );
+  }
+  boxes.push(
+    box(
+      'building',
+      at.x,
+      at.z,
+      layout.width + EXTERIOR_THICKNESS,
+      ROOF_THICKNESS,
+      layout.depth + EXTERIOR_THICKNESS,
+      total,
+    ),
+  );
+
+  layout.floors.forEach((plan, s) => {
+    const bottom = s * layout.storeyHeight;
+    for (const w of plan.walls)
+      boxes.push(
+        ...wallBoxes(
+          'interior',
+          w.from,
+          w.to,
+          w.thickness ?? DEFAULT_WALL_THICKNESS,
+          w.openings ?? [],
+          bottom,
+          layout.storeyHeight,
+          at,
+        ),
+      );
+    for (const b of plan.blocks)
+      boxes.push(
+        box(
+          b.kind ?? 'cover',
+          at.x + b.x,
+          at.z + b.z,
+          b.width,
+          b.height,
+          b.depth,
+          bottom + (b.bottom ?? 0),
+        ),
+      );
+  });
+  return boxes;
+}

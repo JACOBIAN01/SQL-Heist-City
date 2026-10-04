@@ -105,3 +105,6 @@ Validate speed/teleport, fire rate, ammo, line of sight, challenge binding. Clie
 
 ## Load testing
 `npm run load:bots -- --players 100 --latency 100 --loss 0.05`.
+
+## Bank layouts (Phase 7.1)
+A bank is data: `BankLayout` (`shared/src/world/bank/`) lists the footprint, storeys, street entrance and, per storey, interior walls (with door/window openings) and blocks (counters). `compileBank(layout, at)` turns it into `MapBox` colliders; the outer shell is generated from the footprint, and the entrance cuts only the ground storey. `validateBank` rejects diagonal walls, overlapping openings and anything outside the footprint. Server and client call the same function, so they cannot disagree about a wall. Bank 1 ("Corner Savings") is `bank1.ts`; the `heist` map (`heistMap.ts`) puts it on a walled lot. Select a map with `MATCH_MAP=heist` on the server and `?map=heist` on the client (both resolve through `mapById`).

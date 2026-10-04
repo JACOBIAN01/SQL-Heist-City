@@ -16,6 +16,7 @@ import type { GameMap, MapBoxKind } from '@heist/shared';
 const KIND_COLOR: Readonly<Record<MapBoxKind, number>> = {
   wall: 0x3a3f47,
   building: 0x5d6571,
+  interior: 0x8b8f96,
   crate: 0x8a6a3b,
   step: 0x6d737c,
   cover: 0x4b5058,
