@@ -28,7 +28,20 @@ export interface PingMessage {
   readonly clientTime: number;
 }
 
-export type ClientMessage = JoinMessage | InputMessage | PingMessage;
+/**
+ * Low-rate messages (SQL tasks, interactions, inventory) travel as JSON text
+ * inside a binary frame: the hot path stays compact and the rest stays
+ * readable. The payload is validated by its own zod schema on arrival.
+ */
+export interface JsonMessage {
+  readonly t: 'json';
+  readonly text: string;
+}
+
+/** Largest JSON payload either side accepts: a 5 000-character query still fits in UTF-8. */
+export const MAX_JSON_BYTES = 24 * 1024;
+
+export type ClientMessage = JoinMessage | InputMessage | PingMessage | JsonMessage;
 
 // --- server → client ---------------------------------------------------------
 
@@ -133,4 +146,5 @@ export interface PongMessage {
   readonly tick: number;
 }
 
-export type ServerMessage = WelcomeMessage | SnapshotMessage | EventMessage | PongMessage;
+export type ServerMessage =
+  WelcomeMessage | SnapshotMessage | EventMessage | PongMessage | JsonMessage;

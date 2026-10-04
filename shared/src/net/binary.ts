@@ -63,6 +63,19 @@ export class Reader {
       throw new CodecError('invalid utf-8');
     }
   }
+  /** The rest of the message as UTF-8 text (JSON payloads), at most `maxBytes` long. */
+  rest(maxBytes: number): string {
+    const length = this.remaining;
+    if (length > maxBytes) throw new CodecError('text too long');
+    const at = this.take(length);
+    try {
+      return utf8Decoder.decode(
+        new Uint8Array(this.view.buffer, this.view.byteOffset + at, length),
+      );
+    } catch {
+      throw new CodecError('invalid utf-8');
+    }
+  }
   end(): void {
     if (this.remaining !== 0) throw new CodecError('trailing bytes');
   }

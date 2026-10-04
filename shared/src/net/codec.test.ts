@@ -245,3 +245,38 @@ describe('bundles', () => {
     expect(second[0]?.t === 'snapshot' && second[0].entities[0]?.x).toBeCloseTo(10.2, 1);
   });
 });
+
+describe('json messages', () => {
+  const text = JSON.stringify({ t: 'interact', anchor: 'bank-1:lift:0', note: 'héllo ✓' });
+
+  it('round-trips in both directions', () => {
+    expect(decodeClientMessage(encodeClientMessage({ t: 'json', text }))).toEqual({
+      t: 'json',
+      text,
+    });
+    expect(decodeServerMessage(encodeServerMessage({ t: 'json', text }))).toEqual({
+      t: 'json',
+      text,
+    });
+  });
+
+  it('rides inside a bundle next to other messages', () => {
+    const frame = encodeBundle([
+      encodeServerMessage({ t: 'json', text }),
+      encodeServerMessage({ t: 'pong', clientTime: 1, tick: 2 }),
+    ]);
+    expect(decodeServerMessages(frame).map((m) => m.t)).toEqual(['json', 'pong']);
+  });
+
+  it('refuses oversized payloads when encoding and decoding', () => {
+    const big = 'x'.repeat(24 * 1024 + 1);
+    expect(() => encodeClientMessage({ t: 'json', text: big })).toThrow(CodecError);
+    const frame = new Uint8Array(2 + 24 * 1024 + 1).fill(0x78);
+    frame[0] = 0x04;
+    expect(() => decodeClientMessage(frame)).toThrow(CodecError);
+  });
+
+  it('rejects invalid UTF-8', () => {
+    expect(() => decodeClientMessage(new Uint8Array([0x04, 0xff, 0xfe]))).toThrow(CodecError);
+  });
+});

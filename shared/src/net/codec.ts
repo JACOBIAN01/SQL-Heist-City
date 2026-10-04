@@ -11,6 +11,7 @@ import { CodecError, Reader, Writer, utf8 } from './binary';
 import { SnapshotDecoder, SnapshotEncoder } from './snapshotCodec';
 import {
   MAX_COMMANDS_PER_MESSAGE,
+  MAX_JSON_BYTES,
   MAX_NAME_LENGTH,
   type ClientMessage,
   type GameEvent,
@@ -23,6 +24,7 @@ const enum ClientType {
   Join = 0x01,
   Input = 0x02,
   Ping = 0x03,
+  Json = 0x04,
 }
 const enum ServerType {
   Welcome = 0x81,
@@ -30,6 +32,7 @@ const enum ServerType {
   Event = 0x83,
   Pong = 0x84,
   Bundle = 0x85,
+  Json = 0x86,
 }
 const enum EventType {
   Shot = 1,
@@ -74,7 +77,18 @@ export function encodeClientMessage(message: ClientMessage): Uint8Array {
     }
     case 'ping':
       return new Writer(9).u8(ClientType.Ping).f64(message.clientTime).bytes;
+    case 'json':
+      return jsonBytes(ClientType.Json, message.text);
   }
+}
+
+function jsonBytes(type: number, text: string): Uint8Array {
+  const body = utf8.encode(text);
+  if (body.length > MAX_JSON_BYTES) throw new CodecError('json too long');
+  const out = new Uint8Array(1 + body.length);
+  out[0] = type;
+  out.set(body, 1);
+  return out;
 }
 
 export function decodeClientMessage(bytes: Uint8Array): ClientMessage {
@@ -115,6 +129,8 @@ export function decodeClientMessage(bytes: Uint8Array): ClientMessage {
       r.end();
       return { t: 'ping', clientTime };
     }
+    case ClientType.Json:
+      return { t: 'json', text: r.rest(MAX_JSON_BYTES) };
     default:
       throw new CodecError(`unknown client message type ${type}`);
   }
@@ -182,6 +198,8 @@ export function encodeServerMessage(
       }
       return w.bytes;
     }
+    case 'json':
+      return jsonBytes(ServerType.Json, message.text);
     case 'pong':
       return new Writer(13).u8(ServerType.Pong).f64(message.clientTime).u32(message.tick).bytes;
   }
@@ -282,6 +300,8 @@ export function decodeServerMessage(bytes: Uint8Array, snapshots?: SnapshotDecod
       r.end();
       return { t: 'pong', clientTime, tick };
     }
+    case ServerType.Json:
+      return { t: 'json', text: r.rest(MAX_JSON_BYTES) };
     default:
       throw new CodecError(`unknown server message type ${type}`);
   }
