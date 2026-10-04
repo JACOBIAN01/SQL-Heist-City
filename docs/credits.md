@@ -22,3 +22,6 @@ The player model and its animations are from [Quaternius](https://quaternius.com
 - **Universal Animation Library** (idle, walk, jog, sprint, crouch, jump, death, hit, pistol clips)
 
 Modified: simplified to ~5k triangles, body split into recolourable skin/shirt/trousers/shoes parts, textures shrunk to WebP, 13 clips kept. Build steps: `tools/characters/README.md`.
+
+## City kit (planned, Phase 8)
+[Downtown City MegaKit [Standard]](https://quaternius.itch.io/downtown-city-megakit) by Quaternius, CC0 1.0. Design notes: `city-kit.md`.
