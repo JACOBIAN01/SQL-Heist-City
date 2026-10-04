@@ -1,0 +1,12 @@
+{
+  "name": "@heist/city-tools",
+  "description": "Offline build of the city kit (not part of CI)",
+  "type": "module",
+  "dependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
+    "sharp": "^0.35.5"
+  },
+  "private": true
+}
