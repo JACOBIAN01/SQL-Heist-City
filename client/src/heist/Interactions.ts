@@ -25,6 +25,7 @@ export const DENIAL_TEXT: Readonly<Record<string, string>> = {
   too_far: 'Too far away',
   dead: 'You are dead',
   cooldown: 'Slow down',
+  nothing_to_bank: 'You are not carrying any cash',
   not_available: 'Not available right now',
 };
 
@@ -97,6 +98,8 @@ export class Interactions {
       case 'moved':
         this.deps.view.toast(result.storey === 0 ? 'Ground floor' : `Floor ${result.storey}`);
         break;
+      case 'banking':
+        break; // the progress bar is driven by the server's banking messages
       case 'open_task':
         this.deps.onOpenTask(result.rewardKey, result.target);
         break;

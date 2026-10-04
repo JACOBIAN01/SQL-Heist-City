@@ -10,10 +10,12 @@ import {
   type RejectReason,
 } from '@heist/shared';
 import type { Player } from '../game/Player';
+import { BankingService } from './BankingService';
 import type { ChallengeGateway } from './ChallengeGateway';
 import { LootManager } from './LootManager';
 import { ElevatorHandler } from './ElevatorHandler';
 import { InteractionService } from './InteractionService';
+import { SafehouseHandler } from './SafehouseHandler';
 import { TaskRules } from './TaskRule';
 import { VaultConsoleHandler } from './VaultConsoleHandler';
 import type { Vault } from './Vault';
@@ -33,6 +35,7 @@ export class HeistController {
 
   readonly tasks = new TaskRules();
   readonly loot = new LootManager();
+  readonly banking: BankingService;
 
   constructor(
     private readonly match: MatchApi,
@@ -41,7 +44,16 @@ export class HeistController {
     private readonly now: () => number = Date.now,
   ) {
     this.vaults = new VaultRegistry(match.map, settings.locksPerVault);
+    this.banking = new BankingService(match, settings.bankingSeconds, {
+      complete: (player) => {
+        const amount = player.cash;
+        player.banked += amount;
+        this.setCash(player, 0);
+        return amount;
+      },
+    });
     this.interactions = new InteractionService(match)
+      .register('safehouse', new SafehouseHandler(this.banking))
       .register('elevator', new ElevatorHandler())
       .register('vault_console', new VaultConsoleHandler(this.vaults));
     this.tasks.add(
@@ -64,6 +76,7 @@ export class HeistController {
 
   /** Every tick: players walking over a bag pick it up. */
   onTick(): void {
+    this.banking.onTick();
     if (this.loot.count === 0) return;
     const reach = this.settings.bagPickupRadius;
     for (const bag of this.loot.all()) {
@@ -79,10 +92,16 @@ export class HeistController {
 
   /** A player died: what they carried drops where they fell. */
   onDeath(victim: Player): void {
+    this.banking.cancel(victim, 'died');
     if (victim.cash <= 0) return;
     const bag = this.loot.add(victim.body.x, victim.body.y, victim.body.z, victim.cash);
     this.setCash(victim, 0);
     this.match.broadcastJson({ t: 'loot', add: [bag], remove: [] });
+  }
+
+  /** A player took damage: it breaks their banking. */
+  onDamaged(victim: Player): void {
+    this.banking.cancel(victim, 'hurt');
   }
 
   /** The one place cash changes: keeps the speed penalty and the player's purse display in step. */

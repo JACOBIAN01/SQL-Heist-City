@@ -96,3 +96,17 @@ describe('Hud purse', () => {
     expect(text).toContain('$1,000,000');
   });
 });
+
+describe('Hud progress bar', () => {
+  it('shows a label and a clamped fill, and hides again', () => {
+    expect(q('.hud-progress').hidden).toBe(true);
+    hud.setProgress({ label: 'Banking…', fraction: 0.25 });
+    expect(q('.hud-progress').hidden).toBe(false);
+    expect(q('.hud-progress').textContent).toContain('Banking…');
+    expect(q('.hud-progress-fill').style.width).toBe('25%');
+    hud.setProgress({ label: 'x', fraction: 3 });
+    expect(q('.hud-progress-fill').style.width).toBe('100%');
+    hud.setProgress(undefined);
+    expect(q('.hud-progress').hidden).toBe(true);
+  });
+});

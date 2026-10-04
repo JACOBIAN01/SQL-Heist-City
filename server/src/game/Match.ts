@@ -430,6 +430,7 @@ export class Match implements MatchApi {
   damage(victim: Player, amount: number, attacker: Player): void {
     if (!victim.alive || this.isProtected(victim)) return;
     victim.hp = Math.max(0, victim.hp - Math.round(amount));
+    this.heist.onDamaged(victim);
     if (victim.hp > 0) return;
     victim.alive = false;
     victim.deaths++;

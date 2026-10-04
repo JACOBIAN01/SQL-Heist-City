@@ -9,6 +9,8 @@ export interface HudView {
   showHitMarker(head: boolean): void;
   addKill(killer: string, victim: string, involvesYou: boolean): void;
   setDead(dead: boolean, secondsLeft?: number): void;
+  /** A progress bar with a label (banking…); undefined hides it. */
+  setProgress(progress: { label: string; fraction: number } | undefined): void;
   /** Cash on you and cash that is safe. */
   setPurse(carried: number, banked: number): void;
   /** The "F — …" hint for whatever is in reach (undefined hides it). */
@@ -37,6 +39,9 @@ export class Hud implements HudView {
   private readonly deadSub: HTMLElement;
   private readonly carriedText: HTMLElement;
   private readonly bankedText: HTMLElement;
+  private readonly progressBox: HTMLElement;
+  private readonly progressFill: HTMLElement;
+  private readonly progressLabel: HTMLElement;
   private readonly prompt: HTMLElement;
   private readonly toastBox: HTMLElement;
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
@@ -56,6 +61,15 @@ export class Hud implements HudView {
     this.dead.hidden = true;
     this.carriedText = h('b', { text: '$0' });
     this.bankedText = h('b', { text: '$0' });
+    this.progressFill = h('div', { class: 'hud-progress-fill' });
+    this.progressLabel = h('div');
+    this.progressBox = h(
+      'div',
+      { class: 'hud-progress' },
+      this.progressLabel,
+      h('div', { class: 'hud-progress-bar' }, this.progressFill),
+    );
+    this.progressBox.hidden = true;
     this.prompt = h('div', { class: 'hud-prompt' });
     this.prompt.hidden = true;
     this.toastBox = h('div', { class: 'hud-toast', attrs: { 'aria-live': 'polite' } });
@@ -74,6 +88,7 @@ export class Hud implements HudView {
         h('div', {}, 'CARRYING ', this.carriedText),
         h('div', {}, 'BANKED ', this.bankedText),
       ),
+      this.progressBox,
       this.prompt,
       this.toastBox,
       h(
@@ -131,6 +146,13 @@ export class Hud implements HudView {
       dead && secondsLeft !== undefined
         ? `Respawning in ${Math.max(0, Math.ceil(secondsLeft))}…`
         : '';
+  }
+
+  setProgress(progress: { label: string; fraction: number } | undefined): void {
+    this.progressBox.hidden = progress === undefined;
+    if (!progress) return;
+    this.progressLabel.textContent = progress.label;
+    this.progressFill.style.width = `${Math.max(0, Math.min(1, progress.fraction)) * 100}%`;
   }
 
   setPurse(carried: number, banked: number): void {

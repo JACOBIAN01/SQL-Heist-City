@@ -21,11 +21,13 @@ export const jsonClientMessageSchema = z.union([
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
-export type InteractDenial = 'unknown_anchor' | 'too_far' | 'dead' | 'cooldown' | 'not_available';
+export type InteractDenial =
+  'unknown_anchor' | 'too_far' | 'dead' | 'cooldown' | 'nothing_to_bank' | 'not_available';
 
 /** What using an anchor did. `open_task` tells the client to open the SQL panel on this reward. */
 export type InteractResult =
   | { readonly action: 'moved'; readonly storey: number }
+  | { readonly action: 'banking'; readonly seconds: number }
   | { readonly action: 'open_task'; readonly rewardKey: string; readonly target: string }
   | { readonly action: 'denied'; readonly reason: InteractDenial };
 
@@ -76,6 +78,14 @@ export interface PurseMessage {
   readonly speed: number;
 }
 
+/** Progress of banking cash at a safehouse (a few seconds standing still, broken by damage). */
+export type BankingMessage =
+  | { readonly t: 'banking'; readonly status: 'started'; readonly seconds: number }
+  | { readonly t: 'banking'; readonly status: 'done'; readonly amount: number }
+  | { readonly t: 'banking'; readonly status: 'cancelled'; readonly reason: BankingCancel };
+
+export type BankingCancel = 'hurt' | 'moved' | 'died';
+
 /** A short message for the player ("Someone beat you to the lock"). */
 export interface NoticeMessage {
   readonly t: 'notice';
@@ -83,6 +93,6 @@ export interface NoticeMessage {
 }
 
 export type HeistServerMessage =
-  InteractReply | VaultsMessage | LootMessage | PurseMessage | NoticeMessage;
+  InteractReply | VaultsMessage | LootMessage | PurseMessage | BankingMessage | NoticeMessage;
 
 export type JsonServerMessage = ChallengeServerMessage | HeistServerMessage;

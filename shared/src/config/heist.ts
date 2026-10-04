@@ -14,6 +14,8 @@ export const heistSettingsSchema = z.object({
     .default({ '1': 50_000, '2': 100_000, '3': 200_000, '4': 400_000, '5': 800_000 }),
   /** How close (m) a player must be to a bag to pick it up. */
   bagPickupRadius: z.number().positive().default(1.4),
+  /** Seconds a player must stay at a safehouse, unhurt, to bank what they carry. */
+  bankingSeconds: z.number().positive().default(4),
   /** Top speed lost per $100k carried (0.1 = 10%), up to `carrySlowMax`. */
   carrySlowPer100k: z.number().min(0).max(1).default(0.1),
   carrySlowMax: z.number().min(0).max(0.9).default(0.3),

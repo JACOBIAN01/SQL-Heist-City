@@ -167,7 +167,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 7.4 | Vault + lock state (persistent) | locks tracked server-side | ✅ |
 | 7.5 | Vault lock ⇄ SQL challenge wiring | solve → lock opens | ✅ |
 | 7.6 | Loot bags + carry/drop | drop on death works | ✅ |
-| 7.7 | Safehouses + banking | cash banked, score updates | ⬜ |
+| 7.7 | Safehouses + banking | cash banked, score updates | ✅ |
 | 7.8 | Heal via SQL (3 tiers) | HP rises per tier | ⬜ |
 | 7.9 | Gun unlock via SQL + ammo refill | weapon granted | ⬜ |
 | 7.10 | Quick menu (Tab) + HUD | switch tasks mid-fight | ⬜ |

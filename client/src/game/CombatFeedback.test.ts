@@ -21,6 +21,7 @@ function setup() {
     setDead: vi.fn(),
     setPrompt: vi.fn(),
     setPurse: vi.fn(),
+    setProgress: vi.fn(),
     toast: vi.fn(),
   };
   const tracers: { from: Vec3; to: Vec3 }[] = [];

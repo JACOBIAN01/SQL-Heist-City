@@ -22,6 +22,7 @@ import { chooseGameUrl } from './net/lobby';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
 import { CombatFeedback } from './game/CombatFeedback';
+import { BankingProgress } from './heist/BankingProgress';
 import { LootRenderer } from './heist/LootRenderer';
 import { HeistWorld } from './heist/HeistWorld';
 import { createCashBag } from './entities/CashBag';
@@ -113,6 +114,7 @@ const createRig: CharacterFactory = assets
 const remotes = new RemotePlayers(scene, createRig);
 const serverClock = new SnapshotClock();
 const hud = new Hud(document.body);
+const bankingProgress = new BankingProgress(hud);
 const tracers = new Tracers(scene);
 // ?debug draws the server's hit-boxes around other players.
 const hitboxes = params.has('debug')
@@ -153,6 +155,7 @@ client.subscribe({
   json: (message) => {
     if (challengeApi.handle(message) || interactions.handle(message)) return;
     if (message.t === 'vaults') world.applyVaults(message.vaults);
+    else if (message.t === 'banking') bankingProgress.handle(message, performance.now());
     else if (message.t === 'loot') loot.apply(message.add, message.remove);
     else if (message.t === 'purse') {
       hud.setPurse(message.carried, message.banked);
@@ -239,6 +242,7 @@ renderer.setAnimationLoop((now) => {
   predicted.smooth(frameMs / 1000);
   tracers.update(frameMs / 1000);
   loot.update(now / 1000);
+  bankingProgress.update(now);
   hitboxes?.update(remotes.poses());
   if (serverClock.ready)
     remotes.update(serverClock.serverTimeAt(now), frameMs / 1000, INTERP_DELAY_MS);

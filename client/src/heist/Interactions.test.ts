@@ -99,6 +99,20 @@ describe('Interactions', () => {
     vi.useRealTimers();
   });
 
+  it('keeps quiet when banking starts: the progress bar comes from the banking messages', async () => {
+    const { interactions, toasts } = setup();
+    interactions.update(9.5, 0, 5, true);
+    const used = interactions.use();
+    interactions.handle({
+      t: 'interact_result',
+      ref: 1,
+      anchor: 'bank-1:lift:0',
+      result: { action: 'banking', seconds: 4 },
+    });
+    await used;
+    expect(toasts).toEqual([]);
+  });
+
   it('ignores other messages', () => {
     const { interactions } = setup();
     expect(interactions.handle({ t: 'challenge_abandoned', ref: 1, now: 0 })).toBe(false);
