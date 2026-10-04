@@ -68,6 +68,7 @@ export function buildMapObject(map: GameMap): Object3D {
   );
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
+  ground.name = 'map-ground';
   root.add(ground);
 
   const byKind = new Map<MapBoxKind, GameMap['boxes'][number][]>();
@@ -117,6 +118,14 @@ export function buildMapObject(map: GameMap): Object3D {
     root.add(pad);
   }
   return root;
+}
+
+/** What the city kit draws instead of boxes: building shells, kerbs and the plain ground. */
+const KIT_COVERED = new Set(['map-ground', 'map-shell', 'map-kerb']);
+
+/** Hides the stand-in boxes once the city's kit art is in the scene. Bank walls, cover and doors stay. */
+export function hideKitCovered(root: Object3D): void {
+  for (const child of root.children) if (KIT_COVERED.has(child.name)) child.visible = false;
 }
 
 /** Shows the door of every vault still closed and hides the rest. */

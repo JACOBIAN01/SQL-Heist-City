@@ -4,6 +4,7 @@ import {
   DEFAULT_MOVEMENT_SETTINGS,
   SIM_DT,
   TEST_MAP,
+  BANK_LAYOUTS,
   mapById,
   nearestAnchor,
   WEAPON_IDS,
@@ -48,7 +49,9 @@ import { StorageDraftStore } from './ui/sql/DraftStore';
 import { SqlPanelController } from './ui/sql/SqlPanelController';
 import { rewardLabel } from './ui/sql/labels';
 import './ui/sql/sqlPanel.css';
-import { buildMapObject, setClosedDoors } from './world/MapRenderer';
+import { buildMapObject, hideKitCovered, setClosedDoors } from './world/MapRenderer';
+import { loadCityKit } from './world/city/CityKit';
+import { buildCityArt } from './world/city/CityRenderer';
 import { followServerMap } from './world/followServerMap';
 
 // Composition root for the client.
@@ -65,6 +68,15 @@ const scene = new Scene();
 const lighting = addLighting(scene);
 const mapObject = buildMapObject(MAP);
 scene.add(mapObject);
+// A generated city is drawn with kit pieces once they arrive; until then (or if they fail) as boxes.
+const city = MAP.city;
+if (city)
+  loadCityKit()
+    .then((kit) => {
+      scene.add(buildCityArt(kit, city, BANK_LAYOUTS).root);
+      hideKitCovered(mapObject);
+    })
+    .catch((error: unknown) => console.warn('city kit unavailable, drawing boxes', error));
 const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
 

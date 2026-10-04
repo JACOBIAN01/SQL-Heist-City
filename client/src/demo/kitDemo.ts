@@ -2,18 +2,20 @@ import { Box3, PerspectiveCamera, Scene, Sphere, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { addLighting } from '../render/lighting';
 import { computeViewport } from '../render/viewport';
+import { BANK_LAYOUTS, mapById } from '@heist/shared';
 import { loadCityKit } from '../world/city/CityKit';
+import { buildCityArt } from '../world/city/CityRenderer';
 import { layoutPreview } from '../world/city/kitPreview';
 
 // Standalone page (kit.html): every kit piece laid out on a grid, to check the build by eye.
-// ?piece=Name shows one piece close up.
+// ?piece=Name shows one piece close up; ?city[=seed] draws the whole city, ?block=ix,iz one block of it.
 const params = new URLSearchParams(location.search);
 const info = document.getElementById('kit-info');
 const renderer = new WebGLRenderer({ antialias: true });
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 const scene = new Scene();
-const camera = new PerspectiveCamera(55, 1, 0.1, 600);
+const camera = new PerspectiveCamera(55, 1, 0.1, 1200);
 const lighting = addLighting(scene);
 
 const kit = await loadCityKit().catch((error: unknown) => {
@@ -22,7 +24,24 @@ const kit = await loadCityKit().catch((error: unknown) => {
 });
 const only = params.get('piece');
 const ids = only ? [only] : kit.pieceIds;
-const { root } = layoutPreview(kit, ids);
+const block = params.get('block');
+const citySeed = params.get('city');
+const cityLayout =
+  params.has('city') || block ? mapById(citySeed ? `city:${citySeed}` : 'city')?.city : undefined;
+let summary: string;
+let root;
+if (cityLayout) {
+  const art = buildCityArt(kit, cityLayout, BANK_LAYOUTS);
+  root = art.root;
+  if (block) {
+    const keep = `chunk-${block.replace(',', '-')}`;
+    for (const chunk of [...root.children]) if (chunk.name !== keep) root.remove(chunk);
+  }
+  summary = `${art.stats.chunks} chunks · ${art.stats.drawCalls} draw calls · ${Math.round(art.stats.triangles / 1000)}k triangles (whole city)`;
+} else {
+  root = layoutPreview(kit, ids).root;
+  summary = `${ids.length} pieces · ${ids.reduce((sum, id) => sum + kit.info(id).tris, 0)} triangles`;
+}
 scene.add(root);
 
 // Frame everything from the front-right, a little above.
@@ -35,8 +54,7 @@ controls.update();
 lighting.sun.target.position.copy(bounds.center);
 lighting.sun.position.copy(bounds.center).add({ x: 30, y: 50, z: 40 });
 
-const tris = ids.reduce((sum, id) => sum + kit.info(id).tris, 0);
-if (info) info.textContent = `${ids.length} pieces · ${tris} triangles`;
+if (info) info.textContent = summary;
 
 const resize = (): void => {
   const v = computeViewport(window.innerWidth, window.innerHeight, window.devicePixelRatio);
