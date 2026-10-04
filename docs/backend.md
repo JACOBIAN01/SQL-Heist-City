@@ -23,7 +23,7 @@ main process
 Target: <15 ms at 100 players. Per-tick metrics exported.
 
 ## AOI
-Spatial hash, 64 m cells (= one city block/chunk, see `city-kit.md`); a second, finer grid (8 m) indexes static colliders so movement and shots only test nearby boxes. Client gets own + 8 neighbour cells; tiered rates (near <60 m 20 Hz, mid <150 m 10 Hz, far 5 Hz); cap ~30–40 entities. Events (shots, kills) have own relevance rules; vault progress goes on a low-rate global channel.
+Spatial hash, 64 m cells (= one city block/chunk, see `city-kit.md`); a second, finer grid (8 m) indexes static colliders so movement and shots only test nearby boxes. Client gets own + 8 neighbour cells; tiered rates (near <60 m 20 Hz, mid <120 m 10 Hz, far <200 m 5 Hz, beyond that nothing); cap 30 entities, all configurable (`interestSettingsSchema`). Events (shots, kills) have own relevance rules; vault progress goes on a low-rate global channel.
 
 ## Domain classes & patterns (why / how) — master index: design-principles.md
 | Class / pattern | Why |

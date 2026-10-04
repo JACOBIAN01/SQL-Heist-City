@@ -40,7 +40,7 @@ Static colliders are bucketed in an 8 m grid (`shared/src/world/ColliderGrid.ts`
 The gain grows with the number of boxes: this bench map has ~270; the real city will have 500–1000.
 
 ## Phase 6.5 — area of interest and tiered rates
-Each client now gets itself every tick plus only the other players its interest policy says are due: within 60 m every tick (20 Hz), within 150 m every 2nd (10 Hz), within 250 m every 4th (5 Hz), beyond that nobody; at most 40 others, nearest first. Newcomers in range are sent immediately. Shots are delivered only to players within 250 m of the shooter or the impact; kills, joins and leaves stay global. Ranges and rates are settings (`interestSettingsSchema`). The client draws players it hears about less often further behind (1.5 update intervals) so they still move smoothly.
+(Ranges below are the 6.5 values; 6.9 tuned them to 60/120/200 m and 30 players.) Each client now gets itself every tick plus only the other players its interest policy says are due: within 60 m every tick (20 Hz), within 150 m every 2nd (10 Hz), within 250 m every 4th (5 Hz), beyond that nobody; at most 40 others, nearest first. Newcomers in range are sent immediately. Shots are delivered only to players within 250 m of the shooter or the impact; kills, joins and leaves stay global. Ranges and rates are settings (`interestSettingsSchema`). The client draws players it hears about less often further behind (1.5 update intervals) so they still move smoothly.
 
 | players | KB/s per client before → after | tick mean |
 |---|---|---|
@@ -76,3 +76,32 @@ What was allocating, found with V8's sampling heap profiler (`HeapProfiler.start
 | 200 | 5,728 → **669** | 52 → **16** | 4.49 → **2.07 ms** |
 
 What is left is mostly the harness's own input objects, one output buffer per client per tick, and short-lived iterators. Message decoding for inputs still allocates (a small array per input message), which is network-driven, not tick-driven.
+
+## Phase 6.9 — tuning and the 60 / 100 / 200 report
+### What the real-server runs showed
+In-process the whole tick costs ~0.6 ms at 100 players, but on a real server the tick was ~6–12 ms: **every WebSocket send is a system call** (~20 µs each; 100 clients = ~2 ms, and shots and kills were each sent separately to everyone in range, doubling that). Two changes:
+1. **Events ride with the snapshot.** Shots and kills are queued per client and sent in the same frame as that client's snapshot (`bundle`, protocol message 0x85): one send per client per tick. Tick p50 at 100 bots on the dense yard fell from 11.6 to 9.0 ms; on the city-sized map it is 5.9 ms.
+2. **Interest tuned** from a sweep of range/cap settings (`near 60 m`, `mid 120 m`, `far 200 m`, at most 30 others): same behaviour on screen, ~20% less bandwidth and send work.
+
+### Final numbers
+Method: the game server running a match in a worker thread (`MATCH_WORKERS=1 MATCH_MAP=bench MATCH_DUMMIES=0`), driven by real WebSocket bots from the same laptop (so the bots' own CPU use competes with the server; a separate load machine would look better). Bots wander, 30% sprint, 10% hold fire. Tick time is `Match.step()` including all sends, read from `/metrics` after 10 s.
+
+| players | tick p50 | p95 | p99 | KB/s per client | snapshots/s per client | client RTT p95 |
+|---|---|---|---|---|---|---|
+| 60 | 3.7 ms | 5.2 | 6.2 | 1.8 | 20 | 2.7 ms |
+| **100** | **5.9 ms** | **7.8** | **9.1** | **2.2** | 20 | 4.8 ms |
+| 200 | 10.5 ms | 12.0 | 16.3 | 3.4 | 20 | 8.7 ms |
+
+- **Targets met at 100 players:** tick p99 9.1 ms (< 15 ms) and 2.2 KB/s per client (< 4 KB/s).
+- **60 players:** comfortable.
+- **200 players:** bandwidth is under target (3.4 KB/s), tick p95 is 12 ms but p99 is 16.3 ms, slightly over 15 ms. It is a stretch size; the next levers are a second thread per match for sending (not possible with Node sockets today), sending ≤ 30 Hz-equivalent updates less often to far clients, or two 100-player matches. With separate machines for bots the numbers will be better.
+
+### Dense case (everyone in the 120 m sandbox yard)
+All players within range of each other, with constant fighting: 100 bots ≈ 7.3 KB/s per client, tick p50 9.0 ms. The interest cap (30) is what keeps this bounded; the real city spreads players out.
+
+### Before / after summary (100 bots, in-process)
+| | baseline (6.3) | now |
+|---|---|---|
+| KB/s per client | 40.8 | 2.2 |
+| tick mean | 1.15 ms | 0.5 ms |
+| garbage per tick | 1.7 MB | ~0.2 MB |

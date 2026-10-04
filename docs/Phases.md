@@ -23,7 +23,7 @@
 | 3 | Seed content (150 questions) | ✅ Done |
 | 4 | SQL pop-up UI | ✅ Done |
 | 5 | Walk & shoot sandbox | ✅ Done |
-| 6 | Scale core (60/100/200) | 🟦 In progress |
+| 6 | Scale core (60/100/200) | 🟨 In review |
 | 7 | Heist loop v1 | ⬜ |
 | 8 | City, vehicles, atmosphere | ⬜ |
 | 9 | Banks 2–5, weapons, UX | ⬜ |
@@ -144,7 +144,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 5.12 | Health, death, respawn | full kill cycle works | ✅ Done |
 
 ---
-## Phase 6 — Scale core (60 → 100 → 200)  🟦
+## Phase 6 — Scale core (60 → 100 → 200)  🟨
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 6.1 | Bot harness (`load:bots`) | spawns N scripted players | ✅ Done |
@@ -155,7 +155,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 6.6 | Delta compression + quantisation (int16 × 2 cm positions, world ≤ ±650 m) | <4 KB/s/client | ✅ Done |
 | 6.7 | Object pools (no per-tick allocation) | GC pauses gone | ✅ Done |
 | 6.8 | Match worker threads | one match per thread | ✅ Done |
-| 6.9 | Tuning + 60/100/200 report | 100 bots under 15 ms tick | ⬜ |
+| 6.9 | Tuning + 60/100/200 report | 100 bots under 15 ms tick | ✅ Done |
 
 ---
 ## Phase 7 — Heist loop v1 (one bank)  ⬜

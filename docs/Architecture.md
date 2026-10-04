@@ -43,7 +43,7 @@
 - Tick 20 Hz authoritative; client sends input at 30–60 Hz batched per tick.
 - Client prediction + server reconciliation for the local player; 100 ms interpolation buffer for remote entities.
 - Hitscan with lag compensation (server rewinds target positions up to 200 ms).
-- **AOI:** spatial hash grid (cell 64 m). Each client receives entities in its cell + neighbours; near (<60 m) at 20 Hz, mid (<150 m) at 10 Hz, far at 5 Hz. Hard cap ~30–40 entities/snapshot.
+- **AOI:** spatial hash grid (cell 64 m). Each client receives entities in its cell + neighbours; near (<60 m) at 20 Hz, mid (<120 m) at 10 Hz, far (<200 m) at 5 Hz, beyond that not sent. Hard cap 30 entities/snapshot. Shots and kills ride in the same frame as the snapshot (one send per client per tick).
 - Delta compression: quantised positions (16-bit), yaw/pitch bytes, bitmask for changed fields. Budget <4 KB/s/client.
 - Scale levers: worker thread per match, buffer pools, no per-tick allocations.
 
