@@ -129,3 +129,19 @@ Measured on the default city from the centre: 9 detailed and 40 impostor chunks,
 **Character LOD:** each character file carries a light `*_LOD` copy of body and hair on the same skeleton (`tools/characters/build-lod.mjs`): 1.5k/1.9k triangles instead of 4.9k/5.7k, with no eyes. `RemotePlayers` switches a player to it beyond 26 m from the camera, and back inside 24 m. `?lowpoly` shows your own player with it.
 
 Preview: `kit.html?city&lod` shows the city as streamed from its centre, with fog off.
+
+## Day and night (Phase 8.5)
+- **The clock:** the hour comes from the match clock, so every player sees the same sky and nothing new is sent. `hourAt(serverMs, AtmosphereSettings)` uses `dayMinutes` (30) and `startHour` (9) from `shared/src/config/atmosphere.ts` (defaults only), so a 15-minute round runs from morning into the evening.
+- **The sky model:** `skyAt(hour)` (`render/dayNight.ts`, pure) blends keyframes (night, pre-dawn, dawn, morning, noon, afternoon, dusk, evening) into a `SkyState`, which holds:
+  - the light's colour, intensity and direction (the sun by day; the moon, opposite it, by night; never below 0.25 elevation, so shadows stay finite);
+  - the hemisphere fill;
+  - the zenith and horizon colours;
+  - the fog range (closer at night);
+  - a `night` factor.
+  Nights keep at least 0.5 ambient so they stay playable.
+- **Applying it:** `Lighting.apply(state)` sets the shadow light, the fill and the fog. The fog colour is the horizon colour, so far buildings melt into the sky.
+- **The dome:** `SkyDome` draws a gradient around the camera with a sun disc and halo by day, and a moon and stars by night. It is one draw call, ignores fog, and stays inside the 220 m far plane.
+- **Lit windows:** at night the fake-interior window layers of the lit offices glow. The kit shader adds `uNightGlow` × texture as emission for the layers in `uLitLayers`; the dark-office layer stays dark.
+- **Cost:** the game re-applies the sky only when the hour has moved by 0.005 h (about 10 s of a 30-minute day).
+
+`?hour=22` pins the time of day in the game (and in `kit.html`) for screenshots. Overriding `dayMinutes` from the admin is deferred: the client would need to receive it, like the city seed.
