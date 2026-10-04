@@ -1,7 +1,7 @@
 import type { AnimationAction } from 'three';
 import {
   AnimationMixer,
-  LoopOnce,
+  Vector3,
   Color,
   Group,
   MeshStandardMaterial,
@@ -20,6 +20,7 @@ import {
   type MotionState,
 } from './animation';
 import { splitClip } from './aimLayers';
+import { GunHandling } from './GunHandling';
 import type { CharacterRig } from './CharacterRig';
 
 /** What makes one player look different from another. */
@@ -57,34 +58,15 @@ const MAX_SCALE = 1.6;
 const CROSSFADE_SECONDS = 0.15;
 
 /** How long a soldier stays at the ready after the last shot before lowering the gun. */
-const AIM_HOLD_SECONDS = 1.4;
-const DRAW_FADE_SECONDS = 0.2;
-const LOWER_FADE_SECONDS = 0.3;
-/** The gun changes hands at the middle of the draw, and goes back to the sling once the arms are down. */
-const DRAW_SWAP_SECONDS = 0.1;
-const HOLSTER_SWAP_SECONDS = 0.28;
-/** The recoil clip is blended over the aim pose with extra weight so it reads as a kick, not a 50/50 mix. */
-const KICK_WEIGHT = 4;
-
-/** Where the gun sits in each bone's own space: slung across the back, and held at the ready. */
-export const GUN_ON_BACK = {
-  bone: 'spine_03',
-  position: [0, 0.1, -0.14],
-  rotation: [1.57, 0, 0.3],
-} as const;
-/** Debug: overrides for the in-hand pose, set from the URL while tuning (?grot=x,y,z&gpos=x,y,z). */
-export const gunTuning: {
-  rotation?: [number, number, number];
-  position?: [number, number, number];
-  backRotation?: [number, number, number];
-  backPosition?: [number, number, number];
-} = {};
-
-export const GUN_IN_HAND = {
-  bone: 'hand_r',
-  position: [0, 0.05, 0],
-  rotation: [-1.57, 0, 0],
-} as const;
+const AIM_HOLD_SECONDS = 2;
+/** Arms come up a little faster than the gun travels, so the hands meet it. */
+const DRAW_FADE_SECONDS = 0.25;
+const LOWER_FADE_SECONDS = 0.4;
+/** A muzzle flash lasts about one frame at 30 fps: long enough to see, short enough not to linger. */
+const FLASH_SECONDS = 0.04;
+/** Where the bones are when the rig has none (the test stand-ins): upper back and right hand at the ready. */
+const FALLBACK_BACK = new Vector3(0, 1.4, 0.05);
+const FALLBACK_HAND = new Vector3(0.15, 1.45, -0.4);
 
 /**
  * A rigged human (Quaternius, CC0) driven by shared animation clips.
@@ -131,20 +113,21 @@ export class GltfCharacter implements CharacterRig {
   private held: Object3D | undefined;
   private readonly bones = new Map<string, Object3D>();
   private aimIdle: AnimationAction | undefined;
-  private kick: AnimationAction | undefined;
   private aiming = false;
   private aimTimer = 0;
-  /** Where the gun is going and when (seconds from now), so the swap lands mid-draw. */
-  private pending: { slot: 'back' | 'hand'; in: number } | undefined;
-  private gunSlot: 'back' | 'hand' = 'back';
+  private readonly gun = new GunHandling();
+  private flashLeft = 0;
+  private readonly backAt = new Vector3();
+  private readonly handAt = new Vector3();
 
-  /** True while the gun is drawn (for tests and debugging). */
+  /** True while the soldier is at the ready (for tests and debugging). */
   get isAiming(): boolean {
     return this.aiming;
   }
 
+  /** Where the gun is: on the sling or at the shoulder (half-way through a draw counts as the hand). */
   get gunIn(): 'back' | 'hand' {
-    return this.gunSlot;
+    return this.gun.drawn ? 'hand' : 'back';
   }
 
   holdItem(item: Object3D | undefined): void {
@@ -152,22 +135,24 @@ export class GltfCharacter implements CharacterRig {
     this.held = item;
     if (!item) {
       if (this.aiming) this.setAiming(false);
-      this.pending = undefined;
       return;
     }
-    this.place(this.aiming ? 'hand' : 'back');
+    // The gun is placed in character space every frame (see GunHandling), not parented to a bone.
+    this.object.add(item);
+    this.poseGun();
   }
 
-  /** The player just fired: draw the gun if it is slung, aim, and kick. Does nothing without a gun. */
+  setAimPitch(pitch: number): void {
+    this.gun.setPitch(pitch);
+  }
+
+  /** The player just fired: draw the gun if it is slung, bring it up, and take the recoil. */
   fired(): void {
     if (!this.held) return;
     this.aimTimer = AIM_HOLD_SECONDS;
     if (!this.aiming) this.setAiming(true);
-    if (!this.kick) {
-      this.kick = this.upperAction('Pistol_Shoot');
-      this.kick?.setLoop(LoopOnce, 1);
-    }
-    this.kick?.reset().setEffectiveWeight(KICK_WEIGHT).play();
+    this.gun.fire();
+    this.flashLeft = FLASH_SECONDS;
   }
 
   private setAiming(on: boolean): void {
@@ -178,9 +163,23 @@ export class GltfCharacter implements CharacterRig {
     this.aimIdle ??= this.upperAction('Pistol_Idle_Loop');
     if (on) this.aimIdle?.reset().fadeIn(DRAW_FADE_SECONDS).play();
     else this.aimIdle?.fadeOut(LOWER_FADE_SECONDS);
-    this.pending = on
-      ? { slot: 'hand', in: DRAW_SWAP_SECONDS }
-      : { slot: 'back', in: HOLSTER_SWAP_SECONDS };
+  }
+
+  /** Puts the gun where GunHandling says, using where the upper back and right hand are this frame. */
+  private poseGun(): void {
+    const item = this.held;
+    if (!item) return;
+    const spine = this.bones.get('spine_03');
+    const hand = this.bones.get('hand_r');
+    if (spine && hand) {
+      this.object.updateWorldMatrix(true, true);
+      this.object.worldToLocal(spine.getWorldPosition(this.backAt));
+      this.object.worldToLocal(hand.getWorldPosition(this.handAt));
+    } else {
+      this.backAt.copy(FALLBACK_BACK);
+      this.handAt.copy(FALLBACK_HAND);
+    }
+    this.gun.pose(item, this.backAt, this.handAt);
   }
 
   /** An action that plays only the upper-body tracks of a clip; undefined if the clip is missing. */
@@ -193,19 +192,6 @@ export class GltfCharacter implements CharacterRig {
     let pair = this.splits.get(clip.name);
     if (!pair) this.splits.set(clip.name, (pair = splitClip(clip)));
     return pair;
-  }
-
-  private place(slot: 'back' | 'hand'): void {
-    const item = this.held;
-    if (!item) return;
-    const spec = slot === 'hand' ? GUN_IN_HAND : GUN_ON_BACK;
-    const bone = this.bones.get(spec.bone) ?? this.object;
-    const pos = (slot === 'hand' ? gunTuning.position : gunTuning.backPosition) || spec.position;
-    const rot = (slot === 'hand' ? gunTuning.rotation : gunTuning.backRotation) || spec.rotation;
-    item.position.fromArray(pos);
-    item.rotation.set(rot[0], rot[1], rot[2]);
-    bone.add(item);
-    this.gunSlot = slot;
   }
 
   update(motion: MotionState, dtSeconds: number): void {
@@ -222,14 +208,13 @@ export class GltfCharacter implements CharacterRig {
       this.aimTimer -= dtSeconds;
       if (this.aimTimer <= 0) this.setAiming(false);
     }
-    if (this.pending) {
-      this.pending.in -= dtSeconds;
-      if (this.pending.in <= 0) {
-        this.place(this.pending.slot);
-        this.pending = undefined;
-      }
-    }
+    this.gun.update(dtSeconds, this.aiming);
+    this.flashLeft = Math.max(0, this.flashLeft - dtSeconds);
+    const flash = this.held?.getObjectByName('muzzle-flash');
+    // Only once the gun is up: a flash from the sling would be wrong.
+    if (flash) flash.visible = this.flashLeft > 0 && this.gun.drawn;
     this.mixer.update(dtSeconds);
+    this.poseGun();
   }
 
   private play(name: AnimationName): void {

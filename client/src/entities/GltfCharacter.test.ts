@@ -9,6 +9,7 @@ import {
   MeshStandardMaterial,
   NumberKeyframeTrack,
   Texture,
+  Vector3,
 } from 'three';
 import { thresholdsFor } from './animation';
 import { CLIP_FOR, GltfCharacter } from './GltfCharacter';
@@ -186,39 +187,61 @@ describe('GltfCharacter gun handling', () => {
   }
 
   it('carries the gun slung on the back until the player fires', () => {
-    const { c, gun, back } = armed();
-    expect(gun.parent).toBe(back);
+    const { c, gun } = armed();
+    expect(gun.parent).toBe(c.object);
     expect(c.isAiming).toBe(false);
     c.update(still, 0.5);
     expect(c.gunIn).toBe('back');
   });
 
-  it('draws on the first shot: aims at once, and the gun reaches the hand mid-draw', () => {
-    const { c, gun, hand } = armed();
+  it('draws on the first shot: aims at once, the gun reaches the shoulder within the draw', () => {
+    const { c } = armed();
     c.fired();
     expect(c.isAiming).toBe(true);
-    expect(c.gunIn).toBe('back'); // the arm is still on its way up
     c.update(still, 0.05);
-    expect(c.gunIn).toBe('back');
-    c.update(still, 0.1);
+    expect(c.gunIn).toBe('back'); // still on its way
+    for (let i = 0; i < 20; i++) c.update(still, 1 / 60);
     expect(c.gunIn).toBe('hand');
-    expect(gun.parent).toBe(hand);
+  });
+
+  it('points the drawn gun the way the character faces, and up or down with the aim', () => {
+    const { c, gun } = armed();
+    c.setAimPitch(0.3);
+    c.fired();
+    for (let i = 0; i < 60; i++) c.update(still, 1 / 60);
+    const muzzle = new Vector3(0, 0, -1).applyQuaternion(gun.quaternion);
+    expect(muzzle.z).toBeLessThan(-0.9); // forward is −z in character space
+    expect(muzzle.y).toBeGreaterThan(0.2);
+  });
+
+  it('flashes the muzzle for a moment on each shot once the gun is up', () => {
+    const { c, gun } = armed();
+    const flash = new Group();
+    flash.name = 'muzzle-flash';
+    gun.add(flash);
+    c.fired();
+    for (let i = 0; i < 30; i++) c.update(still, 1 / 60);
+    expect(flash.visible).toBe(false);
+    c.fired();
+    c.update(still, 1 / 60);
+    expect(flash.visible).toBe(true);
+    c.update(still, 0.1);
+    expect(flash.visible).toBe(false);
   });
 
   it('stays at the ready while shooting, then lowers and slings the gun after a pause', () => {
-    const { c, gun, back } = armed();
+    const { c } = armed();
     c.fired();
-    c.update(still, 0.3);
+    c.update(still, 0.4);
     for (let i = 0; i < 4; i++) {
       c.fired(); // a burst keeps resetting the timer
       c.update(still, 0.5);
     }
     expect(c.isAiming).toBe(true);
-    c.update(still, 1.5); // no more shots
+    c.update(still, 2.1); // no more shots
     expect(c.isAiming).toBe(false);
-    c.update(still, 0.4);
+    for (let i = 0; i < 40; i++) c.update(still, 1 / 60);
     expect(c.gunIn).toBe('back');
-    expect(gun.parent).toBe(back);
   });
 
   it('keeps walking with the legs while the arms aim', () => {

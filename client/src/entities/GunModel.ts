@@ -1,4 +1,14 @@
-import { BoxGeometry, CylinderGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
+import {
+  AdditiveBlending,
+  BoxGeometry,
+  CylinderGeometry,
+  DoubleSide,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  MeshStandardMaterial,
+  PlaneGeometry,
+} from 'three';
 
 const METAL = new MeshStandardMaterial({ color: 0x1b1d20, roughness: 0.45, metalness: 0.7 });
 const WOOD = new MeshStandardMaterial({ color: 0x5a3b22, roughness: 0.8 });
@@ -46,6 +56,30 @@ const PARTS: Readonly<Record<string, readonly Part[]>> = {
   ],
 };
 
+const FLASH = new MeshBasicMaterial({
+  color: 0xffd27a,
+  transparent: true,
+  opacity: 0.9,
+  blending: AdditiveBlending,
+  depthWrite: false,
+  side: DoubleSide,
+});
+const FLASH_PLANE = new PlaneGeometry(0.16, 0.16);
+
+/** Two crossed glowing quads at the muzzle: a cheap flash (no light, so no extra shader cost). */
+function muzzleFlash(z: number): Group {
+  const flash = new Group();
+  flash.name = 'muzzle-flash';
+  const a = new Mesh(FLASH_PLANE, FLASH);
+  const b = new Mesh(FLASH_PLANE, FLASH);
+  a.rotation.y = Math.PI / 2;
+  b.rotation.set(Math.PI / 2, 0, 0);
+  flash.add(a, b);
+  flash.position.set(0, 0.035, z - 0.06);
+  flash.visible = false;
+  return flash;
+}
+
 /** A gun for `weaponId`, or undefined for an id with no model. */
 export function createGun(weaponId: string): Group | undefined {
   const parts = PARTS[weaponId];
@@ -61,5 +95,8 @@ export function createGun(weaponId: string): Group | undefined {
     mesh.castShadow = true;
     gun.add(mesh);
   }
+  // The muzzle is the front-most point of the parts.
+  const front = Math.min(...parts.map((p) => p.at[2] - p.size[2] / 2));
+  gun.add(muzzleFlash(front));
   return gun;
 }

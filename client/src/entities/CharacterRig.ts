@@ -15,6 +15,8 @@ export interface CharacterRig {
   holdItem(item: Object3D | undefined): void;
   /** This player just fired: a soldier draws, aims and kicks (rigs without the animation ignore it). */
   fired(): void;
+  /** Where the player aims up or down (radians, positive up), so a drawn gun points there. */
+  setAimPitch(pitch: number): void;
   update(motion: MotionState, dtSeconds: number): void;
 }
 

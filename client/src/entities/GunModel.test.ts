@@ -14,4 +14,12 @@ describe('createGun', () => {
     };
     expect(len('rifle')).toBeGreaterThan(len('pistol'));
   });
+
+  it('has a hidden muzzle flash at the front of the barrel', () => {
+    const gun = createGun('rifle');
+    const flash = gun?.getObjectByName('muzzle-flash');
+    expect(flash?.visible).toBe(false);
+    const parts = (gun?.children ?? []).filter((c) => c !== flash).map((c) => c.position.z);
+    expect(flash?.position.z).toBeLessThan(Math.min(...parts));
+  });
 });

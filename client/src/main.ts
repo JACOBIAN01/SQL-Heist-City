@@ -33,7 +33,6 @@ import { ScoreboardView } from './ui/hud/ScoreboardView';
 import { BankingProgress } from './heist/BankingProgress';
 import { LootRenderer } from './heist/LootRenderer';
 import { HeistWorld } from './heist/HeistWorld';
-import { gunTuning } from './entities/GltfCharacter';
 import { createGun } from './entities/GunModel';
 import { createCashBag } from './entities/CashBag';
 import { Interactions } from './heist/Interactions';
@@ -55,17 +54,6 @@ import { buildMapObject, setClosedDoors } from './world/MapRenderer';
 // Composition root for the client.
 // ?map=heist loads the bank map (the server must run MATCH_MAP=heist); the sandbox yard is the default.
 const params = new URLSearchParams(location.search);
-// ?grot / ?gpos tune the in-hand gun pose while developing.
-const triple = (v: string | null) =>
-  v ? (v.split(',').map(Number) as [number, number, number]) : undefined;
-const grot = triple(params.get('grot'));
-if (grot) gunTuning.rotation = grot;
-const brot = triple(params.get('brot'));
-if (brot) gunTuning.backRotation = brot;
-const bpos = triple(params.get('bpos'));
-if (bpos) gunTuning.backPosition = bpos;
-const gpos = triple(params.get('gpos'));
-if (gpos) gunTuning.position = gpos;
 const MAP = mapById(params.get('map')) ?? TEST_MAP;
 /** Remote players are drawn this far in the past (smooth interpolation); shots are rewound by it too. */
 const INTERP_DELAY_MS = 100;
@@ -347,6 +335,7 @@ renderer.setAnimationLoop((now) => {
   model.object.visible = feedback.isAlive;
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
   model.object.rotation.y = input.currentYaw + debugTurn;
+  model.setAimPitch(input.currentPitch);
   model.update(
     {
       speed: Math.hypot(player.body.vx, player.body.vz),

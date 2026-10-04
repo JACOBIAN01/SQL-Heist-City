@@ -111,6 +111,8 @@ export class CharacterModel implements CharacterRig {
 
   fired(): void {}
 
+  setAimPitch(_pitch: number): void {}
+
   holdItem(item: Object3D | undefined): void {
     this.held?.removeFromParent();
     this.held = item;

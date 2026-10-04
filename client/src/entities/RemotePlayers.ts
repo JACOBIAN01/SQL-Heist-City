@@ -121,6 +121,7 @@ export class RemotePlayers {
       remote.flags = pose.flags;
       remote.hp = pose.hp;
       remote.model.object.rotation.y = pose.yaw;
+      remote.model.setAimPitch(pose.pitch);
       remote.bag.visible = (pose.flags & Flag.Carrying) !== 0;
       const weapon = weaponOfFlags(pose.flags);
       if (weapon !== remote.weapon) {
