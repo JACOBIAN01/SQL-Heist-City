@@ -189,6 +189,7 @@ client.subscribe({
 // The SQL pop-up lives on the game connection: the server decides what each task is worth.
 const challengeApi = new ChannelChallengeApi({ send: (message) => client.sendJson(message) });
 const sqlPanel = new SqlPanel(document.body);
+let ownedWeapons: readonly string[] = [];
 // What the player can ask for depends on their situation; this is rebuilt each time the menu opens.
 let latestSelf: SelfState | undefined;
 const taskContext = () => {
@@ -225,7 +226,6 @@ world.onChange((map, closedDoors) => {
   feedback.setMap(map);
   setClosedDoors(mapObject, closedDoors);
 });
-let ownedWeapons: readonly string[] = [];
 // F uses whatever is in reach (lift, vault console…); the server decides if it works.
 const interactions = new Interactions({
   map: MAP,

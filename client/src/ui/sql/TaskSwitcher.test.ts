@@ -73,7 +73,7 @@ describe('TaskSwitcher', () => {
     let list: TaskOption[] = [{ key: 'heal:small', label: 'Small heal', group: 'Heal' }];
     const onSelect = vi.fn();
     const switcher = new TaskSwitcher(host, () => list, onSelect);
-    expect(host.querySelectorAll('.sqlp-item')).toHaveLength(1);
+    expect(host.querySelectorAll('.sqlp-item')).toHaveLength(0); // read on open, not at construction
     list = [
       { key: 'heal:small', label: 'Small heal', group: 'Heal', disabled: 'Full health' },
       { key: 'gun:rifle', label: 'Rifle', group: 'Gun' },

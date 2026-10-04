@@ -46,7 +46,8 @@ export class TaskSwitcher {
     });
     this.menu = h('div', { class: 'sqlp-menu', attrs: { role: 'menu', hidden: '' } });
     this.root = h('span', { class: 'sqlp-switch-wrap' }, this.trigger, this.menu);
-    this.render();
+    // A live source is read when the menu opens, not now: the game it describes may not exist yet.
+    if (typeof source !== 'function') this.render();
     clear(host);
     // A fixed list of one task has nothing to switch to; a live list is always offered.
     if (typeof source === 'function' || source.length > 1) host.append(this.root);
