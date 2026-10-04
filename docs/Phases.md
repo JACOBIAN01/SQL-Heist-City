@@ -23,8 +23,8 @@
 | 3 | Seed content (150 questions) | ✅ Done |
 | 4 | SQL pop-up UI | ✅ Done |
 | 5 | Walk & shoot sandbox | ✅ Done |
-| 6 | Scale core (60/100/200) | 🟨 In review |
-| 7 | Heist loop v1 | ⬜ |
+| 6 | Scale core (60/100/200) | ✅ Done |
+| 7 | Heist loop v1 | 🟨 In progress |
 | 8 | City, vehicles, atmosphere | ⬜ |
 | 9 | Banks 2–5, weapons, UX | ⬜ |
 | 10 | Harden & ship | ⬜ |
@@ -144,7 +144,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 5.12 | Health, death, respawn | full kill cycle works | ✅ Done |
 
 ---
-## Phase 6 — Scale core (60 → 100 → 200)  🟨
+## Phase 6 — Scale core (60 → 100 → 200)  ✅
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 6.1 | Bot harness (`load:bots`) | spawns N scripted players | ✅ Done |
@@ -158,10 +158,10 @@ Goal: movement and combat feel good with 2+ real players.
 | 6.9 | Tuning + 60/100/200 report | 100 bots under 15 ms tick | ✅ Done |
 
 ---
-## Phase 7 — Heist loop v1 (one bank)  ⬜
+## Phase 7 — Heist loop v1 (one bank)  🟨
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 7.1 | Bank layout format + Bank 1 shell and lobby (logical walls → colliders; art from kit pieces, see city-kit.md) | walk inside | ⬜ |
+| 7.1 | Bank layout format + Bank 1 shell and lobby (logical walls → colliders; art from kit pieces, see city-kit.md) | walk inside | ✅ |
 | 7.2 | Floors, stairs, elevator | reach every floor | ⬜ |
 | 7.3 | Interaction system (press F near object) | prompts + server validation | ⬜ |
 | 7.4 | Vault + lock state (persistent) | locks tracked server-side | ⬜ |

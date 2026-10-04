@@ -5,7 +5,7 @@ import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
 import { DEFAULT_MATCH_SETTINGS } from '@heist/shared';
 import { MatchPool } from './game/MatchPool';
-import { mapByName, type MapName } from './game/maps';
+import { mapByName, parseMapName } from './game/maps';
 import { startGame, type RunningGame } from './game/startGame';
 import { createHttpServer } from './http/httpServer';
 
@@ -25,8 +25,8 @@ if (existsSync(dbPath)) {
 }
 
 // The HTTP server is created first (the game attaches to it), so metrics look the game up lazily.
-// Load tests: MATCH_MAX_PLAYERS=200, MATCH_DUMMIES=0, MATCH_MAP=bench (a 640 m city-sized map).
-const mapName: MapName = process.env.MATCH_MAP === 'bench' ? 'bench' : 'sandbox';
+// MATCH_MAP=sandbox|heist|bench. Load tests: MATCH_MAX_PLAYERS=200, MATCH_DUMMIES=0, MATCH_MAP=bench (640 m).
+const mapName = parseMapName(process.env.MATCH_MAP);
 const matchSettings = {
   ...DEFAULT_MATCH_SETTINGS,
   maxPlayers: Number(process.env.MATCH_MAX_PLAYERS ?? DEFAULT_MATCH_SETTINGS.maxPlayers),

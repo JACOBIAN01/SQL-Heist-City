@@ -4,6 +4,7 @@ import {
   DEFAULT_MOVEMENT_SETTINGS,
   SIM_DT,
   TEST_MAP,
+  mapById,
 } from '@heist/shared';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { RemotePlayers } from './entities/RemotePlayers';
@@ -31,6 +32,9 @@ import { computeViewport } from './render/viewport';
 import { buildMapObject } from './world/MapRenderer';
 
 // Composition root for the client.
+// ?map=heist loads the bank map (the server must run MATCH_MAP=heist); the sandbox yard is the default.
+const params = new URLSearchParams(location.search);
+const MAP = mapById(params.get('map')) ?? TEST_MAP;
 /** Remote players are drawn this far in the past (smooth interpolation); shots are rewound by it too. */
 const INTERP_DELAY_MS = 100;
 const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -39,7 +43,7 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new Scene();
 const lighting = addLighting(scene);
-scene.add(buildMapObject(TEST_MAP));
+scene.add(buildMapObject(MAP));
 
 const camera = new PerspectiveCamera(70, 1, 0.1, 220);
 const resize = (): void => {
@@ -52,8 +56,8 @@ const resize = (): void => {
 resize();
 window.addEventListener('resize', resize);
 
-const spawn = TEST_MAP.spawns[0] ?? { x: 0, z: 0, yaw: 0 };
-const player = new LocalPlayer(TEST_MAP, DEFAULT_MOVEMENT_SETTINGS, spawn);
+const spawn = MAP.spawns[0] ?? { x: 0, z: 0, yaw: 0 };
+const player = new LocalPlayer(MAP, DEFAULT_MOVEMENT_SETTINGS, spawn);
 const predicted = new PredictedPlayer(player);
 const input = new InputSampler();
 input.setLook(spawn.yaw);
@@ -66,10 +70,9 @@ document.body.appendChild(hint);
 new PointerLock(renderer.domElement, input, (locked) => {
   hint.hidden = locked;
 });
-const rig = new CameraRig(camera, TEST_MAP);
+const rig = new CameraRig(camera, MAP);
 
 // Network: ?server=<port> (default 8080), ?name=, ?lag=<one-way ms> to simulate latency.
-const params = new URLSearchParams(location.search);
 const port = params.get('server') ?? '8080';
 const lag = Number(params.get('lag') ?? 0);
 // The lobby says which match (and which port, when matches run in their own threads) to join.
@@ -109,7 +112,7 @@ const playerName = params.get('name') ?? 'Player';
 const feedback = new CombatFeedback({
   hud,
   tracers,
-  map: TEST_MAP,
+  map: MAP,
   movement: DEFAULT_MOVEMENT_SETTINGS,
   combat: DEFAULT_COMBAT_SETTINGS,
   myId: () => client.playerId,
