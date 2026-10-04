@@ -13,3 +13,4 @@
 - Admin analytics (solve rate, median time, wrong-answer rate per question): needs the game to record attempts; build once Phase 7 produces data.
 - Character cost with real humans: each is 3 draw calls (body, hair, eyes) and ~5k triangles, so ~30 visible players ≈ 100 calls / 150k triangles before shadows. Phase 6 should add a low-detail model (≈1.5k triangles) for players beyond ~25 m.
 - Admin-editable reward icons (an `icon` field per reward in the DB + picker); today the reward → icon map lives in client code.
+- Vehicles and street furniture are not in the free city kit: hand-download the Quaternius Cars pack (Google Drive) or build simple procedural ones; lamps/hydrants/trees likewise (see city-kit.md).

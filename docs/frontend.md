@@ -38,7 +38,7 @@ src/
 
 ## Rendering approach ("real-life look, light cost")
 - Art direction: stylised-realistic, muted palette, strong lighting, fog depth.
-- Buildings/props via `InstancedMesh`; merged static geometry per chunk.
+- City from the Quaternius kit (`city-kit.md`): kit pieces merged per chunk per material (≤ 6 atlas materials), fake-interior windows on non-bank buildings, far chunks as impostors. Gameplay never reads art meshes: the layout's boxes do.
 - Baked AO/lightmaps on banks; one dynamic sun; shadows only within ~60 m of player.
 - Sky gradient + sun disc; day/night by lerping light, fog, emissive windows/streetlights.
 - Wet roads at night via cheap env-probe reflection.

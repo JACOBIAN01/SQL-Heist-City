@@ -58,4 +58,4 @@ npm run bot -w @heist/server -- 3    # dev bots that walk in circles (needs the 
 - Comments only where the *why* is non-obvious.
 
 ## Doc index
-Architecture.md · system-design.md · Phases.md · rules.md · design-principles.md · frontend.md · backend.md · admin.md · questions.md · gameplay.md · api-protocol.md · testing.md · deployment.md (all in `docs/`)
+Architecture.md · system-design.md · Phases.md · rules.md · design-principles.md · frontend.md · backend.md · admin.md · questions.md · gameplay.md · api-protocol.md · testing.md · deployment.md · city-kit.md (all in `docs/`)

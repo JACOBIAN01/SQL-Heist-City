@@ -22,7 +22,7 @@
 | 2 | Admin backend + UI | ✅ Done |
 | 3 | Seed content (150 questions) | ✅ Done |
 | 4 | SQL pop-up UI | ✅ Done |
-| 5 | Walk & shoot sandbox | 🟨 In review |
+| 5 | Walk & shoot sandbox | ✅ Done |
 | 6 | Scale core (60/100/200) | ⬜ |
 | 7 | Heist loop v1 | ⬜ |
 | 8 | City, vehicles, atmosphere | ⬜ |
@@ -125,7 +125,7 @@ Goal: LeetCode-style, non-blocking panel, demo against real server.
 | 4.9 | Polish: responsive, keyboard shortcuts, bundle-size check | within budget | ✅ Done |
 
 ---
-## Phase 5 — Walk & shoot sandbox  🟨
+## Phase 5 — Walk & shoot sandbox  ✅
 Goal: movement and combat feel good with 2+ real players.
 
 | # | Subphase | Done when | Status |
@@ -150,9 +150,9 @@ Goal: movement and combat feel good with 2+ real players.
 | 6.1 | Bot harness (`load:bots`) | spawns N scripted players | ⬜ |
 | 6.2 | Metrics (tick ms, bytes/s) + `/metrics` | visible numbers | ⬜ |
 | 6.3 | Baseline measurement (no optimisation) | numbers recorded in docs | ⬜ |
-| 6.4 | Spatial hash grid | neighbour queries tested | ⬜ |
+| 6.4 | Spatial hash grid for players **and static colliders** (cell = 64 m chunk for AOI, 8 m for colliders; see city-kit.md §5) | neighbour and box queries tested; stepBody/rays only test nearby boxes | ⬜ |
 | 6.5 | AOI snapshots with tiered rates | bandwidth drops | ⬜ |
-| 6.6 | Delta compression + quantisation | <4 KB/s/client | ⬜ |
+| 6.6 | Delta compression + quantisation (int16 × 2 cm positions, world ≤ ±650 m) | <4 KB/s/client | ⬜ |
 | 6.7 | Object pools (no per-tick allocation) | GC pauses gone | ⬜ |
 | 6.8 | Match worker threads | one match per thread | ⬜ |
 | 6.9 | Tuning + 60/100/200 report | 100 bots under 15 ms tick | ⬜ |
@@ -161,7 +161,7 @@ Goal: movement and combat feel good with 2+ real players.
 ## Phase 7 — Heist loop v1 (one bank)  ⬜
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 7.1 | Bank 1 exterior + lobby | walk inside | ⬜ |
+| 7.1 | Bank layout format + Bank 1 shell and lobby (logical walls → colliders; art from kit pieces, see city-kit.md) | walk inside | ⬜ |
 | 7.2 | Floors, stairs, elevator | reach every floor | ⬜ |
 | 7.3 | Interaction system (press F near object) | prompts + server validation | ⬜ |
 | 7.4 | Vault + lock state (persistent) | locks tracked server-side | ⬜ |
@@ -176,24 +176,27 @@ Goal: movement and combat feel good with 2+ real players.
 
 ---
 ## Phase 8 — City, vehicles, atmosphere  ⬜
+Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
+
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 8.1 | Seeded city layout (roads, blocks) | same seed = same city | ⬜ |
-| 8.2 | Instanced buildings + props | draw calls <200 | ⬜ |
-| 8.3 | Chunk streaming + LOD | smooth traversal | ⬜ |
-| 8.4 | Day/night + fog + sky | cycle works | ⬜ |
-| 8.5 | Post-FX (FXAA + bloom) | fps budget kept | ⬜ |
-| 8.6 | Vehicle physics (sedan) | drive and collide | ⬜ |
-| 8.7 | Vehicle enter/exit + networking | other players see it | ⬜ |
-| 8.8 | Sports car + bike | all 3 drivable | ⬜ |
-| 8.9 | Spatial audio | footsteps, shots, ambience | ⬜ |
-| 8.10 | Perf pass | 60 fps, <8 MB load | ⬜ |
+| 8.1 | Kit build pipeline (`tools/city/`): ~60 light pieces, ≤ 6 atlas texture sets, WebP ≤ 3 MB, `kit.glb` + `kit.json` | one file loads; size report in docs | ⬜ |
+| 8.2 | Seeded `CityLayout` in `shared/` (roads, 64 m blocks, lots, bank/safehouse sites) → `GameMap` colliders | same seed = same city on server and client | ⬜ |
+| 8.3 | Facade grammar → kit placements, merged per chunk per material, fake-interior windows | a block renders with the kit | ⬜ |
+| 8.4 | Chunk streaming + LOD (box impostors far, character LOD) | smooth traversal, draw calls < 200 | ⬜ |
+| 8.5 | Day/night + fog + sky | cycle works | ⬜ |
+| 8.6 | Post-FX (FXAA + bloom) | fps budget kept | ⬜ |
+| 8.7 | Vehicle physics (sedan; car models hand-downloaded or procedural) | drive and collide | ⬜ |
+| 8.8 | Vehicle enter/exit + networking | other players see it | ⬜ |
+| 8.9 | Sports car + bike | all 3 drivable | ⬜ |
+| 8.10 | Spatial audio | footsteps, shots, ambience | ⬜ |
+| 8.11 | Perf pass | 60 fps, <8 MB load | ⬜ |
 
 ---
 ## Phase 9 — Banks 2–5, weapons, UX  ⬜
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 9.1 | Bank 2 | playable | ⬜ |
+| 9.1 | Bank 2 (new layout, same kit pieces and grammar) | playable | ⬜ |
 | 9.2 | Bank 3 | playable | ⬜ |
 | 9.3 | Bank 4 | playable | ⬜ |
 | 9.4 | Bank 5 | playable | ⬜ |

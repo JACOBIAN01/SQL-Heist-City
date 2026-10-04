@@ -82,7 +82,7 @@ The whole template (story, schema, generators, params, reference SQL, hints, fla
 Game server opens the DB read-only; admin writes. Admin pings `POST /internal/reload` (shared secret) → server refreshes its in-memory caches.
 
 ## 7. World & rendering approach (summary; detail in frontend.md)
-Procedural seeded city in chunks, instanced buildings/props, texture atlas + KTX2, baked AO, single sun with near-only shadows, fog/sky, bloom+FXAA, day/night, 5 bank interiors streamed on approach. Empty city (no NPCs).
+Seeded `CityLayout` (shared) is the source of truth: it yields colliders for server and client physics and, separately, kit-piece placements for rendering (Quaternius Downtown City MegaKit, see `city-kit.md`). One 64 m chunk = one block = one network cell. Pieces are merged per chunk per material, far chunks are impostors, only banks have real interiors. Single sun with near-only shadows, fog/sky, bloom+FXAA, day/night. Empty city (no NPCs).
 
 ## 8. Failure & safety
 - Grader runs in worker threads with hard timeouts; crash → challenge cancelled, player not penalised.
