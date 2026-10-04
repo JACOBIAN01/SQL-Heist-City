@@ -82,7 +82,7 @@ describe('compileCity', () => {
     const site = city.banks.find((b) => b.tier === 3);
     const shell = map.boxes.find(
       (b) =>
-        b.kind === 'building' && b.minX === (site?.x ?? 0) - (site?.width ?? 0) / 2 && b.minY === 0,
+        b.kind === 'shell' && b.minX === (site?.x ?? 0) - (site?.width ?? 0) / 2 && b.minY === 0,
     );
     expect(shell).toBeDefined();
   });

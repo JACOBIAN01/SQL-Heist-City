@@ -12,10 +12,10 @@ import type { CityLayout, Rect } from './CityLayout';
 
 /** Kerb height: the kit's sidewalk top sits 0.15 m above the asphalt. */
 export const KERB_HEIGHT = 0.15;
+/** A bank site with no layout yet is a closed building this many storeys tall. */
+export const CLOSED_BANK_STOREYS = 3;
 /** Edge of the world: tall enough that nobody jumps it. */
 const BOUNDARY_HEIGHT = 8;
-/** A bank site with no layout yet is a closed building this many storeys tall. */
-const CLOSED_BANK_STOREYS = 3;
 const SAFEHOUSE_RADIUS = 3;
 
 const rectBox = (kind: MapBox['kind'], r: Rect, height: number, bottom = 0): MapBox => ({
@@ -57,20 +57,20 @@ export function compileCity(
     const { outer: o, inner: i } = block;
     // The sidewalk ring, as four strips: the lots inside stay at street level.
     boxes.push(
-      rectBox('step', { ...o, maxZ: i.minZ }, KERB_HEIGHT),
-      rectBox('step', { ...o, minZ: i.maxZ }, KERB_HEIGHT),
-      rectBox('step', { minX: o.minX, maxX: i.minX, minZ: i.minZ, maxZ: i.maxZ }, KERB_HEIGHT),
-      rectBox('step', { minX: i.maxX, maxX: o.maxX, minZ: i.minZ, maxZ: i.maxZ }, KERB_HEIGHT),
+      rectBox('kerb', { ...o, maxZ: i.minZ }, KERB_HEIGHT),
+      rectBox('kerb', { ...o, minZ: i.maxZ }, KERB_HEIGHT),
+      rectBox('kerb', { minX: o.minX, maxX: i.minX, minZ: i.minZ, maxZ: i.maxZ }, KERB_HEIGHT),
+      rectBox('kerb', { minX: i.maxX, maxX: o.maxX, minZ: i.minZ, maxZ: i.maxZ }, KERB_HEIGHT),
     );
     for (const lot of block.lots)
-      for (const b of lot.buildings) boxes.push(rectBox('building', b.rect, b.storeys * storey));
+      for (const b of lot.buildings) boxes.push(rectBox('shell', b.rect, b.storeys * storey));
   }
 
   for (const site of city.banks) {
     const layout = bankLayouts.get(site.tier);
     if (!layout) {
       boxes.push(
-        box('building', site.x, site.z, site.width, CLOSED_BANK_STOREYS * storey, site.depth),
+        box('shell', site.x, site.z, site.width, CLOSED_BANK_STOREYS * storey, site.depth),
       );
       continue;
     }

@@ -29,6 +29,8 @@ const KIND_COLOR: Readonly<Record<MapBoxKind, number>> = {
   crate: 0x8a6a3b,
   step: 0x6d737c,
   cover: 0x4b5058,
+  shell: 0x5d6571,
+  kerb: 0x9a9da3,
 };
 
 /** Tiled asphalt-with-grid texture: gives the eye something to judge speed by. */

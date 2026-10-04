@@ -14,8 +14,13 @@ export interface Aabb {
   readonly maxZ: number;
 }
 
-/** Drives the client's material only; the server treats every kind the same. */
-export type MapBoxKind = 'wall' | 'building' | 'interior' | 'crate' | 'step' | 'cover';
+/**
+ * Drives the client's material only; the server treats every kind the same.
+ * `shell` (a city building) and `kerb` (a sidewalk) are drawn with kit
+ * pieces once the city kit has loaded; until then, or without it, as boxes.
+ */
+export type MapBoxKind =
+  'wall' | 'building' | 'interior' | 'crate' | 'step' | 'cover' | 'shell' | 'kerb';
 
 export interface MapBox extends Aabb {
   readonly kind: MapBoxKind;
