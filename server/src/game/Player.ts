@@ -1,3 +1,4 @@
+import type { SentInfo } from './InterestManager';
 import {
   SnapshotEncoder,
   createBody,
@@ -38,7 +39,9 @@ export class Player {
   /** What this client already knows about other players, so snapshots carry only changes. */
   readonly snapshots = new SnapshotEncoder();
   /** Tick at which each other player was last sent to this client (area-of-interest bookkeeping). */
-  readonly lastSent = new Map<number, number>();
+  readonly lastSent = new Map<number, SentInfo>();
+  /** Marks "already got this shot" while a shot event is delivered. */
+  shotStamp = 0;
   kills = 0;
   deaths = 0;
   /** Last input sequence number applied; echoed in snapshots so the client can reconcile. */

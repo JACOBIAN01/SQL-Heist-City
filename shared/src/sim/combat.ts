@@ -16,18 +16,34 @@ export function aimOrigin(
   yaw: number,
   cfg: MovementSettings,
 ): Vec3 {
+  return aimOriginInto({ x: 0, y: 0, z: 0 }, body, yaw, cfg);
+}
+
+/** Same as {@link aimOrigin} but writes into `out` (the server fires many shots per tick). */
+export function aimOriginInto(
+  out: Vec3,
+  body: { x: number; y: number; z: number; crouching: boolean },
+  yaw: number,
+  cfg: MovementSettings,
+): Vec3 {
   const eye = body.crouching ? cfg.crouchEyeHeight : cfg.eyeHeight;
-  return {
-    x: body.x + Math.cos(yaw) * cfg.shoulder,
-    y: body.y + eye,
-    z: body.z - Math.sin(yaw) * cfg.shoulder,
-  };
+  out.x = body.x + Math.cos(yaw) * cfg.shoulder;
+  out.y = body.y + eye;
+  out.z = body.z - Math.sin(yaw) * cfg.shoulder;
+  return out;
 }
 
 /** Unit look direction (yaw 0 faces −z, counter-clockwise positive; + pitch looks up). */
 export function aimDirection(yaw: number, pitch: number): Vec3 {
+  return aimDirectionInto({ x: 0, y: 0, z: 0 }, yaw, pitch);
+}
+
+export function aimDirectionInto(out: Vec3, yaw: number, pitch: number): Vec3 {
   const cosP = Math.cos(pitch);
-  return { x: -Math.sin(yaw) * cosP, y: Math.sin(pitch), z: -Math.cos(yaw) * cosP };
+  out.x = -Math.sin(yaw) * cosP;
+  out.y = Math.sin(pitch);
+  out.z = -Math.cos(yaw) * cosP;
+  return out;
 }
 
 /**
@@ -47,36 +63,48 @@ export function rayCylinder(
 ): number | undefined {
   const fx = o.x - cx;
   const fz = o.z - cz;
-  const insideXZ = fx * fx + fz * fz <= radius * radius;
-  if (insideXZ && o.y >= y0 && o.y <= y1) return 0;
+  const r2 = radius * radius;
+  if (fx * fx + fz * fz <= r2 && o.y >= y0 && o.y <= y1) return 0;
 
-  let best: number | undefined;
-  const consider = (t: number) => {
-    if (t >= 0 && t <= maxDist && (best === undefined || t < best)) best = t;
-  };
+  let best = Infinity;
 
+  // Side wall: solve |(o + t d) − axis|² = r² in the ground plane, then check the height.
   const a = d.x * d.x + d.z * d.z;
   if (a > 1e-12) {
     const b = 2 * (fx * d.x + fz * d.z);
-    const c = fx * fx + fz * fz - radius * radius;
+    const c = fx * fx + fz * fz - r2;
     const disc = b * b - 4 * a * c;
     if (disc >= 0) {
       const root = Math.sqrt(disc);
-      for (const t of [(-b - root) / (2 * a), (-b + root) / (2 * a)]) {
-        const y = o.y + d.y * t;
-        if (y >= y0 && y <= y1) consider(t);
+      const t1 = (-b - root) / (2 * a);
+      const t2 = (-b + root) / (2 * a);
+      if (t1 >= 0 && t1 <= maxDist && t1 < best) {
+        const y = o.y + d.y * t1;
+        if (y >= y0 && y <= y1) best = t1;
+      }
+      if (t2 >= 0 && t2 <= maxDist && t2 < best) {
+        const y = o.y + d.y * t2;
+        if (y >= y0 && y <= y1) best = t2;
       }
     }
   }
+
+  // Caps (bottom and top discs).
   if (Math.abs(d.y) > 1e-9) {
-    for (const plane of [y0, y1]) {
-      const t = (plane - o.y) / d.y;
-      const x = o.x + d.x * t - cx;
-      const z = o.z + d.z * t - cz;
-      if (x * x + z * z <= radius * radius) consider(t);
+    const tb = (y0 - o.y) / d.y;
+    if (tb >= 0 && tb <= maxDist && tb < best) {
+      const x = o.x + d.x * tb - cx;
+      const z = o.z + d.z * tb - cz;
+      if (x * x + z * z <= r2) best = tb;
+    }
+    const tt = (y1 - o.y) / d.y;
+    if (tt >= 0 && tt <= maxDist && tt < best) {
+      const x = o.x + d.x * tt - cx;
+      const z = o.z + d.z * tt - cz;
+      if (x * x + z * z <= r2) best = tt;
     }
   }
-  return best;
+  return best === Infinity ? undefined : best;
 }
 
 export interface ShotTarget {
@@ -89,11 +117,18 @@ export interface ShotTarget {
 }
 
 export interface ShotResult {
-  readonly hit: HitKind;
-  readonly target: number;
-  readonly distance: number;
+  hit: HitKind;
+  target: number;
+  distance: number;
   readonly end: Vec3;
 }
+
+export const newShotResult = (): ShotResult => ({
+  hit: 'miss',
+  target: 0,
+  distance: 0,
+  end: { x: 0, y: 0, z: 0 },
+});
 
 /**
  * One bullet: the nearest of (world, each target) along the ray, within range.
@@ -107,12 +142,28 @@ export function resolveShot(
   targets: readonly ShotTarget[],
   combat: Pick<CombatSettings, 'bodyRadius' | 'headHeight'>,
 ): ShotResult {
+  return resolveShotInto(newShotResult(), map, origin, dir, range, targets, combat);
+}
+
+/** Same as {@link resolveShot} but fills a caller-owned result instead of allocating one. */
+export function resolveShotInto(
+  result: ShotResult,
+  map: GameMap,
+  origin: Vec3,
+  dir: Vec3,
+  range: number,
+  targets: readonly ShotTarget[],
+  combat: Pick<CombatSettings, 'bodyRadius' | 'headHeight'>,
+  /** How many entries of `targets` are live (lets callers reuse a longer array). */
+  targetCount = targets.length,
+): ShotResult {
   const wall = raycastMap(map, origin.x, origin.y, origin.z, dir.x, dir.y, dir.z, range);
   const limit = wall ?? range;
 
   let bestT = limit;
   let bestTarget: ShotTarget | undefined;
-  for (const t of targets) {
+  for (let i = 0; i < targetCount; i++) {
+    const t = targets[i] as ShotTarget;
     const hit = rayCylinder(origin, dir, t.x, t.z, combat.bodyRadius, t.y, t.y + t.height, bestT);
     if (hit !== undefined && hit <= bestT) {
       bestT = hit;
@@ -120,12 +171,17 @@ export function resolveShot(
     }
   }
 
-  const end = {
-    x: origin.x + dir.x * bestT,
-    y: origin.y + dir.y * bestT,
-    z: origin.z + dir.z * bestT,
-  };
-  if (!bestTarget) return { hit: 'miss', target: 0, distance: bestT, end };
-  const head = end.y >= bestTarget.y + bestTarget.height - combat.headHeight;
-  return { hit: head ? 'head' : 'body', target: bestTarget.id, distance: bestT, end };
+  result.distance = bestT;
+  result.end.x = origin.x + dir.x * bestT;
+  result.end.y = origin.y + dir.y * bestT;
+  result.end.z = origin.z + dir.z * bestT;
+  if (!bestTarget) {
+    result.hit = 'miss';
+    result.target = 0;
+    return result;
+  }
+  const head = result.end.y >= bestTarget.y + bestTarget.height - combat.headHeight;
+  result.hit = head ? 'head' : 'body';
+  result.target = bestTarget.id;
+  return result;
 }

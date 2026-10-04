@@ -137,6 +137,8 @@ function eventBytes(event: GameEvent): number {
 export function encodeServerMessage(
   message: ServerMessage,
   snapshots?: SnapshotEncoder,
+  /** For snapshots built in reused arrays: how many entries are live. */
+  counts?: { readonly entities: number; readonly removed: number },
 ): Uint8Array {
   switch (message.t) {
     case 'welcome':
@@ -148,7 +150,12 @@ export function encodeServerMessage(
         .string(message.mapId).bytes;
     case 'snapshot':
       // Stateless callers get a fresh encoder: every entity is sent in full.
-      return (snapshots ?? new SnapshotEncoder()).encode(message, ServerType.Snapshot);
+      return (snapshots ?? new SnapshotEncoder()).encode(
+        message,
+        ServerType.Snapshot,
+        counts?.entities,
+        counts?.removed,
+      );
     case 'event': {
       const ev = message.event;
       const w = new Writer(1 + eventBytes(ev)).u8(ServerType.Event);

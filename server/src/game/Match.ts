@@ -5,15 +5,14 @@ import {
   Flag,
   PROTOCOL_VERSION,
   SIM_DT,
-  SeededRng,
-  aimDirection,
-  aimOrigin,
+  aimDirectionInto,
+  aimOriginInto,
+  newShotResult,
   bodyHeight,
   createBody,
   encodeServerMessage,
   hasButton,
-  resolveShot,
-  seedOf,
+  resolveShotInto,
   stepBody,
   type CombatSettings,
   type EntityState,
@@ -24,17 +23,22 @@ import {
   type MovementSettings,
   type ServerMessage,
   type ShotTarget,
+  type SelfState,
   type SnapshotMessage,
   type SpawnPoint,
 } from '@heist/shared';
 import { InterestManager } from './InterestManager';
-import { LagCompensator } from './LagCompensator';
+import { LagCompensator, type BodyPose } from './LagCompensator';
 import { Player, type PlayerConnection } from './Player';
+import { ShotRng } from './ShotRng';
 import { FarthestSpawnPolicy, type SpawnPolicy } from './SpawnPolicy';
 
 export const CLOSE_PROTOCOL = 4000;
 export const CLOSE_FULL = 4001;
 export const CLOSE_IDLE = 4002;
+
+/** The snapshot scratch objects are written in place, so they are not readonly here. */
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 export type JoinResult =
   | { readonly ok: true; readonly player: Player }
@@ -70,11 +74,41 @@ export class Match {
   private readonly combat: CombatSettings;
   private readonly lagComp: LagCompensator;
   private readonly interest: InterestManager;
+  // Scratch space reused by every snapshot: nothing here is allocated per tick.
+  private readonly scratchIds: number[] = [];
+  private readonly scratchRemoved: number[] = [];
+  private readonly entityPool: Mutable<EntityState>[] = [];
+  private readonly snapshotCounts = { entities: 0, removed: 0 };
+  private readonly snapshotMessage: Mutable<SnapshotMessage>;
+  private readonly positionOf = (id: number) => this.players.get(id)?.body;
+  // Shot scratch: a tick can fire dozens of bullets and none of this is allocated per shot.
+  private readonly shotRng = new ShotRng();
+  private readonly seedNumber: number;
+  private readonly aimFrom = { x: 0, y: 0, z: 0 };
+  private readonly aimDir = { x: 0, y: 0, z: 0 };
+  private readonly shotResult = newShotResult();
+  private readonly shotTargets: Mutable<ShotTarget>[] = [];
+  private readonly nearShooter: number[] = [];
+  private readonly rewound: BodyPose = { x: 0, y: 0, z: 0, height: 0 };
+  private shotEvent: Extract<GameEvent, { e: 'shot' }> | undefined;
+  private shotBytes: Uint8Array = new Uint8Array(0);
+  private shotStamp = 0;
+  private shotTargetCount = 0;
+  private shotRange = 0;
 
   constructor(private readonly deps: MatchDeps) {
     this.movement = deps.movement ?? DEFAULT_MOVEMENT_SETTINGS;
     this.combat = deps.combat ?? DEFAULT_COMBAT_SETTINGS;
     this.interest = new InterestManager(deps.settings.interest);
+    this.seedNumber = hashString(deps.seed ?? 'match');
+    this.snapshotMessage = {
+      t: 'snapshot',
+      tick: 0,
+      ackSeq: 0,
+      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 0, hp: 0 },
+      entities: this.entityPool,
+      removed: this.scratchRemoved,
+    };
     // A bit more history than the rewind cap, so the oldest legal rewind is always covered.
     this.lagComp = new LagCompensator(
       Math.ceil((this.combat.maxLagCompMs / 1000) * deps.settings.tickRate) + 4,
@@ -222,21 +256,30 @@ export class Match {
     if (!weapon) return;
     shooter.cooldown += 60 / weapon.rpm;
 
-    const origin = aimOrigin(shooter.body, command.yaw, this.movement);
-    const targets = this.targetsFor(shooter, command);
-    const rng = new SeededRng(
-      seedOf(this.deps.seed ?? 'match', this.tick, shooter.id, command.seq),
-    );
+    const origin = aimOriginInto(this.aimFrom, shooter.body, command.yaw, this.movement);
+    const targets = this.targetsFor(shooter, command, weapon.range);
+    const rng = this.shotRng;
+    rng.reseed(this.seedNumber, this.tick, shooter.id, command.seq);
 
     for (let pellet = 0; pellet < weapon.pellets; pellet++) {
       // Random point in a cone: uniform over the disc, so spread is not biased to the centre.
       const radius = weapon.spread * Math.sqrt(rng.next());
       const angle = rng.next() * Math.PI * 2;
-      const dir = aimDirection(
+      const dir = aimDirectionInto(
+        this.aimDir,
         command.yaw + (radius * Math.cos(angle)) / Math.max(0.2, Math.cos(command.pitch)),
         command.pitch + radius * Math.sin(angle),
       );
-      const result = resolveShot(this.deps.map, origin, dir, weapon.range, targets, this.combat);
+      const result = resolveShotInto(
+        this.shotResult,
+        this.deps.map,
+        origin,
+        dir,
+        weapon.range,
+        targets,
+        this.combat,
+        this.shotTargetCount,
+      );
       this.broadcastShot({
         e: 'shot',
         shooter: shooter.id,
@@ -260,20 +303,38 @@ export class Match {
    * most `maxLagCompMs`. Only completed ticks are used, so every target is
    * judged at the same moment regardless of processing order within a tick.
    */
-  private targetsFor(shooter: Player, command: InputCommand): ShotTarget[] {
+  private targetsFor(shooter: Player, command: InputCommand, range: number): ShotTarget[] {
     const lagMs = Math.min(command.viewLagMs, this.combat.maxLagCompMs);
     const rewindTick = this.tick - (lagMs / 1000) * this.deps.settings.tickRate;
-    const targets: ShotTarget[] = [];
-    for (const p of this.players.values()) {
-      if (p === shooter || !p.alive || this.isProtected(p)) continue;
-      const pose = this.lagComp.poseAt(p.id, rewindTick) ?? {
-        x: p.body.x,
-        y: p.body.y,
-        z: p.body.z,
-        height: bodyHeight(p.body, this.movement),
-      };
-      targets.push({ id: p.id, ...pose });
+    const targets = this.shotTargets;
+    // Only players near the shooter can be in range; the margin covers how far they
+    // can have moved since the grid was last updated (max rewind × top speed, with room).
+    const nearby = this.nearShooter;
+    const found = this.interest.grid.collectNear(shooter.body.x, shooter.body.z, range + 6, nearby);
+    let n = 0;
+    for (let i = 0; i < found; i++) {
+      const p = this.players.get(nearby[i] as number);
+      if (!p || p === shooter || !p.alive || this.isProtected(p)) continue;
+      let slot = targets[n];
+      if (!slot) {
+        slot = { id: 0, x: 0, y: 0, z: 0, height: 0 };
+        targets[n] = slot;
+      }
+      n++;
+      slot.id = p.id;
+      if (this.lagComp.poseAt(p.id, rewindTick, this.rewound)) {
+        slot.x = this.rewound.x;
+        slot.y = this.rewound.y;
+        slot.z = this.rewound.z;
+        slot.height = this.rewound.height;
+      } else {
+        slot.x = p.body.x;
+        slot.y = p.body.y;
+        slot.z = p.body.z;
+        slot.height = bodyHeight(p.body, this.movement);
+      }
     }
+    this.shotTargetCount = n;
     return targets;
   }
 
@@ -281,12 +342,14 @@ export class Match {
     for (const p of this.players.values()) {
       this.interest.update(p.id, p.body.x, p.body.z);
       if (!p.alive) continue;
-      this.lagComp.record(this.tick, p.id, {
-        x: p.body.x,
-        y: p.body.y,
-        z: p.body.z,
-        height: bodyHeight(p.body, this.movement),
-      });
+      this.lagComp.record(
+        this.tick,
+        p.id,
+        p.body.x,
+        p.body.y,
+        p.body.z,
+        bodyHeight(p.body, this.movement),
+      );
     }
   }
 
@@ -344,46 +407,58 @@ export class Match {
   /**
    * Each client gets itself in full every tick, plus only the other players
    * its interest policy says are due (near often, far rarely, out of range never).
+   * Scratch arrays and entity objects are reused across clients and ticks.
    */
   private sendSnapshots(): void {
-    const ids: number[] = [];
-    const removed: number[] = [];
-    const positionOf = (id: number) => this.players.get(id)?.body;
+    const ids = this.scratchIds;
+    const removed = this.scratchRemoved;
+    const pool = this.entityPool;
+    const snapshot = this.snapshotMessage;
+    const counts = this.snapshotCounts;
+    const self = snapshot.self as { -readonly [K in keyof SelfState]: SelfState[K] };
     for (const player of this.players.values()) {
       if (player.isDummy) continue; // nobody is listening
       const b = player.body;
-      ids.length = 0;
-      removed.length = 0;
       this.interest.select(
         { id: player.id, x: b.x, z: b.z, lastSent: player.lastSent },
         this.tick,
-        positionOf,
+        this.positionOf,
         ids,
         removed,
       );
-      const entities: EntityState[] = [];
-      for (const id of ids) {
-        const other = this.players.get(id);
-        if (other) entities.push(entityOf(other, this.isProtected(other)));
+      const selected = this.interest.selected;
+      let listed = 0;
+      for (let i = 0; i < selected; i++) {
+        const other = this.players.get(ids[i] as number);
+        if (!other) continue;
+        let slot = pool[listed];
+        if (!slot) {
+          slot = { id: 0, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, flags: 0, hp: 0 };
+          pool[listed] = slot;
+        }
+        listed++;
+        slot.id = other.id;
+        slot.x = other.body.x;
+        slot.y = other.body.y;
+        slot.z = other.body.z;
+        slot.yaw = other.yaw;
+        slot.pitch = other.pitch;
+        slot.flags = flagsOf(other, this.isProtected(other));
+        slot.hp = other.hp;
       }
-      const snapshot: SnapshotMessage = {
-        t: 'snapshot',
-        tick: this.tick,
-        ackSeq: player.lastAppliedSeq,
-        self: {
-          x: b.x,
-          y: b.y,
-          z: b.z,
-          vx: b.vx,
-          vy: b.vy,
-          vz: b.vz,
-          flags: flagsOf(player, this.isProtected(player)),
-          hp: player.hp,
-        },
-        entities,
-        removed: [...removed],
-      };
-      this.sendTo(player, snapshot);
+      counts.entities = listed;
+      counts.removed = this.interest.removedCount;
+      self.x = b.x;
+      self.y = b.y;
+      self.z = b.z;
+      self.vx = b.vx;
+      self.vy = b.vy;
+      self.vz = b.vz;
+      self.flags = flagsOf(player, this.isProtected(player));
+      self.hp = player.hp;
+      snapshot.tick = this.tick;
+      snapshot.ackSeq = player.lastAppliedSeq;
+      this.sendTo(player, snapshot, counts);
     }
   }
 
@@ -391,23 +466,29 @@ export class Match {
   private broadcastShot(event: Extract<GameEvent, { e: 'shot' }>): void {
     const shooter = this.players.get(event.shooter);
     const range = this.deps.settings.interest.farRange;
-    const bytes = encodeServerMessage({ t: 'event', event });
-    const sent = new Set<number>();
-    const deliver = (id: number) => {
-      if (sent.has(id)) return;
-      const p = this.players.get(id);
-      if (!p) return;
-      const near = (x: number, z: number) => Math.hypot(p.body.x - x, p.body.z - z) <= range;
-      if (!(shooter && near(shooter.body.x, shooter.body.z)) && !near(event.endX, event.endZ))
-        return;
-      sent.add(id);
-      p.connection.send(bytes);
-      this.traffic.bytes += bytes.length;
-      this.traffic.events++;
-    };
-    if (shooter) this.interest.forEachNear(shooter.body.x, shooter.body.z, range, deliver);
-    this.interest.forEachNear(event.endX, event.endZ, range, deliver);
+    this.shotEvent = event;
+    this.shotBytes = encodeServerMessage({ t: 'event', event });
+    this.shotRange = range;
+    this.shotStamp++;
+    if (shooter) this.interest.forEachNear(shooter.body.x, shooter.body.z, range, this.deliverShot);
+    this.interest.forEachNear(event.endX, event.endZ, range, this.deliverShot);
   }
+
+  /** Visitor for {@link broadcastShot}: a field, not a closure, so a shot allocates no function. */
+  private readonly deliverShot = (id: number): void => {
+    const p = this.players.get(id);
+    const event = this.shotEvent;
+    if (!p || !event || p.shotStamp === this.shotStamp) return;
+    const shooter = this.players.get(event.shooter);
+    const range = this.shotRange;
+    const hears = (x: number, z: number) => Math.hypot(p.body.x - x, p.body.z - z) <= range;
+    if (!(shooter && hears(shooter.body.x, shooter.body.z)) && !hears(event.endX, event.endZ))
+      return;
+    p.shotStamp = this.shotStamp;
+    p.connection.send(this.shotBytes);
+    this.traffic.bytes += this.shotBytes.length;
+    this.traffic.events++;
+  };
 
   private broadcast(event: GameEvent, exceptId?: number): void {
     const bytes = encodeServerMessage({ t: 'event', event });
@@ -419,9 +500,13 @@ export class Match {
     }
   }
 
-  private sendTo(player: Player, message: ServerMessage): void {
+  private sendTo(
+    player: Player,
+    message: ServerMessage,
+    counts?: { readonly entities: number; readonly removed: number },
+  ): void {
     // Snapshots go through this client's own encoder: it sends only what changed since the last one.
-    const bytes = encodeServerMessage(message, player.snapshots);
+    const bytes = encodeServerMessage(message, player.snapshots, counts);
     player.connection.send(bytes);
     this.traffic.bytes += bytes.length;
     if (message.t === 'snapshot') this.traffic.snapshots++;
@@ -447,19 +532,6 @@ export function flagsOf(player: Player, isProtected = false): number {
   return flags;
 }
 
-function entityOf(p: Player, isProtected: boolean): EntityState {
-  return {
-    id: p.id,
-    x: p.body.x,
-    y: p.body.y,
-    z: p.body.z,
-    yaw: p.yaw,
-    pitch: p.pitch,
-    flags: flagsOf(p, isProtected),
-    hp: p.hp,
-  };
-}
-
 /** Printable, trimmed, never empty. Names are shown to other players, so no control characters. */
 function cleanName(raw: string, id: number): string {
   const cleaned = [...raw]
@@ -468,4 +540,11 @@ function cleanName(raw: string, id: number): string {
     .trim()
     .slice(0, 20);
   return cleaned.length > 0 ? cleaned : `Player ${id}`;
+}
+
+/** Stable 32-bit hash of a string (FNV-1a), used to seed bullet spread. */
+function hashString(text: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193);
+  return h >>> 0;
 }

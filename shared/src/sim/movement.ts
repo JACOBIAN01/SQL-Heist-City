@@ -105,7 +105,7 @@ export function stepBody(
   const cos = Math.cos(cmd.yaw);
   let wx = my * -sin + mx * cos;
   let wz = my * -cos + mx * -sin;
-  const len = Math.hypot(wx, wz);
+  const len = Math.sqrt(wx * wx + wz * wz);
   if (len > 1) {
     wx /= len;
     wz /= len;

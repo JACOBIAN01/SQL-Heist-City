@@ -172,3 +172,27 @@ describe('SpatialGrid', () => {
     expect(g.size).toBe(1);
   });
 });
+
+describe('SpatialGrid.collectNear', () => {
+  it('writes ids into a reused array and returns how many, without shrinking it', () => {
+    const g = new SpatialGrid(64);
+    g.set(1, 10, 10);
+    g.set(2, 20, 20);
+    g.set(3, 900, 900);
+    const out: number[] = [99, 99, 99, 99];
+    expect(g.collectNear(0, 0, 50, out)).toBe(2);
+    expect(out.slice(0, 2).sort()).toEqual([1, 2]);
+    expect(out).toHaveLength(4); // stale tail is left alone; the count says what is live
+    expect(g.collectNear(0, 0, 5, out)).toBe(2);
+    expect(g.collectNear(2000, 2000, 5, out)).toBe(0);
+  });
+
+  it('handles far-away and negative coordinates with small integer keys', () => {
+    const g = new SpatialGrid(64);
+    g.set(1, -20_000, 15_000);
+    const out: number[] = [];
+    expect(g.collectNear(-20_000, 15_000, 10, out)).toBe(1);
+    g.remove(1);
+    expect(g.collectNear(-20_000, 15_000, 10, out)).toBe(0);
+  });
+});

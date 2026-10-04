@@ -58,3 +58,21 @@ Snapshots carry only what changed for that client: positions as 2 cm int16 (or 3
 | 200 | 11.3 → **4.4** | close; tuning in 6.9 |
 
 (Compared with the original, 41 → 2.7 KB/s at 100 players.) Tick cost is ~1.4 ms at 100: encoding now compares against baselines, and 6.7 removes the allocation overhead.
+
+## Phase 6.7 — object pools, no per-tick garbage
+`load:bots` now reports **garbage per tick** (heap growth around each `Match.step()`, summed) and how many ticks a collection ran in. Baseline before this step: **1,697 KB per tick at 100 players** (5.7 MB at 200), a scavenge every ~17 ticks.
+
+What was allocating, found with V8's sampling heap profiler (`HeapProfiler.startSampling` with collected objects included) and fixed:
+- Snapshot building: per-client entity objects, quantise objects, record lists, `Set`s and message objects → pooled entity objects, one reused message, an encoder that compares plain numbers, updates baselines in place and writes into shared scratch memory (only the output bytes are allocated).
+- Interest selection: object candidates and a `Set` per viewer → insertion into preallocated typed arrays; counts returned instead of `array.length = 0` (which frees the backing store, so the next tick regrew it).
+- Spatial grid: Map keys larger than 2³⁰ were boxed on the heap at every lookup → keys packed into small integers; `for…of` over `Set`s → arrays.
+- Shots: a string-seeded generator, target list, pose objects, result objects, a closure and a `Set` per shot → one reseedable integer generator, pooled targets, caller-owned results, no closures; targets come from the grid instead of scanning every player.
+- Lag history: two objects per player per tick and `Array.shift` → ring buffers in typed arrays.
+- `rayAabb`/`rayCylinder`/`ColliderGrid`: temporary arrays and tuples removed.
+
+| players | garbage KB/tick | ticks with a GC (of 400) | tick mean |
+|---|---|---|---|
+| 100 | 1,697 → **235** | 43 → **12** | 1.43 → **0.65 ms** |
+| 200 | 5,728 → **669** | 52 → **16** | 4.49 → **2.07 ms** |
+
+What is left is mostly the harness's own input objects, one output buffer per client per tick, and short-lived iterators. Message decoding for inputs still allocates (a small array per input message), which is network-driven, not tick-driven.

@@ -43,8 +43,14 @@ export interface BenchResult {
   readonly tickMs: Summary;
   /** Average bytes the server sends to one client per second. */
   readonly bytesPerClientPerSec: number;
-  /** Bytes allocated on the JS heap per tick (rough; GC may hide some). */
-  readonly heapBytesPerTick: number;
+  /**
+   * Heap growth per `Match.step()`, KB (sum of positive heap deltas; a tick where
+   * the heap shrank had a collection and is counted in `gcTicks` instead). A rough
+   * measure of garbage produced per tick: pooled code should be near zero.
+   */
+  readonly allocKbPerTick: number;
+  /** Ticks during which the garbage collector ran. */
+  readonly gcTicks: number;
 }
 
 /**
@@ -101,14 +107,18 @@ export function runHeadlessBench(options: BenchOptions): BenchResult {
 
   const ticks = Math.round(options.seconds * settings.tickRate);
   const durations: number[] = [];
-  const heapBefore = process.memoryUsage().heapUsed;
+  let allocated = 0;
+  let gcTicks = 0;
   for (let t = 0; t < ticks; t++) {
     feed();
+    const heapBefore = process.memoryUsage().heapUsed;
     const started = performance.now();
     match.step();
     durations.push(performance.now() - started);
+    const heapAfter = process.memoryUsage().heapUsed;
+    if (heapAfter >= heapBefore) allocated += heapAfter - heapBefore;
+    else gcTicks++;
   }
-  const heapAfter = process.memoryUsage().heapUsed;
 
   const totalBytes = connections.reduce((s, c) => s + c.bytes, 0);
   return {
@@ -116,6 +126,7 @@ export function runHeadlessBench(options: BenchOptions): BenchResult {
     ticks,
     tickMs: summarise(durations),
     bytesPerClientPerSec: totalBytes / Math.max(1, options.players) / options.seconds,
-    heapBytesPerTick: Math.max(0, heapAfter - heapBefore) / ticks,
+    allocKbPerTick: allocated / ticks / 1024,
+    gcTicks,
   };
 }

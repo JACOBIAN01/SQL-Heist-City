@@ -28,8 +28,10 @@ export class ColliderGrid {
     this.cells = Array.from({ length: this.size * this.size }, () => []);
     this.seen = new Uint32Array(boxes.length);
     boxes.forEach((b, index) => {
-      const [x0, z0] = [this.cellOf(b.minX), this.cellOf(b.minZ)];
-      const [x1, z1] = [this.cellOf(b.maxX), this.cellOf(b.maxZ)];
+      const x0 = this.cellOf(b.minX);
+      const z0 = this.cellOf(b.minZ);
+      const x1 = this.cellOf(b.maxX);
+      const z1 = this.cellOf(b.maxZ);
       for (let cx = x0; cx <= x1; cx++)
         for (let cz = z0; cz <= z1; cz++) this.cells[cx * this.size + cz]?.push(index);
     });
@@ -46,11 +48,16 @@ export class ColliderGrid {
   query(minX: number, minZ: number, maxX: number, maxZ: number, out: Aabb[]): number {
     this.stamp++;
     let n = 0;
-    const [x0, z0] = [this.cellOf(minX), this.cellOf(minZ)];
-    const [x1, z1] = [this.cellOf(maxX), this.cellOf(maxZ)];
+    const x0 = this.cellOf(minX);
+    const z0 = this.cellOf(minZ);
+    const x1 = this.cellOf(maxX);
+    const z1 = this.cellOf(maxZ);
     for (let cx = x0; cx <= x1; cx++) {
       for (let cz = z0; cz <= z1; cz++) {
-        for (const index of this.cells[cx * this.size + cz] ?? []) {
+        const cell = this.cells[cx * this.size + cz];
+        if (!cell) continue;
+        for (let k = 0; k < cell.length; k++) {
+          const index = cell[k] as number;
           if (this.seen[index] === this.stamp) continue;
           this.seen[index] = this.stamp;
           out[n++] = this.boxes[index] as Aabb;
@@ -85,7 +92,9 @@ export class ColliderGrid {
     const tDeltaZ = dz === 0 ? Infinity : this.cellSize / Math.abs(dz);
 
     for (let guard = 0; guard < this.size * 2 + 2; guard++) {
-      for (const index of this.cells[cx * this.size + cz] ?? []) {
+      const cell = this.cells[cx * this.size + cz];
+      for (let k = 0; cell && k < cell.length; k++) {
+        const index = cell[k] as number;
         if (this.seen[index] === this.stamp) continue;
         this.seen[index] = this.stamp;
         const t = rayAabb(ox, oy, oz, dx, dy, dz, this.boxes[index] as Aabb, best ?? maxDist);
