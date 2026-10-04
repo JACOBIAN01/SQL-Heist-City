@@ -20,6 +20,7 @@ export * from './world/variant';
 export * from './config/heist';
 export * from './world/maps';
 export * from './config/city';
+export * from './config/atmosphere';
 export * from './world/bank/banks';
 export * from './world/city/CityLayout';
 export * from './world/city/generateCity';
