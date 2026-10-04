@@ -26,6 +26,12 @@ describe('stepBody: walking', () => {
     expect(-b.z).toBeCloseTo(cfg.walkSpeed * 2, 0);
   });
 
+  it('scales top speed by speedScale', () => {
+    const slow = createBody(0, 0, 0);
+    for (let i = 0; i < 120; i++) stepBody(slow, forward(), SIM_DT, flat, cfg, 0.5);
+    expect(-slow.z).toBeCloseTo(cfg.walkSpeed * 2 * 0.5, 0);
+  });
+
   it('follows yaw: facing left (+π/2) walks toward −x', () => {
     const b = createBody(0, 0, 0);
     run(b, forward({ yaw: Math.PI / 2 }), 60);

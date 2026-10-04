@@ -79,6 +79,8 @@ export function stepBody(
   dt: number,
   map: GameMap,
   cfg: MovementSettings,
+  /** Multiplies top speed: 1 normally, less when carrying cash (docs/gameplay.md). */
+  speedScale = 1,
 ): void {
   colliderGridFor(map).query(
     body.x - NEARBY_RADIUS,
@@ -110,11 +112,12 @@ export function stepBody(
     wx /= len;
     wz /= len;
   }
-  const speed = body.crouching
-    ? cfg.crouchSpeed
-    : hasButton(cmd.buttons, Button.Sprint) && my > 0
-      ? cfg.sprintSpeed
-      : cfg.walkSpeed;
+  const speed =
+    (body.crouching
+      ? cfg.crouchSpeed
+      : hasButton(cmd.buttons, Button.Sprint) && my > 0
+        ? cfg.sprintSpeed
+        : cfg.walkSpeed) * speedScale;
   const accel = (body.onGround ? cfg.groundAccel : cfg.airAccel) * dt;
   body.vx = approach(body.vx, wx * speed, accel);
   body.vz = approach(body.vz, wz * speed, accel);

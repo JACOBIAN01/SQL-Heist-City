@@ -82,7 +82,8 @@ export class Match implements MatchApi {
   private readonly now: () => number;
   private readonly movement: MovementSettings;
   private readonly combat: CombatSettings;
-  private readonly heist: HeistController;
+  /** The heist rules (vaults, loot, tasks); public so tests and tools can drive them. */
+  readonly heist: HeistController;
   /** The map as it stands (open vault doors change it); the base map is `deps.map`. */
   private collisionMap: GameMap;
   private readonly lagComp: LagCompensator;
@@ -153,6 +154,17 @@ export class Match implements MatchApi {
     return this.players.values();
   }
 
+  playersNear(x: number, z: number, radius: number): Player[] {
+    const ids: number[] = [];
+    const found = this.interest.grid.collectNear(x, z, radius, ids);
+    const out: Player[] = [];
+    for (let i = 0; i < found; i++) {
+      const p = this.players.get(ids[i] as number);
+      if (p && Math.hypot(p.body.x - x, p.body.z - z) <= radius) out.push(p);
+    }
+    return out;
+  }
+
   sendJson(player: Player, message: JsonServerMessage): void {
     if (player.isDummy) return;
     this.sendTo(player, { t: 'json', text: JSON.stringify(message) });
@@ -170,11 +182,6 @@ export class Match implements MatchApi {
   teleport(player: Player, x: number, y: number, z: number): void {
     Object.assign(player.body, createBody(x, y, z));
     this.interest.update(player.id, x, z);
-  }
-
-  /** Opens a vault lock (the SQL reward does this); false if it was not the next lock. */
-  openVaultLock(vaultId: string, lock: number): boolean {
-    return this.heist.openLock(vaultId, lock);
   }
 
   /** A JSON frame from a client (SQL tasks, interactions); ignored if the player is gone. */
@@ -279,6 +286,7 @@ export class Match implements MatchApi {
     for (const p of this.players.values()) this.interest.update(p.id, p.body.x, p.body.z);
     for (const player of this.players.values()) this.applyInput(player);
     this.recordHistory();
+    this.heist.onTick();
     this.sendSnapshots();
   }
 
@@ -299,7 +307,7 @@ export class Match implements MatchApi {
     for (let i = 0; i < budget; i++) {
       const command = player.queue.shift();
       if (!command) break;
-      stepBody(player.body, command, SIM_DT, this.collisionMap, this.movement);
+      stepBody(player.body, command, SIM_DT, this.collisionMap, this.movement, player.speedScale);
       player.yaw = command.yaw;
       player.pitch = command.pitch;
       player.lastAppliedSeq = command.seq;
@@ -418,7 +426,8 @@ export class Match implements MatchApi {
     }
   }
 
-  private damage(victim: Player, amount: number, attacker: Player): void {
+  /** Applies damage and handles a kill; public for tests and for rules that hurt players (none yet). */
+  damage(victim: Player, amount: number, attacker: Player): void {
     if (!victim.alive || this.isProtected(victim)) return;
     victim.hp = Math.max(0, victim.hp - Math.round(amount));
     if (victim.hp > 0) return;
@@ -426,6 +435,7 @@ export class Match implements MatchApi {
     victim.deaths++;
     attacker.kills++;
     victim.respawnAtTick = this.tick + this.ticksFor(this.combat.respawnDelaySec);
+    this.heist.onDeath(victim);
     this.broadcastQueued({ e: 'kill', killer: attacker.id, victim: victim.id });
   }
 
@@ -618,6 +628,7 @@ export function flagsOf(player: Player, isProtected = false): number {
   if (player.body.crouching) flags |= Flag.Crouching;
   if (player.body.onGround) flags |= Flag.OnGround;
   if (player.alive) flags |= Flag.Alive;
+  if (player.cash > 0) flags |= Flag.Carrying;
   return flags;
 }
 

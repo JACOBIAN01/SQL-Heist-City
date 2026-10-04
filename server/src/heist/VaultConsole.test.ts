@@ -62,13 +62,13 @@ describe('vault console', () => {
 
   it('offers the next lock after one is opened, for anyone', () => {
     const s = setup();
-    s.match.openVaultLock('bank-1:vault', 1);
+    s.match.heist.openLock('bank-1:vault', 1);
     expect(s.useConsole()?.result).toMatchObject({ rewardKey: 'vault:bank-1:lock-2' });
   });
 
   it('refuses once the vault is open', () => {
     const s = setup(1);
-    s.match.openVaultLock('bank-1:vault', 1);
+    s.match.heist.openLock('bank-1:vault', 1);
     expect(s.useConsole()?.result).toEqual({ action: 'denied', reason: 'not_available' });
   });
 });
@@ -84,16 +84,16 @@ describe('vault state', () => {
   it('tells everyone when a lock opens', () => {
     const s = setup();
     s.connection.clear();
-    s.match.openVaultLock('bank-1:vault', 1);
+    s.match.heist.openLock('bank-1:vault', 1);
     expect(s.connection.jsonOf('vaults')[0]?.vaults[0]?.opened).toBe(1);
   });
 
   it('ignores a lock that is not next, or that is already open', () => {
     const s = setup();
-    expect(s.match.openVaultLock('bank-1:vault', 2)).toBe(false);
-    expect(s.match.openVaultLock('bank-1:vault', 1)).toBe(true);
-    expect(s.match.openVaultLock('bank-1:vault', 1)).toBe(false);
-    expect(s.match.openVaultLock('nowhere', 1)).toBe(false);
+    expect(s.match.heist.openLock('bank-1:vault', 2)).toBe(false);
+    expect(s.match.heist.openLock('bank-1:vault', 1)).toBe(true);
+    expect(s.match.heist.openLock('bank-1:vault', 1)).toBe(false);
+    expect(s.match.heist.openLock('nowhere', 1)).toBe(false);
   });
 
   it('blocks the doorway until the last lock opens', () => {
@@ -102,14 +102,14 @@ describe('vault state', () => {
     expect(closed.player.body.x).toBeLessThan(3.8);
 
     const opened = setup(1);
-    opened.match.openVaultLock('bank-1:vault', 1);
+    opened.match.heist.openLock('bank-1:vault', 1);
     opened.walkEast(30);
     expect(opened.player.body.x).toBeGreaterThan(6);
   });
 
   it('keeps a partly opened vault shut', () => {
     const s = setup(3);
-    s.match.openVaultLock('bank-1:vault', 1);
+    s.match.heist.openLock('bank-1:vault', 1);
     s.walkEast(30);
     expect(s.player.body.x).toBeLessThan(3.8);
   });

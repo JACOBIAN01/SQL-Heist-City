@@ -1,5 +1,7 @@
 import {
+  ANCHOR_REACH_Y,
   DEFAULT_HEIST_SETTINGS,
+  carrySpeedScale,
   jsonClientMessageSchema,
   mapWithClosedDoors,
   type ChallengeServerMessage,
@@ -9,10 +11,12 @@ import {
 } from '@heist/shared';
 import type { Player } from '../game/Player';
 import type { ChallengeGateway } from './ChallengeGateway';
+import { LootManager } from './LootManager';
 import { ElevatorHandler } from './ElevatorHandler';
 import { InteractionService } from './InteractionService';
 import { TaskRules } from './TaskRule';
 import { VaultConsoleHandler } from './VaultConsoleHandler';
+import type { Vault } from './Vault';
 import { VaultLockRule } from './VaultLockRule';
 import { VaultRegistry } from './VaultRegistry';
 import type { MatchApi } from './MatchApi';
@@ -28,6 +32,7 @@ export class HeistController {
   readonly vaults: VaultRegistry;
 
   readonly tasks = new TaskRules();
+  readonly loot = new LootManager();
 
   constructor(
     private readonly match: MatchApi,
@@ -53,6 +58,42 @@ export class HeistController {
   /** A player just joined: tell them where every vault stands. */
   onJoin(player: Player): void {
     this.match.sendJson(player, { t: 'vaults', vaults: this.vaults.views() });
+    this.match.sendJson(player, { t: 'loot', add: this.loot.all(), remove: [] });
+    this.sendPurse(player);
+  }
+
+  /** Every tick: players walking over a bag pick it up. */
+  onTick(): void {
+    if (this.loot.count === 0) return;
+    const reach = this.settings.bagPickupRadius;
+    for (const bag of this.loot.all()) {
+      const taker = this.match
+        .playersNear(bag.x, bag.z, reach)
+        .find((p) => p.alive && Math.abs(p.body.y - bag.y) <= ANCHOR_REACH_Y);
+      if (!taker) continue;
+      this.loot.remove(bag.id);
+      this.setCash(taker, taker.cash + bag.amount);
+      this.match.broadcastJson({ t: 'loot', add: [], remove: [bag.id] });
+    }
+  }
+
+  /** A player died: what they carried drops where they fell. */
+  onDeath(victim: Player): void {
+    if (victim.cash <= 0) return;
+    const bag = this.loot.add(victim.body.x, victim.body.y, victim.body.z, victim.cash);
+    this.setCash(victim, 0);
+    this.match.broadcastJson({ t: 'loot', add: [bag], remove: [] });
+  }
+
+  /** The one place cash changes: keeps the speed penalty and the player's purse display in step. */
+  setCash(player: Player, cash: number): void {
+    player.cash = Math.max(0, Math.floor(cash));
+    player.speedScale = carrySpeedScale(player.cash, this.settings);
+    this.sendPurse(player);
+  }
+
+  private sendPurse(player: Player): void {
+    this.match.sendJson(player, { t: 'purse', carried: player.cash, banked: player.banked });
   }
 
   /**
@@ -64,7 +105,19 @@ export class HeistController {
     if (!vault || vault.openLock(lock) !== 'opened') return false;
     this.refreshDoors();
     this.match.broadcastJson({ t: 'vaults', vaults: this.vaults.views() });
+    if (vault.isOpen) this.spillLoot(vault);
     return true;
+  }
+
+  /** The last lock fell: the vault's cash lies in bags at its loot spots. */
+  private spillLoot(vault: Vault): void {
+    const spots = vault.spec.loot;
+    const total = this.settings.vaultLootByTier[String(vault.spec.tier)] ?? 0;
+    const bags = LootManager.split(total, spots.length).flatMap((amount, i) => {
+      const spot = spots[i];
+      return spot && amount > 0 ? [this.loot.add(spot.x, spot.y, spot.z, amount)] : [];
+    });
+    if (bags.length > 0) this.match.broadcastJson({ t: 'loot', add: bags, remove: [] });
   }
 
   private refreshDoors(): void {
@@ -97,6 +150,7 @@ export class HeistController {
   /** A player left: their challenge state goes with them. */
   onLeave(player: Player): void {
     this.challenges?.playerLeft(player.key);
+    this.onDeath(player); // cash does not vanish with a disconnect
   }
 
   /**
@@ -120,6 +174,8 @@ export class HeistController {
     void this.challenges
       .handle(player.key, raw)
       .then((reply) => {
+        if (reply.t === 'challenge_hint' && reply.result.ok && reply.result.hint.charged)
+          this.chargeHint(player, reply.result.hint.cost, reply.result.hint.costMode);
         if (reply.t === 'challenge_result' && reply.result.status === 'correct')
           this.tasks
             .find(reply.result.rewardKey)
@@ -127,6 +183,12 @@ export class HeistController {
         this.reply(player, reply);
       })
       .catch(() => this.reply(player, this.refuse(message.ref, 'unavailable')));
+  }
+
+  /** A hint costs carried cash (a fraction of it, or a fixed amount); never more than the player has. */
+  private chargeHint(player: Player, cost: number, mode: 'fraction' | 'absolute'): void {
+    const price = mode === 'fraction' ? Math.round(player.cash * cost) : Math.round(cost);
+    if (price > 0) this.setCash(player, player.cash - Math.min(price, player.cash));
   }
 
   private refuse(ref: number, reason: RejectReason): ChallengeServerMessage {

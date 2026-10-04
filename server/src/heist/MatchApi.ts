@@ -12,6 +12,8 @@ export interface MatchApi {
   readonly map: GameMap;
   getPlayer(id: number): Player | undefined;
   playerList(): Iterable<Player>;
+  /** Players within `radius` metres of a point on the ground plane (alive or not). */
+  playersNear(x: number, z: number, radius: number): Player[];
   /** One JSON message to one player. */
   sendJson(player: Player, message: JsonServerMessage): void;
   /** Same message to every player. */

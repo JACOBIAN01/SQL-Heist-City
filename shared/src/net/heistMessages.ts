@@ -51,12 +51,36 @@ export interface VaultsMessage {
   readonly vaults: readonly VaultView[];
 }
 
+/** A cash bag lying in the world. */
+export interface BagView {
+  readonly id: number;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly amount: number;
+}
+
+/** Bags that appeared or vanished. The full list (all in `add`) goes to a player who joins. */
+export interface LootMessage {
+  readonly t: 'loot';
+  readonly add: readonly BagView[];
+  readonly remove: readonly number[];
+}
+
+/** The receiving player's own purse; sent when it changes. */
+export interface PurseMessage {
+  readonly t: 'purse';
+  readonly carried: number;
+  readonly banked: number;
+}
+
 /** A short message for the player ("Someone beat you to the lock"). */
 export interface NoticeMessage {
   readonly t: 'notice';
   readonly text: string;
 }
 
-export type HeistServerMessage = InteractReply | VaultsMessage | NoticeMessage;
+export type HeistServerMessage =
+  InteractReply | VaultsMessage | LootMessage | PurseMessage | NoticeMessage;
 
 export type JsonServerMessage = ChallengeServerMessage | HeistServerMessage;

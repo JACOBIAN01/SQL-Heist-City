@@ -82,7 +82,7 @@ describe('cracking a vault lock end to end', () => {
     const vaults = connection.jsonOf('vaults').at(-1)?.vaults[0];
     expect(vaults).toMatchObject({ opened: 1, locks: 1 });
     // The door no longer blocks: the match's collision map has no vault door left.
-    expect(match.openVaultLock('bank-1:vault', 1)).toBe(false);
+    expect(match.heist.openLock('bank-1:vault', 1)).toBe(false);
   });
 
   it('does not open the vault for a wrong answer', async () => {

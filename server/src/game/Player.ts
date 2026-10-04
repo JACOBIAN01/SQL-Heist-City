@@ -52,6 +52,12 @@ export class Player {
   shotStamp = 0;
   /** Earliest tick this player may use an anchor again. */
   interactReadyTick = 0;
+  /** Cash on the player: dropped as a bag on death, banked at a safehouse. */
+  cash = 0;
+  /** Cash that is safe; what the round is won on. */
+  banked = 0;
+  /** Top-speed multiplier from the cash carried; kept here so the tick does not recompute it. */
+  speedScale = 1;
   kills = 0;
   deaths = 0;
   /** Last input sequence number applied; echoed in snapshots so the client can reconcile. */

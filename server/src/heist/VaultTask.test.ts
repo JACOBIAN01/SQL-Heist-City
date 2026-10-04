@@ -165,7 +165,7 @@ describe('vault lock tasks', () => {
     g.answer = (raw) => correct(raw.ref, 1);
     a.send({ t: 'challenge_submit', ref: 1, challengeId: 'c1', sql: 'x' });
     await settle();
-    expect(match.openVaultLock('bank-1:vault', 1)).toBe(false); // already open
+    expect(match.heist.openLock('bank-1:vault', 1)).toBe(false); // already open
     expect(a.connection.jsonOf('vaults').at(-1)?.vaults[0]).toMatchObject({ opened: 1, locks: 1 });
   });
 
@@ -173,7 +173,7 @@ describe('vault lock tasks', () => {
     const g = new ScriptedGateway();
     const { join, settle, match } = setup(g);
     const a = join('A');
-    match.openVaultLock('bank-1:vault', 1); // somebody else got there first
+    match.heist.openLock('bank-1:vault', 1); // somebody else got there first
     g.answer = (raw) => correct(raw.ref, 1);
     a.send({ t: 'challenge_submit', ref: 1, challengeId: 'c1', sql: 'x' });
     await settle();

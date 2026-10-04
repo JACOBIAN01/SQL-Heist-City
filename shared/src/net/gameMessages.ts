@@ -61,6 +61,8 @@ export const Flag = {
   Firing: 8,
   /** Spawn protection: cannot be hurt. */
   Protected: 16,
+  /** Carrying cash: others see a bag on the back. */
+  Carrying: 32,
 } as const;
 
 /** The receiving player's own full state: enough to rewind and replay prediction. */
