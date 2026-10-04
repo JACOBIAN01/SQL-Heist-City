@@ -4,7 +4,7 @@ import {
   PROTOCOL_VERSION,
   SIM_DT,
   SnapshotDecoder,
-  decodeServerMessage,
+  decodeServerMessages,
   encodeClientMessage,
   quantiseYaw,
   type InputCommand,
@@ -27,7 +27,8 @@ for (let n = 0; n < count; n++) {
     ws.send(encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: `Bot ${n + 1}` })),
   );
   ws.on('message', (data: Buffer) => {
-    if (decodeServerMessage(new Uint8Array(data), snapshots).t !== 'welcome') return;
+    if (!decodeServerMessages(new Uint8Array(data), snapshots).some((m) => m.t === 'welcome'))
+      return;
     console.log(`bot ${n + 1} joined`);
     setInterval(
       () => {

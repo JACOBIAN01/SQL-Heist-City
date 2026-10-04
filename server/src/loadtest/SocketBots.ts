@@ -4,7 +4,8 @@ import {
   SIM_DT,
   SeededRng,
   SnapshotDecoder,
-  decodeServerMessage,
+  decodeServerMessages,
+  type ServerMessage,
   encodeClientMessage,
   seedOf,
   type InputCommand,
@@ -62,7 +63,10 @@ export async function runSocketBots(options: SocketBotOptions): Promise<SocketBo
       );
       ws.on('message', (data: Buffer) => {
         if (measuring) bytes += data.length;
-        const message = decodeServerMessage(new Uint8Array(data), snapshotState);
+        for (const message of decodeServerMessages(new Uint8Array(data), snapshotState))
+          handle(message);
+      });
+      const handle = (message: ServerMessage) => {
         if (message.t === 'welcome') {
           joined++;
           measuring = true;
@@ -89,7 +93,7 @@ export async function runSocketBots(options: SocketBotOptions): Promise<SocketBo
         } else if (message.t === 'pong') {
           rtts.push(performance.now() - message.clientTime);
         }
-      });
+      };
       ws.on('close', () => {
         if (!measuring) failed++;
         resolve();

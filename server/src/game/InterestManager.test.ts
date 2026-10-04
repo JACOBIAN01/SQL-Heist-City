@@ -27,7 +27,7 @@ describe('InterestManager', () => {
     const { place, pick } = setup();
     place(2, 30, 0); // near
     place(3, 100, 0); // mid
-    place(4, 200, 0); // far
+    place(4, 180, 0); // far
     place(5, 400, 0); // out of range
     const seen = Array.from({ length: 8 }, (_, t) => pick(t + 1));
     expect(seen.filter((s) => s.includes(2))).toHaveLength(8);
@@ -45,22 +45,22 @@ describe('InterestManager', () => {
 
   it('sends a newcomer straight away, whatever the tick phase', () => {
     const { place, pick } = setup();
-    place(4, 200, 0);
+    place(4, 180, 0);
     expect(pick(1)).toEqual([4]);
     expect(pick(2)).toEqual([]);
-    place(6, 210, 0);
+    place(6, 190, 0);
     expect(pick(3)).toEqual([6]); // new on a "quiet" tick
   });
 
   it('forgets players who leave range, and re-sends them at once if they return', () => {
     const { place, pick, viewer, removed } = setup();
-    place(4, 200, 0);
+    place(4, 180, 0);
     expect(pick(1)).toEqual([4]);
     place(4, 600, 0);
     expect(pick(2)).toEqual([]);
     expect(removed()).toEqual([4]); // the client is told to forget them
     expect(viewer.lastSent.has(4)).toBe(false);
-    place(4, 200, 0);
+    place(4, 180, 0);
     expect(pick(3)).toEqual([4]);
   });
 

@@ -442,7 +442,7 @@ describe('Interest management in a match', () => {
     const { match, spawn } = arena(wide);
     const a = spawn('A', 0, 0);
     const near = spawn('Near', 30, 0);
-    const far = spawn('Far', 200, 0);
+    const far = spawn('Far', 180, 0);
     const gone = spawn('Gone', 450, 0);
     const counts = { near: 0, far: 0, gone: 0 };
     for (let t = 0; t < 8; t++) {
@@ -481,5 +481,34 @@ describe('Interest management in a match', () => {
     match.receiveInput(a.player.id, [fire()]);
     match.step();
     expect(kills(faraway.connection)).toHaveLength(1);
+  });
+});
+
+describe('Events ride with the snapshot', () => {
+  it('sends a tick’s shots and kills in the same frame as the snapshot: one send per client per tick', () => {
+    const { match, spawn } = arena();
+    const a = spawn('A', 0, 0);
+    const b = spawn('B', 0.55, -10);
+    b.player.protectedUntilTick = 0;
+    b.player.hp = 1;
+    match.receiveInput(a.player.id, [fire()]);
+    a.connection.clear();
+    b.connection.clear();
+    const before = { a: a.connection.frames, b: b.connection.frames };
+    match.step();
+    expect(a.connection.frames - before.a).toBe(1);
+    expect(b.connection.frames - before.b).toBe(1);
+    expect(shots(a.connection)).toHaveLength(1);
+    expect(kills(b.connection)).toHaveLength(1);
+    expect(a.connection.of('snapshot')).toHaveLength(1);
+  });
+
+  it('delivers nothing extra when no events happened', () => {
+    const { match, spawn } = arena();
+    const a = spawn('A', 0, 0);
+    const before = a.connection.frames;
+    match.step();
+    match.step();
+    expect(a.connection.frames - before).toBe(2);
   });
 });

@@ -4,7 +4,7 @@ import {
   DEFAULT_MATCH_SETTINGS,
   PROTOCOL_VERSION,
   SnapshotDecoder,
-  decodeServerMessage,
+  decodeServerMessages,
   encodeClientMessage,
   type ServerMessage,
 } from '@heist/shared';
@@ -27,7 +27,7 @@ function join(port: number) {
     ws.send(encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: 'T' })),
   );
   ws.on('message', (data: Buffer) =>
-    messages.push(decodeServerMessage(new Uint8Array(data), decoder)),
+    messages.push(...decodeServerMessages(new Uint8Array(data), decoder)),
   );
   return { ws, messages };
 }

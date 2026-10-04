@@ -6,13 +6,13 @@ export const interestSettingsSchema = z.object({
   /** Within this distance (m) a player is sent every tick (20 Hz). */
   nearRange: z.number().positive().default(60),
   /** Within this, every `midEvery` ticks (10 Hz by default). */
-  midRange: z.number().positive().default(150),
+  midRange: z.number().positive().default(120),
   /** Within this, every `farEvery` ticks (5 Hz); beyond it a player is not sent at all. */
-  farRange: z.number().positive().default(250),
+  farRange: z.number().positive().default(200),
   midEvery: z.number().int().min(1).default(2),
   farEvery: z.number().int().min(1).default(4),
   /** Hard cap on other players per snapshot; the nearest win. */
-  maxEntities: z.number().int().min(1).default(40),
+  maxEntities: z.number().int().min(1).default(30),
 });
 
 export type InterestSettings = z.infer<typeof interestSettingsSchema>;

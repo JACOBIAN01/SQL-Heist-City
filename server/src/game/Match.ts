@@ -10,6 +10,7 @@ import {
   newShotResult,
   bodyHeight,
   createBody,
+  encodeBundle,
   encodeServerMessage,
   hasButton,
   resolveShotInto,
@@ -93,6 +94,7 @@ export class Match {
   private shotEvent: Extract<GameEvent, { e: 'shot' }> | undefined;
   private shotBytes: Uint8Array = new Uint8Array(0);
   private shotStamp = 0;
+  private readonly bundleParts: Uint8Array[] = [];
   private shotTargetCount = 0;
   private shotRange = 0;
 
@@ -361,7 +363,7 @@ export class Match {
     victim.deaths++;
     attacker.kills++;
     victim.respawnAtTick = this.tick + this.ticksFor(this.combat.respawnDelaySec);
-    this.broadcast({ e: 'kill', killer: attacker.id, victim: victim.id });
+    this.broadcastQueued({ e: 'kill', killer: attacker.id, victim: victim.id });
   }
 
   private respawnDue(): void {
@@ -485,10 +487,21 @@ export class Match {
     if (!(shooter && hears(shooter.body.x, shooter.body.z)) && !hears(event.endX, event.endZ))
       return;
     p.shotStamp = this.shotStamp;
-    p.connection.send(this.shotBytes);
-    this.traffic.bytes += this.shotBytes.length;
-    this.traffic.events++;
+    this.queueEvent(p, this.shotBytes);
   };
+
+  /** Holds an encoded event until this player's next snapshot (dummies have no client to tell). */
+  private queueEvent(player: Player, bytes: Uint8Array): void {
+    // At most 200 per tick: a bundle holds up to 255 parts, one of which is the snapshot.
+    if (player.isDummy || player.pendingCount >= 200) return;
+    player.pendingEvents[player.pendingCount++] = bytes;
+  }
+
+  /** Like {@link broadcast} but delivered with each player's next snapshot instead of at once. */
+  private broadcastQueued(event: GameEvent): void {
+    const bytes = encodeServerMessage({ t: 'event', event });
+    for (const p of this.players.values()) this.queueEvent(p, bytes);
+  }
 
   private broadcast(event: GameEvent, exceptId?: number): void {
     const bytes = encodeServerMessage({ t: 'event', event });
@@ -506,11 +519,24 @@ export class Match {
     counts?: { readonly entities: number; readonly removed: number },
   ): void {
     // Snapshots go through this client's own encoder: it sends only what changed since the last one.
-    const bytes = encodeServerMessage(message, player.snapshots, counts);
+    let bytes = encodeServerMessage(message, player.snapshots, counts);
+    if (message.t === 'snapshot') {
+      this.traffic.snapshots++;
+      if (player.pendingCount > 0) {
+        // Shots and kills since the last snapshot ride in the same frame: one send per client per tick.
+        const parts = this.bundleParts;
+        parts[0] = bytes;
+        for (let i = 0; i < player.pendingCount; i++)
+          parts[i + 1] = player.pendingEvents[i] as Uint8Array;
+        this.traffic.events += player.pendingCount;
+        bytes = encodeBundle(parts, player.pendingCount + 1);
+        player.pendingCount = 0;
+      }
+    } else {
+      this.traffic.events++;
+    }
     player.connection.send(bytes);
     this.traffic.bytes += bytes.length;
-    if (message.t === 'snapshot') this.traffic.snapshots++;
-    else this.traffic.events++;
   }
 
   private allocateId(): number {

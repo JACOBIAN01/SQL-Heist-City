@@ -2,10 +2,11 @@ import {
   CodecError,
   PROTOCOL_VERSION,
   SnapshotDecoder,
-  decodeServerMessage,
+  decodeServerMessages,
   encodeClientMessage,
   type GameEvent,
   type InputCommand,
+  type ServerMessage,
   type SnapshotMessage,
   type WelcomeMessage,
 } from '@heist/shared';
@@ -79,15 +80,20 @@ export class GameClient {
   }
 
   private handleMessage(bytes: Uint8Array): void {
-    let message;
+    let messages;
     try {
-      message = decodeServerMessage(bytes, this.snapshots);
+      // One frame can carry a snapshot plus the shots and kills of that tick.
+      messages = decodeServerMessages(bytes, this.snapshots);
     } catch (error) {
       if (!(error instanceof CodecError)) throw error;
       this.transport.close();
       this.handleClose('bad data from server');
       return;
     }
+    for (const message of messages) this.dispatch(message);
+  }
+
+  private dispatch(message: ServerMessage): void {
     switch (message.t) {
       case 'welcome':
         this.playerId = message.playerId;

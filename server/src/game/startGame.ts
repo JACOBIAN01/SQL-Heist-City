@@ -1,5 +1,5 @@
 import type { Server } from 'node:http';
-import { DEFAULT_MATCH_SETTINGS, TEST_MAP, type MatchSettings } from '@heist/shared';
+import { DEFAULT_MATCH_SETTINGS, TEST_MAP, type GameMap, type MatchSettings } from '@heist/shared';
 import { GameLoop } from './GameLoop';
 import { attachGameSocket, type GameSocket } from './GameSocket';
 import { Match } from './Match';
@@ -32,9 +32,10 @@ export interface RunningGame {
 export function startGame(
   http: Server,
   settings: MatchSettings = DEFAULT_MATCH_SETTINGS,
+  map: GameMap = TEST_MAP,
 ): RunningGame {
-  const match = new Match({ map: TEST_MAP, settings });
-  (TEST_MAP.dummies ?? [])
+  const match = new Match({ map, settings });
+  (map.dummies ?? [])
     .slice(0, settings.sandboxDummies)
     .forEach((spot, i) => match.addDummy(`Dummy ${i + 1}`, spot));
   const loop = new GameLoop(1000 / settings.tickRate, () => match.step());

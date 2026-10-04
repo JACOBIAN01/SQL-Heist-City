@@ -1,15 +1,18 @@
-import { SnapshotDecoder, decodeServerMessage, type ServerMessage } from '@heist/shared';
+import { SnapshotDecoder, decodeServerMessages, type ServerMessage } from '@heist/shared';
 import type { PlayerConnection } from './Player';
 
 /** Records what the server sent, decoded, so tests assert on messages not bytes. */
 export class FakeConnection implements PlayerConnection {
   readonly sent: ServerMessage[] = [];
+  /** How many WebSocket frames (send calls) the server used. */
+  frames = 0;
   closed: { code: number; reason: string } | undefined;
   /** Like a real client: snapshots are deltas against what it has received so far. */
   private readonly snapshots = new SnapshotDecoder();
 
   send(bytes: Uint8Array): void {
-    this.sent.push(decodeServerMessage(bytes, this.snapshots));
+    this.frames++;
+    this.sent.push(...decodeServerMessages(bytes, this.snapshots));
   }
 
   close(code: number, reason: string): void {

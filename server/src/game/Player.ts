@@ -40,6 +40,9 @@ export class Player {
   readonly snapshots = new SnapshotEncoder();
   /** Tick at which each other player was last sent to this client (area-of-interest bookkeeping). */
   readonly lastSent = new Map<number, SentInfo>();
+  /** Encoded events waiting to ride along with the next snapshot (one WebSocket send per tick). */
+  readonly pendingEvents: Uint8Array[] = [];
+  pendingCount = 0;
   /** Marks "already got this shot" while a shot event is delivered. */
   shotStamp = 0;
   kills = 0;

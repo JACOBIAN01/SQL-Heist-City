@@ -5,6 +5,7 @@ import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
 import { DEFAULT_MATCH_SETTINGS } from '@heist/shared';
 import { MatchPool } from './game/MatchPool';
+import { mapByName, type MapName } from './game/maps';
 import { startGame, type RunningGame } from './game/startGame';
 import { createHttpServer } from './http/httpServer';
 
@@ -24,12 +25,19 @@ if (existsSync(dbPath)) {
 }
 
 // The HTTP server is created first (the game attaches to it), so metrics look the game up lazily.
+// Load tests: MATCH_MAX_PLAYERS=200, MATCH_DUMMIES=0, MATCH_MAP=bench (a 640 m city-sized map).
+const mapName: MapName = process.env.MATCH_MAP === 'bench' ? 'bench' : 'sandbox';
+const matchSettings = {
+  ...DEFAULT_MATCH_SETTINGS,
+  maxPlayers: Number(process.env.MATCH_MAX_PLAYERS ?? DEFAULT_MATCH_SETTINGS.maxPlayers),
+  sandboxDummies: Number(process.env.MATCH_DUMMIES ?? DEFAULT_MATCH_SETTINGS.sandboxDummies),
+};
 const running: { game?: RunningGame; pool?: MatchPool } = {};
 const lobby = () => {
   if (running.pool) return { matches: running.pool.list(), open: running.pool.openMatch() };
   // One in-process match on this server's own port.
   const players = running.game?.metrics().players ?? 0;
-  const max = DEFAULT_MATCH_SETTINGS.maxPlayers;
+  const max = matchSettings.maxPlayers;
   const only = { id: 0, port, players, maxPlayers: max };
   return { matches: [only], open: players < max ? only : undefined };
 };
@@ -51,11 +59,11 @@ const workers = Number(process.env.MATCH_WORKERS ?? 0);
 if (workers > 0) {
   running.pool = new MatchPool();
   for (let i = 0; i < workers; i++) {
-    const info = await running.pool.start(DEFAULT_MATCH_SETTINGS);
+    const info = await running.pool.start(matchSettings, 0, mapName);
     console.log(`match ${info.id} listening on ws://localhost:${info.port}/ws/game`);
   }
 } else {
-  running.game = startGame(server);
+  running.game = startGame(server, matchSettings, mapByName(mapName));
 }
 
 server.listen(port, () => {

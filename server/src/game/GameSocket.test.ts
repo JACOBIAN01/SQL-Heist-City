@@ -10,7 +10,7 @@ import {
   PROTOCOL_VERSION,
   TEST_MAP,
   SnapshotDecoder,
-  decodeServerMessage,
+  decodeServerMessages,
   encodeClientMessage,
   type ServerMessage,
 } from '@heist/shared';
@@ -45,7 +45,7 @@ async function connect() {
   const waiters: (() => void)[] = [];
   ws.on('message', (data: Buffer, isBinary: boolean) => {
     if (!isBinary) return;
-    messages.push(decodeServerMessage(new Uint8Array(data), snapshotState));
+    messages.push(...decodeServerMessages(new Uint8Array(data), snapshotState));
     for (const w of waiters.splice(0)) w();
   });
   const closed = new Promise<number>((resolve) => ws.on('close', (code) => resolve(code)));

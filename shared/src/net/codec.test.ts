@@ -4,10 +4,13 @@ import {
   CodecError,
   decodeClientMessage,
   decodeServerMessage,
+  decodeServerMessages,
+  encodeBundle,
   encodeClientMessage,
   encodeServerMessage,
 } from './codec';
 import { Flag, type GameEvent, type ServerMessage } from './gameMessages';
+import { SnapshotDecoder, SnapshotEncoder } from './snapshotCodec';
 
 const command = (seq: number, over = {}) => ({
   seq,
@@ -188,5 +191,57 @@ describe('server messages', () => {
   it('round-trips pong', () => {
     const m: ServerMessage = { t: 'pong', clientTime: 99.5, tick: 7 };
     expect(decodeServerMessage(encodeServerMessage(m))).toEqual(m);
+  });
+});
+
+describe('bundles', () => {
+  const welcome = { t: 'welcome', playerId: 1, tick: 5, tickRate: 20, mapId: 'm' } as const;
+  const kill = { t: 'event', event: { e: 'kill', killer: 1, victim: 2 } } as const;
+
+  it('carries several messages in one frame and decodes them in order', () => {
+    const frame = encodeBundle([encodeServerMessage(welcome), encodeServerMessage(kill)]);
+    expect(decodeServerMessages(frame)).toEqual([welcome, kill]);
+  });
+
+  it('passes a plain single message through as a list of one', () => {
+    expect(decodeServerMessages(encodeServerMessage(kill))).toEqual([kill]);
+  });
+
+  it('can use only the first `count` parts of a longer reusable array', () => {
+    const parts = [
+      encodeServerMessage(welcome),
+      encodeServerMessage(kill),
+      encodeServerMessage(kill),
+    ];
+    expect(decodeServerMessages(encodeBundle(parts, 2))).toEqual([welcome, kill]);
+  });
+
+  it('rejects a bundle whose part lengths lie, or that has trailing bytes', () => {
+    const frame = encodeBundle([encodeServerMessage(kill)]);
+    new DataView(frame.buffer).setUint16(2, 500, true);
+    expect(() => decodeServerMessages(frame)).toThrow(CodecError);
+    const padded = new Uint8Array([...encodeBundle([encodeServerMessage(kill)]), 9]);
+    expect(() => decodeServerMessages(padded)).toThrow(CodecError);
+  });
+
+  it('keeps snapshot baselines consistent when a snapshot arrives inside a bundle', () => {
+    const encoder = new SnapshotEncoder();
+    const decoder = new SnapshotDecoder();
+    const snap = (x: number): ServerMessage => ({
+      t: 'snapshot',
+      tick: 1,
+      ackSeq: 1,
+      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 4, hp: 100 },
+      entities: [{ id: 2, x, y: 0, z: 0, yaw: 0, pitch: 0, flags: 6, hp: 100 }],
+      removed: [],
+    });
+    const first = decodeServerMessages(
+      encodeBundle([encodeServerMessage(snap(10), encoder), encodeServerMessage(kill)]),
+      decoder,
+    );
+    expect(first[0]?.t).toBe('snapshot');
+    // The next snapshot is a delta against the first: it only decodes if the baseline survived the bundle.
+    const second = decodeServerMessages(encodeServerMessage(snap(10.2), encoder), decoder);
+    expect(second[0]?.t === 'snapshot' && second[0].entities[0]?.x).toBeCloseTo(10.2, 1);
   });
 });

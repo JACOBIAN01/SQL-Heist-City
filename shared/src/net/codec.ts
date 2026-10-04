@@ -29,6 +29,7 @@ const enum ServerType {
   Snapshot = 0x82,
   Event = 0x83,
   Pong = 0x84,
+  Bundle = 0x85,
 }
 const enum EventType {
   Shot = 1,
@@ -184,6 +185,52 @@ export function encodeServerMessage(
     case 'pong':
       return new Writer(13).u8(ServerType.Pong).f64(message.clientTime).u32(message.tick).bytes;
   }
+}
+
+/**
+ * Several server messages in one WebSocket frame: a snapshot plus the shots and
+ * kills that happened this tick. One send per client per tick instead of one per
+ * event matters because each send is a system call (see docs/performance.md).
+ * Layout: type u8, count u8, then per part: length u16 + the part's own bytes.
+ */
+export function encodeBundle(parts: readonly Uint8Array[], count = parts.length): Uint8Array {
+  let size = 2;
+  for (let i = 0; i < count; i++) size += 2 + (parts[i] as Uint8Array).length;
+  const out = new Uint8Array(size);
+  const view = new DataView(out.buffer);
+  out[0] = ServerType.Bundle;
+  out[1] = count;
+  let at = 2;
+  for (let i = 0; i < count; i++) {
+    const part = parts[i] as Uint8Array;
+    view.setUint16(at, part.length, true);
+    out.set(part, at + 2);
+    at += 2 + part.length;
+  }
+  return out;
+}
+
+/** Decodes a frame that may be a single message or a bundle; always returns a list. */
+export function decodeServerMessages(
+  bytes: Uint8Array,
+  snapshots?: SnapshotDecoder,
+): ServerMessage[] {
+  if (bytes[0] !== ServerType.Bundle) return [decodeServerMessage(bytes, snapshots)];
+  const r = new Reader(bytes);
+  r.u8();
+  const count = r.u8();
+  const messages: ServerMessage[] = [];
+  let at = 2;
+  for (let i = 0; i < count; i++) {
+    const length = r.u16();
+    at += 2;
+    if (at + length > bytes.length) throw new CodecError('bundle part exceeds frame');
+    messages.push(decodeServerMessage(bytes.subarray(at, at + length), snapshots));
+    for (let k = 0; k < length; k++) r.u8();
+    at += length;
+  }
+  r.end();
+  return messages;
 }
 
 export function decodeServerMessage(bytes: Uint8Array, snapshots?: SnapshotDecoder): ServerMessage {
