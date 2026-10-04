@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { attachChallengeSocket } from './challenges/ChallengeSocket';
 import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
+import { DEFAULT_MATCH_SETTINGS } from '@heist/shared';
+import { MatchPool } from './game/MatchPool';
 import { startGame, type RunningGame } from './game/startGame';
 import { createHttpServer } from './http/httpServer';
 
@@ -22,9 +24,18 @@ if (existsSync(dbPath)) {
 }
 
 // The HTTP server is created first (the game attaches to it), so metrics look the game up lazily.
-const running: { game?: RunningGame } = {};
+const running: { game?: RunningGame; pool?: MatchPool } = {};
+const lobby = () => {
+  if (running.pool) return { matches: running.pool.list(), open: running.pool.openMatch() };
+  // One in-process match on this server's own port.
+  const players = running.game?.metrics().players ?? 0;
+  const max = DEFAULT_MATCH_SETTINGS.maxPlayers;
+  const only = { id: 0, port, players, maxPlayers: max };
+  return { matches: [only], open: players < max ? only : undefined };
+};
 const server = createHttpServer({
-  metrics: () => running.game?.metrics() ?? {},
+  lobby,
+  metrics: () => (running.pool ? running.pool.metrics() : (running.game?.metrics() ?? {})),
   now: Date.now,
   startedAt: Date.now(),
   ...(process.env.INTERNAL_SECRET ? { internalSecret: process.env.INTERNAL_SECRET } : {}),
@@ -34,10 +45,22 @@ const server = createHttpServer({
   },
 });
 if (challenges) attachChallengeSocket(server, challenges.handler);
-running.game = startGame(server);
+// MATCH_WORKERS=N runs N matches, each in its own thread on its own port (the lobby tells
+// clients where); 0 (default) runs one match in this process.
+const workers = Number(process.env.MATCH_WORKERS ?? 0);
+if (workers > 0) {
+  running.pool = new MatchPool();
+  for (let i = 0; i < workers; i++) {
+    const info = await running.pool.start(DEFAULT_MATCH_SETTINGS);
+    console.log(`match ${info.id} listening on ws://localhost:${info.port}/ws/game`);
+  }
+} else {
+  running.game = startGame(server);
+}
 
 server.listen(port, () => {
   console.log(`game server listening on http://localhost:${port}`);
-  console.log(`game socket: ws://localhost:${port}/ws/game`);
+  if (!running.pool) console.log(`game socket: ws://localhost:${port}/ws/game`);
+  console.log(`lobby: http://localhost:${port}/lobby`);
   if (challenges) console.log(`challenge socket: ws://localhost:${port}/ws/challenge`);
 });

@@ -48,6 +48,7 @@ npm run bot -w @heist/server -- 3    # dev bots that walk in circles (needs the 
 npm run load:bots -- --players 60,100,200 --seconds 20   # server tick cost per player count (in-process; add --mode socket for real clients)
 ```
 - TypeScript is pinned to 6.0.x until typescript-eslint supports 7.
+- Game server env: `PORT` (default 8080), `MATCH_WORKERS=N` runs N matches each in its own thread on its own port (clients ask `GET /lobby` where to connect; 0 = one in-process match), `/metrics` serves tick time, players and bandwidth.
 - Admin env: `DB_PATH` (default `data/dev.db`), `ADMIN_EMAIL` + `ADMIN_PASSWORD` (create the first admin on an empty DB), `INTERNAL_SECRET` + `GAME_SERVER_URL` (hot reload to the game server; same `INTERNAL_SECRET` on the game server).
 
 ## Conventions

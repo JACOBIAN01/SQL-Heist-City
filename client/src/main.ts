@@ -17,6 +17,7 @@ import { PredictedPlayer } from './game/PredictedPlayer';
 import { GameClient } from './net/GameClient';
 import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
 import { InputBatcher } from './net/InputBatcher';
+import { chooseGameUrl } from './net/lobby';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
 import { CombatFeedback } from './game/CombatFeedback';
@@ -71,9 +72,9 @@ const rig = new CameraRig(camera, TEST_MAP);
 const params = new URLSearchParams(location.search);
 const port = params.get('server') ?? '8080';
 const lag = Number(params.get('lag') ?? 0);
-let transport: GameTransport = new WebSocketGameTransport(
-  `ws://${location.hostname}:${port}/ws/game`,
-);
+// The lobby says which match (and which port, when matches run in their own threads) to join.
+const gameUrl = await chooseGameUrl(location.hostname, port);
+let transport: GameTransport = new WebSocketGameTransport(gameUrl);
 if (lag > 0) transport = new DelayedTransport(transport, lag);
 const client = new GameClient(transport, { name: params.get('name') ?? 'Player' });
 const thresholds = thresholdsFor(

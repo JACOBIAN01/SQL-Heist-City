@@ -33,6 +33,21 @@ describe('game server HTTP', () => {
     expect((await get('/metrics')).status).toBe(404);
   });
 
+  it('serves the lobby (readable from another origin) only when configured', async () => {
+    const withLobby = createHttpServer({
+      now: () => 0,
+      startedAt: 0,
+      lobby: () => ({ matches: [{ id: 1, port: 9001 }], open: { id: 1, port: 9001 } }),
+    });
+    await new Promise<void>((done) => withLobby.listen(0, done));
+    const { port } = withLobby.address() as AddressInfo;
+    const res = await fetch(`http://127.0.0.1:${port}/lobby`);
+    expect(res.headers.get('access-control-allow-origin')).toBe('*');
+    expect(await res.json()).toMatchObject({ open: { port: 9001 } });
+    await new Promise<void>((done) => withLobby.close(() => done()));
+    expect((await get('/lobby')).status).toBe(404);
+  });
+
   it('returns a JSON 404 for unknown routes', async () => {
     const res = await get('/nope');
     expect(res.status).toBe(404);

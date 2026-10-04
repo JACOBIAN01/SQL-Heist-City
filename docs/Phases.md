@@ -154,7 +154,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 6.5 | AOI snapshots with tiered rates | bandwidth drops | ✅ Done |
 | 6.6 | Delta compression + quantisation (int16 × 2 cm positions, world ≤ ±650 m) | <4 KB/s/client | ✅ Done |
 | 6.7 | Object pools (no per-tick allocation) | GC pauses gone | ✅ Done |
-| 6.8 | Match worker threads | one match per thread | ⬜ |
+| 6.8 | Match worker threads | one match per thread | ✅ Done |
 | 6.9 | Tuning + 60/100/200 report | 100 bots under 15 ms tick | ⬜ |
 
 ---

@@ -10,6 +10,8 @@ export interface HttpServerDeps {
   startedAt: number;
   /** Shared secret for /internal/* (admin → game). Unset = internal routes disabled. */
   internalSecret?: string;
+  /** Source for `GET /lobby`: which matches exist and where to connect. Absent = route disabled. */
+  lobby?: () => unknown;
   /** Source of numbers for `GET /metrics` (tick time, players, bandwidth). Absent = route disabled. */
   metrics?: () => unknown;
   /** Called on POST /internal/reload, e.g. to drop question/settings caches. */
@@ -27,6 +29,12 @@ export function createHttpServer(deps: HttpServerDeps): Server {
         protocolVersion: PROTOCOL_VERSION,
         uptimeMs: deps.now() - deps.startedAt,
       });
+      return;
+    }
+    if (req.method === 'GET' && req.url === '/lobby' && deps.lobby) {
+      // The game page is served from another origin (the Vite dev server), so it must be allowed to ask.
+      res.setHeader('access-control-allow-origin', '*');
+      sendJson(res, 200, deps.lobby());
       return;
     }
     if (req.method === 'GET' && req.url === '/metrics' && deps.metrics) {

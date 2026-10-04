@@ -12,6 +12,8 @@ main process
 ```
 `MAX_PLAYERS`: 60 / **100 (default)** / 200. Matches are isolated; scale out with more processes.
 
+**As built (Phase 6.8):** `MatchPool` starts each match in a worker thread (`matchWorker.ts`) that owns its own HTTP/WebSocket listener, so matches never share an event loop; the main process keeps `/lobby` (which match has room, on which port), `/metrics`, `/health` and the SQL challenge socket. `MATCH_WORKERS=0` (default) keeps one match in-process. Sockets cannot be handed between threads in Node, which is why a match listens itself instead of the main process routing connections.
+
 ## Tick loop (20 Hz = 50 ms)
 1. Drain `InputCommand` queues (validated, rate-limited).
 2. Simulate: movement + static collisions, vehicles, cooldowns, respawns.
