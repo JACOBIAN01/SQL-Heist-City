@@ -16,6 +16,8 @@ export * from './world/bank/BankLayout';
 export * from './world/bank/compileBank';
 export * from './world/bank/bank1';
 export * from './world/heistMap';
+export * from './world/variant';
+export * from './config/heist';
 export * from './world/maps';
 export * from './config/movement';
 export * from './sim/input';

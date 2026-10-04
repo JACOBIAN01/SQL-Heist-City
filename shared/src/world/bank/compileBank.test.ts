@@ -3,6 +3,7 @@ import { DEFAULT_MOVEMENT_SETTINGS } from '../../config/movement';
 import { SIM_DT } from '../../sim/input';
 import { createBody, stepBody } from '../../sim/movement';
 import { anchorInReach, nearestAnchor } from '../map';
+import { mapWithClosedDoors } from '../variant';
 import { HEIST_MAP } from '../heistMap';
 import type { BankLayout } from './BankLayout';
 import { BANK_1 } from './bank1';
@@ -262,5 +263,86 @@ describe('anchors', () => {
     expect(() => validateBank({ ...tiny, anchors: [{ ...lift, x: 9 }] })).toThrow(
       /leaves the footprint/,
     );
+  });
+});
+
+describe('vault', () => {
+  const vault = HEIST_MAP.vaults?.[0];
+  const door = HEIST_MAP.doors?.[0];
+
+  it('is described on the map with its door, console and loot spots', () => {
+    expect(vault).toMatchObject({
+      id: 'bank-1:vault',
+      bank: 'bank-1',
+      tier: 1,
+      doorId: 'bank-1:vault:door',
+      consoleId: 'bank-1:vault:console',
+    });
+    expect(vault?.loot).toHaveLength(5);
+    expect(HEIST_MAP.anchors?.find((a) => a.id === vault?.consoleId)).toMatchObject({
+      kind: 'vault_console',
+      y: 6,
+    });
+  });
+
+  it('keeps the door out of the fixed boxes', () => {
+    expect(door && HEIST_MAP.boxes.includes(door.box)).toBe(false);
+  });
+
+  /** Walks east through the vault doorway on the top storey. */
+  const walkIn = (map: typeof HEIST_MAP) => {
+    const body = createBody(2.4, 6, -5.3);
+    for (let i = 0; i < 120; i++)
+      stepBody(body, forward(i, -Math.PI / 2), SIM_DT, map, DEFAULT_MOVEMENT_SETTINGS);
+    return body;
+  };
+
+  it('blocks the doorway while closed and lets players in once open', () => {
+    expect(walkIn(mapWithClosedDoors(HEIST_MAP, ['bank-1:vault:door'])).x).toBeLessThan(3.8);
+    expect(walkIn(mapWithClosedDoors(HEIST_MAP, [])).x).toBeGreaterThan(6);
+  });
+
+  it('puts every loot spot inside the vault room, clear of walls', () => {
+    const boxes = [...HEIST_MAP.boxes];
+    for (const spot of vault?.loot ?? []) {
+      expect(spot.x).toBeGreaterThan(4.5);
+      expect(spot.z).toBeLessThan(-1.5);
+      expect(
+        boxes.some(
+          (b) =>
+            spot.x > b.minX &&
+            spot.x < b.maxX &&
+            spot.z > b.minZ &&
+            spot.z < b.maxZ &&
+            spot.y + 0.5 > b.minY &&
+            spot.y + 0.5 < b.maxY,
+        ),
+      ).toBe(false);
+    }
+  });
+
+  it('rejects a vault without loot', () => {
+    const spec = {
+      id: 'v',
+      storey: 0,
+      door: { x: 0, z: 0, width: 1, depth: 1, height: 2 },
+      console: { x: 0, z: 0 },
+      loot: [],
+    };
+    expect(() => validateBank({ ...tiny, vaults: [spec] })).toThrow(/no loot/);
+  });
+});
+
+describe('mapWithClosedDoors', () => {
+  it('returns the same cached map for the same set of closed doors', () => {
+    const a = mapWithClosedDoors(HEIST_MAP, ['bank-1:vault:door']);
+    expect(mapWithClosedDoors(HEIST_MAP, ['bank-1:vault:door'])).toBe(a);
+    expect(a.boxes).toHaveLength(HEIST_MAP.boxes.length + 1);
+  });
+  it('is the base map when everything is open', () => {
+    expect(mapWithClosedDoors(HEIST_MAP, [])).toBe(HEIST_MAP);
+  });
+  it('ignores unknown door ids', () => {
+    expect(mapWithClosedDoors(HEIST_MAP, ['nope'])).toBe(HEIST_MAP);
   });
 });

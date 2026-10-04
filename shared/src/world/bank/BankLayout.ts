@@ -81,6 +81,24 @@ export interface AnchorSpec {
   readonly radius?: number;
 }
 
+/** A vault room's door and console. The door is a blocker until the vault opens. */
+export interface VaultSpec {
+  readonly id: string;
+  readonly storey: number;
+  /** The door, as a block in the doorway (bottom is relative to the storey floor). */
+  readonly door: {
+    readonly x: number;
+    readonly z: number;
+    readonly width: number;
+    readonly depth: number;
+    readonly height: number;
+  };
+  /** Where players stand to work the locks. */
+  readonly console: Point2;
+  /** Where cash bags appear once the vault is open. */
+  readonly loot: readonly Point2[];
+}
+
 export interface BankLayout {
   readonly id: string;
   readonly name: string;
@@ -100,6 +118,7 @@ export interface BankLayout {
   readonly stairs?: readonly StairSpec[];
   /** Elevators, the vault console… */
   readonly anchors?: readonly AnchorSpec[];
+  readonly vaults?: readonly VaultSpec[];
 }
 
 export const DEFAULT_ANCHOR_RADIUS = 1.5;

@@ -51,6 +51,30 @@ export interface MapAnchor {
 /** How far above or below an anchor a player may be and still use it (one storey is 3 m). */
 export const ANCHOR_REACH_Y = 1.5;
 
+/** A blocker that exists while its vault is closed (the vault door). Kept out of `boxes`; see world/variant.ts. */
+export interface MapDoor {
+  readonly id: string;
+  readonly box: MapBox;
+}
+
+export interface LootSpot {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
+
+/** A vault: locks guard the door, and loot appears at `loot` spots once it opens. */
+export interface MapVault {
+  readonly id: string;
+  readonly bank: string;
+  /** Bank tier 1–5: decides the lock questions and the loot. */
+  readonly tier: number;
+  readonly doorId: string;
+  /** The anchor where players work the locks. */
+  readonly consoleId: string;
+  readonly loot: readonly LootSpot[];
+}
+
 export interface GameMap {
   readonly id: string;
   /** The ground plane (y = 0) spans [-halfSize, halfSize] on x and z. */
@@ -61,6 +85,8 @@ export interface GameMap {
   readonly dummies?: readonly SpawnPoint[];
   /** Usable spots (elevators, vault consoles, safehouses). */
   readonly anchors?: readonly MapAnchor[];
+  readonly doors?: readonly MapDoor[];
+  readonly vaults?: readonly MapVault[];
 }
 
 /** Whether a body at (x, y, z) is close enough to use the anchor. */

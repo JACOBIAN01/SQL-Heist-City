@@ -1,4 +1,11 @@
-import { box, type MapAnchor, type MapBox, type MapBoxKind } from '../map';
+import {
+  box,
+  type MapAnchor,
+  type MapBox,
+  type MapBoxKind,
+  type MapDoor,
+  type MapVault,
+} from '../map';
 import {
   DEFAULT_ANCHOR_RADIUS,
   DEFAULT_WALL_THICKNESS,
@@ -43,6 +50,11 @@ export function validateBank(layout: BankLayout): void {
     seen.add(a.id);
     if (a.storey < 0 || a.storey >= layout.storeys) fail(`anchor ${a.id} is on a missing storey`);
     if (Math.abs(a.x) > hw || Math.abs(a.z) > hd) fail(`anchor ${a.id} leaves the footprint`);
+  }
+  for (const v of layout.vaults ?? []) {
+    if (v.storey < 0 || v.storey >= layout.storeys) fail(`vault ${v.id} is on a missing storey`);
+    if (v.loot.length === 0) fail(`vault ${v.id} has no loot spots`);
+    if (v.door.height >= layout.storeyHeight) fail(`vault ${v.id} door is taller than the storey`);
   }
   layout.floors.forEach((plan, storey) => {
     for (const wall of plan.walls) {
@@ -192,8 +204,65 @@ function wallBoxes(
   return out;
 }
 
-/** The bank's usable spots in world coordinates. */
+/** The bank's usable spots in world coordinates: its explicit anchors plus one console per vault. */
 export function compileAnchors(layout: BankLayout, at: Point2): MapAnchor[] {
+  const consoles: MapAnchor[] = (layout.vaults ?? []).map((v) => ({
+    id: `${layout.id}:${v.id}:console`,
+    kind: 'vault_console',
+    x: at.x + v.console.x,
+    y: v.storey * layout.storeyHeight,
+    z: at.z + v.console.z,
+    radius: DEFAULT_ANCHOR_RADIUS,
+    bank: layout.id,
+    storey: v.storey,
+  }));
+  return [...consoles, ...explicitAnchors(layout, at)];
+}
+
+/** Vault doors (blockers while closed) and the vaults themselves, in world coordinates. */
+export function compileVaults(
+  layout: BankLayout,
+  at: Point2,
+): { doors: MapDoor[]; vaults: MapVault[] } {
+  const doors: MapDoor[] = [];
+  const vaults: MapVault[] = [];
+  for (const v of layout.vaults ?? []) {
+    const id = `${layout.id}:${v.id}`;
+    const floor = v.storey * layout.storeyHeight;
+    doors.push({
+      id: `${id}:door`,
+      box: box(
+        'interior',
+        at.x + v.door.x,
+        at.z + v.door.z,
+        v.door.width,
+        v.door.height,
+        v.door.depth,
+        floor,
+      ),
+    });
+    vaults.push({
+      id,
+      bank: layout.id,
+      tier: layout.tier,
+      doorId: `${id}:door`,
+      consoleId: `${id}:console`,
+      loot: v.loot.map((p) => ({ x: at.x + p.x, y: floor, z: at.z + p.z })),
+    });
+  }
+  return { doors, vaults };
+}
+
+/** Everything a bank adds to a map. */
+export function compileBankWorld(layout: BankLayout, at: Point2) {
+  return {
+    boxes: compileBank(layout, at),
+    anchors: compileAnchors(layout, at),
+    ...compileVaults(layout, at),
+  };
+}
+
+function explicitAnchors(layout: BankLayout, at: Point2): MapAnchor[] {
   return (layout.anchors ?? []).map((a) => ({
     id: `${layout.id}:${a.id}`,
     kind: a.kind,
