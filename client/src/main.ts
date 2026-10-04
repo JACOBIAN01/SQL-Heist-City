@@ -49,9 +49,10 @@ import { SqlPanelController } from './ui/sql/SqlPanelController';
 import { rewardLabel } from './ui/sql/labels';
 import './ui/sql/sqlPanel.css';
 import { buildMapObject, setClosedDoors } from './world/MapRenderer';
+import { followServerMap } from './world/followServerMap';
 
 // Composition root for the client.
-// ?map=heist loads the bank map (the server must run MATCH_MAP=heist); the sandbox yard is the default.
+// ?map=heist|city|city:<seed> picks the map; on joining, the page follows whatever map the server plays.
 const params = new URLSearchParams(location.search);
 const MAP = mapById(params.get('map')) ?? TEST_MAP;
 /** Remote players are drawn this far in the past (smooth interpolation); shots are rewound by it too. */
@@ -149,6 +150,10 @@ let transport: GameTransport = new WebSocketGameTransport(gameUrl);
 if (lag > 0) transport = new DelayedTransport(transport, lag);
 const client = new GameClient(transport, { name: params.get('name') ?? 'Player' });
 client.subscribe({
+  welcome: (message) => {
+    const next = followServerMap(MAP.id, message.mapId, location.search);
+    if (next) location.search = next;
+  },
   snapshot: (snapshot) => {
     latestSelf = snapshot.self;
     if (snapshot.self.weapon !== heldWeapon) {
