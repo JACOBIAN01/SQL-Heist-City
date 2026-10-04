@@ -1,6 +1,7 @@
 import {
   BoxGeometry,
   CanvasTexture,
+  CylinderGeometry,
   Color,
   InstancedMesh,
   Matrix4,
@@ -11,7 +12,13 @@ import {
   SRGBColorSpace,
   type Object3D,
 } from 'three';
-import type { GameMap, MapBoxKind } from '@heist/shared';
+import type { AnchorKind, GameMap, MapBoxKind } from '@heist/shared';
+
+const ANCHOR_COLOR: Readonly<Record<AnchorKind, number>> = {
+  elevator: 0x33d6c4,
+  vault_console: 0xf2b134,
+  safehouse: 0x6bd36b,
+};
 
 const KIND_COLOR: Readonly<Record<MapBoxKind, number>> = {
   wall: 0x3a3f47,
@@ -79,6 +86,18 @@ export function buildMapObject(map: GameMap): Object3D {
     mesh.receiveShadow = true;
     mesh.name = `map-${kind}`;
     root.add(mesh);
+  }
+
+  // A glowing pad on the floor wherever F does something.
+  for (const a of map.anchors ?? []) {
+    const color = ANCHOR_COLOR[a.kind];
+    const pad = new Mesh(
+      new CylinderGeometry(a.radius * 0.6, a.radius * 0.6, 0.06, 24),
+      new MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.6 }),
+    );
+    pad.position.set(a.x, a.y + 0.03, a.z);
+    pad.name = `anchor-${a.id}`;
+    root.add(pad);
   }
   return root;
 }

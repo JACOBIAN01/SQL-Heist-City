@@ -22,6 +22,7 @@ import { chooseGameUrl } from './net/lobby';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
 import { CombatFeedback } from './game/CombatFeedback';
+import { Interactions } from './heist/Interactions';
 import { HitboxDebug } from './entities/HitboxDebug';
 import { Tracers } from './render/Tracers';
 import { Hud } from './ui/hud/Hud';
@@ -135,6 +136,22 @@ client.subscribe({
     remotes.onEvent(event);
     feedback.onEvent(event);
   },
+  json: (message) => {
+    interactions.handle(message);
+  },
+});
+// F uses whatever is in reach (lift, vault console…); the server decides if it works.
+const interactions = new Interactions({
+  map: MAP,
+  send: (message) => client.sendJson(message),
+  view: hud,
+  onOpenTask: (rewardKey) => hud.toast(`Task: ${rewardKey}`),
+});
+window.addEventListener('keydown', (event) => {
+  const typing =
+    event.target instanceof Element && event.target.closest('input, textarea, .cm-editor');
+  if (event.code === 'KeyF' && !event.repeat && !typing && feedback.isAlive)
+    void interactions.use();
 });
 const batcher = new InputBatcher((commands) => client.sendInput(commands));
 
@@ -175,6 +192,7 @@ renderer.setAnimationLoop((now) => {
     remotes.update(serverClock.serverTimeAt(now), frameMs / 1000, INTERP_DELAY_MS);
 
   predicted.drawPosition(loop.alpha, drawPos);
+  interactions.update(player.body.x, player.body.y, player.body.z, feedback.isAlive);
   model.object.visible = feedback.isAlive;
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
   model.object.rotation.y = input.currentYaw;

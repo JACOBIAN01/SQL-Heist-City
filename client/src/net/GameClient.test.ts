@@ -111,3 +111,30 @@ describe('GameClient', () => {
     expect(closed).toHaveBeenCalledWith('bad data from server');
   });
 });
+
+describe('GameClient JSON messages', () => {
+  const connect = () => {
+    transport.open();
+    transport.receive(welcome);
+  };
+
+  it('sends JSON messages as json frames once playing', () => {
+    client.sendJson({ t: 'interact', ref: 1, anchor: 'bank-1:lift:0' });
+    expect(transport.of('json')).toEqual([]); // not connected yet: dropped
+    connect();
+    client.sendJson({ t: 'interact', ref: 2, anchor: 'bank-1:lift:0' });
+    expect(transport.of('json').map((m) => JSON.parse(m.text))).toEqual([
+      { t: 'interact', ref: 2, anchor: 'bank-1:lift:0' },
+    ]);
+  });
+
+  it('hands parsed server JSON to listeners and survives garbage', () => {
+    connect();
+    const seen: unknown[] = [];
+    client.subscribe({ json: (m) => seen.push(m) });
+    transport.receive({ t: 'json', text: '{"t":"interact_result","ref":1}' });
+    transport.receive({ t: 'json', text: '{broken' });
+    expect(seen).toEqual([{ t: 'interact_result', ref: 1 }]);
+    expect(client.status).toBe('playing');
+  });
+});

@@ -6,6 +6,8 @@ import {
   encodeClientMessage,
   type GameEvent,
   type InputCommand,
+  type JsonClientMessage,
+  type JsonServerMessage,
   type ServerMessage,
   type SnapshotMessage,
   type WelcomeMessage,
@@ -19,6 +21,8 @@ export interface GameClientListener {
   welcome?(message: WelcomeMessage): void;
   snapshot?(message: SnapshotMessage): void;
   event?(event: GameEvent): void;
+  /** A JSON message from the heist layer (SQL task replies, interaction results…). */
+  json?(message: JsonServerMessage): void;
   closed?(reason: string): void;
 }
 
@@ -67,6 +71,12 @@ export class GameClient {
     this.transport.send(encodeClientMessage({ t: 'input', commands }));
   }
 
+  /** Sends a JSON message (tasks, interactions). Dropped while not connected. */
+  sendJson(message: JsonClientMessage): void {
+    if (this.status !== 'playing') return;
+    this.transport.send(encodeClientMessage({ t: 'json', text: JSON.stringify(message) }));
+  }
+
   close(): void {
     this.transport.close();
     this.handleClose('left');
@@ -108,6 +118,16 @@ export class GameClient {
       case 'event':
         for (const l of this.listeners) l.event?.(message.event);
         break;
+      case 'json': {
+        let parsed: JsonServerMessage;
+        try {
+          parsed = JSON.parse(message.text) as JsonServerMessage;
+        } catch {
+          return; // a garbled message from the server is not worth dropping the game for
+        }
+        for (const l of this.listeners) l.json?.(parsed);
+        break;
+      }
       case 'pong': {
         const sample = Math.max(0, this.now() - message.clientTime);
         this.rttMs = this.rttMs === 0 ? sample : this.rttMs + (sample - this.rttMs) * RTT_SMOOTHING;

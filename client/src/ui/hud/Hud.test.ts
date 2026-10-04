@@ -69,3 +69,21 @@ describe('Hud', () => {
     expect(q('.hud-dead').hidden).toBe(true);
   });
 });
+
+describe('Hud prompts', () => {
+  it('shows the interaction prompt only while something is in reach', () => {
+    expect(q('.hud-prompt').hidden).toBe(true);
+    hud.setPrompt('F — Take the lift');
+    expect(q('.hud-prompt').hidden).toBe(false);
+    expect(q('.hud-prompt').textContent).toBe('F — Take the lift');
+    hud.setPrompt(undefined);
+    expect(q('.hud-prompt').hidden).toBe(true);
+  });
+
+  it('shows a toast and hides it after two seconds', () => {
+    hud.toast('Floor 1');
+    expect(q('.hud-toast').hidden).toBe(false);
+    vi.advanceTimersByTime(2100);
+    expect(q('.hud-toast').hidden).toBe(true);
+  });
+});

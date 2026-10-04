@@ -19,6 +19,8 @@ function setup() {
     showHitMarker: vi.fn(),
     addKill: vi.fn(),
     setDead: vi.fn(),
+    setPrompt: vi.fn(),
+    toast: vi.fn(),
   };
   const tracers: { from: Vec3; to: Vec3 }[] = [];
   const feedback = new CombatFeedback({
