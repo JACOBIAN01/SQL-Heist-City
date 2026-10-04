@@ -132,7 +132,8 @@ export class RemotePlayers {
     const model = this.createRig(id);
     const bag = createCashBag();
     // On the back: the character faces −z at yaw 0, so behind is +z.
-    bag.position.set(0, 0.85, 0.28);
+    bag.position.set(0, 0.95, 0.26);
+    bag.scale.setScalar(0.75);
     bag.visible = false;
     model.object.add(bag);
     const remote: Remote = {

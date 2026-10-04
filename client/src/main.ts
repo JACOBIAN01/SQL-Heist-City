@@ -273,8 +273,9 @@ const model = createRig(0);
 scene.add(model.object);
 // Your own bag, on your back, while you carry cash (others see the same from the server's flag).
 const ownBag = createCashBag();
-ownBag.position.set(0, 0.85, 0.28);
-ownBag.visible = false;
+ownBag.position.set(0, 0.95, 0.26);
+ownBag.scale.setScalar(0.75);
+ownBag.visible = params.has('bag'); // ?bag previews the bag without carrying cash
 model.object.add(ownBag);
 
 const stats = new FrameStats();
