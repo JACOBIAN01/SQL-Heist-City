@@ -120,11 +120,11 @@ describe.each(SWEEP)('generateCity invariants ($blocks blocks, seed $seed)', (op
     }
   });
 
-  it('spawns players on the streets, never in a block', () => {
+  it('spawns players on the inner streets, never in a block or on the outer ring', () => {
     expect(c.spawns.length).toBeGreaterThanOrEqual(100);
     for (const p of c.spawns) {
-      expect(Math.abs(p.x)).toBeLessThan(c.halfSize);
-      expect(Math.abs(p.z)).toBeLessThan(c.halfSize);
+      expect(Math.abs(p.x)).toBeLessThan(c.halfSize - s.streetWidth);
+      expect(Math.abs(p.z)).toBeLessThan(c.halfSize - s.streetWidth);
       for (const b of c.blocks) {
         const inBlock =
           p.x > b.outer.minX && p.x < b.outer.maxX && p.z > b.outer.minZ && p.z < b.outer.maxZ;

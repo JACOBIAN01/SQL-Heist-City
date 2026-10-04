@@ -131,7 +131,7 @@ The city is data too. `generateCity(settings, bankFootprint)` (`shared/src/world
   - **Banks:** 5 sites, tier 5 in the most central block and tier 1 on the outskirts. Each site reserves the footprint of its tier's `BankLayout` (`BANK_LAYOUTS`; tiers without a layout reserve Bank 1's size and stand as a closed building until Phase 9).
   - **Safehouses:** 3, placed as far from the banks and from each other as the grid allows.
   - **Hospital:** the most central free block, with an 8 m forecourt holding the beds.
-- **Spawns:** four per street segment, on the asphalt, one in each lane, facing along the street.
+- **Spawns:** twelve per segment of the inner streets (the outer ring only looks at the city wall), on the asphalt, one in each lane, facing along the street.
 
 `compileCity(id, layout, BANK_LAYOUTS)` turns the layout into a `GameMap`:
 - boundary walls;

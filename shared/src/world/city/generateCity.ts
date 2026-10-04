@@ -283,17 +283,18 @@ function beds(lot: Rect, count: number): SpawnPoint[] {
 }
 
 /**
- * Spawns along every street segment, a third and two thirds of the way along,
- * one in each lane, facing along the street: four per segment and street.
+ * Spawns along the inner streets (the outer ring looks at the city wall), at
+ * a quarter, half and three quarters of every segment, one in each lane,
+ * facing along the street: twelve per segment.
  */
 function streetSpawns(lines: readonly number[]): SpawnPoint[] {
   const out: SpawnPoint[] = [];
-  for (let k = 0; k < lines.length; k++)
+  for (let k = 1; k + 1 < lines.length; k++)
     for (let j = 0; j + 1 < lines.length; j++) {
       const line = lines[k] ?? 0;
       const from = lines[j] ?? 0;
       const to = lines[j + 1] ?? 0;
-      for (const t of [1 / 3, 2 / 3]) {
+      for (const t of [1 / 4, 1 / 2, 3 / 4]) {
         const along = Math.round(from + (to - from) * t);
         // North–south street at x = line, then east–west street at z = line.
         out.push(
