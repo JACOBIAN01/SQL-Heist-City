@@ -11,13 +11,18 @@ export class FakeConnection implements PlayerConnection {
   readonly sent: ServerMessage[] = [];
   /** How many WebSocket frames (send calls) the server used. */
   frames = 0;
+  /** Frames that carried only JSON messages. */
+  jsonFrames = 0;
   closed: { code: number; reason: string } | undefined;
   /** Like a real client: snapshots are deltas against what it has received so far. */
   private readonly snapshots = new SnapshotDecoder();
 
   send(bytes: Uint8Array): void {
-    this.frames++;
-    this.sent.push(...decodeServerMessages(bytes, this.snapshots));
+    const messages = decodeServerMessages(bytes, this.snapshots);
+    // Heist-layer JSON (purse, loot…) is counted apart: the one-send-per-tick rule is about game traffic.
+    if (messages.every((m) => m.t === 'json')) this.jsonFrames++;
+    else this.frames++;
+    this.sent.push(...messages);
   }
 
   close(code: number, reason: string): void {

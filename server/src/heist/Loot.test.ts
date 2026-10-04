@@ -210,7 +210,7 @@ describe('dropping cash', () => {
     victim.player.hp = 1;
     match.damage(victim.player, 5, killer.player);
     match.step();
-    expect(killer.player.cash).toBe(30_000);
+    expect(killer.player.cash).toBe(30_000 + DEFAULT_HEIST_SETTINGS.killBonus); // the drop plus the kill bonus
   });
 
   it('drops cash when a player disconnects', () => {

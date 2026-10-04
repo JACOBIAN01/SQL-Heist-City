@@ -81,6 +81,8 @@ export interface GameMap {
   readonly halfSize: number;
   readonly boxes: readonly MapBox[];
   readonly spawns: readonly SpawnPoint[];
+  /** Where the dead come back (the hospital). Without it they respawn at `spawns` like new players. */
+  readonly respawns?: readonly SpawnPoint[];
   /** Where sandbox target dummies stand (optional). */
   readonly dummies?: readonly SpawnPoint[];
   /** Usable spots (elevators, vault consoles, safehouses). */

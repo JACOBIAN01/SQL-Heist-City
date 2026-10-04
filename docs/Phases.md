@@ -171,7 +171,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 7.8 | Heal via SQL (3 tiers) | HP rises per tier | ✅ |
 | 7.9 | Gun unlock via SQL + ammo refill | weapon granted | ✅ |
 | 7.10 | Quick menu (Tab) + HUD | switch tasks mid-fight | ✅ |
-| 7.11 | Death/respawn at hospital + spawn protection | rules from gameplay.md | ⬜ |
+| 7.11 | Death/respawn at hospital + spawn protection | rules from gameplay.md | ✅ |
 | 7.12 | Scoreboard + round timer + win condition | round ends with winner | ⬜ |
 
 ---

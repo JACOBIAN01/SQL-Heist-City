@@ -18,6 +18,8 @@ export const heistSettingsSchema = z.object({
   healByTier: z
     .record(z.string(), z.number().int().positive())
     .default({ small: 20, medium: 50, full: 1000 }),
+  /** Cash the killer takes from a kill, on top of what the victim drops. Keeps the hunters hunting. */
+  killBonus: z.number().int().min(0).default(2_000),
   /** Seconds a player must stay at a safehouse, unhurt, to bank what they carry. */
   bankingSeconds: z.number().positive().default(4),
   /** Top speed lost per $100k carried (0.1 = 10%), up to `carrySlowMax`. */

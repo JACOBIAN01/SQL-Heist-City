@@ -98,8 +98,10 @@ export class HeistController implements ArmsControl {
   }
 
   /** A player died: what they carried drops where they fell. */
-  onDeath(victim: Player): void {
+  onDeath(victim: Player, killer?: Player): void {
     this.banking.cancel(victim, 'died');
+    if (killer && killer !== victim && killer.alive && this.settings.killBonus > 0)
+      this.setCash(killer, killer.cash + this.settings.killBonus);
     if (victim.cash <= 0) return;
     const bag = this.loot.add(victim.body.x, victim.body.y, victim.body.z, victim.cash);
     this.setCash(victim, 0);

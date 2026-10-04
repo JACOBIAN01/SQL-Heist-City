@@ -50,7 +50,7 @@ Hitscan, recoil/spread, headshot ×2. Guns are earned **per life**.
 > **Sandbox map:** on the sandbox yard everyone still holds the rifle with unlimited ammo (`sandboxWeapon`); heist maps (`unarmedStart`) start everyone unarmed. Magazines are finite there: each shot spends a round (a shotgun blast one, all pellets), an empty gun clicks, and `ammo:refill` fills the held gun's magazine; guns are lost on death. Respawn is 5 s at 50 HP with 5 s protection, all from `shared/config/combat.ts`.
 
 ## Death & respawn
-Drops carried cash as a bag; respawn at hospital after 5 s with 50 HP, unarmed; banked cash and vault progress kept. Kill bonus (small, config) to discourage pure camping.
+Drops carried cash as a bag; respawn at the hospital (`respawns` on the map, one bed per spot) after 5 s with 50 HP, unarmed; banked cash and vault progress kept. The 5 s spawn protection ends the moment its owner fires (no shooting from behind it). Kill bonus (`killBonus`, default $2,000, setting) goes to the killer's pocket, on top of whatever the victim drops.
 
 ## Cash flow
 Carrying: visible bag, −10% speed per $100k (cap −30%). **Banking** at one of 3 safehouses (4 s interaction, interrupted by damage). Scoreboard shows banked cash and kills.

@@ -5,6 +5,9 @@ import { BANK_1 } from './bank/bank1';
 const HALF = 60;
 const WALL_HEIGHT = 4;
 /** Where cash is banked on this lot; Phase 8 places them on city blocks. */
+/** The hospital: where the dead wake up, behind the north wall of the lot, facing south into the map. */
+const HOSPITAL: readonly SpawnPoint[] = [-6, -2, 2, 6].map((x) => ({ x, z: -54, yaw: Math.PI }));
+
 const SAFEHOUSES: readonly { x: number; z: number }[] = [
   { x: -36, z: -36 },
   { x: 36, z: -36 },
@@ -47,10 +50,13 @@ export const HEIST_MAP: GameMap = {
     ...BANK_1_WORLD.boxes,
     // A low wall behind each safehouse pad, so it reads as a place.
     ...SAFEHOUSES.map((s) => box('building', s.x, s.z - 3.6, 6, 2.4, 0.6)),
+    // The hospital's back wall.
+    box('building', 0, -58.2, 20, 4, 0.6),
     box('cover', -10, 22, 6, 1.1, 0.4),
     box('cover', 12, 24, 0.4, 1.1, 5),
   ],
   spawns: ring(12, 48),
+  respawns: HOSPITAL,
   anchors: [...BANK_1_WORLD.anchors, ...SAFEHOUSE_ANCHORS],
   doors: BANK_1_WORLD.doors,
   vaults: BANK_1_WORLD.vaults,

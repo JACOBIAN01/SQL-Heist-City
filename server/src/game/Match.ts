@@ -87,6 +87,8 @@ export class Match implements MatchApi {
   readonly heist: HeistController;
   /** The map as it stands (open vault doors change it); the base map is `deps.map`. */
   private collisionMap: GameMap;
+  /** The map as the respawn picker sees it: hospital spots in place of street spawns, when there are any. */
+  private readonly respawnMap: GameMap;
   private readonly lagComp: LagCompensator;
   private readonly interest: InterestManager;
   // Scratch space reused by every snapshot: nothing here is allocated per tick.
@@ -114,6 +116,7 @@ export class Match implements MatchApi {
 
   constructor(private readonly deps: MatchDeps) {
     this.collisionMap = deps.map;
+    this.respawnMap = deps.map.respawns ? { ...deps.map, spawns: deps.map.respawns } : deps.map;
     this.movement = deps.movement ?? DEFAULT_MOVEMENT_SETTINGS;
     this.combat = deps.combat ?? DEFAULT_COMBAT_SETTINGS;
     this.interest = new InterestManager(deps.settings.interest);
@@ -351,6 +354,8 @@ export class Match implements MatchApi {
       shooter.arsenal.set(shooter.weaponId, rounds - 1);
     }
     shooter.cooldown += 60 / weapon.rpm;
+    // A player cannot shoot from behind spawn protection.
+    shooter.protectedUntilTick = 0;
 
     const origin = aimOriginInto(this.aimFrom, shooter.body, command.yaw, this.movement);
     const targets = this.targetsFor(shooter, command, weapon.range);
@@ -459,7 +464,7 @@ export class Match implements MatchApi {
     victim.deaths++;
     attacker.kills++;
     victim.respawnAtTick = this.tick + this.ticksFor(this.combat.respawnDelaySec);
-    this.heist.onDeath(victim);
+    this.heist.onDeath(victim, attacker);
     this.broadcastQueued({ e: 'kill', killer: attacker.id, victim: victim.id });
   }
 
@@ -469,7 +474,7 @@ export class Match implements MatchApi {
       const spawn =
         p.home ??
         this.spawnPolicy.pick(
-          this.deps.map,
+          this.respawnMap,
           [...this.players.values()].filter((o) => o !== p && o.alive).map((o) => o.body),
         );
       this.lagComp.forget(p.id);
