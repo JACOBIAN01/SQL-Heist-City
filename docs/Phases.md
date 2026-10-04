@@ -23,7 +23,7 @@
 | 3 | Seed content (150 questions) | ✅ Done |
 | 4 | SQL pop-up UI | ✅ Done |
 | 5 | Walk & shoot sandbox | ✅ Done |
-| 6 | Scale core (60/100/200) | ⬜ |
+| 6 | Scale core (60/100/200) | 🟦 In progress |
 | 7 | Heist loop v1 | ⬜ |
 | 8 | City, vehicles, atmosphere | ⬜ |
 | 9 | Banks 2–5, weapons, UX | ⬜ |
@@ -144,10 +144,10 @@ Goal: movement and combat feel good with 2+ real players.
 | 5.12 | Health, death, respawn | full kill cycle works | ✅ Done |
 
 ---
-## Phase 6 — Scale core (60 → 100 → 200)  ⬜
+## Phase 6 — Scale core (60 → 100 → 200)  🟦
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 6.1 | Bot harness (`load:bots`) | spawns N scripted players | ⬜ |
+| 6.1 | Bot harness (`load:bots`) | spawns N scripted players | ✅ Done |
 | 6.2 | Metrics (tick ms, bytes/s) + `/metrics` | visible numbers | ⬜ |
 | 6.3 | Baseline measurement (no optimisation) | numbers recorded in docs | ⬜ |
 | 6.4 | Spatial hash grid for players **and static colliders** (cell = 64 m chunk for AOI, 8 m for colliders; see city-kit.md §5) | neighbour and box queries tested; stepBody/rays only test nearby boxes | ⬜ |

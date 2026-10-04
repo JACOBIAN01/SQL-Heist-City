@@ -45,7 +45,7 @@ npm run db:seed        # import content/questions/*.json (skips existing; --upda
 npm run questions:validate   # QA gate for content files (100 seeds each)
 npm run user:create -w @heist/admin -- --email you@school.test --password '…' [--role admin|teacher]
 npm run bot -w @heist/server -- 3    # dev bots that walk in circles (needs the game server running)
-# later phases: npm run load:bots -- --players 100
+npm run load:bots -- --players 60,100,200 --seconds 20   # server tick cost per player count (in-process; add --mode socket for real clients)
 ```
 - TypeScript is pinned to 6.0.x until typescript-eslint supports 7.
 - Admin env: `DB_PATH` (default `data/dev.db`), `ADMIN_EMAIL` + `ADMIN_PASSWORD` (create the first admin on an empty DB), `INTERNAL_SECRET` + `GAME_SERVER_URL` (hot reload to the game server; same `INTERNAL_SECRET` on the game server).
