@@ -35,6 +35,8 @@ const selfOf = (b: BodyState): SelfState => ({
   vz: Math.round(b.vz * 1000) / 1000, // the wire carries velocity in mm/s
   flags: (b.onGround ? Flag.OnGround : 0) | (b.crouching ? Flag.Crouching : 0) | Flag.Alive,
   hp: 100,
+  weapon: 0,
+  ammo: 0,
 });
 
 /**

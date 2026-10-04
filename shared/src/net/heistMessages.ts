@@ -14,10 +14,18 @@ export const interactMessageSchema = z.object({
 });
 export type InteractMessage = z.infer<typeof interactMessageSchema>;
 
+/** Hold a gun you own. */
+export const equipMessageSchema = z.object({
+  t: z.literal('equip'),
+  weapon: z.string().min(1).max(30),
+});
+export type EquipMessage = z.infer<typeof equipMessageSchema>;
+
 /** Everything a client may send as JSON. The server validates it again; this is the shape check. */
 export const jsonClientMessageSchema = z.union([
   challengeClientMessageSchema,
   interactMessageSchema,
+  equipMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -86,6 +94,13 @@ export type BankingMessage =
 
 export type BankingCancel = 'hurt' | 'moved' | 'died';
 
+/** The guns a player owns this life, and the one in hand (ammo travels in snapshots). */
+export interface ArmsMessage {
+  readonly t: 'arms';
+  readonly owned: readonly string[];
+  readonly current: string;
+}
+
 /** A short message for the player ("Someone beat you to the lock"). */
 export interface NoticeMessage {
   readonly t: 'notice';
@@ -93,6 +108,12 @@ export interface NoticeMessage {
 }
 
 export type HeistServerMessage =
-  InteractReply | VaultsMessage | LootMessage | PurseMessage | BankingMessage | NoticeMessage;
+  | InteractReply
+  | VaultsMessage
+  | LootMessage
+  | PurseMessage
+  | BankingMessage
+  | ArmsMessage
+  | NoticeMessage;
 
 export type JsonServerMessage = ChallengeServerMessage | HeistServerMessage;

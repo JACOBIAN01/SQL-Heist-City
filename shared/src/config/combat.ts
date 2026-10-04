@@ -24,6 +24,17 @@ export const DEFAULT_WEAPONS: Readonly<Record<string, WeaponSpec>> = {
   sniper: { damage: 90, rpm: 40, range: 200, magSize: 5, pellets: 1, spread: 0.001 },
 };
 
+/**
+ * The guns, in a fixed order the wire format indexes into (0 means unarmed).
+ * Stats come from the weapon table and can change; adding a gun means
+ * appending here and in the table.
+ */
+export const WEAPON_IDS = ['pistol', 'smg', 'shotgun', 'rifle', 'sniper'] as const;
+export type WeaponId = (typeof WEAPON_IDS)[number];
+
+export const weaponToWire = (id: string): number => WEAPON_IDS.indexOf(id as WeaponId) + 1;
+export const weaponFromWire = (wire: number): WeaponId | undefined => WEAPON_IDS[wire - 1];
+
 export const combatSettingsSchema = z.object({
   weapons: z.record(z.string(), weaponSpecSchema).default({ ...DEFAULT_WEAPONS }),
   /**

@@ -1,4 +1,5 @@
 import { h } from '../dom';
+import { WeaponBar } from './WeaponBar';
 import './hud.css';
 
 /** What game logic may ask of the HUD. Kept as an interface so logic is tested without a DOM. */
@@ -11,6 +12,10 @@ export interface HudView {
   setDead(dead: boolean, secondsLeft?: number): void;
   /** A progress bar with a label (banking…); undefined hides it. */
   setProgress(progress: { label: string; fraction: number } | undefined): void;
+  /** The guns owned and the one in hand. */
+  setArms(owned: readonly string[], current: string): void;
+  /** Rounds left in the magazine. */
+  setAmmo(rounds: number): void;
   /** Cash on you and cash that is safe. */
   setPurse(carried: number, banked: number): void;
   /** The "F — …" hint for whatever is in reach (undefined hides it). */
@@ -39,6 +44,7 @@ export class Hud implements HudView {
   private readonly deadSub: HTMLElement;
   private readonly carriedText: HTMLElement;
   private readonly bankedText: HTMLElement;
+  private readonly weapons = new WeaponBar();
   private readonly progressBox: HTMLElement;
   private readonly progressFill: HTMLElement;
   private readonly progressLabel: HTMLElement;
@@ -88,6 +94,7 @@ export class Hud implements HudView {
         h('div', {}, 'CARRYING ', this.carriedText),
         h('div', {}, 'BANKED ', this.bankedText),
       ),
+      this.weapons.root,
       this.progressBox,
       this.prompt,
       this.toastBox,
@@ -153,6 +160,14 @@ export class Hud implements HudView {
     if (!progress) return;
     this.progressLabel.textContent = progress.label;
     this.progressFill.style.width = `${Math.max(0, Math.min(1, progress.fraction)) * 100}%`;
+  }
+
+  setArms(owned: readonly string[], current: string): void {
+    this.weapons.setArms(owned, current);
+  }
+
+  setAmmo(rounds: number): void {
+    this.weapons.setAmmo(rounds);
   }
 
   setPurse(carried: number, banked: number): void {

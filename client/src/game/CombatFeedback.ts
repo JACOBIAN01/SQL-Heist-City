@@ -12,6 +12,8 @@ import {
   type InputCommand,
   type MovementSettings,
   type SelfState,
+  seqNewer,
+  weaponFromWire,
   type Vec3,
 } from '@heist/shared';
 import type { HudView } from '../ui/hud/Hud';
@@ -43,6 +45,10 @@ export class CombatFeedback {
   private alive = true;
   private diedAt = 0;
   private cooldown = 0;
+  /** Gun in hand (from the server) and the fire commands the server has not acknowledged yet. */
+  private weaponId: string | undefined;
+  private ammo = 0;
+  private inFlight: number[] = [];
 
   private map: GameMap;
 
@@ -58,12 +64,16 @@ export class CombatFeedback {
     return this.alive;
   }
 
-  onSnapshot(self: SelfState, nowSeconds: number): void {
+  onSnapshot(self: SelfState, nowSeconds: number, ackSeq = 0): void {
     const { hud, combat } = this.deps;
     const alive = (self.flags & Flag.Alive) !== 0;
     if (this.hp !== undefined && self.hp < this.hp) hud.flashDamage();
     this.hp = self.hp;
     hud.setHealth(self.hp, combat.maxHp);
+    this.weaponId = weaponFromWire(self.weapon);
+    this.ammo = self.ammo;
+    this.inFlight = this.inFlight.filter((seq) => seqNewer(seq, ackSeq));
+    hud.setAmmo(self.ammo);
     hud.setProtected((self.flags & Flag.Protected) !== 0 && alive);
 
     if (!alive && this.alive) this.diedAt = nowSeconds;
@@ -76,10 +86,13 @@ export class CombatFeedback {
     command: InputCommand,
     body: { x: number; y: number; z: number; crouching: boolean },
   ): void {
-    const weapon = this.deps.combat.weapons[this.deps.combat.sandboxWeapon];
+    const weapon = this.weaponId ? this.deps.combat.weapons[this.weaponId] : undefined;
     this.cooldown = Math.max(0, this.cooldown - SIM_DT);
     if (!weapon || !this.alive) return;
     if (!hasButton(command.buttons, Button.Fire) || this.cooldown > 1e-9) return;
+    // Rounds the server will have left once the shots still on their way arrive: none, no trail.
+    if (this.ammo - this.inFlight.length <= 0) return;
+    this.inFlight.push(command.seq);
     this.cooldown += 60 / weapon.rpm;
 
     const origin = aimOrigin(body, command.yaw, this.deps.movement);

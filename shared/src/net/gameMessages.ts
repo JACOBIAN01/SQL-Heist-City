@@ -75,6 +75,10 @@ export interface SelfState {
   readonly vz: number;
   readonly flags: number;
   readonly hp: number;
+  /** Weapon held: 0 = none, else 1 + its index in WEAPON_IDS. */
+  readonly weapon: number;
+  /** Rounds left in the magazine. */
+  readonly ammo: number;
 }
 
 export interface EntityState {

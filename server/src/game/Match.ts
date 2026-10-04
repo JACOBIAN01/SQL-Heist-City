@@ -28,6 +28,7 @@ import {
   type ShotTarget,
   type SelfState,
   type SnapshotMessage,
+  type WeaponSpec,
   type SpawnPoint,
 } from '@heist/shared';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
@@ -121,7 +122,7 @@ export class Match implements MatchApi {
       t: 'snapshot',
       tick: 0,
       ackSeq: 0,
-      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 0, hp: 0 },
+      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 0, hp: 0, weapon: 0, ammo: 0 },
       entities: this.entityPool,
       removed: this.scratchRemoved,
     };
@@ -148,6 +149,14 @@ export class Match implements MatchApi {
 
   get maxHp(): number {
     return this.combat.maxHp;
+  }
+
+  weaponSpec(id: string): WeaponSpec | undefined {
+    return this.combat.weapons[id];
+  }
+
+  get unarmedStart(): boolean {
+    return this.deps.map.unarmedStart === true;
   }
 
   getPlayer(id: number): Player | undefined {
@@ -216,9 +225,9 @@ export class Match implements MatchApi {
       spawn,
       this.now(),
       this.combat.maxHp,
-      this.combat.sandboxWeapon,
     );
     player.key = key;
+    this.equipStartingGear(player);
     player.protectedUntilTick = this.tick + this.ticksFor(this.combat.spawnProtectionSec);
     this.players.set(id, player);
 
@@ -239,18 +248,23 @@ export class Match implements MatchApi {
     return { ok: true, player };
   }
 
+  /**
+   * What a player holds at the start of a life: nothing on heist maps (guns
+   * are earned with SQL), the sandbox rifle with endless ammo elsewhere.
+   */
+  private equipStartingGear(player: Player, alwaysArmed = false): void {
+    player.disarm();
+    if (this.deps.map.unarmedStart && !alwaysArmed) return;
+    const id = this.combat.sandboxWeapon;
+    player.infiniteAmmo = true;
+    player.giveWeapon(id, this.combat.weapons[id]?.magSize ?? 0);
+  }
+
   /** Adds a stationary target (sandbox only). It has no connection and is never idle-dropped. */
   addDummy(name: string, spot: SpawnPoint): Player {
     const quiet: PlayerConnection = { send: () => {}, close: () => {} };
-    const player = new Player(
-      this.allocateId(),
-      name,
-      quiet,
-      spot,
-      this.now(),
-      this.combat.maxHp,
-      this.combat.sandboxWeapon,
-    );
+    const player = new Player(this.allocateId(), name, quiet, spot, this.now(), this.combat.maxHp);
+    this.equipStartingGear(player, true);
     player.isDummy = true;
     player.home = spot;
     this.players.set(player.id, player);
@@ -331,6 +345,11 @@ export class Match implements MatchApi {
   private fire(shooter: Player, command: InputCommand): void {
     const weapon = this.combat.weapons[shooter.weaponId];
     if (!weapon) return;
+    if (!shooter.infiniteAmmo) {
+      const rounds = shooter.ammo;
+      if (rounds <= 0) return; // click: empty
+      shooter.arsenal.set(shooter.weaponId, rounds - 1);
+    }
     shooter.cooldown += 60 / weapon.rpm;
 
     const origin = aimOriginInto(this.aimFrom, shooter.body, command.yaw, this.movement);
@@ -459,6 +478,8 @@ export class Match implements MatchApi {
       p.hp = this.combat.respawnHp;
       p.alive = true;
       p.cooldown = 0;
+      this.equipStartingGear(p, p.isDummy);
+      this.heist.onRespawn(p);
       // Dummies are targets: protection would only get in the way of testing.
       p.protectedUntilTick = p.isDummy
         ? 0
@@ -536,6 +557,10 @@ export class Match implements MatchApi {
       self.vz = b.vz;
       self.flags = flagsOf(player, this.isProtected(player));
       self.hp = player.hp;
+      self.weapon = player.weaponWire;
+      self.ammo = player.infiniteAmmo
+        ? (this.combat.weapons[player.weaponId]?.magSize ?? 0)
+        : player.ammo;
       snapshot.tick = this.tick;
       snapshot.ackSeq = player.lastAppliedSeq;
       this.sendTo(player, snapshot, counts);

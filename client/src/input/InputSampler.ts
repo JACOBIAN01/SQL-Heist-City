@@ -6,17 +6,11 @@ import {
   quantiseYaw,
   type InputCommand,
 } from '@heist/shared';
+import { isTyping } from './Hotkeys';
 
 const MAX_PITCH = 1.45;
 /** Radians per mouse pixel. */
 const DEFAULT_SENSITIVITY = 0.0022;
-
-/** True while the player is typing (SQL editor, form fields): keys then belong to the page. */
-function isTyping(target: EventTarget | null): boolean {
-  return (
-    target instanceof Element && target.closest('input, textarea, select, .cm-editor') !== null
-  );
-}
 
 /**
  * Turns keyboard + mouse into one `InputCommand` per simulation tick.

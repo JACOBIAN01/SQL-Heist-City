@@ -5,7 +5,18 @@ import { decodeServerMessage, encodeServerMessage } from './codec';
 import { Flag, type EntityState, type SnapshotMessage } from './gameMessages';
 import { POSITION_UNIT, SnapshotDecoder, SnapshotEncoder } from './snapshotCodec';
 
-const self = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: Flag.Alive, hp: 100 };
+const self = {
+  x: 0,
+  y: 0,
+  z: 0,
+  vx: 0,
+  vy: 0,
+  vz: 0,
+  flags: Flag.Alive,
+  hp: 100,
+  weapon: 3,
+  ammo: 20,
+};
 const ent = (id: number, over: Partial<EntityState> = {}): EntityState => ({
   id,
   x: 10,

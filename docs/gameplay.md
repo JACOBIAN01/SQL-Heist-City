@@ -47,7 +47,7 @@ The world never pauses. While the pop-up is open the player stays vulnerable.
 
 Hitscan, recoil/spread, headshot ×2. Guns are earned **per life**.
 
-> **Phase 5 sandbox:** until Phase 7, everyone holds the rifle with unlimited ammo (`sandboxWeapon`), and respawn is 5 s at 50 HP with 5 s protection, all from `shared/config/combat.ts`.
+> **Sandbox map:** on the sandbox yard everyone still holds the rifle with unlimited ammo (`sandboxWeapon`); heist maps (`unarmedStart`) start everyone unarmed. Magazines are finite there: each shot spends a round (a shotgun blast one, all pellets), an empty gun clicks, and `ammo:refill` fills the held gun's magazine; guns are lost on death. Respawn is 5 s at 50 HP with 5 s protection, all from `shared/config/combat.ts`.
 
 ## Death & respawn
 Drops carried cash as a bag; respawn at hospital after 5 s with 50 HP, unarmed; banked cash and vault progress kept. Kill bonus (small, config) to discourage pure camping.

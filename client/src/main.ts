@@ -5,6 +5,7 @@ import {
   SIM_DT,
   TEST_MAP,
   mapById,
+  WEAPON_IDS,
 } from '@heist/shared';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { RemotePlayers } from './entities/RemotePlayers';
@@ -19,6 +20,7 @@ import { GameClient } from './net/GameClient';
 import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
 import { InputBatcher } from './net/InputBatcher';
 import { chooseGameUrl } from './net/lobby';
+import { Hotkeys } from './input/Hotkeys';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
 import { CombatFeedback } from './game/CombatFeedback';
@@ -140,7 +142,7 @@ const client = new GameClient(transport, { name: params.get('name') ?? 'Player' 
 client.subscribe({
   snapshot: (snapshot) => {
     predicted.reconcile(snapshot.self, snapshot.ackSeq);
-    feedback.onSnapshot(snapshot.self, performance.now() / 1000);
+    feedback.onSnapshot(snapshot.self, performance.now() / 1000, snapshot.ackSeq);
     serverClock.observe(snapshot.tick, client.tickRate, performance.now());
     remotes.onSnapshot(
       (snapshot.tick * 1000) / client.tickRate,
@@ -155,7 +157,10 @@ client.subscribe({
   json: (message) => {
     if (challengeApi.handle(message) || interactions.handle(message)) return;
     if (message.t === 'vaults') world.applyVaults(message.vaults);
-    else if (message.t === 'banking') bankingProgress.handle(message, performance.now());
+    else if (message.t === 'arms') {
+      ownedWeapons = message.owned;
+      hud.setArms(message.owned, message.current);
+    } else if (message.t === 'banking') bankingProgress.handle(message, performance.now());
     else if (message.t === 'loot') loot.apply(message.add, message.remove);
     else if (message.t === 'purse') {
       hud.setPurse(message.carried, message.banked);
@@ -180,6 +185,7 @@ world.onChange((map, closedDoors) => {
   feedback.setMap(map);
   setClosedDoors(mapObject, closedDoors);
 });
+let ownedWeapons: readonly string[] = [];
 // F uses whatever is in reach (lift, vault console…); the server decides if it works.
 const interactions = new Interactions({
   map: MAP,
@@ -196,12 +202,15 @@ const interactions = new Interactions({
     });
   },
 });
-window.addEventListener('keydown', (event) => {
-  const typing =
-    event.target instanceof Element && event.target.closest('input, textarea, .cm-editor');
-  if (event.code === 'KeyF' && !event.repeat && !typing && feedback.isAlive)
-    void interactions.use();
-});
+// F uses what is in reach; the number keys hold a gun you own (the server confirms in the next snapshot).
+new Hotkeys()
+  .bind(['KeyF'], () => {
+    if (feedback.isAlive) void interactions.use();
+  })
+  .bind(['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'], (code) => {
+    const weapon = WEAPON_IDS[Number(code.slice(-1)) - 1];
+    if (weapon && ownedWeapons.includes(weapon)) client.sendJson({ t: 'equip', weapon });
+  });
 const batcher = new InputBatcher((commands) => client.sendInput(commands));
 
 // Move now (prediction); the server confirms or corrects later. Offline play still works.

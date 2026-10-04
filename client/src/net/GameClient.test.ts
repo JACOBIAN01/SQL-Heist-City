@@ -12,7 +12,7 @@ const snapshot: SnapshotMessage = {
   t: 'snapshot',
   tick: 1,
   ackSeq: 0,
-  self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: Flag.Alive, hp: 100 },
+  self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: Flag.Alive, hp: 100, weapon: 0, ammo: 0 },
   entities: [],
   removed: [],
 };

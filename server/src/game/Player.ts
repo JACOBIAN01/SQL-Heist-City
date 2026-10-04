@@ -6,6 +6,7 @@ import {
   type BodyState,
   type InputCommand,
   type SpawnPoint,
+  weaponToWire,
 } from '@heist/shared';
 
 /** What the match needs from a client connection; sockets and test fakes both fit. */
@@ -30,8 +31,14 @@ export class Player {
   pitch = 0;
   hp: number;
   alive = true;
-  /** Weapon held (key into the combat settings). */
-  weaponId: string;
+  /** Weapon held (key into the combat settings); empty when unarmed. */
+  weaponId = '';
+  /** `weaponId` as the wire index (0 = none), kept so snapshots do not look it up per tick. */
+  weaponWire = 0;
+  /** Guns owned this life and the rounds left in each magazine. */
+  readonly arsenal = new Map<string, number>();
+  /** The Phase 5 sandbox rifle never runs dry. */
+  infiniteAmmo = false;
   /** Seconds until the weapon can fire again; counts down in simulated time, not wall time. */
   cooldown = 0;
   /** Tick until which the player cannot be hurt. */
@@ -74,13 +81,37 @@ export class Player {
     spawn: SpawnPoint,
     now: number,
     hp: number,
-    weaponId: string,
   ) {
     this.hp = hp;
-    this.weaponId = weaponId;
     this.body = createBody(spawn.x, 0, spawn.z);
     this.yaw = spawn.yaw;
     this.lastHeardAt = now;
+  }
+
+  /** Rounds left in the held weapon's magazine. */
+  get ammo(): number {
+    return this.arsenal.get(this.weaponId) ?? 0;
+  }
+
+  /** Takes a gun with a full magazine and holds it. */
+  giveWeapon(id: string, magSize: number): void {
+    this.arsenal.set(id, magSize);
+    this.equip(id);
+  }
+
+  /** Holds a gun already owned; false if it is not. */
+  equip(id: string): boolean {
+    if (!this.arsenal.has(id)) return false;
+    this.weaponId = id;
+    this.weaponWire = weaponToWire(id);
+    return true;
+  }
+
+  /** Back to empty hands (death, new life). */
+  disarm(): void {
+    this.arsenal.clear();
+    this.weaponId = '';
+    this.weaponWire = 0;
   }
 
   /**

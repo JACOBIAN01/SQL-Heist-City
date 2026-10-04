@@ -38,6 +38,7 @@ function ring(count: number, radius: number): SpawnPoint[] {
 export const HEIST_MAP: GameMap = {
   id: 'heist',
   halfSize: HALF,
+  unarmedStart: true,
   boxes: [
     box('wall', 0, -HALF - 0.5, HALF * 2 + 2, WALL_HEIGHT, 1),
     box('wall', 0, HALF + 0.5, HALF * 2 + 2, WALL_HEIGHT, 1),

@@ -145,7 +145,18 @@ describe('server messages', () => {
       t: 'snapshot',
       tick: 99,
       ackSeq: 4242,
-      self: { x: 1.5, y: 2, z: 3.25, vx: 0.5, vy: -1, vz: 0, flags: Flag.Alive, hp: 100 },
+      self: {
+        x: 1.5,
+        y: 2,
+        z: 3.25,
+        vx: 0.5,
+        vy: -1,
+        vz: 0,
+        flags: Flag.Alive,
+        hp: 100,
+        weapon: 4,
+        ammo: 17,
+      },
       entities: Array.from({ length: 50 }, (_, i) => entity(i + 1)),
       removed: [900, 901],
     };
@@ -169,11 +180,11 @@ describe('server messages', () => {
       t: 'snapshot',
       tick: 1,
       ackSeq: 1,
-      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 0, hp: 0 },
+      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 0, hp: 0, weapon: 0, ammo: 0 },
       entities: [],
       removed: [],
     });
-    bytes[1 + 4 + 2 + 20] = 200; // claim 200 entities that are not there
+    bytes[1 + 4 + 2 + 22] = 200; // claim 200 entities that are not there
     expect(() => decodeServerMessage(bytes)).toThrow(CodecError);
   });
 
@@ -231,7 +242,7 @@ describe('bundles', () => {
       t: 'snapshot',
       tick: 1,
       ackSeq: 1,
-      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 4, hp: 100 },
+      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 4, hp: 100, weapon: 0, ammo: 0 },
       entities: [{ id: 2, x, y: 0, z: 0, yaw: 0, pitch: 0, flags: 6, hp: 100 }],
       removed: [],
     });

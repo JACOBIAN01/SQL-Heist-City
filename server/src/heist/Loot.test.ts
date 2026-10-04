@@ -179,6 +179,7 @@ describe('dropping cash', () => {
     const killer = join('K', { x: 10, y: 0, z: 20 });
     setCash(match, victim.player, 30_000);
     victim.player.hp = 1;
+    match.heist.giveWeapon(killer.player, 'rifle'); // heist players start unarmed
     // The killer shoots: facing +z means yaw π.
     const shot = (seq: number): InputCommand => ({
       seq,

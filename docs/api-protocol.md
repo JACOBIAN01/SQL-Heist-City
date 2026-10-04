@@ -50,7 +50,7 @@ Little-endian. The first byte is the type. Decoders throw `CodecError` on trunca
 | Server → client | Type | Layout |
 |---|---|---|
 | welcome | 0x81 | playerId u16, tick u32, tickRate u8, mapId (string) |
-| snapshot | 0x82 | tick u32, ackSeq u16, self (x y z f32, vx vy vz i16 in mm/s, flags u8, hp u8), changed count u8, removed count u8, then per changed entity: id u16, change mask u8 (1 pos delta, 2 pos absolute, 4 yaw, 8 pitch, 16 flags, 32 hp) + only the fields in the mask — pos delta = 3 × i8, absolute = 3 × i16, both in 2 cm units; yaw u8 (1.4°), pitch i8 (1.2°), flags u8, hp u8 — then the removed ids u16 |
+| snapshot | 0x82 | tick u32, ackSeq u16, self (x y z f32, vx vy vz i16 in mm/s, flags u8, hp u8, weapon u8 (0 none, else 1 + index in `WEAPON_IDS`), ammo u8), changed count u8, removed count u8, then per changed entity: id u16, change mask u8 (1 pos delta, 2 pos absolute, 4 yaw, 8 pitch, 16 flags, 32 hp) + only the fields in the mask — pos delta = 3 × i8, absolute = 3 × i16, both in 2 cm units; yaw u8 (1.4°), pitch i8 (1.2°), flags u8, hp u8 — then the removed ids u16 |
 | event | 0x83 | sub-type u8 (1 shot, 2 kill, 3 joined, 4 left) + fields |
 | pong | 0x84 | clientTime f64, tick u32 |
 | bundle | 0x85 | count u8, then per part length u16 + a complete message (usually a snapshot followed by that tick's shot/kill events) |
@@ -112,3 +112,5 @@ The SQL pop-up uses the same challenge messages as before, now over `json` frame
 - `loot { add: [{id,x,y,z,amount}], remove: [id] }` (server → client): cash bags that appeared or vanished (vault spills, deaths and disconnects, pickups). A joining player gets every bag in `add`.
 - `purse { carried, banked, speed }` (server → client, to that player): their cash; `speed` is the top-speed multiplier the server applies (the client predicts with it). Snapshot flag `Carrying` (32) marks players with cash so others draw a bag on their back.
 - `banking { status: 'started', seconds }` / `{ status: 'done', amount }` / `{ status: 'cancelled', reason: 'hurt'|'moved'|'died' }` (server → client): banking is a channel the server counts down (`bankingSeconds`, default 4). `interact` on a safehouse answers `{action:'banking', seconds}` (or `denied` with `nothing_to_bank`).
+- `equip { weapon }` (client → server): hold a gun you own (the number keys 1–5).
+- `arms { owned: [id], current }` (server → client): the guns owned this life and the one in hand; sent on join, unlock, equip and respawn. Rounds in the magazine travel in every snapshot (`self.ammo`) because they change with every shot.

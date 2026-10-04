@@ -10,6 +10,7 @@ import {
   type RejectReason,
 } from '@heist/shared';
 import type { Player } from '../game/Player';
+import { AmmoRule, GunRule, type ArmsControl } from './ArmsRules';
 import { BankingService } from './BankingService';
 import type { ChallengeGateway } from './ChallengeGateway';
 import { HealRule } from './HealRule';
@@ -30,7 +31,7 @@ import type { MatchApi } from './MatchApi';
  * Pattern: Facade — Why: Match stays about movement and shooting; vaults,
  * loot and tasks grow here without touching the tick loop.
  */
-export class HeistController {
+export class HeistController implements ArmsControl {
   readonly interactions: InteractionService;
   readonly vaults: VaultRegistry;
 
@@ -65,7 +66,10 @@ export class HeistController {
         },
       }),
     );
-    this.tasks.add(new HealRule(match, settings));
+    this.tasks
+      .add(new HealRule(match, settings))
+      .add(new GunRule(match, this))
+      .add(new AmmoRule(match, this));
     this.refreshDoors();
   }
 
@@ -74,6 +78,7 @@ export class HeistController {
     this.match.sendJson(player, { t: 'vaults', vaults: this.vaults.views() });
     this.match.sendJson(player, { t: 'loot', add: this.loot.all(), remove: [] });
     this.sendPurse(player);
+    this.sendArms(player);
   }
 
   /** Every tick: players walking over a bag pick it up. */
@@ -99,6 +104,32 @@ export class HeistController {
     const bag = this.loot.add(victim.body.x, victim.body.y, victim.body.z, victim.cash);
     this.setCash(victim, 0);
     this.match.broadcastJson({ t: 'loot', add: [bag], remove: [] });
+  }
+
+  /** A new life: empty hands again (or the sandbox rifle); tell the client. */
+  onRespawn(player: Player): void {
+    this.sendArms(player);
+  }
+
+  giveWeapon(player: Player, id: string): void {
+    const spec = this.match.weaponSpec(id);
+    if (!spec) return;
+    player.giveWeapon(id, spec.magSize);
+    this.sendArms(player);
+  }
+
+  refillAmmo(player: Player): void {
+    const spec = this.match.weaponSpec(player.weaponId);
+    if (spec && player.arsenal.has(player.weaponId))
+      player.arsenal.set(player.weaponId, spec.magSize);
+  }
+
+  private sendArms(player: Player): void {
+    this.match.sendJson(player, {
+      t: 'arms',
+      owned: [...player.arsenal.keys()],
+      current: player.weaponId,
+    });
   }
 
   /** A player took damage: it breaks their banking. */
@@ -170,6 +201,10 @@ export class HeistController {
       });
       return;
     }
+    if (message.t === 'equip') {
+      if (player.alive && player.equip(message.weapon)) this.sendArms(player);
+      return;
+    }
     this.onChallenge(player, message, raw);
   }
 
@@ -185,7 +220,7 @@ export class HeistController {
    * challenge system; a correct answer applies the reward.
    */
   private onChallenge(player: Player, message: JsonClientMessage, raw: unknown): void {
-    if (message.t === 'interact') return;
+    if (message.t === 'interact' || message.t === 'equip') return;
     if (!this.challenges) {
       if (message.t === 'challenge_request')
         this.reply(player, this.refuse(message.ref, 'unavailable'));

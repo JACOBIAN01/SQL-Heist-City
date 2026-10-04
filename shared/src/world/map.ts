@@ -85,6 +85,8 @@ export interface GameMap {
   readonly dummies?: readonly SpawnPoint[];
   /** Usable spots (elevators, vault consoles, safehouses). */
   readonly anchors?: readonly MapAnchor[];
+  /** Players start with no gun and earn them (heist maps); otherwise everyone holds the sandbox rifle. */
+  readonly unarmedStart?: boolean;
   readonly doors?: readonly MapDoor[];
   readonly vaults?: readonly MapVault[];
 }

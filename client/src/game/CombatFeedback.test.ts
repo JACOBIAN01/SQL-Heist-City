@@ -22,6 +22,8 @@ function setup() {
     setPrompt: vi.fn(),
     setPurse: vi.fn(),
     setProgress: vi.fn(),
+    setArms: vi.fn(),
+    setAmmo: vi.fn(),
     toast: vi.fn(),
   };
   const tracers: { from: Vec3; to: Vec3 }[] = [];
@@ -48,6 +50,8 @@ const self = (over: Partial<SelfState> = {}): SelfState => ({
   vz: 0,
   flags: Flag.Alive | Flag.OnGround,
   hp: 100,
+  weapon: 4,
+  ammo: 25,
   ...over,
 });
 const firing = (over: Partial<InputCommand> = {}): InputCommand => ({
@@ -145,5 +149,48 @@ describe('CombatFeedback: kill feed', () => {
     feedback.onEvent({ e: 'kill', killer: 2, victim: 3 });
     expect(hud.addKill).toHaveBeenNthCalledWith(1, 'Me', 'P2', true);
     expect(hud.addKill).toHaveBeenNthCalledWith(2, 'P2', 'P3', false);
+  });
+});
+
+describe('CombatFeedback ammo and weapons', () => {
+  it('draws no trail while unarmed', () => {
+    const { feedback, tracers } = setup();
+    feedback.onSnapshot(self({ weapon: 0, ammo: 0 }), 0);
+    feedback.onLocalCommand(firing(), { x: 0, y: 0, z: 0, crouching: false });
+    expect(tracers).toHaveLength(0);
+  });
+
+  it('draws no trail with an empty magazine, and shows the rounds left', () => {
+    const { feedback, tracers, hud } = setup();
+    feedback.onSnapshot(self({ weapon: 4, ammo: 0 }), 0);
+    expect(hud.setAmmo).toHaveBeenLastCalledWith(0);
+    feedback.onLocalCommand(firing(), { x: 0, y: 0, z: 0, crouching: false });
+    expect(tracers).toHaveLength(0);
+  });
+
+  it('stops drawing trails once the shots already sent would empty the magazine', () => {
+    const { feedback, tracers } = setup();
+    feedback.onSnapshot(self({ weapon: 4, ammo: 2 }), 0);
+    const body = { x: 0, y: 0, z: 0, crouching: false };
+    // Fire three times, a full cooldown apart: the server has 2 rounds, so only 2 trails.
+    for (let seq = 1; seq <= 3; seq++) {
+      feedback.onLocalCommand(firing({ seq }), body);
+      for (let i = 0; i < 10; i++)
+        feedback.onLocalCommand(firing({ seq: 100 + seq * 10 + i, buttons: 0 }), body);
+    }
+    expect(tracers).toHaveLength(2);
+  });
+
+  it('counts a shot as spent only until the server acknowledges it', () => {
+    const { feedback, tracers } = setup();
+    feedback.onSnapshot(self({ weapon: 4, ammo: 1 }), 0);
+    const body = { x: 0, y: 0, z: 0, crouching: false };
+    feedback.onLocalCommand(firing({ seq: 1 }), body);
+    expect(tracers).toHaveLength(1);
+    // The server saw seq 1 and still reports 1 round (e.g. a refill): firing is allowed again.
+    feedback.onSnapshot(self({ weapon: 4, ammo: 1 }), 0.1, 1);
+    for (let i = 0; i < 10; i++) feedback.onLocalCommand(firing({ seq: 50 + i, buttons: 0 }), body);
+    feedback.onLocalCommand(firing({ seq: 2 }), body);
+    expect(tracers).toHaveLength(2);
   });
 });

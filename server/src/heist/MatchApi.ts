@@ -1,4 +1,4 @@
-import type { GameMap, JsonServerMessage } from '@heist/shared';
+import type { GameMap, JsonServerMessage, WeaponSpec } from '@heist/shared';
 import type { Player } from '../game/Player';
 
 /**
@@ -10,6 +10,9 @@ export interface MatchApi {
   readonly tick: number;
   readonly tickRate: number;
   readonly maxHp: number;
+  /** Heist maps start everyone unarmed. */
+  readonly unarmedStart: boolean;
+  weaponSpec(id: string): WeaponSpec | undefined;
   readonly map: GameMap;
   getPlayer(id: number): Player | undefined;
   playerList(): Iterable<Player>;

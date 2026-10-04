@@ -59,8 +59,8 @@ function toEntity(id: number, q: Quantised): EntityState {
   };
 }
 
-/** Header: tick u32, ackSeq u16, self (f32×3 position, i16×3 velocity in mm/s, flags, hp), counts u8 ×2. */
-const SELF_BYTES = 12 + 6 + 2;
+/** Header: tick u32, ackSeq u16, self (f32×3 position, i16×3 velocity in mm/s, flags, hp, weapon, ammo), counts u8 ×2. */
+const SELF_BYTES = 12 + 6 + 4;
 const MAX_ENTITIES = 255;
 
 const velocityToWire = (v: number): number =>
@@ -119,6 +119,8 @@ export class SnapshotEncoder {
     v.setInt16(o + 16, velocityToWire(s.vz), true);
     v.setUint8(o + 18, s.flags);
     v.setUint8(o + 19, s.hp);
+    v.setUint8(o + 20, s.weapon);
+    v.setUint8(o + 21, Math.min(255, s.ammo));
     o += SELF_BYTES;
     const countAt = o;
     o += 2; // entity and removed counts, filled in below
@@ -212,6 +214,8 @@ export class SnapshotDecoder {
       vz: r.i16() * VELOCITY_UNIT,
       flags: r.u8(),
       hp: r.u8(),
+      weapon: r.u8(),
+      ammo: r.u8(),
     };
     const count = r.u8();
     const removedCount = r.u8();

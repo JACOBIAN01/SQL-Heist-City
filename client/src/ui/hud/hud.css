@@ -196,3 +196,65 @@
   height: 100%;
   background: #7be08f;
 }
+
+.hud-weapons {
+  position: absolute;
+  right: 16px;
+  bottom: 24px;
+  text-align: right;
+  text-shadow: 0 1px 2px #000;
+}
+.hud-weapons[hidden] {
+  display: none;
+}
+.hud-weapon-line {
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+.hud-ammo {
+  margin-left: 8px;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+.hud-ammo[data-empty='true'] {
+  color: #ff6b5e;
+}
+.hud-slots {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+.hud-slot {
+  position: relative;
+  width: 52px;
+  height: 36px;
+  padding: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0.6;
+}
+.hud-slot.current {
+  opacity: 1;
+  border-color: #7be08f;
+}
+.hud-slot[hidden] {
+  display: none;
+}
+.hud-slot .sqlp-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hud-slot .sqlp-icon svg {
+  width: 100%;
+  height: 100%;
+}
+.hud-slot-key {
+  position: absolute;
+  left: 3px;
+  top: 0;
+  font-size: 10px;
+  opacity: 0.8;
+}
