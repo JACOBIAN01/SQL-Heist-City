@@ -11,6 +11,13 @@ const workerExecArgv = fromSource ? ['--import', 'tsx'] : [];
 
 type Metrics = Extract<MatchWorkerMessage, { type: 'metrics' }>['metrics'];
 
+/** Optional wiring for a match thread. */
+export interface MatchExtras {
+  readonly heist?: HeistSettings;
+  /** Question database (opened read-only inside the thread) so the match can serve SQL tasks. */
+  readonly dbPath?: string;
+}
+
 export interface MatchInfo {
   readonly id: number;
   readonly port: number;
@@ -55,7 +62,7 @@ export class MatchPool {
     settings: MatchSettings,
     port = 0,
     map?: MapName,
-    heist?: HeistSettings,
+    extras: MatchExtras = {},
   ): Promise<MatchInfo> {
     const id = this.nextId++;
     const data: MatchWorkerData = {
@@ -63,7 +70,8 @@ export class MatchPool {
       port,
       settings,
       ...(map ? { map } : {}),
-      ...(heist ? { heist } : {}),
+      ...(extras.heist ? { heist: extras.heist } : {}),
+      ...(extras.dbPath ? { dbPath: extras.dbPath } : {}),
     };
     const worker = new Worker(workerUrl, { execArgv: workerExecArgv, workerData: data });
     return new Promise((resolve, reject) => {
@@ -83,6 +91,11 @@ export class MatchPool {
         }
       });
     });
+  }
+
+  /** Admin edited questions or settings: every match thread drops its caches. */
+  reload(): void {
+    for (const m of this.matches.values()) m.worker.postMessage({ type: 'reload' });
   }
 
   list(): MatchInfo[] {

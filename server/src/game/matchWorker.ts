@@ -1,6 +1,9 @@
 import { createServer } from 'node:http';
 import { parentPort, workerData } from 'node:worker_threads';
 import type { HeistSettings, MatchSettings } from '@heist/shared';
+import { existsSync } from 'node:fs';
+import { buildChallengeStack } from '../composition';
+import { openDatabase } from '../db/database';
 import { mapByName, type MapName } from './maps';
 import { startGame } from './startGame';
 
@@ -13,6 +16,8 @@ export interface MatchWorkerData {
   /** Which map to load (default: the sandbox yard). */
   readonly map?: MapName;
   readonly heist?: HeistSettings;
+  /** Question database; the thread opens it read-only and serves SQL tasks from it. */
+  readonly dbPath?: string;
 }
 
 /** Messages worker → pool. */
@@ -31,8 +36,18 @@ export type MatchWorkerMessage =
  */
 const data = workerData as MatchWorkerData;
 const http = createServer();
+// Each thread has its own read-only handle and challenge stack: SQLite allows many readers, and
+// a match then never waits on another thread to ask or grade a question.
+const stack =
+  data.dbPath && existsSync(data.dbPath)
+    ? buildChallengeStack(openDatabase({ path: data.dbPath, readOnly: true }), {
+        logger: { warn: (message, meta) => console.warn(message, meta ?? '') },
+      })
+    : undefined;
+const heist = data.heist ?? stack?.heistSettings();
 const game = startGame(http, data.settings, mapByName(data.map), {
-  ...(data.heist ? { heist: data.heist } : {}),
+  ...(heist ? { heist } : {}),
+  ...(stack ? { challenges: stack.handler } : {}),
 });
 
 http.listen(data.port, () => {
@@ -49,10 +64,17 @@ const report = setInterval(() => {
 }, 1000);
 
 parentPort?.on('message', (message: { type: string }) => {
+  if (message.type === 'reload') {
+    stack?.invalidate();
+    return;
+  }
   if (message.type !== 'stop') return;
   clearInterval(report);
-  void game.stop().then(() => {
-    http.close();
-    process.exit(0);
-  });
+  void game
+    .stop()
+    .then(() => stack?.close())
+    .then(() => {
+      http.close();
+      process.exit(0);
+    });
 });

@@ -30,6 +30,7 @@ import {
   type SnapshotMessage,
   type SpawnPoint,
 } from '@heist/shared';
+import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import { HeistController } from '../heist/HeistController';
 import type { MatchApi } from '../heist/MatchApi';
 import { InterestManager } from './InterestManager';
@@ -55,6 +56,8 @@ export interface MatchDeps {
   readonly movement?: MovementSettings;
   readonly combat?: CombatSettings;
   readonly heist?: HeistSettings;
+  /** SQL tasks; without it every task request is answered "unavailable". */
+  readonly challenges?: ChallengeGateway;
   /** Seeds bullet spread so a match is reproducible in tests. */
   readonly seed?: string;
   readonly spawnPolicy?: SpawnPolicy;
@@ -74,6 +77,7 @@ export class Match implements MatchApi {
   /** Everything the server has tried to send, for `/metrics` and the load tests. */
   readonly traffic = { bytes: 0, snapshots: 0, events: 0 };
   private nextId = 1;
+  private joinCount = 0;
   private readonly spawnPolicy: SpawnPolicy;
   private readonly now: () => number;
   private readonly movement: MovementSettings;
@@ -126,7 +130,7 @@ export class Match implements MatchApi {
     );
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
-    this.heist = new HeistController(this, deps.heist);
+    this.heist = new HeistController(this, deps.heist, deps.challenges);
   }
 
   get map(): GameMap {
@@ -189,6 +193,7 @@ export class Match implements MatchApi {
       return { ok: false, code: CLOSE_FULL, reason: 'Match is full' };
     }
     const id = this.allocateId();
+    const key = `p${++this.joinCount}`;
     const spawn = this.spawnPolicy.pick(
       this.deps.map,
       [...this.players.values()].map((p) => p.body),
@@ -202,6 +207,7 @@ export class Match implements MatchApi {
       this.combat.maxHp,
       this.combat.sandboxWeapon,
     );
+    player.key = key;
     player.protectedUntilTick = this.tick + this.ticksFor(this.combat.spawnProtectionSec);
     this.players.set(id, player);
 
@@ -242,7 +248,9 @@ export class Match implements MatchApi {
   }
 
   leave(id: number): void {
-    if (!this.players.delete(id)) return;
+    const leaving = this.players.get(id);
+    if (!leaving || !this.players.delete(id)) return;
+    this.heist.onLeave(leaving);
     this.lagComp.forget(id);
     this.interest.remove(id);
     this.broadcast({ e: 'left', id });

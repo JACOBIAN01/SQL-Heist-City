@@ -49,6 +49,7 @@ const server = createHttpServer({
   ...(process.env.INTERNAL_SECRET ? { internalSecret: process.env.INTERNAL_SECRET } : {}),
   onReload: () => {
     challenges?.invalidate();
+    running.pool?.reload();
     console.log('reloaded questions and settings');
   },
 });
@@ -59,12 +60,14 @@ const workers = Number(process.env.MATCH_WORKERS ?? 0);
 if (workers > 0) {
   running.pool = new MatchPool();
   for (let i = 0; i < workers; i++) {
-    const info = await running.pool.start(matchSettings, 0, mapName, challenges?.heistSettings());
+    const info = await running.pool.start(matchSettings, 0, mapName, {
+      ...(challenges ? { heist: challenges.heistSettings(), dbPath } : {}),
+    });
     console.log(`match ${info.id} listening on ws://localhost:${info.port}/ws/game`);
   }
 } else {
   running.game = startGame(server, matchSettings, mapByName(mapName), {
-    ...(challenges ? { heist: challenges.heistSettings() } : {}),
+    ...(challenges ? { heist: challenges.heistSettings(), challenges: challenges.handler } : {}),
   });
 }
 

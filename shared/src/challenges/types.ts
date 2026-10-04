@@ -40,6 +40,8 @@ export interface PreviewRows {
 
 export type RejectReason =
   | 'unknown_reward'
+  /** The game rules refuse this task right now (not at the vault, dead, already open…). */
+  | 'not_allowed'
   | 'no_questions'
   | 'not_found'
   | 'expired'

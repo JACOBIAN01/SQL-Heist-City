@@ -31,6 +31,12 @@ import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
+import { ChannelChallengeApi } from './net/ChannelChallengeApi';
+import { SqlPanel } from './ui/sql/SqlPanel';
+import { StorageDraftStore } from './ui/sql/DraftStore';
+import { SqlPanelController } from './ui/sql/SqlPanelController';
+import { rewardLabel } from './ui/sql/labels';
+import './ui/sql/sqlPanel.css';
 import { buildMapObject, setClosedDoors } from './world/MapRenderer';
 
 // Composition root for the client.
@@ -71,7 +77,7 @@ hint.textContent =
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
-new PointerLock(renderer.domElement, input, (locked) => {
+const pointer = new PointerLock(renderer.domElement, input, (locked) => {
   hint.hidden = locked;
 });
 const rig = new CameraRig(camera, MAP);
@@ -140,9 +146,19 @@ client.subscribe({
     feedback.onEvent(event);
   },
   json: (message) => {
+    if (challengeApi.handle(message) || interactions.handle(message)) return;
     if (message.t === 'vaults') world.applyVaults(message.vaults);
-    else interactions.handle(message);
+    else if (message.t === 'notice') hud.toast(message.text);
   },
+});
+// The SQL pop-up lives on the game connection: the server decides what each task is worth.
+const challengeApi = new ChannelChallengeApi({ send: (message) => client.sendJson(message) });
+const sqlPanel = new SqlPanel(document.body);
+const sqlTasks = new SqlPanelController({
+  panel: sqlPanel,
+  api: challengeApi,
+  drafts: new StorageDraftStore(sessionStorage),
+  onHintCharged: (hint) => hud.toast(`Hint revealed (cost ${hint.cost})`),
 });
 // A vault door opening changes what everyone collides with.
 world.onChange((map, closedDoors) => {
@@ -156,7 +172,16 @@ const interactions = new Interactions({
   map: MAP,
   send: (message) => client.sendJson(message),
   view: hud,
-  onOpenTask: (rewardKey) => hud.toast(`Task: ${rewardKey}`),
+  onOpenTask: (rewardKey, target) => {
+    // The panel needs the mouse (the world keeps running behind it).
+    pointer.release();
+    void sqlTasks.start({
+      key: rewardKey,
+      label: rewardLabel(rewardKey),
+      group: rewardKey.split(':')[0] ?? 'Task',
+      target,
+    });
+  },
 });
 window.addEventListener('keydown', (event) => {
   const typing =

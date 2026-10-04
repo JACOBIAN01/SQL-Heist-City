@@ -105,3 +105,7 @@ Server → client: the challenge replies and
 The server validates every use: the anchor exists, the player is alive and within its radius (+0.75 m slack) on the same storey, and a 0.75 s per-player cooldown has passed. Anything that fails the shape check is ignored.
 
 - `vaults { vaults: [{id, tier, locks, opened}] }` (server → client): progress of every vault, sent on join and whenever a lock opens. The vault door stops blocking once `opened == locks`; the client swaps its collision map and hides the door.
+- `notice { text }` (server → client): a short message for the player, e.g. "Someone opened that lock first."
+
+### Tasks on the game connection
+The SQL pop-up uses the same challenge messages as before, now over `json` frames. The game checks every `challenge_request` against its own rules *before* the question system sees it (`TaskRule`, one per reward family). For a vault lock the player must be alive, standing at that vault's console (same storey, within reach), and the reward key must be exactly the vault's next lock (`vault:bank-<tier>:lock-<k>`); otherwise the reply is `{ok:false, reason:'not_allowed'}`. A reward key no rule owns is `unknown_reward`; without a question database it is `unavailable`. A correct `challenge_result` applies the reward (for a lock: opens it, swaps the collision map, broadcasts `vaults`). Each join gets a unique player key (`p<n>`) for the challenge system, so a reused player id never inherits another student's attempts or rate limits.

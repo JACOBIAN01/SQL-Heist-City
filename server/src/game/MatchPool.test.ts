@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join as joinPath } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { WebSocket } from 'ws';
 import {
@@ -8,6 +11,7 @@ import {
   encodeClientMessage,
   type ServerMessage,
 } from '@heist/shared';
+import { openDatabase } from '../db/database';
 import { MatchPool } from './MatchPool';
 
 let pool: MatchPool | undefined;
@@ -77,6 +81,43 @@ describe('MatchPool', () => {
     await until(() => (pool?.list()[0]?.players ?? 0) === 3, 10000);
     expect(pool.openMatch()).toBeUndefined();
     c.ws.terminate();
+  }, 25000);
+
+  it('serves interactions and SQL tasks from inside a match thread', async () => {
+    const dir = mkdtempSync(joinPath(tmpdir(), 'heist-pool-'));
+    const dbPath = joinPath(dir, 'game.db');
+    openDatabase({ path: dbPath }).close();
+    try {
+      pool = new MatchPool();
+      const info = await pool.start({ ...settings, sandboxDummies: 0 }, 0, 'heist', { dbPath });
+      const c = join(info.port);
+      await until(() => c.messages.some((m) => m.t === 'welcome'));
+      const send = (m: object) =>
+        c.ws.send(encodeClientMessage({ t: 'json', text: JSON.stringify(m) }));
+      const answers = () =>
+        c.messages.flatMap((m) => (m.t === 'json' ? [JSON.parse(m.text) as { t: string }] : []));
+
+      // The vault state arrives on join.
+      await until(() => answers().some((m) => m.t === 'vaults'));
+      send({ t: 'interact', ref: 1, anchor: 'nowhere' });
+      await until(() => answers().some((m) => m.t === 'interact_result'));
+      // A vault task from the street is refused by the rules, before any question is drawn.
+      send({
+        t: 'challenge_request',
+        ref: 2,
+        rewardKey: 'vault:bank-1:lock-1',
+        target: 'bank-1:vault',
+      });
+      await until(() => answers().some((m) => m.t === 'challenge'));
+      expect(answers().find((m) => m.t === 'challenge')).toMatchObject({
+        result: { ok: false, reason: 'not_allowed' },
+      });
+      c.ws.terminate();
+    } finally {
+      await pool?.stop();
+      pool = undefined;
+      rmSync(dir, { recursive: true, force: true });
+    }
   }, 25000);
 
   it('stops cleanly', async () => {

@@ -5,6 +5,8 @@ export function reasonMessage(reason: RejectReason, secondsUntilRetry?: number):
   switch (reason) {
     case 'unknown_reward':
       return 'The game does not know that task.';
+    case 'not_allowed':
+      return 'You cannot do that task from here right now.';
     case 'no_questions':
       return 'No questions are available for this task right now. Ask your teacher to enable some.';
     case 'not_found':

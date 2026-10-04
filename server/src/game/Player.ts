@@ -20,6 +20,11 @@ export interface PlayerConnection {
  * with fakes and the transport can change freely).
  */
 export class Player {
+  /**
+   * Unique for this join, never reused (ids are): keys per-player state held elsewhere,
+   * such as the SQL challenge service's attempts and rate limits.
+   */
+  key = '';
   readonly body: BodyState;
   yaw = 0;
   pitch = 0;

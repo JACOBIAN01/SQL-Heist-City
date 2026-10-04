@@ -51,6 +51,12 @@ export interface VaultsMessage {
   readonly vaults: readonly VaultView[];
 }
 
-export type HeistServerMessage = InteractReply | VaultsMessage;
+/** A short message for the player ("Someone beat you to the lock"). */
+export interface NoticeMessage {
+  readonly t: 'notice';
+  readonly text: string;
+}
+
+export type HeistServerMessage = InteractReply | VaultsMessage | NoticeMessage;
 
 export type JsonServerMessage = ChallengeServerMessage | HeistServerMessage;

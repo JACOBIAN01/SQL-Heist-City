@@ -6,6 +6,7 @@ import {
   type HeistSettings,
   type MatchSettings,
 } from '@heist/shared';
+import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import { GameLoop } from './GameLoop';
 import { attachGameSocket, type GameSocket } from './GameSocket';
 import { Match } from './Match';
@@ -36,6 +37,7 @@ export interface RunningGame {
 
 export interface GameOptions {
   readonly heist?: HeistSettings;
+  readonly challenges?: ChallengeGateway;
 }
 
 /** Wires one match to the HTTP server and starts ticking. Composition only, no rules. */
@@ -45,7 +47,12 @@ export function startGame(
   map: GameMap = TEST_MAP,
   options: GameOptions = {},
 ): RunningGame {
-  const match = new Match({ map, settings, ...(options.heist ? { heist: options.heist } : {}) });
+  const match = new Match({
+    map,
+    settings,
+    ...(options.heist ? { heist: options.heist } : {}),
+    ...(options.challenges ? { challenges: options.challenges } : {}),
+  });
   (map.dummies ?? [])
     .slice(0, settings.sandboxDummies)
     .forEach((spot, i) => match.addDummy(`Dummy ${i + 1}`, spot));
