@@ -43,6 +43,7 @@ import { Tracers } from './render/Tracers';
 import { Hud } from './ui/hud/Hud';
 import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
+import { FrameBudget, lowerLevel, PostFx } from './render/PostFx';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
 import { ChannelChallengeApi } from './net/ChannelChallengeApi';
@@ -81,10 +82,19 @@ const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
 
 const camera = new PerspectiveCamera(70, 1, 0.1, 220);
+// Bloom + FXAA. ?fx=high|fxaa|off pins a level; otherwise it starts high and steps down when
+// frames stay over budget, so slow laptops keep their frame rate.
+const fxParam = params.get('fx');
+const postFx = new PostFx(renderer, scene, camera);
+if (fxParam === 'high' || fxParam === 'fxaa' || fxParam === 'off') postFx.setLevel(fxParam);
+const fxBudget = fxParam ? undefined : new FrameBudget();
+// The composer renders several passes a frame; count them all in the overlay.
+renderer.info.autoReset = false;
 const resize = (): void => {
   const v = computeViewport(window.innerWidth, window.innerHeight, window.devicePixelRatio);
   renderer.setPixelRatio(v.pixelRatio);
   renderer.setSize(v.width, v.height);
+  postFx.setSize(v.width, v.height, v.pixelRatio);
   camera.aspect = v.aspect;
   camera.updateProjectionMatrix();
 };
@@ -342,6 +352,14 @@ renderer.setAnimationLoop((now) => {
   const frameMs = now - last;
   last = now;
   stats.push(frameMs);
+  renderer.info.reset();
+  if (fxBudget?.push(frameMs)) {
+    const lower = lowerLevel(postFx.level);
+    if (lower) {
+      postFx.setLevel(lower);
+      console.info(`frames over budget: post-processing down to "${lower}"`);
+    }
+  }
   input.setViewLag(client.rttMs / 2 + INTERP_DELAY_MS);
   loop.advance(frameMs / 1000);
   batcher.flush(now);
@@ -385,15 +403,16 @@ renderer.setAnimationLoop((now) => {
     hourAt(serverClock.ready ? serverClock.serverTimeAt(now) : 0, DEFAULT_ATMOSPHERE_SETTINGS);
   if (Math.abs(hour - lighting.state.hour) > SKY_STEP_HOURS) {
     lighting.apply(skyAt(hour));
+    postFx.setNight(lighting.state.night);
     if (cityKit) setNightGlow(cityKit.materials, lighting.state.night);
   }
   lighting.frame(camera);
   lighting.follow(model.object);
-  renderer.render(scene, camera);
+  postFx.render(scene, camera);
 
   if (now - lastOverlay > 500) {
     lastOverlay = now;
     const { calls, triangles } = renderer.info.render;
-    overlay.textContent = `${client.status} · rtt ${client.rttMs.toFixed(0)} ms · players ${remotes.count + 1} · pending ${predicted.pendingCount} · corr ${predicted.lastCorrection.toFixed(3)} m · ${stats.fps.toFixed(0)} fps · worst ${stats.worstMs.toFixed(0)} ms · ${calls} calls · ${(triangles / 1000).toFixed(1)}k tris`;
+    overlay.textContent = `${client.status} · rtt ${client.rttMs.toFixed(0)} ms · players ${remotes.count + 1} · pending ${predicted.pendingCount} · corr ${predicted.lastCorrection.toFixed(3)} m · ${stats.fps.toFixed(0)} fps · worst ${stats.worstMs.toFixed(0)} ms · ${calls} calls · ${(triangles / 1000).toFixed(1)}k tris · fx ${postFx.level}`;
   }
 });
