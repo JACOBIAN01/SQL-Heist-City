@@ -45,6 +45,8 @@ export class Player {
   pendingCount = 0;
   /** Marks "already got this shot" while a shot event is delivered. */
   shotStamp = 0;
+  /** Earliest tick this player may use an anchor again. */
+  interactReadyTick = 0;
   kills = 0;
   deaths = 0;
   /** Last input sequence number applied; echoed in snapshots so the client can reconcile. */

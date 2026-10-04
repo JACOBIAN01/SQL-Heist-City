@@ -91,3 +91,15 @@ Errors: `{error: {code, message, details?}}`, standard HTTP codes.
 
 ## Versioning
 `welcome` carries protocol version; mismatch → client prompted to refresh.
+
+
+## JSON messages on the game socket (protocol 3, Phase 7)
+Low-rate messages travel as `json` frames inside the binary protocol: client `0x04` and server `0x86`, followed by UTF-8 JSON (at most 24 KB). They may sit in a bundle. Binary input/snapshot frames are unchanged, and any other binary message still has to match its exact layout.
+
+Client → server: the challenge messages (`challenge_request`, `challenge_run`, `challenge_submit`, `challenge_hint`, `challenge_abandon`; see above) and
+- `interact { ref, anchor }`: use the map anchor with this id (lift, vault console, safehouse).
+
+Server → client: the challenge replies and
+- `interact_result { ref, anchor, result }` where `result` is `{action:'moved', storey}`, `{action:'open_task', rewardKey, target}` or `{action:'denied', reason}` (`unknown_anchor`, `too_far`, `dead`, `cooldown`, `not_available`).
+
+The server validates every use: the anchor exists, the player is alive and within its radius (+0.75 m slack) on the same storey, and a 0.75 s per-player cooldown has passed. Anything that fails the shape check is ignored.

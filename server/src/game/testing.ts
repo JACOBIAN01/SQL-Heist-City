@@ -23,6 +23,11 @@ export class FakeConnection implements PlayerConnection {
     return this.sent.filter((m): m is Extract<ServerMessage, { t: T }> => m.t === type);
   }
 
+  /** JSON messages received so far, parsed (tasks, interaction results…). */
+  json(): { t: string; [key: string]: unknown }[] {
+    return this.of('json').map((m) => JSON.parse(m.text) as { t: string });
+  }
+
   clear(): void {
     this.sent.length = 0;
   }

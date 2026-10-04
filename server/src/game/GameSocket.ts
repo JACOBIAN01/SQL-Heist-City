@@ -1,6 +1,11 @@
 import type { Server } from 'node:http';
 import { WebSocketServer, type RawData, type WebSocket } from 'ws';
-import { CodecError, decodeClientMessage, encodeServerMessage } from '@heist/shared';
+import {
+  CodecError,
+  MAX_JSON_BYTES,
+  decodeClientMessage,
+  encodeServerMessage,
+} from '@heist/shared';
 import { TokenBucket } from '../net/TokenBucket';
 import { upgradeRouterFor } from '../net/UpgradeRouter';
 import type { Match } from './Match';
@@ -8,7 +13,7 @@ import type { PlayerConnection } from './Player';
 
 export interface GameSocketOptions {
   readonly path?: string;
-  /** Largest frame accepted. A full input batch is ~82 bytes; this leaves room and stops abuse. */
+  /** Largest frame accepted. Input batches are ~82 bytes (their decoder rejects anything longer); JSON tasks may be larger. */
   readonly maxPayload?: number;
   /** Messages per second one client may send (input batches + pings). */
   readonly messagesPerSecond?: number;
@@ -49,7 +54,10 @@ export function attachGameSocket(
   match: Match,
   options: GameSocketOptions = {},
 ): GameSocket {
-  const wss = new WebSocketServer({ noServer: true, maxPayload: options.maxPayload ?? 1024 });
+  const wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: options.maxPayload ?? MAX_JSON_BYTES + 16,
+  });
   upgradeRouterFor(http).route(options.path ?? '/ws/game', wss);
   const maxBuffered = options.maxBufferedBytes ?? 1_000_000;
   const rate = options.messagesPerSecond ?? 120;
@@ -101,6 +109,9 @@ export function attachGameSocket(
           connection.send(
             encodeServerMessage({ t: 'pong', clientTime: message.clientTime, tick: match.tick }),
           );
+          break;
+        case 'json':
+          match.receiveJson(playerId, message.text);
           break;
         case 'join':
           socket.close(CLOSE_BAD_MESSAGE, 'Already joined');

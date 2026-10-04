@@ -20,6 +20,7 @@ import {
   type GameEvent,
   type GameMap,
   type InputCommand,
+  type JsonServerMessage,
   type MatchSettings,
   type MovementSettings,
   type ServerMessage,
@@ -28,6 +29,8 @@ import {
   type SnapshotMessage,
   type SpawnPoint,
 } from '@heist/shared';
+import { HeistController } from '../heist/HeistController';
+import type { MatchApi } from '../heist/MatchApi';
 import { InterestManager } from './InterestManager';
 import { LagCompensator, type BodyPose } from './LagCompensator';
 import { Player, type PlayerConnection } from './Player';
@@ -63,7 +66,7 @@ const MAX_ID = 0xffff;
  * One running match: who is in it and what happens each tick. It knows
  * nothing about WebSockets — connections come in as `PlayerConnection`.
  */
-export class Match {
+export class Match implements MatchApi {
   readonly players = new Map<number, Player>();
   tick = 0;
   /** Everything the server has tried to send, for `/metrics` and the load tests. */
@@ -73,6 +76,7 @@ export class Match {
   private readonly now: () => number;
   private readonly movement: MovementSettings;
   private readonly combat: CombatSettings;
+  private readonly heist: HeistController;
   private readonly lagComp: LagCompensator;
   private readonly interest: InterestManager;
   // Scratch space reused by every snapshot: nothing here is allocated per tick.
@@ -117,6 +121,7 @@ export class Match {
     );
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
+    this.heist = new HeistController(this);
   }
 
   get map(): GameMap {
@@ -125,6 +130,36 @@ export class Match {
 
   get settings(): MatchSettings {
     return this.deps.settings;
+  }
+
+  get tickRate(): number {
+    return this.deps.settings.tickRate;
+  }
+
+  getPlayer(id: number): Player | undefined {
+    return this.players.get(id);
+  }
+
+  playerList(): Iterable<Player> {
+    return this.players.values();
+  }
+
+  sendJson(player: Player, message: JsonServerMessage): void {
+    if (player.isDummy) return;
+    this.sendTo(player, { t: 'json', text: JSON.stringify(message) });
+  }
+
+  teleport(player: Player, x: number, y: number, z: number): void {
+    Object.assign(player.body, createBody(x, y, z));
+    this.interest.update(player.id, x, z);
+  }
+
+  /** A JSON frame from a client (SQL tasks, interactions); ignored if the player is gone. */
+  receiveJson(id: number, text: string): void {
+    const player = this.players.get(id);
+    if (!player) return;
+    player.lastHeardAt = this.now();
+    this.heist.onJson(player, text);
   }
 
   join(protocol: number, rawName: string, connection: PlayerConnection): JoinResult {

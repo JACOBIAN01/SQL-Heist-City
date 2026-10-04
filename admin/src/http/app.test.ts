@@ -10,7 +10,7 @@ describe('admin app', () => {
     client = await startTestServer(createAdminApp({ logger: { error: () => {} } }));
     expect(await client.get('/health')).toMatchObject({
       status: 200,
-      body: { status: 'ok', service: 'admin', protocolVersion: 2 },
+      body: { status: 'ok', service: 'admin', protocolVersion: 3 },
     });
   });
 
