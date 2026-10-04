@@ -23,6 +23,8 @@ export * from './config/city';
 export * from './world/bank/banks';
 export * from './world/city/CityLayout';
 export * from './world/city/generateCity';
+export * from './world/city/compileCity';
+export * from './world/city/cityMaps';
 export * from './config/movement';
 export * from './sim/input';
 export * from './sim/movement';

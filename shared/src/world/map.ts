@@ -1,3 +1,5 @@
+import type { CityLayout } from './city/CityLayout';
+
 /**
  * Static world geometry shared by server (collisions, line of sight) and
  * client (rendering). One definition means what you see is what blocks you.
@@ -91,6 +93,8 @@ export interface GameMap {
   readonly unarmedStart?: boolean;
   readonly doors?: readonly MapDoor[];
   readonly vaults?: readonly MapVault[];
+  /** The layout a generated city was compiled from; the client builds its art from it. */
+  readonly city?: CityLayout;
 }
 
 /** Whether a body at (x, y, z) is close enough to use the anchor. */
