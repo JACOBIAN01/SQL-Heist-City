@@ -100,3 +100,19 @@ Unit (Vitest): codec, interpolation, prediction. UI: Playwright smoke for pop-up
 - **Task menu:** the SQL panel's Switch menu is fed by `buildTaskOptions(situation)` each time it opens: heals (greyed at full health), guns (greyed if owned), ammo refill (greyed if no gun or magazine full) and the next lock of a vault in reach. Greyed items say why. The server re-checks every request, so the menu only saves a wasted round trip. Picking a task switches to a new question; the panel never pauses the world.
 - **HUD:** health bar, cash carried and banked, weapon bar (owned guns as icon slots numbered by key, the held one lit, rounds left), interaction prompt, banking progress bar, toasts.
 - **World:** loot bags bob in the world, players carrying cash wear a bag on their back (snapshot flag), vault doors are separate meshes hidden when the vault opens, glowing pads mark lifts, consoles and safehouses.
+
+## City art (Phase 8.3)
+The generated city (`map.city`, see backend.md "The city") is drawn from kit pieces, client side only. Collisions never depend on it.
+1. **Plan:** `planCity(layout, BANK_LAYOUTS)` → one `ChunkPlan` per block. A plan is pure data: kit placements (piece, position, quarter turn, chosen window interior), horizontal `GroundQuad`s and vertical `WallQuad`s. It is seeded from the city seed, so every client draws the same facades. A chunk owns its block plus the streets to its north and west; the last row and column also own the outer ring.
+   - **Ground:** asphalt (the chunk minus the block), sidewalk tops at kerb height with kerb faces on both edges, paving in alleys and lots, and marble on plazas and safehouses. All of it uses world-space UVs, so the tiling has no seams.
+   - **Road markings:** double-yellow centre lines and a wide crosswalk at both ends of every street segment.
+   - **Props:** planters on plazas and AC units on roofs.
+2. **Facade grammar (`facades.ts`, Interpreter):** a building picks a style (brick, metal, trim: wall, window, ground wall, shop window, cornice) and a window rhythm (`WP`, `WWP`, `WPP`). Every 2 m module of every storey gets one piece, and a cornice runs along the roof line.
+   - **Street sides** get windows and shop fronts. Each window shows one of three fake-interior layers, chosen per window.
+   - **Alley sides** are plain walls.
+   - **Shared walls:** storeys hidden behind an equal-or-taller neighbour are skipped.
+   - **Bank 1** gets a trim facade pushed 0.22 m out so it shows outside its collider walls, with the ground floor left open at the entrance. Its collider roof and interior are still drawn as boxes. Bank sites without a layout are closed trim buildings.
+   - **Triangle choices:** the kit's own trim window (556 triangles) and trim cornice (112) are swapped for the metal ones (210, 30).
+3. **Merge (`buildChunkGeometry`, Builder):** every placement is copied into one opaque geometry (texture-array layer per vertex) and one decal geometry per chunk. `buildCityArt` puts each chunk in a group named `chunk-ix-iz` whose `userData.bounds` holds the ground it covers (used by 8.4 streaming).
+
+Default city: 25 chunks, 50 draw calls, about 0.9M triangles in total. That is above the 400k on-screen budget, which is why 8.4 (streaming, far-chunk impostors, near-only shadows) comes next. The game starts with the box stand-ins and swaps in the kit art when it loads (`hideKitCovered` hides `shell`/`kerb` boxes and the plain ground). If the kit fails to load, the boxes stay. Preview: `kit.html?city` (whole city) or `kit.html?block=0,0` (one block; Bank 1 is in block 0,0 of the default seed).

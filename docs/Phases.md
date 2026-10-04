@@ -182,7 +182,7 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 |---|---|---|---|
 | 8.1 | Kit build pipeline (`tools/city/`): ~60 light pieces, ≤ 6 atlas texture sets, WebP ≤ 3 MB, `kit.glb` + `kit.json` | one file loads; size report in docs | ✅ 66 pieces, 1 texture array + decals, 1.06 MB (city-kit.md §6) |
 | 8.2 | Seeded `CityLayout` in `shared/` (roads, 64 m blocks, lots, bank/safehouse sites) → `GameMap` colliders | same seed = same city on server and client | ✅ `MATCH_MAP=city[:seed]`, client follows the server's map (backend.md "The city") |
-| 8.3 | Facade grammar → kit placements, merged per chunk per material, fake-interior windows | a block renders with the kit | ⬜ |
+| 8.3 | Facade grammar → kit placements, merged per chunk per material, fake-interior windows | a block renders with the kit | ✅ 25 chunks, ≤ 2 draw calls each (frontend.md "City art") |
 | 8.4 | Chunk streaming + LOD (box impostors far, character LOD) | smooth traversal, draw calls < 200 | ⬜ |
 | 8.5 | Day/night + fog + sky | cycle works | ⬜ |
 | 8.6 | Post-FX (FXAA + bloom) | fps budget kept | ⬜ |
