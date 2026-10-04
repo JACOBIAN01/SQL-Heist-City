@@ -24,6 +24,9 @@ export class Hotkeys {
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (event.repeat || isTyping(event.target)) return;
-    this.bindings.get(event.code)?.(event.code);
+    const handler = this.bindings.get(event.code);
+    if (!handler) return;
+    event.preventDefault(); // Tab must not move browser focus; the digits must not scroll
+    handler(event.code);
   };
 }

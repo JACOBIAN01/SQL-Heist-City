@@ -66,4 +66,28 @@ describe('TaskSwitcher', () => {
     new TaskSwitcher(host, [tasks[0] as TaskOption], vi.fn());
     expect(host.querySelector('.sqlp-switch')).toBeNull();
   });
+
+  it('asks a live task source each time it opens, and greys out unavailable tasks', () => {
+    const host = document.createElement('div');
+    document.body.append(host);
+    let list: TaskOption[] = [{ key: 'heal:small', label: 'Small heal', group: 'Heal' }];
+    const onSelect = vi.fn();
+    const switcher = new TaskSwitcher(host, () => list, onSelect);
+    expect(host.querySelectorAll('.sqlp-item')).toHaveLength(1);
+    list = [
+      { key: 'heal:small', label: 'Small heal', group: 'Heal', disabled: 'Full health' },
+      { key: 'gun:rifle', label: 'Rifle', group: 'Gun' },
+    ];
+    switcher.setCurrent('gun:rifle');
+    switcher.open();
+    const items = [...host.querySelectorAll<HTMLButtonElement>('.sqlp-item')];
+    expect(items).toHaveLength(2);
+    expect(items[0]?.disabled).toBe(true);
+    expect(items[0]?.textContent).toContain('Full health');
+    expect(items[1]?.getAttribute('aria-current')).toBe('true');
+    items[0]?.click();
+    expect(onSelect).not.toHaveBeenCalled(); // a disabled item does nothing
+    items[1]?.click();
+    expect(onSelect).toHaveBeenCalledWith(list[1]);
+  });
 });

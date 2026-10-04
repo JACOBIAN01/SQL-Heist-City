@@ -94,3 +94,9 @@ Frame budget now: ~37 draw calls and ~65k triangles (shadow pass included) with 
 
 ## Testing
 Unit (Vitest): codec, interpolation, prediction. UI: Playwright smoke for pop-up flow against a mock server. Perf: scripted fly-through logs fps/draw calls via `renderer.info` (Phase 8+).
+
+## In-game heist UI (Phase 7)
+- **Keys:** F uses what is in reach (lift, vault console, safehouse; a prompt shows when something is), Tab opens the task menu ("what do you need?"), 1–5 hold a gun you own. `Hotkeys` handles these one-shot presses (ignored while typing in the SQL editor); movement stays in `InputSampler`.
+- **Task menu:** the SQL panel's Switch menu is fed by `buildTaskOptions(situation)` each time it opens: heals (greyed at full health), guns (greyed if owned), ammo refill (greyed if no gun or magazine full) and the next lock of a vault in reach. Greyed items say why. The server re-checks every request, so the menu only saves a wasted round trip. Picking a task switches to a new question; the panel never pauses the world.
+- **HUD:** health bar, cash carried and banked, weapon bar (owned guns as icon slots numbered by key, the held one lit, rounds left), interaction prompt, banking progress bar, toasts.
+- **World:** loot bags bob in the world, players carrying cash wear a bag on their back (snapshot flag), vault doors are separate meshes hidden when the vault opens, glowing pads mark lifts, consoles and safehouses.

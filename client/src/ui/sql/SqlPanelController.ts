@@ -6,7 +6,7 @@ import { formatClock, hintCostText, rewardLabel } from './labels';
 import { CONNECTION_MESSAGE, hintFailureMessage, reasonMessage } from './messages';
 import { ProblemPane } from './ProblemPane';
 import type { SqlPanel } from './SqlPanel';
-import { TaskSwitcher, type TaskOption } from './TaskSwitcher';
+import { TaskSwitcher, type TaskOption, type TaskSource } from './TaskSwitcher';
 import { WorkPane } from './WorkPane';
 
 /** Under this much time left the timer turns red. */
@@ -25,7 +25,7 @@ export interface SqlPanelControllerDeps {
   /** A hint was revealed for the first time; the game deducts its cost (once). */
   readonly onHintCharged?: (hint: HintReveal) => void;
   /** Tasks the player can switch between (heal, guns, vault locks…). */
-  readonly tasks?: readonly TaskOption[];
+  readonly tasks?: TaskSource;
   /** Where unsent queries are remembered per task. Defaults to memory. */
   readonly drafts?: DraftStore;
 }
@@ -105,6 +105,12 @@ export class SqlPanelController {
     } finally {
       this.setBusy(false);
     }
+  }
+
+  /** "What do you need?": opens the panel with the task menu showing, whatever is (or is not) in progress. */
+  pick(): void {
+    this.deps.panel.open();
+    this.switcher.open();
   }
 
   /** Free preview of the current query. */

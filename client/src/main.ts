@@ -5,7 +5,10 @@ import {
   SIM_DT,
   TEST_MAP,
   mapById,
+  nearestAnchor,
   WEAPON_IDS,
+  type SelfState,
+  weaponFromWire,
 } from '@heist/shared';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { RemotePlayers } from './entities/RemotePlayers';
@@ -20,6 +23,7 @@ import { GameClient } from './net/GameClient';
 import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
 import { InputBatcher } from './net/InputBatcher';
 import { chooseGameUrl } from './net/lobby';
+import { buildTaskOptions } from './heist/taskOptions';
 import { Hotkeys } from './input/Hotkeys';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
@@ -79,7 +83,7 @@ const input = new InputSampler();
 input.setLook(spawn.yaw);
 const hint = document.createElement('div');
 hint.textContent =
-  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · Esc release mouse';
+  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · F use · Tab tasks · 1–5 guns · Esc release mouse';
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
@@ -141,6 +145,7 @@ if (lag > 0) transport = new DelayedTransport(transport, lag);
 const client = new GameClient(transport, { name: params.get('name') ?? 'Player' });
 client.subscribe({
   snapshot: (snapshot) => {
+    latestSelf = snapshot.self;
     predicted.reconcile(snapshot.self, snapshot.ackSeq);
     feedback.onSnapshot(snapshot.self, performance.now() / 1000, snapshot.ackSeq);
     serverClock.observe(snapshot.tick, client.tickRate, performance.now());
@@ -172,9 +177,32 @@ client.subscribe({
 // The SQL pop-up lives on the game connection: the server decides what each task is worth.
 const challengeApi = new ChannelChallengeApi({ send: (message) => client.sendJson(message) });
 const sqlPanel = new SqlPanel(document.body);
+// What the player can ask for depends on their situation; this is rebuilt each time the menu opens.
+let latestSelf: SelfState | undefined;
+const taskContext = () => {
+  const self = latestSelf;
+  const weapon = self ? weaponFromWire(self.weapon) : undefined;
+  const anchor = nearestAnchor(MAP, player.body.x, player.body.y, player.body.z);
+  const spec =
+    anchor?.kind === 'vault_console'
+      ? MAP.vaults?.find((v) => v.consoleId === anchor.id)
+      : undefined;
+  const view = spec ? world.vaults.find((v) => v.id === spec.id) : undefined;
+  return {
+    alive: feedback.isAlive,
+    hp: self?.hp ?? DEFAULT_COMBAT_SETTINGS.maxHp,
+    maxHp: DEFAULT_COMBAT_SETTINGS.maxHp,
+    owned: ownedWeapons,
+    weapon,
+    ammo: self?.ammo ?? 0,
+    magSize: weapon ? (DEFAULT_COMBAT_SETTINGS.weapons[weapon]?.magSize ?? 0) : 0,
+    ...(view ? { vault: view } : {}),
+  };
+};
 const sqlTasks = new SqlPanelController({
   panel: sqlPanel,
   api: challengeApi,
+  tasks: () => buildTaskOptions(taskContext()),
   drafts: new StorageDraftStore(sessionStorage),
   onHintCharged: (hint) => hud.toast(`Hint revealed (cost ${hint.cost})`),
 });
@@ -204,6 +232,10 @@ const interactions = new Interactions({
 });
 // F uses what is in reach; the number keys hold a gun you own (the server confirms in the next snapshot).
 new Hotkeys()
+  .bind(['Tab'], () => {
+    pointer.release();
+    sqlTasks.pick();
+  })
   .bind(['KeyF'], () => {
     if (feedback.isAlive) void interactions.use();
   })

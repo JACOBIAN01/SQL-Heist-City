@@ -507,3 +507,14 @@
   line-height: 1.2;
   text-align: center;
 }
+
+.sqlp-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.sqlp-item-why {
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--sqlp-muted);
+}

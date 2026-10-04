@@ -40,4 +40,15 @@ describe('Hotkeys', () => {
     editor.remove();
     input.remove();
   });
+
+  it('stops the browser acting on a key it handles (Tab moving focus)', () => {
+    const target = new EventTarget();
+    new Hotkeys(target).bind(['Tab'], () => {});
+    const handled = new KeyboardEvent('keydown', { code: 'Tab', cancelable: true });
+    target.dispatchEvent(handled);
+    expect(handled.defaultPrevented).toBe(true);
+    const other = new KeyboardEvent('keydown', { code: 'KeyZ', cancelable: true });
+    target.dispatchEvent(other);
+    expect(other.defaultPrevented).toBe(false);
+  });
 });
