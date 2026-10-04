@@ -1,7 +1,9 @@
 import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import {
   DEFAULT_COMBAT_SETTINGS,
+  DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
+  hourAt,
   SIM_DT,
   TEST_MAP,
   BANK_LAYOUTS,
@@ -50,7 +52,9 @@ import { SqlPanelController } from './ui/sql/SqlPanelController';
 import { rewardLabel } from './ui/sql/labels';
 import './ui/sql/sqlPanel.css';
 import { buildMapObject, hideKitCovered, setClosedDoors } from './world/MapRenderer';
-import { loadCityKit } from './world/city/CityKit';
+import { loadCityKit, type CityKit } from './world/city/CityKit';
+import { setNightGlow } from './world/city/kitMaterials';
+import { skyAt } from './render/dayNight';
 import { createCityArt, type CityStreamer } from './world/city/CityRenderer';
 import { followServerMap } from './world/followServerMap';
 
@@ -67,6 +71,10 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new Scene();
 const lighting = addLighting(scene);
+/** Re-light the scene when the hour has moved this much (~10 s of a 30-minute day). */
+const SKY_STEP_HOURS = 0.005;
+const hourParam = params.get('hour');
+const fixedHour = hourParam !== null && hourParam !== '' ? Number(hourParam) : undefined;
 const mapObject = buildMapObject(MAP);
 scene.add(mapObject);
 const world = new HeistWorld(MAP);
@@ -88,14 +96,17 @@ const player = new LocalPlayer(MAP, DEFAULT_MOVEMENT_SETTINGS, spawn);
 // A generated city is drawn with kit pieces once they arrive (near blocks in detail, the rest as
 // impostors); until then, or if they fail to load, as boxes.
 let cityArt: CityStreamer | undefined;
+let cityKit: CityKit | undefined;
 const city = MAP.city;
 if (city)
   loadCityKit()
     .then((kit) => {
+      cityKit = kit;
       cityArt = createCityArt(kit, city, BANK_LAYOUTS);
       cityArt.prime(player.body.x, player.body.z);
       scene.add(cityArt.root);
       hideKitCovered(mapObject);
+      setNightGlow(kit.materials, lighting.state.night);
     })
     .catch((error: unknown) => console.warn('city kit unavailable, drawing boxes', error));
 const predicted = new PredictedPlayer(player);
@@ -368,6 +379,15 @@ renderer.setAnimationLoop((now) => {
     frameMs / 1000,
     player.body.crouching,
   );
+  // Time of day from the match clock, so every player shares one sky (?hour=22 pins it).
+  const hour =
+    fixedHour ??
+    hourAt(serverClock.ready ? serverClock.serverTimeAt(now) : 0, DEFAULT_ATMOSPHERE_SETTINGS);
+  if (Math.abs(hour - lighting.state.hour) > SKY_STEP_HOURS) {
+    lighting.apply(skyAt(hour));
+    if (cityKit) setNightGlow(cityKit.materials, lighting.state.night);
+  }
+  lighting.frame(camera);
   lighting.follow(model.object);
   renderer.render(scene, camera);
 

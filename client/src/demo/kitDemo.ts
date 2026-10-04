@@ -1,6 +1,8 @@
 import { Box3, PerspectiveCamera, Scene, Sphere, WebGLRenderer } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { addLighting } from '../render/lighting';
+import { skyAt } from '../render/dayNight';
+import { setNightGlow } from '../world/city/kitMaterials';
 import { computeViewport } from '../render/viewport';
 import { BANK_LAYOUTS, mapById } from '@heist/shared';
 import { loadCityKit } from '../world/city/CityKit';
@@ -18,6 +20,8 @@ document.body.appendChild(renderer.domElement);
 const scene = new Scene();
 const camera = new PerspectiveCamera(55, 1, 0.1, 1200);
 const lighting = addLighting(scene);
+// ?hour=21 shows the kit at that time of day (lit windows glow at night).
+lighting.apply(skyAt(Number(params.get('hour') ?? 11)));
 
 const kit = await loadCityKit().catch((error: unknown) => {
   if (info) info.textContent = `Kit failed to load: ${String(error)}`;
@@ -51,6 +55,7 @@ if (cityLayout) {
   summary = `${ids.length} pieces · ${ids.reduce((sum, id) => sum + kit.info(id).tris, 0)} triangles`;
 }
 scene.add(root);
+setNightGlow(kit.materials, lighting.state.night);
 // The game's fog (60–170 m) would hide an overview framed from hundreds of metres away.
 if (cityLayout && !block) scene.fog = null;
 
@@ -77,5 +82,6 @@ resize();
 window.addEventListener('resize', resize);
 renderer.setAnimationLoop(() => {
   controls.update();
+  lighting.frame(camera);
   renderer.render(scene, camera);
 });
