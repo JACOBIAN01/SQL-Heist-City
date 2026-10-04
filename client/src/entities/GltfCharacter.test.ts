@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { Color } from 'three';
 import {
@@ -272,5 +274,51 @@ describe('GltfCharacter gun handling', () => {
       c.fired();
       c.update(still, 0.5);
     }).not.toThrow();
+  });
+});
+
+describe('GltfCharacter LOD', () => {
+  it('shows the full body near and the light *_LOD copy far, sharing one rig', () => {
+    const t = template();
+    const lod = new Mesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial({ name: 'body' }));
+    lod.name = 'Body_LOD';
+    t.root.add(lod);
+    const c = new GltfCharacter(t.root, clips, look, thresholds);
+    const near = byName(c, 'MI_Hair_1');
+    const far = meshesOf(c).find((m) => m.name === 'Body_LOD');
+    expect(near.visible).toBe(true);
+    expect(far?.visible).toBe(false);
+    c.setFar(true);
+    expect(c.isFar).toBe(true);
+    expect(near.visible).toBe(false);
+    expect(far?.visible).toBe(true);
+    // The light body is recoloured like the full one.
+    expect((far?.material as MeshStandardMaterial).customProgramCacheKey()).toBe(
+      'heist-character-body',
+    );
+    c.setFar(false);
+    expect(near.visible).toBe(true);
+  });
+
+  it('ignores the switch for a character file without a light copy', () => {
+    const c = new GltfCharacter(template().root, clips, look, thresholds);
+    c.setFar(true);
+    expect(c.isFar).toBe(false);
+    expect(byName(c, 'MI_Hair_1').visible).toBe(true);
+  });
+});
+
+describe('character files', () => {
+  it('carry a light copy of body and hair (tools/characters/build-lod.mjs)', () => {
+    for (const file of ['male.glb', 'female.glb']) {
+      const glb = readFileSync(join(__dirname, '../../public/characters/', file));
+      const jsonLength = glb.readUInt32LE(12);
+      const json = JSON.parse(glb.subarray(20, 20 + jsonLength).toString('utf8')) as {
+        nodes: { name?: string; skin?: number }[];
+      };
+      const lods = json.nodes.filter((n) => n.name?.endsWith('_LOD'));
+      expect(lods.length).toBe(2);
+      expect(lods.every((n) => n.skin !== undefined)).toBe(true);
+    }
   });
 });

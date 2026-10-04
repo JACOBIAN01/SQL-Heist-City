@@ -138,3 +138,34 @@ describe('RemotePlayers guns', () => {
     expect(scene.getObjectByName('gun-rifle')).toBeUndefined();
   });
 });
+
+describe('RemotePlayers character LOD', () => {
+  it('switches a player to the light body beyond ~25 m from the camera, without flickering', () => {
+    const calls: boolean[] = [];
+    const scene = new Scene();
+    const remotes = new RemotePlayers(scene, () => {
+      const rig = new CharacterModel(
+        PALETTES[0] ?? { shirt: 0, trousers: 0, skin: 0 },
+        thresholdsFor(4, 7),
+      );
+      rig.setFar = (far) => void calls.push(far);
+      return rig;
+    });
+    let t = 0;
+    // A steady 20 Hz stream at x for a second, drawn as it arrives.
+    const at = (x: number) => {
+      for (let k = 0; k < 20; k++, t += 50) {
+        remotes.onSnapshot(t, [entity(2, x)]);
+        remotes.update(t, 0.016, 0, { x: 0, z: 0 });
+      }
+    };
+    at(10);
+    expect(calls).toEqual([]);
+    at(30);
+    expect(calls).toEqual([true]);
+    at(25); // between the two thresholds: stays light
+    expect(calls).toEqual([true]);
+    at(20);
+    expect(calls).toEqual([true, false]);
+  });
+});

@@ -19,6 +19,8 @@ export interface CharacterRig {
   setCarrying(carrying: boolean): void;
   /** Where the player aims up or down (radians, positive up), so a drawn gun points there. */
   setAimPitch(pitch: number): void;
+  /** Far from the camera: draw the light version of the body, if the rig has one. */
+  setFar(far: boolean): void;
   update(motion: MotionState, dtSeconds: number): void;
 }
 

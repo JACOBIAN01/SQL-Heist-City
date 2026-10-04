@@ -302,6 +302,8 @@ const model = createRig(0);
 scene.add(model.object);
 // ?bag previews the carried bag without carrying cash.
 if (params.has('bag')) model.setCarrying(true);
+// ?lowpoly: show your own player with the light body others see beyond 25 m, to judge the LOD.
+if (params.has('lowpoly')) model.setFar(true);
 
 // ?pose=back|aim previews the slung or drawn gun without a server (for checking how they look).
 const previewPose = params.get('pose');
@@ -339,7 +341,7 @@ renderer.setAnimationLoop((now) => {
   roundUi.update(now);
   hitboxes?.update(remotes.poses());
   if (serverClock.ready)
-    remotes.update(serverClock.serverTimeAt(now), frameMs / 1000, INTERP_DELAY_MS);
+    remotes.update(serverClock.serverTimeAt(now), frameMs / 1000, INTERP_DELAY_MS, camera.position);
 
   predicted.drawPosition(loop.alpha, drawPos);
   cityArt?.update(camera.position.x, camera.position.z);

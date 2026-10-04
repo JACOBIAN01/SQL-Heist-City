@@ -33,6 +33,9 @@ export interface Look {
   readonly skin?: Texture;
 }
 
+/** Name suffix of the light, far-distance meshes in a character file (tools/characters/build-lod.mjs). */
+export const LOD_SUFFIX = '_LOD';
+
 /** Which clip in the animation file plays for each state. */
 export const CLIP_FOR: Readonly<Record<AnimationName, string>> = {
   idle: 'Idle_Loop',
@@ -107,6 +110,11 @@ export class GltfCharacter implements CharacterRig {
     model.traverse((node) => {
       const mesh = node as Mesh;
       if (!mesh.isMesh) return;
+      // The character file carries a light copy of body and hair (`*_LOD`), skinned to the same skeleton.
+      if (mesh.name.endsWith(LOD_SUFFIX)) {
+        this.farMeshes.push(mesh);
+        mesh.visible = false;
+      } else this.nearMeshes.push(mesh);
       // Eyes are tiny: skip them in the shadow pass (one draw call less per player).
       mesh.castShadow = !/Eyes/.test((mesh.material as Material).name);
       mesh.frustumCulled = false; // skinned bounds do not follow the animation
@@ -115,6 +123,9 @@ export class GltfCharacter implements CharacterRig {
   }
 
   private held: Object3D | undefined;
+  private readonly nearMeshes: Object3D[] = [];
+  private readonly farMeshes: Object3D[] = [];
+  private far = false;
   private readonly bones = new Map<string, Object3D>();
   private aimIdle: AnimationAction | undefined;
   private aiming = false;
@@ -161,6 +172,19 @@ export class GltfCharacter implements CharacterRig {
 
   setAimPitch(pitch: number): void {
     this.gun.setPitch(pitch);
+  }
+
+  /** Swaps to the light body (~1.5k triangles instead of ~5k) far away; no-op for files without one. */
+  setFar(far: boolean): void {
+    if (far === this.far || this.farMeshes.length === 0) return;
+    this.far = far;
+    for (const m of this.nearMeshes) m.visible = !far;
+    for (const m of this.farMeshes) m.visible = far;
+  }
+
+  /** Whether the light body is showing (for tests and debugging). */
+  get isFar(): boolean {
+    return this.far;
   }
 
   /** The player just fired: draw the gun if it is slung, bring it up, and take the recoil. */

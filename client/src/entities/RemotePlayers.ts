@@ -15,7 +15,13 @@ interface Remote {
   position: { x: number; y: number; z: number };
   flags: number;
   hp: number;
+  far: boolean;
 }
+
+/** Beyond this distance (m) from the camera a player is drawn with the light body… */
+const FAR_ENTER = 26;
+/** …and switches back inside this one: the gap stops a player flickering at the boundary. */
+const FAR_EXIT = 24;
 
 /**
  * The server sends only what changed, so a player who stood still then moves
@@ -106,7 +112,12 @@ export class RemotePlayers {
    * intervals if the server updates that player less often (distant ones), so
    * they still have two snapshots to blend between instead of freezing.
    */
-  update(serverTimeMs: number, dtSeconds: number, baseDelayMs: number): void {
+  update(
+    serverTimeMs: number,
+    dtSeconds: number,
+    baseDelayMs: number,
+    viewer?: { readonly x: number; readonly z: number },
+  ): void {
     for (const remote of this.remotes.values()) {
       const delay = Math.max(baseDelayMs, remote.buffer.averageIntervalMs * 1.5);
       const pose = remote.buffer.sample(serverTimeMs - delay);
@@ -119,6 +130,11 @@ export class RemotePlayers {
       remote.hp = pose.hp;
       remote.model.object.rotation.y = pose.yaw;
       remote.model.setAimPitch(pose.pitch);
+      if (viewer) {
+        const d = Math.hypot(pose.x - viewer.x, pose.z - viewer.z);
+        const far = d > (remote.far ? FAR_EXIT : FAR_ENTER);
+        if (far !== remote.far) remote.model.setFar((remote.far = far));
+      }
       remote.model.setCarrying((pose.flags & Flag.Carrying) !== 0);
       const weapon = weaponOfFlags(pose.flags);
       if (weapon !== remote.weapon) {
@@ -147,6 +163,7 @@ export class RemotePlayers {
       position: { x: 0, y: 0, z: 0 },
       flags: 0,
       hp: 0,
+      far: false,
     };
     this.scene.add(remote.model.object);
     this.remotes.set(id, remote);

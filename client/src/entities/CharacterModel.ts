@@ -129,6 +129,9 @@ export class CharacterModel implements CharacterRig {
 
   setAimPitch(_pitch: number): void {}
 
+  /** The boxes are light already. */
+  setFar(_far: boolean): void {}
+
   holdItem(item: Object3D | undefined): void {
     this.held?.removeFromParent();
     this.held = item;
