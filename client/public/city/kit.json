@@ -1,0 +1,1191 @@
+{
+  "version": 1,
+  "source": "Quaternius Downtown City MegaKit [Standard] (CC0)",
+  "layerSize": 512,
+  "layers": [
+    "brick",
+    "brickPale",
+    "trim",
+    "trimDark",
+    "trimGreen",
+    "metal",
+    "concrete",
+    "plaster",
+    "asphalt",
+    "marble",
+    "slate",
+    "ornaments",
+    "dirt",
+    "interior1",
+    "interior2",
+    "interiorDark"
+  ],
+  "interiorLayers": [
+    "interior1",
+    "interior2",
+    "interiorDark"
+  ],
+  "files": {
+    "geometry": "kit.glb",
+    "layers": "kit-layers.webp",
+    "decals": "kit-decals.webp"
+  },
+  "pieces": {
+    "Street_2Lane": {
+      "tris": 220,
+      "min": [
+        -3,
+        -0.15,
+        -6
+      ],
+      "size": [
+        6,
+        0.15,
+        12
+      ],
+      "decal": true,
+      "layers": [
+        "asphalt",
+        "metal"
+      ]
+    },
+    "Street_2Lane_noSidewalk": {
+      "tris": 16,
+      "min": [
+        -3,
+        -0.15,
+        -3
+      ],
+      "size": [
+        6,
+        0,
+        6
+      ],
+      "decal": true,
+      "layers": [
+        "asphalt"
+      ]
+    },
+    "Street_4Lane": {
+      "tris": 252,
+      "min": [
+        -3,
+        -0.15,
+        -9
+      ],
+      "size": [
+        6,
+        0.15,
+        18
+      ],
+      "decal": true,
+      "layers": [
+        "asphalt",
+        "metal"
+      ]
+    },
+    "Street_4Lane_noSidewalk": {
+      "tris": 12,
+      "min": [
+        -3,
+        -0.15,
+        -6
+      ],
+      "size": [
+        6,
+        0,
+        12
+      ],
+      "decal": true,
+      "layers": [
+        "asphalt"
+      ]
+    },
+    "Street_4WayIntersection": {
+      "tris": 892,
+      "min": [
+        -12.33,
+        -0.15,
+        -12.33
+      ],
+      "size": [
+        24.67,
+        0.15,
+        24.67
+      ],
+      "decal": true,
+      "layers": [
+        "asphalt",
+        "metal"
+      ]
+    },
+    "Street_TIntersection": {
+      "tris": 858,
+      "min": [
+        -12.33,
+        -0.15,
+        -12.33
+      ],
+      "size": [
+        24.67,
+        0.15,
+        21.33
+      ],
+      "decal": true,
+      "layers": [
+        "asphalt",
+        "metal"
+      ]
+    },
+    "Street_Asphalt_6x6": {
+      "tris": 2,
+      "min": [
+        -3,
+        -0.15,
+        -3
+      ],
+      "size": [
+        6,
+        0,
+        6
+      ],
+      "decal": false,
+      "layers": [
+        "asphalt"
+      ]
+    },
+    "Street_Asphalt_9x9": {
+      "tris": 2,
+      "min": [
+        -9,
+        -0.15,
+        -9
+      ],
+      "size": [
+        9,
+        0,
+        9
+      ],
+      "decal": false,
+      "layers": [
+        "asphalt"
+      ]
+    },
+    "Sidewalk_Straight_3m": {
+      "tris": 60,
+      "min": [
+        -1.5,
+        -0.15,
+        -1.5
+      ],
+      "size": [
+        3,
+        0.15,
+        3.01
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Sidewalk_Corner_Round_3m": {
+      "tris": 177,
+      "min": [
+        -1.51,
+        -0.15,
+        -1.5
+      ],
+      "size": [
+        3.01,
+        0.15,
+        3.01
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Sidewalk_NoCurb_3m": {
+      "tris": 42,
+      "min": [
+        -1.5,
+        -0.15,
+        -1.5
+      ],
+      "size": [
+        3,
+        0.15,
+        3
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Sidewalk_Planter": {
+      "tris": 598,
+      "min": [
+        -0.99,
+        0,
+        -0.88
+      ],
+      "size": [
+        1.97,
+        0.51,
+        1.77
+      ],
+      "decal": false,
+      "layers": [
+        "dirt",
+        "metal"
+      ]
+    },
+    "Decal_Crosswalk": {
+      "tris": 2,
+      "min": [
+        -2.27,
+        -0.15,
+        -2.71
+      ],
+      "size": [
+        4.54,
+        0,
+        5.43
+      ],
+      "decal": true,
+      "layers": []
+    },
+    "Decal_Crosswalk_Wide": {
+      "tris": 4,
+      "min": [
+        -2.33,
+        -0.15,
+        -5.71
+      ],
+      "size": [
+        4.67,
+        0,
+        11.42
+      ],
+      "decal": true,
+      "layers": []
+    },
+    "Decal_BrokenLine_Straight": {
+      "tris": 2,
+      "min": [
+        -3,
+        -0.13,
+        -0.1
+      ],
+      "size": [
+        6,
+        0,
+        0.2
+      ],
+      "decal": true,
+      "layers": []
+    },
+    "Decal_DoubleYellow_Straight": {
+      "tris": 2,
+      "min": [
+        -3,
+        -0.11,
+        -0.2
+      ],
+      "size": [
+        6,
+        0,
+        0.39
+      ],
+      "decal": true,
+      "layers": []
+    },
+    "Decal_ArrowStraight": {
+      "tris": 2,
+      "min": [
+        -0.47,
+        -0.13,
+        -1.18
+      ],
+      "size": [
+        0.94,
+        0,
+        2.37
+      ],
+      "decal": true,
+      "layers": []
+    },
+    "Decal_Stop": {
+      "tris": 2,
+      "min": [
+        -1.48,
+        -0.13,
+        -0.76
+      ],
+      "size": [
+        2.96,
+        0,
+        1.52
+      ],
+      "decal": true,
+      "layers": []
+    },
+    "Brick_Plain_3": {
+      "tris": 6,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        3,
+        0.2
+      ],
+      "decal": false,
+      "layers": [
+        "brick",
+        "plaster"
+      ]
+    },
+    "Brick_Plain_1": {
+      "tris": 4,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        1,
+        0.2
+      ],
+      "decal": false,
+      "layers": [
+        "brick",
+        "plaster"
+      ]
+    },
+    "Brick_BottomTrim": {
+      "tris": 52,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        3,
+        0.23
+      ],
+      "decal": false,
+      "layers": [
+        "brick",
+        "plaster",
+        "trim"
+      ]
+    },
+    "Brick_TopTrim": {
+      "tris": 16,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        3,
+        0.2
+      ],
+      "decal": false,
+      "layers": [
+        "brickPale",
+        "plaster",
+        "trim"
+      ]
+    },
+    "Brick_Corner_Plain": {
+      "tris": 12,
+      "min": [
+        -1,
+        0,
+        -2
+      ],
+      "size": [
+        2,
+        3,
+        2
+      ],
+      "decal": false,
+      "layers": [
+        "brick",
+        "plaster"
+      ]
+    },
+    "Brick_TopTrim_Corner": {
+      "tris": 24,
+      "min": [
+        -1,
+        0,
+        -2
+      ],
+      "size": [
+        2,
+        3,
+        2
+      ],
+      "decal": false,
+      "layers": [
+        "brick",
+        "plaster",
+        "trim"
+      ]
+    },
+    "Brick_Window_Square_Single": {
+      "tris": 186,
+      "min": [
+        -1,
+        0,
+        -0.24
+      ],
+      "size": [
+        2,
+        3,
+        0.27
+      ],
+      "decal": false,
+      "layers": [
+        "brickPale",
+        "interior1",
+        "plaster",
+        "trim"
+      ]
+    },
+    "Brick_Window_Trim_Single": {
+      "tris": 418,
+      "min": [
+        -1,
+        0,
+        -0.23
+      ],
+      "size": [
+        2,
+        3,
+        0.28
+      ],
+      "decal": false,
+      "layers": [
+        "brick",
+        "interior1",
+        "plaster",
+        "trim"
+      ]
+    },
+    "Brick_Inset": {
+      "tris": 72,
+      "min": [
+        -2,
+        0,
+        -0.2
+      ],
+      "size": [
+        4,
+        3,
+        0.2
+      ],
+      "decal": false,
+      "layers": [
+        "brickPale",
+        "plaster",
+        "trim"
+      ]
+    },
+    "Brick_Inset_Window": {
+      "tris": 476,
+      "min": [
+        -2,
+        0,
+        -0.25
+      ],
+      "size": [
+        4,
+        3,
+        0.37
+      ],
+      "decal": false,
+      "layers": [
+        "brickPale",
+        "interior1",
+        "plaster",
+        "trim"
+      ]
+    },
+    "Brick_Column_Small": {
+      "tris": 32,
+      "min": [
+        -0.12,
+        0,
+        -0.25
+      ],
+      "size": [
+        0.25,
+        3,
+        0.35
+      ],
+      "decal": false,
+      "layers": [
+        "brick"
+      ]
+    },
+    "Brick_CornerColumn_Center": {
+      "tris": 32,
+      "min": [
+        -0.97,
+        0,
+        -0.97
+      ],
+      "size": [
+        1.14,
+        3,
+        1.14
+      ],
+      "decal": false,
+      "layers": [
+        "brickPale"
+      ]
+    },
+    "Metal_Plain_3": {
+      "tris": 18,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        3,
+        0.2
+      ],
+      "decal": false,
+      "layers": [
+        "metal",
+        "plaster"
+      ]
+    },
+    "Metal_Plain_1": {
+      "tris": 6,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        1,
+        0.2
+      ],
+      "decal": false,
+      "layers": [
+        "metal",
+        "plaster"
+      ]
+    },
+    "Metal_FullWindow": {
+      "tris": 202,
+      "min": [
+        -1,
+        0,
+        -0.22
+      ],
+      "size": [
+        2,
+        3,
+        0.23
+      ],
+      "decal": false,
+      "layers": [
+        "interior1",
+        "metal"
+      ]
+    },
+    "Metal_Window_Half": {
+      "tris": 304,
+      "min": [
+        -1,
+        0,
+        -0.21
+      ],
+      "size": [
+        2,
+        3,
+        0.23
+      ],
+      "decal": false,
+      "layers": [
+        "interior1",
+        "metal"
+      ]
+    },
+    "Metal_FirstFloor_Window": {
+      "tris": 152,
+      "min": [
+        -1,
+        0,
+        -0.22
+      ],
+      "size": [
+        2,
+        3,
+        0.26
+      ],
+      "decal": false,
+      "layers": [
+        "interior1",
+        "metal",
+        "plaster",
+        "trimDark"
+      ]
+    },
+    "Metal_FirstFloor_Wall": {
+      "tris": 36,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        3,
+        0.24
+      ],
+      "decal": false,
+      "layers": [
+        "metal",
+        "plaster",
+        "trimDark"
+      ]
+    },
+    "Metal_Column_Center": {
+      "tris": 16,
+      "min": [
+        -0.25,
+        0,
+        -0.25
+      ],
+      "size": [
+        0.5,
+        3,
+        0.5
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Trim_Plain_3": {
+      "tris": 34,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        3,
+        0.2
+      ],
+      "decal": false,
+      "layers": [
+        "plaster",
+        "trim"
+      ]
+    },
+    "Trim_Corner": {
+      "tris": 68,
+      "min": [
+        -1.05,
+        0,
+        -2
+      ],
+      "size": [
+        2.05,
+        3,
+        2.05
+      ],
+      "decal": false,
+      "layers": [
+        "plaster",
+        "trim"
+      ]
+    },
+    "Trim_Window": {
+      "tris": 556,
+      "min": [
+        -1,
+        0,
+        -0.24
+      ],
+      "size": [
+        2,
+        3,
+        0.24
+      ],
+      "decal": false,
+      "layers": [
+        "interior1",
+        "plaster",
+        "trim",
+        "trimDark"
+      ]
+    },
+    "Trim_FirstFloor_Wall": {
+      "tris": 50,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        3,
+        0.25
+      ],
+      "decal": false,
+      "layers": [
+        "plaster",
+        "trim"
+      ]
+    },
+    "Trim_FirstFloor_Window_001": {
+      "tris": 158,
+      "min": [
+        -1,
+        -0.01,
+        -0.22
+      ],
+      "size": [
+        2,
+        3.01,
+        0.22
+      ],
+      "decal": false,
+      "layers": [
+        "interior1",
+        "plaster",
+        "trimGreen"
+      ]
+    },
+    "Trim_Column_Center": {
+      "tris": 64,
+      "min": [
+        -0.34,
+        0,
+        -0.34
+      ],
+      "size": [
+        0.67,
+        3,
+        0.67
+      ],
+      "decal": false,
+      "layers": [
+        "trim"
+      ]
+    },
+    "Cornice_Brick_Center": {
+      "tris": 6,
+      "min": [
+        -1,
+        0,
+        -0.4
+      ],
+      "size": [
+        2,
+        1,
+        0.4
+      ],
+      "decal": false,
+      "layers": [
+        "brick"
+      ]
+    },
+    "Cornice_Brick_90Angle_L": {
+      "tris": 29,
+      "min": [
+        -1,
+        0,
+        -0.9
+      ],
+      "size": [
+        2,
+        1,
+        0.9
+      ],
+      "decal": false,
+      "layers": [
+        "brick"
+      ]
+    },
+    "Cornice_Brick_90Angle_R": {
+      "tris": 29,
+      "min": [
+        -1,
+        0,
+        -0.9
+      ],
+      "size": [
+        2,
+        1,
+        0.9
+      ],
+      "decal": false,
+      "layers": [
+        "brick"
+      ]
+    },
+    "Cornice_Metal_Center": {
+      "tris": 30,
+      "min": [
+        -1,
+        0,
+        -0.1
+      ],
+      "size": [
+        2,
+        1,
+        0.2
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Cornice_Metal_90Angle_L": {
+      "tris": 90,
+      "min": [
+        -1,
+        0,
+        -0.6
+      ],
+      "size": [
+        2,
+        1,
+        0.7
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Cornice_Metal_90Angle_R": {
+      "tris": 90,
+      "min": [
+        -1,
+        0,
+        -0.6
+      ],
+      "size": [
+        2,
+        1,
+        0.7
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Cornice_Trim_Center": {
+      "tris": 112,
+      "min": [
+        -1,
+        0,
+        -0.1
+      ],
+      "size": [
+        2,
+        1,
+        0.63
+      ],
+      "decal": false,
+      "layers": [
+        "trim"
+      ]
+    },
+    "Cornice_Trim_90Angle_L": {
+      "tris": 160,
+      "min": [
+        -1,
+        0,
+        -0.6
+      ],
+      "size": [
+        2,
+        1,
+        1.13
+      ],
+      "decal": false,
+      "layers": [
+        "trim"
+      ]
+    },
+    "Cornice_Trim_90Angle_R": {
+      "tris": 160,
+      "min": [
+        -1,
+        0,
+        -0.6
+      ],
+      "size": [
+        2,
+        1,
+        1.13
+      ],
+      "decal": false,
+      "layers": [
+        "trim"
+      ]
+    },
+    "DoorFrame_Metal_Single": {
+      "tris": 232,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        3,
+        0.2
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Door_2": {
+      "tris": 184,
+      "min": [
+        -1,
+        0,
+        -0.1
+      ],
+      "size": [
+        1,
+        2.2,
+        0.21
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Entrance_Concrete_2x1": {
+      "tris": 12,
+      "min": [
+        -1,
+        0,
+        0
+      ],
+      "size": [
+        2,
+        1.01,
+        1
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Stairs_Entrance_Concrete": {
+      "tris": 128,
+      "min": [
+        -1,
+        0,
+        0
+      ],
+      "size": [
+        2,
+        1.01,
+        1.99
+      ],
+      "decal": false,
+      "layers": [
+        "concrete",
+        "metal"
+      ]
+    },
+    "Roof_4x4": {
+      "tris": 8,
+      "min": [
+        -2,
+        -0.2,
+        -2
+      ],
+      "size": [
+        4,
+        0,
+        4
+      ],
+      "decal": false,
+      "layers": [
+        "asphalt"
+      ]
+    },
+    "Roof_2x2": {
+      "tris": 2,
+      "min": [
+        -1,
+        -0.2,
+        -1
+      ],
+      "size": [
+        2,
+        0,
+        2
+      ],
+      "decal": false,
+      "layers": [
+        "asphalt"
+      ]
+    },
+    "Floor_4x4": {
+      "tris": 16,
+      "min": [
+        -2,
+        -0.1,
+        -2
+      ],
+      "size": [
+        4,
+        0.1,
+        4
+      ],
+      "decal": false,
+      "layers": [
+        "concrete",
+        "marble"
+      ]
+    },
+    "Floor_2x2": {
+      "tris": 4,
+      "min": [
+        -1,
+        -0.1,
+        -1
+      ],
+      "size": [
+        2,
+        0.1,
+        2
+      ],
+      "decal": false,
+      "layers": [
+        "concrete",
+        "marble"
+      ]
+    },
+    "Brick_InteriorWall_3": {
+      "tris": 4,
+      "min": [
+        -1,
+        0,
+        -0.2
+      ],
+      "size": [
+        2,
+        3,
+        0
+      ],
+      "decal": false,
+      "layers": [
+        "plaster"
+      ]
+    },
+    "Stairs_Rails_Metal": {
+      "tris": 564,
+      "min": [
+        -0.98,
+        -0.01,
+        0
+      ],
+      "size": [
+        1.96,
+        1.98,
+        2.31
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Prop_ACUnit": {
+      "tris": 136,
+      "min": [
+        -0.41,
+        0,
+        -0.02
+      ],
+      "size": [
+        0.89,
+        0.6,
+        0.35
+      ],
+      "decal": false,
+      "layers": [
+        "ornaments"
+      ]
+    },
+    "Prop_Bollard": {
+      "tris": 190,
+      "min": [
+        -0.11,
+        0,
+        -0.11
+      ],
+      "size": [
+        0.22,
+        0.89,
+        0.23
+      ],
+      "decal": false,
+      "layers": [
+        "metal"
+      ]
+    },
+    "Prop_ManholeCover": {
+      "tris": 118,
+      "min": [
+        -0.46,
+        -0.01,
+        -0.46
+      ],
+      "size": [
+        0.93,
+        0.03,
+        0.93
+      ],
+      "decal": false,
+      "layers": [
+        "ornaments"
+      ]
+    },
+    "Prop_Planter_Single": {
+      "tris": 118,
+      "min": [
+        -1,
+        0,
+        -1
+      ],
+      "size": [
+        2,
+        0.6,
+        2
+      ],
+      "decal": false,
+      "layers": [
+        "dirt",
+        "metal"
+      ]
+    }
+  }
+}
