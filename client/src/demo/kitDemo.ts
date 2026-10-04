@@ -4,11 +4,12 @@ import { addLighting } from '../render/lighting';
 import { computeViewport } from '../render/viewport';
 import { BANK_LAYOUTS, mapById } from '@heist/shared';
 import { loadCityKit } from '../world/city/CityKit';
-import { buildCityArt } from '../world/city/CityRenderer';
+import { createCityArt, DEFAULT_STREAM } from '../world/city/CityRenderer';
 import { layoutPreview } from '../world/city/kitPreview';
 
 // Standalone page (kit.html): every kit piece laid out on a grid, to check the build by eye.
-// ?piece=Name shows one piece close up; ?city[=seed] draws the whole city, ?block=ix,iz one block of it.
+// ?piece=Name shows one piece close up; ?city[=seed] draws the whole city (?lod: as streamed
+// from the centre), ?block=ix,iz one block of it.
 const params = new URLSearchParams(location.search);
 const info = document.getElementById('kit-info');
 const renderer = new WebGLRenderer({ antialias: true });
@@ -31,18 +32,27 @@ const cityLayout =
 let summary: string;
 let root;
 if (cityLayout) {
-  const art = buildCityArt(kit, cityLayout, BANK_LAYOUTS);
+  // ?lod shows the city as the game streams it from the centre; otherwise everything in detail.
+  const lod = params.has('lod');
+  const art = createCityArt(kit, cityLayout, BANK_LAYOUTS, {
+    ...DEFAULT_STREAM,
+    ...(lod ? {} : { detailRange: Infinity, detailExit: Infinity, drawRange: Infinity }),
+  });
+  art.prime(0, 0);
   root = art.root;
   if (block) {
     const keep = `chunk-${block.replace(',', '-')}`;
     for (const chunk of [...root.children]) if (chunk.name !== keep) root.remove(chunk);
   }
-  summary = `${art.stats.chunks} chunks · ${art.stats.drawCalls} draw calls · ${Math.round(art.stats.triangles / 1000)}k triangles (whole city)`;
+  const st = art.stats;
+  summary = `${st.chunks} chunks · ${st.detailed} detailed · ${st.impostors} impostors · ${st.drawCalls} draw calls`;
 } else {
   root = layoutPreview(kit, ids).root;
   summary = `${ids.length} pieces · ${ids.reduce((sum, id) => sum + kit.info(id).tris, 0)} triangles`;
 }
 scene.add(root);
+// The game's fog (60–170 m) would hide an overview framed from hundreds of metres away.
+if (cityLayout && !block) scene.fog = null;
 
 // Frame everything from the front-right, a little above.
 const bounds = new Box3().setFromObject(root).getBoundingSphere(new Sphere());

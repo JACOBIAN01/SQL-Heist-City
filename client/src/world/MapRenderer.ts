@@ -120,8 +120,8 @@ export function buildMapObject(map: GameMap): Object3D {
   return root;
 }
 
-/** What the city kit draws instead of boxes: building shells, kerbs and the plain ground. */
-const KIT_COVERED = new Set(['map-ground', 'map-shell', 'map-kerb']);
+/** What the city kit draws instead of boxes: building shells, kerbs, the plain ground and the city wall (behind the outskirts). */
+const KIT_COVERED = new Set(['map-ground', 'map-shell', 'map-kerb', 'map-wall']);
 
 /** Hides the stand-in boxes once the city's kit art is in the scene. Bank walls, cover and doors stay. */
 export function hideKitCovered(root: Object3D): void {

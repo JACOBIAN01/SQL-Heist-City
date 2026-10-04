@@ -51,7 +51,7 @@ import { rewardLabel } from './ui/sql/labels';
 import './ui/sql/sqlPanel.css';
 import { buildMapObject, hideKitCovered, setClosedDoors } from './world/MapRenderer';
 import { loadCityKit } from './world/city/CityKit';
-import { buildCityArt } from './world/city/CityRenderer';
+import { createCityArt, type CityStreamer } from './world/city/CityRenderer';
 import { followServerMap } from './world/followServerMap';
 
 // Composition root for the client.
@@ -69,15 +69,6 @@ const scene = new Scene();
 const lighting = addLighting(scene);
 const mapObject = buildMapObject(MAP);
 scene.add(mapObject);
-// A generated city is drawn with kit pieces once they arrive; until then (or if they fail) as boxes.
-const city = MAP.city;
-if (city)
-  loadCityKit()
-    .then((kit) => {
-      scene.add(buildCityArt(kit, city, BANK_LAYOUTS).root);
-      hideKitCovered(mapObject);
-    })
-    .catch((error: unknown) => console.warn('city kit unavailable, drawing boxes', error));
 const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
 
@@ -94,6 +85,19 @@ window.addEventListener('resize', resize);
 
 const spawn = MAP.spawns[0] ?? { x: 0, z: 0, yaw: 0 };
 const player = new LocalPlayer(MAP, DEFAULT_MOVEMENT_SETTINGS, spawn);
+// A generated city is drawn with kit pieces once they arrive (near blocks in detail, the rest as
+// impostors); until then, or if they fail to load, as boxes.
+let cityArt: CityStreamer | undefined;
+const city = MAP.city;
+if (city)
+  loadCityKit()
+    .then((kit) => {
+      cityArt = createCityArt(kit, city, BANK_LAYOUTS);
+      cityArt.prime(player.body.x, player.body.z);
+      scene.add(cityArt.root);
+      hideKitCovered(mapObject);
+    })
+    .catch((error: unknown) => console.warn('city kit unavailable, drawing boxes', error));
 const predicted = new PredictedPlayer(player);
 const input = new InputSampler();
 input.setLook(spawn.yaw);
@@ -338,6 +342,7 @@ renderer.setAnimationLoop((now) => {
     remotes.update(serverClock.serverTimeAt(now), frameMs / 1000, INTERP_DELAY_MS);
 
   predicted.drawPosition(loop.alpha, drawPos);
+  cityArt?.update(camera.position.x, camera.position.z);
   interactions.update(player.body.x, player.body.y, player.body.z, feedback.isAlive);
   model.object.visible = feedback.isAlive;
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
