@@ -24,7 +24,7 @@
 | 4 | SQL pop-up UI | ✅ Done |
 | 5 | Walk & shoot sandbox | ✅ Done |
 | 6 | Scale core (60/100/200) | ✅ Done |
-| 7 | Heist loop v1 | 🟨 In progress |
+| 7 | Heist loop v1 | ✅ Done |
 | 8 | City, vehicles, atmosphere | ⬜ |
 | 9 | Banks 2–5, weapons, UX | ⬜ |
 | 10 | Harden & ship | ⬜ |
@@ -158,7 +158,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 6.9 | Tuning + 60/100/200 report | 100 bots under 15 ms tick | ✅ Done |
 
 ---
-## Phase 7 — Heist loop v1 (one bank)  🟨
+## Phase 7 — Heist loop v1 (one bank)  ✅
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 7.1 | Bank layout format + Bank 1 shell and lobby (logical walls → colliders; art from kit pieces, see city-kit.md) | walk inside | ✅ |
