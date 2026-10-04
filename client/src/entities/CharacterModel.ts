@@ -1,3 +1,4 @@
+import { createCashBag } from './CashBag';
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial, type Object3D } from 'three';
 import {
   selectAnimation,
@@ -110,6 +111,21 @@ export class CharacterModel implements CharacterRig {
   private held: Object3D | undefined;
 
   fired(): void {}
+
+  private bag: Object3D | undefined;
+
+  setCarrying(carrying: boolean): void {
+    let bag = this.bag;
+    if (!bag) {
+      bag = createCashBag();
+      bag.scale.setScalar(0.7);
+      bag.rotation.y = Math.PI / 2;
+      bag.position.set(-0.38, 0.55, 0.05); // at the left hip
+      this.root.add(bag);
+      this.bag = bag;
+    }
+    bag.visible = carrying;
+  }
 
   setAimPitch(_pitch: number): void {}
 

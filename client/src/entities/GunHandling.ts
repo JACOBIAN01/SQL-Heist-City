@@ -11,8 +11,8 @@ const RECOIL_SETTLE = 0.07;
 const DRAW_ARC = new Vector3(0.12, 0.1, 0);
 /** Behind the shoulder blades (character space: +z is behind, the character faces −z). */
 const SLING_OFFSET = new Vector3(0, -0.04, 0.26);
-/** The gun hangs with the stock over the right shoulder and the muzzle down at the left hip. */
-const SLING_BARREL = new Vector3(-0.5, -1, 0).normalize();
+/** The gun hangs with the stock over the left shoulder and the muzzle down at the right hip (the cash bag rides on the left). */
+const SLING_BARREL = new Vector3(0.45, -1, 0).normalize();
 /** Rifles are modelled grip at the origin, muzzle toward −z; this is roughly the middle of one. */
 const GUN_MIDDLE = 0.27;
 

@@ -28,6 +28,7 @@ const LOGO = new CylinderGeometry(0.05, 0.05, 0.01, 14);
  */
 export function createCashBag(): Group {
   const bag = new Group();
+  bag.name = 'cash-bag';
   const barrel = new Mesh(BARREL, CANVAS);
   barrel.rotation.z = Math.PI / 2; // capsule axis along x
   barrel.position.y = 0.17;

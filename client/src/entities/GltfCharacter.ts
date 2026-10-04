@@ -20,6 +20,7 @@ import {
   type MotionState,
 } from './animation';
 import { splitClip } from './aimLayers';
+import { CarriedBag } from './CarriedBag';
 import { GunHandling } from './GunHandling';
 import type { CharacterRig } from './CharacterRig';
 
@@ -67,6 +68,8 @@ const FLASH_SECONDS = 0.04;
 /** Where the bones are when the rig has none (the test stand-ins): upper back and right hand at the ready. */
 const FALLBACK_BACK = new Vector3(0, 1.4, 0.05);
 const FALLBACK_HAND = new Vector3(0.15, 1.45, -0.4);
+const FALLBACK_LEFT_HAND = new Vector3(-0.3, 0.85, 0);
+const FALLBACK_HIP = new Vector3(0, 0.95, 0);
 
 /**
  * A rigged human (Quaternius, CC0) driven by shared animation clips.
@@ -94,6 +97,7 @@ export class GltfCharacter implements CharacterRig {
     const model = clone(template);
     model.rotation.y = Math.PI;
     this.object.add(model);
+    this.object.add(this.bag.object);
     model.traverse((n) => {
       if (n.name) this.bones.set(n.name, n);
     });
@@ -118,6 +122,9 @@ export class GltfCharacter implements CharacterRig {
   private readonly gun = new GunHandling();
   private flashLeft = 0;
   private readonly backAt = new Vector3();
+  private readonly bag = new CarriedBag();
+  private readonly leftHandAt = new Vector3();
+  private readonly hipAt = new Vector3();
   private readonly handAt = new Vector3();
 
   /** True while the soldier is at the ready (for tests and debugging). */
@@ -140,6 +147,16 @@ export class GltfCharacter implements CharacterRig {
     // The gun is placed in character space every frame (see GunHandling), not parented to a bone.
     this.object.add(item);
     this.poseGun();
+  }
+
+  setCarrying(carrying: boolean): void {
+    this.bag.visible = carrying;
+    if (carrying) this.poseGun();
+  }
+
+  /** For tests and debugging. */
+  get carriedBag(): CarriedBag {
+    return this.bag;
   }
 
   setAimPitch(pitch: number): void {
@@ -168,18 +185,27 @@ export class GltfCharacter implements CharacterRig {
   /** Puts the gun where GunHandling says, using where the upper back and right hand are this frame. */
   private poseGun(): void {
     const item = this.held;
-    if (!item) return;
+    if (!item && !this.bag.visible) return;
     const spine = this.bones.get('spine_03');
     const hand = this.bones.get('hand_r');
-    if (spine && hand) {
+    const leftHand = this.bones.get('hand_l');
+    const pelvis = this.bones.get('pelvis');
+    if (spine && hand && leftHand && pelvis) {
       this.object.updateWorldMatrix(true, true);
       this.object.worldToLocal(spine.getWorldPosition(this.backAt));
       this.object.worldToLocal(hand.getWorldPosition(this.handAt));
+      this.object.worldToLocal(leftHand.getWorldPosition(this.leftHandAt));
+      this.object.worldToLocal(pelvis.getWorldPosition(this.hipAt));
     } else {
       this.backAt.copy(FALLBACK_BACK);
       this.handAt.copy(FALLBACK_HAND);
+      this.leftHandAt.copy(FALLBACK_LEFT_HAND);
+      this.hipAt.copy(FALLBACK_HIP);
     }
-    this.gun.pose(item, this.backAt, this.handAt);
+    if (item) this.gun.pose(item, this.backAt, this.handAt);
+    // Hands on the gun: the bag goes onto its strap; otherwise it swings from the left hand.
+    if (this.bag.visible)
+      this.bag.pose(this.leftHandAt, this.hipAt, this.backAt, item ? this.gun.blend * 2 : 0);
   }
 
   /** An action that plays only the upper-body tracks of a clip; undefined if the clip is missing. */

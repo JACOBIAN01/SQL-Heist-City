@@ -34,7 +34,6 @@ import { BankingProgress } from './heist/BankingProgress';
 import { LootRenderer } from './heist/LootRenderer';
 import { HeistWorld } from './heist/HeistWorld';
 import { createGun } from './entities/GunModel';
-import { createCashBag } from './entities/CashBag';
 import { Interactions } from './heist/Interactions';
 import { HitboxDebug } from './entities/HitboxDebug';
 import { Tracers } from './render/Tracers';
@@ -156,13 +155,6 @@ client.subscribe({
       heldWeapon = snapshot.self.weapon;
       const id = WEAPON_IDS[heldWeapon - 1];
       model.holdItem(id ? createGun(id) : undefined);
-      if (params.get('pose') === 'back') model.holdItem(createGun(params.get('gun') ?? 'rifle'));
-      if (params.get('pose') === 'aim') {
-        // Preview: draw, aim and let the pose settle at once (headless screenshots render too few frames to wait for it).
-        model.fired();
-        for (let i = 0; i < 40; i++)
-          model.update({ speed: 0, crouching: false, onGround: true }, 0.03);
-      }
     }
     predicted.reconcile(snapshot.self, snapshot.ackSeq);
     feedback.onSnapshot(snapshot.self, performance.now() / 1000, snapshot.ackSeq);
@@ -196,7 +188,7 @@ client.subscribe({
     else if (message.t === 'purse') {
       hud.setPurse(message.carried, message.banked);
       player.speedScale = message.speed;
-      ownBag.visible = message.carried > 0;
+      model.setCarrying(message.carried > 0 || params.has('bag'));
     } else if (message.t === 'notice') hud.toast(message.text);
   },
 });
@@ -286,17 +278,14 @@ const loop = new FixedStepLoop(SIM_DT, () => {
 
 const model = createRig(0);
 scene.add(model.object);
-// Your own bag, on your back, while you carry cash (others see the same from the server's flag).
-const ownBag = createCashBag();
-ownBag.position.set(0, 0.95, 0.26);
-ownBag.scale.setScalar(0.75);
-ownBag.visible = params.has('bag'); // ?bag previews the bag without carrying cash
-model.object.add(ownBag);
+// ?bag previews the carried bag without carrying cash.
+if (params.has('bag')) model.setCarrying(true);
 
-// ?pose=aim keeps the drawn-gun pose on screen for checking the animation without shooting.
-if (params.get('pose') === 'aim') {
-  // Preview without a server: equip a rifle and settle into the drawn pose straight away.
+// ?pose=back|aim previews the slung or drawn gun without a server (for checking how they look).
+const previewPose = params.get('pose');
+if (previewPose === 'back' || previewPose === 'aim')
   model.holdItem(createGun(params.get('gun') ?? 'rifle'));
+if (previewPose === 'aim') {
   model.fired();
   for (let i = 0; i < 40; i++) model.update({ speed: 0, crouching: false, onGround: true }, 0.03);
   setInterval(() => model.fired(), 400);
