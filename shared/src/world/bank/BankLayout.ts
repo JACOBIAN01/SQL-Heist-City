@@ -49,6 +49,26 @@ export interface FloorPlan {
   readonly blocks: readonly BlockSpec[];
 }
 
+export type Heading = '+x' | '-x' | '+z' | '-z';
+
+/**
+ * A straight flight from `storey` up to the next one. The low end is where
+ * you start climbing; the storey above gets a matching hole in its floor.
+ */
+export interface StairSpec {
+  /** The storey the flight starts on (arrives on storey + 1). */
+  readonly storey: number;
+  /** Centre of the flight's footprint. */
+  readonly x: number;
+  readonly z: number;
+  readonly width: number;
+  /** Direction of travel, up the stairs. */
+  readonly heading: Heading;
+  readonly steps: number;
+  /** Horizontal depth of one step, m. */
+  readonly tread: number;
+}
+
 export interface BankLayout {
   readonly id: string;
   readonly name: string;
@@ -64,8 +84,13 @@ export interface BankLayout {
   readonly entrance: { readonly x: number; readonly width: number; readonly height: number };
   /** Interior per storey; index 0 is the ground floor. Missing storeys are empty. */
   readonly floors: readonly FloorPlan[];
+  /** Flights between storeys. Floors above the ground get slabs with holes where these arrive. */
+  readonly stairs?: readonly StairSpec[];
 }
 
 export const EXTERIOR_THICKNESS = 0.4;
 export const DEFAULT_WALL_THICKNESS = 0.2;
 export const ROOF_THICKNESS = 0.3;
+export const SLAB_THICKNESS = 0.3;
+/** Tallest single step the layout may use (movement.stepHeight is 0.35). */
+export const MAX_STEP_RISE = 0.3;

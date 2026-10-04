@@ -2,10 +2,13 @@ import { box, type MapBox, type MapBoxKind } from '../map';
 import {
   DEFAULT_WALL_THICKNESS,
   EXTERIOR_THICKNESS,
+  MAX_STEP_RISE,
   ROOF_THICKNESS,
+  SLAB_THICKNESS,
   type BankLayout,
   type Opening,
   type Point2,
+  type StairSpec,
   type WallSpec,
 } from './BankLayout';
 
@@ -25,6 +28,14 @@ export function validateBank(layout: BankLayout): void {
     fail('entrance lies outside the facade');
   const hw = layout.width / 2;
   const hd = layout.depth / 2;
+  for (const st of layout.stairs ?? []) {
+    const where = `stairs at (${st.x},${st.z})`;
+    if (st.storey < 0 || st.storey + 1 >= layout.storeys) fail(`${where} has no storey above`);
+    if (layout.storeyHeight / st.steps > MAX_STEP_RISE) fail(`${where} has steps too tall to walk`);
+    const f = stairFootprint(st);
+    if (f.minX < -hw || f.maxX > hw || f.minZ < -hd || f.maxZ > hd)
+      fail(`${where} leaves the footprint`);
+  }
   layout.floors.forEach((plan, storey) => {
     for (const wall of plan.walls) {
       const where = `storey ${storey} wall (${wall.from.x},${wall.from.z})→(${wall.to.x},${wall.to.z})`;
@@ -45,6 +56,89 @@ export function validateBank(layout: BankLayout): void {
       if (Math.abs(b.x) + b.width / 2 > hw || Math.abs(b.z) + b.depth / 2 > hd)
         fail(`storey ${storey} block at (${b.x},${b.z}) leaves the footprint`);
   });
+}
+
+/** Floor-plan rectangle covered by a flight. */
+export function stairFootprint(s: StairSpec): Rect {
+  const along = s.steps * s.tread;
+  const alongX = s.heading === '+x' || s.heading === '-x';
+  const sx = alongX ? along : s.width;
+  const sz = alongX ? s.width : along;
+  return { minX: s.x - sx / 2, maxX: s.x + sx / 2, minZ: s.z - sz / 2, maxZ: s.z + sz / 2 };
+}
+
+interface Rect {
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minZ: number;
+  readonly maxZ: number;
+}
+
+/** Steps of one flight: solid from the storey floor up, each one `rise` higher than the last. */
+function stairBoxes(layout: BankLayout, s: StairSpec, at: Point2): MapBox[] {
+  const rise = layout.storeyHeight / s.steps;
+  const f = stairFootprint(s);
+  const out: MapBox[] = [];
+  for (let i = 0; i < s.steps; i++) {
+    const h = rise * (i + 1);
+    const a = i * s.tread;
+    const b = a + s.tread;
+    const r: Rect =
+      s.heading === '+x'
+        ? { ...f, minX: f.minX + a, maxX: f.minX + b }
+        : s.heading === '-x'
+          ? { ...f, minX: f.maxX - b, maxX: f.maxX - a }
+          : s.heading === '+z'
+            ? { ...f, minZ: f.minZ + a, maxZ: f.minZ + b }
+            : { ...f, minZ: f.maxZ - b, maxZ: f.maxZ - a };
+    out.push({
+      kind: 'step',
+      minX: at.x + r.minX,
+      maxX: at.x + r.maxX,
+      minZ: at.z + r.minZ,
+      maxZ: at.z + r.maxZ,
+      minY: s.storey * layout.storeyHeight,
+      maxY: s.storey * layout.storeyHeight + h,
+    });
+  }
+  return out;
+}
+
+/** A floor slab covering the footprint except the holes; cut into strips so no box spans a hole. */
+function slabBoxes(layout: BankLayout, top: number, holes: readonly Rect[], at: Point2): MapBox[] {
+  const hw = layout.width / 2;
+  const hd = layout.depth / 2;
+  const xs = [-hw, hw, ...holes.flatMap((h) => [h.minX, h.maxX])]
+    .filter((x) => x >= -hw && x <= hw)
+    .sort((a, b) => a - b);
+  const out: MapBox[] = [];
+  for (let i = 0; i + 1 < xs.length; i++) {
+    const x0 = xs[i] as number;
+    const x1 = xs[i + 1] as number;
+    if (x1 - x0 < EPS) continue;
+    const mid = (x0 + x1) / 2;
+    // Holes crossing this strip, in z order; the slab fills what is between them.
+    const cuts = holes.filter((h) => h.minX < mid && h.maxX > mid).sort((a, b) => a.minZ - b.minZ);
+    let z = -hd;
+    const fill = (z0: number, z1: number): void => {
+      if (z1 - z0 < EPS) return;
+      out.push({
+        kind: 'interior',
+        minX: at.x + x0,
+        maxX: at.x + x1,
+        minZ: at.z + z0,
+        maxZ: at.z + z1,
+        minY: top - SLAB_THICKNESS,
+        maxY: top,
+      });
+    };
+    for (const c of cuts) {
+      fill(z, c.minZ);
+      z = c.maxZ;
+    }
+    fill(z, hd);
+  }
+  return out;
 }
 
 const wallLength = (w: WallSpec): number =>
@@ -137,6 +231,13 @@ export function compileBank(layout: BankLayout, at: Point2): MapBox[] {
       total,
     ),
   );
+
+  const stairs = layout.stairs ?? [];
+  for (let s = 1; s < layout.storeys; s++) {
+    const holes = stairs.filter((st) => st.storey === s - 1).map(stairFootprint);
+    boxes.push(...slabBoxes(layout, s * layout.storeyHeight, holes, at));
+  }
+  for (const st of stairs) boxes.push(...stairBoxes(layout, st, at));
 
   layout.floors.forEach((plan, s) => {
     const bottom = s * layout.storeyHeight;

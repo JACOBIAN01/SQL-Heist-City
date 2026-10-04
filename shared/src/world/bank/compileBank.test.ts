@@ -143,3 +143,72 @@ describe('Bank 1 on the heist map', () => {
     for (const s of HEIST_MAP.spawns) expect(Math.hypot(s.x, s.z)).toBeGreaterThan(30);
   });
 });
+
+/** Steers a body through waypoints (x, z) with the real movement code; returns it when the last is reached. */
+function route(points: readonly [number, number][], start: [number, number]) {
+  const body = createBody(start[0], 0, start[1]);
+  let seq = 0;
+  for (const [tx, tz] of points) {
+    for (let i = 0; i < 60 * 12; i++) {
+      const dx = tx - body.x;
+      const dz = tz - body.z;
+      if (Math.hypot(dx, dz) < 0.3) break;
+      const yaw = Math.atan2(-dx, -dz);
+      stepBody(body, forward(seq++, yaw), SIM_DT, HEIST_MAP, DEFAULT_MOVEMENT_SETTINGS);
+    }
+  }
+  return body;
+}
+
+describe('Bank 1 stairs', () => {
+  const toLanding: [number, number][] = [
+    [0, 6],
+    [-10, 6],
+    [-10, -1], // foot of flight 1
+    [-10, -8], // landing against the back wall
+  ];
+
+  it('climbs the first flight to the second storey', () => {
+    expect(route(toLanding, [0, 20]).y).toBeCloseTo(3, 1);
+  });
+
+  it('reaches the top storey', () => {
+    const body = route(
+      [
+        ...toLanding,
+        [-8.9, -8.3],
+        [-7.5, -8.3], // foot of flight 2, one metre off the back wall
+        [-7.5, -3],
+      ],
+      [0, 20],
+    );
+    expect(body.y).toBeCloseTo(6, 1);
+  });
+
+  it('leaves a hole in the slab where each flight arrives', () => {
+    const boxes = compileBank(BANK_1, { x: 0, z: 0 });
+    const slab1 = boxes.filter((b) => b.maxY === 3 && b.minY === 2.7);
+    const covers = (x: number, z: number) =>
+      slab1.some((b) => b.minX < x && b.maxX > x && b.minZ < z && b.maxZ > z);
+    expect(covers(-10, -4)).toBe(false);
+    expect(covers(-10, -8)).toBe(true); // the landing
+    expect(covers(-10, 3)).toBe(true);
+    expect(slab1.some((b) => b.minX < 0 && b.maxX > 0)).toBe(true);
+  });
+
+  it('rejects stairs too steep to walk or without a storey above', () => {
+    const flight = {
+      storey: 0,
+      x: 0,
+      z: 0,
+      width: 2,
+      heading: '+z' as const,
+      steps: 6,
+      tread: 0.4,
+    };
+    expect(() => validateBank({ ...tiny, storeys: 2, stairs: [flight] })).toThrow(/too tall/);
+    expect(() => validateBank({ ...tiny, storeys: 1, stairs: [{ ...flight, steps: 12 }] })).toThrow(
+      /no storey above/,
+    );
+  });
+});

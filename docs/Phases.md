@@ -162,8 +162,8 @@ Goal: movement and combat feel good with 2+ real players.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 7.1 | Bank layout format + Bank 1 shell and lobby (logical walls → colliders; art from kit pieces, see city-kit.md) | walk inside | ✅ |
-| 7.2 | Floors, stairs, elevator | reach every floor | ⬜ |
-| 7.3 | Interaction system (press F near object) | prompts + server validation | ⬜ |
+| 7.2 | Floors and stairs (the elevator is a teleport interaction, so it moves to 7.3) | reach every floor | ✅ |
+| 7.3 | Interaction system (press F near object) + elevator | prompts + server validation | ⬜ |
 | 7.4 | Vault + lock state (persistent) | locks tracked server-side | ⬜ |
 | 7.5 | Vault lock ⇄ SQL challenge wiring | solve → lock opens | ⬜ |
 | 7.6 | Loot bags + carry/drop | drop on death works | ⬜ |
