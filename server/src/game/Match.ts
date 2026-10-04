@@ -43,6 +43,7 @@ import { FarthestSpawnPolicy, type SpawnPolicy } from './SpawnPolicy';
 export const CLOSE_PROTOCOL = 4000;
 export const CLOSE_FULL = 4001;
 export const CLOSE_IDLE = 4002;
+export const CLOSE_ROUND = 4003;
 
 /** The snapshot scratch objects are written in place, so they are not readonly here. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
@@ -195,6 +196,34 @@ export class Match implements MatchApi {
     for (const p of this.players.values()) if (!p.isDummy) this.sendTo(p, { t: 'json', text });
   }
 
+  resetPlayersForRound(): void {
+    for (const p of this.players.values()) {
+      p.kills = 0;
+      p.deaths = 0;
+      p.banked = 0;
+      p.cash = 0;
+      p.speedScale = 1;
+      p.rank = 0;
+      p.rankedOf = 0;
+      p.hp = this.combat.maxHp;
+      p.alive = true;
+      p.cooldown = 0;
+      const spawn =
+        p.home ??
+        this.spawnPolicy.pick(
+          this.deps.map,
+          [...this.players.values()].filter((o) => o !== p && o.alive).map((o) => o.body),
+        );
+      this.lagComp.forget(p.id);
+      Object.assign(p.body, createBody(spawn.x, 0, spawn.z));
+      p.yaw = spawn.yaw;
+      this.equipStartingGear(p, p.isDummy);
+      p.protectedUntilTick = p.isDummy
+        ? 0
+        : this.tick + this.ticksFor(this.combat.spawnProtectionSec);
+    }
+  }
+
   teleport(player: Player, x: number, y: number, z: number): void {
     Object.assign(player.body, createBody(x, y, z));
     this.interest.update(player.id, x, z);
@@ -214,6 +243,13 @@ export class Match implements MatchApi {
     }
     if (this.players.size >= this.deps.settings.maxPlayers) {
       return { ok: false, code: CLOSE_FULL, reason: 'Match is full' };
+    }
+    if (!this.heist.canJoin()) {
+      return {
+        ok: false,
+        code: CLOSE_ROUND,
+        reason: 'This round is under way. Join the next one.',
+      };
     }
     const id = this.allocateId();
     const key = `p${++this.joinCount}`;
@@ -456,7 +492,7 @@ export class Match implements MatchApi {
 
   /** Applies damage and handles a kill; public for tests and for rules that hurt players (none yet). */
   damage(victim: Player, amount: number, attacker: Player): void {
-    if (!victim.alive || this.isProtected(victim)) return;
+    if (!victim.alive || this.isProtected(victim) || this.heist.roundOver) return;
     victim.hp = Math.max(0, victim.hp - Math.round(amount));
     this.heist.onDamaged(victim);
     if (victim.hp > 0) return;

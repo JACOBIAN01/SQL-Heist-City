@@ -17,6 +17,13 @@ export class LootManager {
     return bag;
   }
 
+  /** Takes every bag away and returns their ids (a new round). */
+  clear(): number[] {
+    const ids = [...this.bags.keys()];
+    this.bags.clear();
+    return ids;
+  }
+
   all(): BagView[] {
     return [...this.bags.values()];
   }

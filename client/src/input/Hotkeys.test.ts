@@ -51,4 +51,18 @@ describe('Hotkeys', () => {
     target.dispatchEvent(other);
     expect(other.defaultPrevented).toBe(false);
   });
+
+  it('reports a held key going down and up, and lets go when the window loses focus', () => {
+    const target = new EventTarget();
+    const states: boolean[] = [];
+    new Hotkeys(target).hold('KeyB', (down) => states.push(down));
+    press(target, 'KeyB');
+    press(target, 'KeyB', { repeat: true });
+    target.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyB' }));
+    target.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyB' })); // a stray second keyup
+    expect(states).toEqual([true, false]);
+    press(target, 'KeyB');
+    target.dispatchEvent(new Event('blur'));
+    expect(states).toEqual([true, false, true, false]);
+  });
 });

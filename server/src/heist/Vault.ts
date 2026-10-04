@@ -36,6 +36,11 @@ export class Vault {
     return 'opened';
   }
 
+  /** A new round: every lock closed again. */
+  reset(): void {
+    this.opened = 0;
+  }
+
   view(): VaultView {
     return { id: this.spec.id, tier: this.spec.tier, locks: this.lockCount, opened: this.opened };
   }

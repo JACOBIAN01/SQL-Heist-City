@@ -28,6 +28,8 @@ import { Hotkeys } from './input/Hotkeys';
 import { InputSampler } from './input/InputSampler';
 import { PointerLock } from './input/PointerLock';
 import { CombatFeedback } from './game/CombatFeedback';
+import { RoundUi } from './heist/RoundUi';
+import { ScoreboardView } from './ui/hud/ScoreboardView';
 import { BankingProgress } from './heist/BankingProgress';
 import { LootRenderer } from './heist/LootRenderer';
 import { HeistWorld } from './heist/HeistWorld';
@@ -83,7 +85,7 @@ const input = new InputSampler();
 input.setLook(spawn.yaw);
 const hint = document.createElement('div');
 hint.textContent =
-  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · F use · Tab tasks · 1–5 guns · Esc release mouse';
+  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · F use · Tab tasks · hold B scoreboard · 1–5 guns · Esc release mouse';
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
@@ -121,6 +123,8 @@ const remotes = new RemotePlayers(scene, createRig);
 const serverClock = new SnapshotClock();
 const hud = new Hud(document.body);
 const bankingProgress = new BankingProgress(hud);
+const scoreboard = new ScoreboardView(document.body, () => client.playerId);
+const roundUi = new RoundUi(scoreboard);
 const tracers = new Tracers(scene);
 // ?debug draws the server's hit-boxes around other players.
 const hitboxes = params.has('debug')
@@ -159,9 +163,17 @@ client.subscribe({
     remotes.onEvent(event);
     feedback.onEvent(event);
   },
+  closed: (reason) => {
+    // The server said why (round under way, match full, out of date): show it and stay on screen.
+    hint.hidden = false;
+    hint.textContent = `Disconnected: ${reason}. Reload the page to try again.`;
+  },
   json: (message) => {
     if (challengeApi.handle(message) || interactions.handle(message)) return;
     if (message.t === 'vaults') world.applyVaults(message.vaults);
+    else if (message.t === 'round') roundUi.onRound(message, performance.now());
+    else if (message.t === 'scores') roundUi.onScores(message);
+    else if (message.t === 'standing') roundUi.onStanding(message);
     else if (message.t === 'arms') {
       ownedWeapons = message.owned;
       hud.setArms(message.owned, message.current);
@@ -236,6 +248,7 @@ new Hotkeys()
     pointer.release();
     sqlTasks.pick();
   })
+  .hold('KeyB', (down) => scoreboard.setBoardVisible(down))
   .bind(['KeyF'], () => {
     if (feedback.isAlive) void interactions.use();
   })
@@ -284,6 +297,7 @@ renderer.setAnimationLoop((now) => {
   tracers.update(frameMs / 1000);
   loot.update(now / 1000);
   bankingProgress.update(now);
+  roundUi.update(now);
   hitboxes?.update(remotes.poses());
   if (serverClock.ready)
     remotes.update(serverClock.serverTimeAt(now), frameMs / 1000, INTERP_DELAY_MS);

@@ -258,3 +258,72 @@
   font-size: 10px;
   opacity: 0.8;
 }
+
+.hud-timer {
+  position: absolute;
+  left: 50%;
+  top: 12px;
+  transform: translateX(-50%);
+  padding: 4px 14px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.hud-board,
+.hud-results {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 340px;
+  max-width: 90vw;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: rgba(10, 12, 16, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.hud-board[hidden],
+.hud-results[hidden],
+.hud-timer[hidden] {
+  display: none;
+}
+.hud-board h2,
+.hud-results h1 {
+  margin: 0 0 8px;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+.hud-results h1 {
+  font-size: 28px;
+}
+.hud-winner {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 18px;
+  color: #7be08f;
+}
+.hud-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.hud-table th {
+  text-align: left;
+  font-size: 11px;
+  opacity: 0.6;
+  font-weight: 600;
+}
+.hud-table td,
+.hud-table th {
+  padding: 2px 8px;
+}
+.hud-table tr.me {
+  background: rgba(123, 224, 143, 0.18);
+}
+.hud-standing,
+.hud-next {
+  margin-top: 8px;
+  text-align: center;
+  opacity: 0.85;
+}

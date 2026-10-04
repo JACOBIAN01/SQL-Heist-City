@@ -65,6 +65,10 @@ export class Player {
   banked = 0;
   /** Top-speed multiplier from the cash carried; kept here so the tick does not recompute it. */
   speedScale = 1;
+  /** Place on the scoreboard (1 = leading); 0 until first ranked. */
+  rank = 0;
+  /** How many players were ranked when `rank` was last sent. */
+  rankedOf = 0;
   kills = 0;
   deaths = 0;
   /** Last input sequence number applied; echoed in snapshots so the client can reconcile. */

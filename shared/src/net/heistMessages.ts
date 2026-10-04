@@ -30,7 +30,13 @@ export const jsonClientMessageSchema = z.union([
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
 export type InteractDenial =
-  'unknown_anchor' | 'too_far' | 'dead' | 'cooldown' | 'nothing_to_bank' | 'not_available';
+  | 'unknown_anchor'
+  | 'too_far'
+  | 'dead'
+  | 'cooldown'
+  | 'nothing_to_bank'
+  | 'round_over'
+  | 'not_available';
 
 /** What using an anchor did. `open_task` tells the client to open the SQL panel on this reward. */
 export type InteractResult =
@@ -92,7 +98,7 @@ export type BankingMessage =
   | { readonly t: 'banking'; readonly status: 'done'; readonly amount: number }
   | { readonly t: 'banking'; readonly status: 'cancelled'; readonly reason: BankingCancel };
 
-export type BankingCancel = 'hurt' | 'moved' | 'died';
+export type BankingCancel = 'hurt' | 'moved' | 'died' | 'round_over';
 
 /** The guns a player owns this life, and the one in hand (ammo travels in snapshots). */
 export interface ArmsMessage {
@@ -100,6 +106,41 @@ export interface ArmsMessage {
   readonly owned: readonly string[];
   readonly current: string;
 }
+
+/** One line of the scoreboard. */
+export interface StandingView {
+  readonly id: number;
+  readonly name: string;
+  readonly banked: number;
+  readonly kills: number;
+}
+
+/** The leaders. Broadcast every few seconds; each player also learns their own rank (`standing`). */
+export interface ScoresMessage {
+  readonly t: 'scores';
+  readonly top: readonly StandingView[];
+  readonly players: number;
+}
+
+export interface StandingMessage {
+  readonly t: 'standing';
+  readonly rank: number;
+  readonly players: number;
+}
+
+/**
+ * Round state. `playing`: the round ends in `endsInSec`. `ended`: the final
+ * standings, who won, and when the next round starts.
+ */
+export type RoundMessage =
+  | { readonly t: 'round'; readonly phase: 'playing'; readonly endsInSec: number }
+  | {
+      readonly t: 'round';
+      readonly phase: 'ended';
+      readonly nextInSec: number;
+      readonly winner: StandingView | null;
+      readonly standings: readonly StandingView[];
+    };
 
 /** A short message for the player ("Someone beat you to the lock"). */
 export interface NoticeMessage {
@@ -114,6 +155,9 @@ export type HeistServerMessage =
   | PurseMessage
   | BankingMessage
   | ArmsMessage
+  | ScoresMessage
+  | StandingMessage
+  | RoundMessage
   | NoticeMessage;
 
 export type JsonServerMessage = ChallengeServerMessage | HeistServerMessage;

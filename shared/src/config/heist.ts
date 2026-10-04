@@ -20,6 +20,15 @@ export const heistSettingsSchema = z.object({
     .default({ small: 20, medium: 50, full: 1000 }),
   /** Cash the killer takes from a kill, on top of what the victim drops. Keeps the hunters hunting. */
   killBonus: z.number().int().min(0).default(2_000),
+  /** Length of a round, and how long after it starts new players may still join. */
+  roundMinutes: z.number().positive().default(15),
+  joinWindowMinutes: z.number().min(0).default(3),
+  /** Once every vault is open and its loot gone, the round ends this many seconds later (time to bank). */
+  overtimeSeconds: z.number().min(0).default(60),
+  /** Pause between the end of a round and the next one starting. */
+  intermissionSeconds: z.number().min(0).default(20),
+  /** Seconds between scoreboard updates. */
+  scoreboardEverySec: z.number().positive().default(3),
   /** Seconds a player must stay at a safehouse, unhurt, to bank what they carry. */
   bankingSeconds: z.number().positive().default(4),
   /** Top speed lost per $100k carried (0.1 = 10%), up to `carrySlowMax`. */

@@ -6,6 +6,7 @@ const CANCEL_TEXT = {
   hurt: 'Banking interrupted: you were hit',
   moved: 'Banking cancelled: you left the safehouse',
   died: 'Banking cancelled',
+  round_over: 'The round is over',
 } as const;
 
 /** Shows a progress bar while the server counts down a banking channel, and the outcome after. */

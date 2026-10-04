@@ -17,6 +17,7 @@ import { HealRule } from './HealRule';
 import { LootManager } from './LootManager';
 import { ElevatorHandler } from './ElevatorHandler';
 import { InteractionService } from './InteractionService';
+import { RoundController } from './RoundController';
 import { SafehouseHandler } from './SafehouseHandler';
 import { TaskRules } from './TaskRule';
 import { VaultConsoleHandler } from './VaultConsoleHandler';
@@ -38,6 +39,8 @@ export class HeistController implements ArmsControl {
   readonly tasks = new TaskRules();
   readonly loot = new LootManager();
   readonly banking: BankingService;
+  /** The round clock and scoreboard; only on maps with vaults (the sandbox has no rounds). */
+  readonly round: RoundController | undefined;
 
   constructor(
     private readonly match: MatchApi,
@@ -71,6 +74,39 @@ export class HeistController implements ArmsControl {
       .add(new GunRule(match, this))
       .add(new AmmoRule(match, this));
     this.refreshDoors();
+    if ((match.map.vaults?.length ?? 0) > 0) {
+      this.round = new RoundController(match, settings, {
+        allVaultsEmptied: () =>
+          [...this.vaults.all()].every((v) => v.isOpen) && this.loot.count === 0,
+        reset: () => this.resetWorld(),
+        onEnd: () => this.banking.cancelAll('round_over'),
+      });
+    }
+  }
+
+  /** Whether the round is between rounds: nothing counts then. */
+  get roundOver(): boolean {
+    return this.round?.over ?? false;
+  }
+
+  /** Whether a new player may join now (not late in a round). */
+  canJoin(): boolean {
+    return this.round?.canJoin() ?? true;
+  }
+
+  /** A new round: vaults shut, bags gone, scores and players reset. */
+  private resetWorld(): void {
+    for (const v of this.vaults.all()) v.reset();
+    this.refreshDoors();
+    const gone = this.loot.clear();
+    if (gone.length > 0) this.match.broadcastJson({ t: 'loot', add: [], remove: gone });
+    this.match.broadcastJson({ t: 'vaults', vaults: this.vaults.views() });
+    this.banking.cancelAll('round_over');
+    this.match.resetPlayersForRound();
+    for (const p of this.match.playerList()) {
+      this.setCash(p, 0);
+      this.sendArms(p);
+    }
   }
 
   /** A player just joined: tell them where every vault stands. */
@@ -79,11 +115,13 @@ export class HeistController implements ArmsControl {
     this.match.sendJson(player, { t: 'loot', add: this.loot.all(), remove: [] });
     this.sendPurse(player);
     this.sendArms(player);
+    this.round?.onJoin(player);
   }
 
   /** Every tick: players walking over a bag pick it up. */
   onTick(): void {
-    this.banking.onTick();
+    this.round?.onTick();
+    if (!this.roundOver) this.banking.onTick();
     if (this.loot.count === 0) return;
     const reach = this.settings.bagPickupRadius;
     for (const bag of this.loot.all()) {
@@ -199,7 +237,9 @@ export class HeistController implements ArmsControl {
         t: 'interact_result',
         ref: message.ref,
         anchor: message.anchor,
-        result: this.interactions.use(player, message.anchor),
+        result: this.roundOver
+          ? { action: 'denied', reason: 'round_over' }
+          : this.interactions.use(player, message.anchor),
       });
       return;
     }
@@ -223,6 +263,8 @@ export class HeistController implements ArmsControl {
    */
   private onChallenge(player: Player, message: JsonClientMessage, raw: unknown): void {
     if (message.t === 'interact' || message.t === 'equip') return;
+    if (this.roundOver && message.t === 'challenge_request')
+      return this.reply(player, this.refuse(message.ref, 'not_allowed'));
     if (!this.challenges) {
       if (message.t === 'challenge_request')
         this.reply(player, this.refuse(message.ref, 'unavailable'));

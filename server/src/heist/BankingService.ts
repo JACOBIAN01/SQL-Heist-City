@@ -46,6 +46,11 @@ export class BankingService {
     this.match.sendJson(player, { t: 'banking', status: 'cancelled', reason });
   }
 
+  /** Breaks every channel (the round ended or restarted). */
+  cancelAll(reason: BankingCancel): void {
+    for (const player of [...this.channels.keys()]) this.cancel(player, reason);
+  }
+
   /** Every tick: finish channels that ran their time, break those whose player wandered off. */
   onTick(): void {
     for (const [player, channel] of this.channels) {
