@@ -31,6 +31,11 @@ export class LootRenderer {
     }
   }
 
+  /** Where each bag lies, for the minimap. */
+  *positions(): IterableIterator<{ id: number; x: number; z: number }> {
+    for (const [id, { mesh }] of this.bags) yield { id, x: mesh.position.x, z: mesh.position.z };
+  }
+
   update(seconds: number): void {
     for (const { mesh, baseY } of this.bags.values()) {
       mesh.position.y = baseY + 0.12 + Math.sin(seconds * 2 + baseY + mesh.position.x) * 0.06;

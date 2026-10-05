@@ -51,6 +51,8 @@ import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
 import { AimView } from './render/AimView';
 import { WeaponTable } from './game/WeaponTable';
+import { markersFor, VaultAlerts } from './ui/minimap/minimapModel';
+import { MinimapView } from './ui/minimap/MinimapView';
 import { loadCarAssets, type CarAssets } from './vehicles/carAssets';
 import { followAngle, PredictedVehicle } from './vehicles/PredictedVehicle';
 import { RemoteVehicles } from './vehicles/RemoteVehicles';
@@ -216,6 +218,12 @@ if (MAP.parkedCars?.length)
 const serverClock = new SnapshotClock();
 const hud = new Hud(document.body);
 const bankingProgress = new BankingProgress(hud);
+// The minimap: every bank's vault progress (flashing while its alarm rings), safehouses, loose cash.
+const minimap = new MinimapView(hud.root, MAP);
+const vaultAlerts = new VaultAlerts(DEFAULT_AUDIO_SETTINGS.alarmSeconds);
+/** Redraw the minimap at most this often (ms): it is a glance, not a view. */
+const MINIMAP_EVERY_MS = 33;
+let lastMinimap = 0;
 const scoreboard = new ScoreboardView(document.body, () => client.playerId);
 const roundUi = new RoundUi(scoreboard);
 const tracers = new Tracers(scene);
@@ -305,6 +313,7 @@ client.subscribe({
     if (message.t === 'vaults') {
       world.applyVaults(message.vaults);
       audio.onVaults(message.vaults);
+      vaultAlerts.observe(message.vaults, performance.now() / 1000);
     } else if (message.t === 'round') roundUi.onRound(message, performance.now());
     else if (message.t === 'scores') roundUi.onScores(message);
     else if (message.t === 'standing') roundUi.onStanding(message);
@@ -610,6 +619,15 @@ renderer.setAnimationLoop((now) => {
     drivers: driverIds,
     cars: heardCars(),
   });
+  if (now - lastMinimap >= MINIMAP_EVERY_MS) {
+    lastMinimap = now;
+    minimap.draw(
+      // Turned the way the camera looks (behind the car when driving).
+      { x: drawPos.x, z: drawPos.z, yaw: Math.atan2(-earForward.x, -earForward.z) },
+      markersFor(MAP, world.vaults, loot.positions(), vaultAlerts, now / 1000),
+      now / 1000,
+    );
+  }
   lighting.frame(camera);
   lighting.follow(myCar ? myCar.model.object : model.object);
   postFx.render(scene, camera);
