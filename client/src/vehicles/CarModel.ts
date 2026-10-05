@@ -1,54 +1,16 @@
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import {
-  BufferAttribute,
-  BufferGeometry,
-  Group,
-  Mesh,
-  MeshStandardMaterial,
-  type Object3D,
-  type WebGLProgramParametersWithUniforms,
-} from 'three';
+import type { MeshStandardMaterial } from 'three';
+import { BufferAttribute, BufferGeometry, Group, Mesh, type Object3D } from 'three';
 import type { VehicleState } from '@heist/shared';
+import { createBakedColourMaterial } from '../render/bakedColourMaterial';
 
 /** Wheel nodes in the car file are `<car>_<part>` (tools/city/build-cars.mjs); their origins are the axles. */
 const FRONT = ['wheel_fl', 'wheel_fr'] as const;
 const WHEELS = [...FRONT, 'wheels_back'] as const;
 
-/**
- * One material for every car: colours are in the vertices, faces are flat
- * (the file stores no normals), and lamp vertices (_glow) light up at night.
- * Pattern: Flyweight — Why: a street full of cars is one compiled program
- * and one material; only transforms differ.
- */
+/** One material for every car (see createBakedColourMaterial). */
 export function createCarMaterial(nightGlow: { value: number }): MeshStandardMaterial {
-  const material = new MeshStandardMaterial({
-    name: 'car',
-    vertexColors: true,
-    flatShading: true,
-    roughness: 0.55,
-    metalness: 0.1,
-  });
-  material.customProgramCacheKey = () => 'heist-car';
-  material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
-    shader.uniforms.uNightGlow = nightGlow;
-    shader.vertexShader = shader.vertexShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nattribute float _glow;\nvarying float vGlow;',
-      )
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGlow = _glow;');
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
-        '#include <common>',
-        '#include <common>\nuniform float uNightGlow;\nvarying float vGlow;',
-      )
-      .replace(
-        '#include <emissivemap_fragment>',
-        // Lamps glow a little by day and properly at night (bloom catches them).
-        '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vColor.rgb * vGlow * (0.2 + 2.5 * uNightGlow);',
-      );
-  };
-  return material;
+  return createBakedColourMaterial({ name: 'car', nightGlow, roughness: 0.55, metalness: 0.1 });
 }
 
 /**
