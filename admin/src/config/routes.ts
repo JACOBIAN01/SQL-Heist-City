@@ -29,6 +29,15 @@ export function configRoutes(settings: SettingsService): Router {
     res.json({ combat: settings.updateCombatSettings(body.combat ?? {}, requireUser(res)) });
   });
 
+  router.get('/config/tutorial', (_req, res) => {
+    res.json({ tutorial: settings.tutorialSettings() });
+  });
+
+  router.put('/config/tutorial', requireRole('admin'), (req, res) => {
+    const body = (req.body ?? {}) as { tutorial?: unknown };
+    res.json({ tutorial: settings.updateTutorialSettings(body.tutorial ?? {}, requireUser(res)) });
+  });
+
   router.get('/config/reward-map', (_req, res) => {
     res.json({ rewards: settings.rewardMap() });
   });

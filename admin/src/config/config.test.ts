@@ -5,6 +5,8 @@ import {
   type CombatSettings,
   type RewardTierEntry,
 } from '@heist/shared';
+import { DEFAULT_TUTORIAL_SETTINGS } from '@heist/shared';
+import { sampleQuestion } from '@heist/shared/fixtures';
 import { SqliteSettingsReader } from '@heist/server/config/SettingsReader';
 import { startAdmin } from '../testing/harness';
 
@@ -120,5 +122,43 @@ describe('combat (guns) API', () => {
     h.client.clearCookie();
     await h.loginAs('t@school.test', 'teacher');
     expect((await put({ maxHp: 200 }))?.status).toBe(403);
+  });
+});
+
+describe('tutorial API', () => {
+  async function withQuestions(slugs: readonly string[]) {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    for (const slug of slugs)
+      expect((await h.client.post('/api/questions', { ...sampleQuestion, slug })).status).toBe(201);
+    return h;
+  }
+
+  it('picks one fixed question, keeps the others, and the game reader sees it', async () => {
+    const d = DEFAULT_TUTORIAL_SETTINGS.questions;
+    const h = await withQuestions([d.heal, d.gun, d.vault, 'easy-one']);
+    expect((await h.client.get('/api/config/tutorial')).body).toEqual({
+      tutorial: { current: DEFAULT_TUTORIAL_SETTINGS, defaults: DEFAULT_TUTORIAL_SETTINGS },
+    });
+    const res = await h.client.put('/api/config/tutorial', {
+      tutorial: { questions: { gun: 'easy-one' } },
+    });
+    expect(res.status).toBe(200);
+    expect(new SqliteSettingsReader(h.db).tutorialSettings().questions).toEqual({
+      ...d,
+      gun: 'easy-one',
+    });
+  });
+
+  it('rejects a question that does not exist, and non-admins', async () => {
+    const d = DEFAULT_TUTORIAL_SETTINGS.questions;
+    const h = await withQuestions([d.heal, d.gun, d.vault]);
+    const put = (tutorial: unknown) => h.client.put('/api/config/tutorial', { tutorial });
+    const res = await put({ questions: { heal: 'nope' } });
+    expect(res.status).toBe(400);
+    expect((res.body as { error: { code: string } }).error.code).toBe('unknown_question');
+    h.client.clearCookie();
+    await h.loginAs('t@school.test', 'teacher');
+    expect((await put({ seed: 'x' })).status).toBe(403);
   });
 });

@@ -10,11 +10,15 @@ import {
   type ChallengeSettings,
   type RewardMapUpdate,
   type RewardTierEntry,
+  DEFAULT_TUTORIAL_SETTINGS,
+  tutorialSettingsSchema,
+  type TutorialSettings,
 } from '@heist/shared';
 import {
   CHALLENGE_SETTINGS_KEY,
   COMBAT_SETTINGS_KEY,
   SqliteSettingsReader,
+  TUTORIAL_SETTINGS_KEY,
 } from '@heist/server/config/SettingsReader';
 import { HttpError } from '../http/errors';
 import type { AdminEventBus } from '../events/AdminEvents';
@@ -100,6 +104,54 @@ export class SettingsService {
     this.events.publish({
       type: 'settings_changed',
       key: COMBAT_SETTINGS_KEY,
+      actor: { id: actor.id, email: actor.email },
+      before,
+      after: parsed.data,
+    });
+    return parsed.data;
+  }
+
+  tutorialSettings(): { current: TutorialSettings; defaults: TutorialSettings } {
+    return { current: this.reader.tutorialSettings(), defaults: DEFAULT_TUTORIAL_SETTINGS };
+  }
+
+  /**
+   * Merges a partial change (the fixed questions one by one) into the current
+   * values. Every fixed question must exist; new tutorials use the change.
+   */
+  updateTutorialSettings(changes: unknown, actor: AdminUser): TutorialSettings {
+    const before = this.reader.tutorialSettings();
+    const given = (changes ?? {}) as Partial<TutorialSettings>;
+    if (typeof given !== 'object' || Array.isArray(given))
+      throw new HttpError(400, 'validation_failed', 'Tutorial settings must be an object');
+    const parsed = tutorialSettingsSchema.safeParse({
+      ...before,
+      ...given,
+      questions: { ...before.questions, ...given.questions },
+    });
+    if (!parsed.success) {
+      throw new HttpError(
+        400,
+        'validation_failed',
+        'Some settings are invalid',
+        parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      );
+    }
+    for (const [task, slug] of Object.entries(parsed.data.questions)) {
+      const found = this.db
+        .prepare('SELECT 1 FROM questions WHERE slug = ? AND deleted_at IS NULL')
+        .get(slug);
+      if (!found)
+        throw new HttpError(400, 'unknown_question', `No question "${slug}" (tutorial ${task})`);
+    }
+    this.db
+      .prepare(
+        'INSERT INTO settings (key, value_json) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json',
+      )
+      .run(TUTORIAL_SETTINGS_KEY, JSON.stringify(parsed.data));
+    this.events.publish({
+      type: 'settings_changed',
+      key: TUTORIAL_SETTINGS_KEY,
       actor: { id: actor.id, email: actor.email },
       before,
       after: parsed.data,

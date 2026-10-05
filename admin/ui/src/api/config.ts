@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ChallengeSettings, CombatSettings, RewardTierEntry } from '@heist/shared';
+import type {
+  ChallengeSettings,
+  CombatSettings,
+  RewardTierEntry,
+  TutorialSettings,
+} from '@heist/shared';
 import { api } from './client';
 
 export function useChallengeSettings() {
@@ -64,6 +69,30 @@ export function useSaveCombatSettings() {
       api<{ combat: CombatSettings }>('/config/combat', {
         method: 'PUT',
         body: { combat: changes },
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['config'] }),
+  });
+}
+
+export function useTutorialSettings() {
+  return useQuery({
+    queryKey: ['config', 'tutorial'],
+    queryFn: async () =>
+      (
+        await api<{ tutorial: { current: TutorialSettings; defaults: TutorialSettings } }>(
+          '/config/tutorial',
+        )
+      ).tutorial,
+  });
+}
+
+export function useSaveTutorialSettings() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (changes: Partial<TutorialSettings>) =>
+      api<{ tutorial: TutorialSettings }>('/config/tutorial', {
+        method: 'PUT',
+        body: { tutorial: changes },
       }),
     onSuccess: () => client.invalidateQueries({ queryKey: ['config'] }),
   });

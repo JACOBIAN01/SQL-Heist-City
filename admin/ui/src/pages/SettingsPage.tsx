@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { ChallengeSettings, CombatSettings, RewardTierEntry, WeaponSpec } from '@heist/shared';
+import type {
+  ChallengeSettings,
+  CombatSettings,
+  RewardTierEntry,
+  TutorialSettings,
+  WeaponSpec,
+} from '@heist/shared';
 import {
   useChallengeSettings,
   useCombatSettings,
@@ -7,7 +13,10 @@ import {
   useSaveChallengeSettings,
   useSaveCombatSettings,
   useSaveRewardMap,
+  useSaveTutorialSettings,
+  useTutorialSettings,
 } from '../api/config';
+import { useQuestions } from '../api/questions';
 import { useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
 
@@ -20,6 +29,9 @@ const FIELDS: { key: NumericKey; label: string; unit: string }[] = [
   { key: 'submitCooldownMs', label: 'Min gap between "Submit" presses', unit: 'ms' },
   { key: 'requestCooldownMs', label: 'Min gap between new challenges', unit: 'ms' },
   { key: 'sampleRows', label: 'Sample rows shown per table', unit: 'rows' },
+  { key: 'exampleRows', label: 'Worked example: rows per table at first', unit: 'rows' },
+  { key: 'exampleTries', label: 'Worked example: small tries before full size', unit: 'tries' },
+  { key: 'exampleShownRows', label: 'Worked example: rows shown', unit: 'rows' },
 ];
 
 const REWARD_LABELS: Record<string, string> = {
@@ -45,6 +57,7 @@ export function SettingsPage() {
         <RewardMapCard editable={isAdmin} />
       </div>
       <GunsCard editable={isAdmin} />
+      <TutorialCard editable={isAdmin} />
     </div>
   );
 }
@@ -274,6 +287,71 @@ function RewardMapCard({ editable }: { editable: boolean }) {
             onClick={() => save.mutate(rows.map(({ key, min, max }) => ({ key, min, max })))}
           >
             Save tiers
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const TUTORIAL_TASKS: { key: keyof TutorialSettings['questions']; label: string }[] = [
+  { key: 'heal', label: 'Heal task' },
+  { key: 'gun', label: 'Gun task' },
+  { key: 'vault', label: 'Vault lock' },
+];
+
+/** The question each tutorial task always asks (the same for every player, solution free). */
+function TutorialCard({ editable }: { editable: boolean }) {
+  const settings = useTutorialSettings();
+  const questions = useQuestions({ enabled: true });
+  const save = useSaveTutorialSettings();
+  const [picked, setPicked] = useState<TutorialSettings['questions'] | null>(null);
+  useEffect(() => {
+    if (settings.data) setPicked(settings.data.current.questions);
+  }, [settings.data]);
+
+  if (!picked || !settings.data) return <ErrorMessage error={settings.error} />;
+  const list = [...(questions.data ?? [])].sort((a, b) => a.tier - b.tier || a.id - b.id);
+  return (
+    <div className="card stack">
+      <h2>Tutorial questions</h2>
+      <p className="muted">
+        Each tutorial task always asks this question, with the same tables for every player, and its
+        solution is free. New tutorials use a change.
+      </p>
+      {TUTORIAL_TASKS.map((t) => (
+        <label key={t.key}>
+          {t.label}
+          <select
+            disabled={!editable}
+            value={picked[t.key]}
+            onChange={(e) => setPicked({ ...picked, [t.key]: e.target.value })}
+          >
+            {!list.some((q) => q.slug === picked[t.key]) && (
+              <option value={picked[t.key]}>{picked[t.key]} (not found)</option>
+            )}
+            {list.map((q) => (
+              <option key={q.id} value={q.slug}>
+                T{q.tier} · {q.title} ({q.slug})
+              </option>
+            ))}
+          </select>
+        </label>
+      ))}
+      <ErrorMessage error={save.error} />
+      {editable && (
+        <div className="row">
+          <button onClick={() => setPicked(settings.data.defaults.questions)}>
+            Reset to defaults
+          </button>
+          <span className="spacer" />
+          {save.isSuccess && <span className="notice">Saved ✓</span>}
+          <button
+            className="primary"
+            disabled={save.isPending}
+            onClick={() => save.mutate({ questions: picked })}
+          >
+            Save tutorial
           </button>
         </div>
       )}

@@ -5,6 +5,7 @@ import {
   DEFAULT_CHALLENGE_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_REWARD_TIERS,
+  DEFAULT_TUTORIAL_SETTINGS,
 } from '@heist/shared';
 import { admin, fakeApi, renderWithProviders, teacher } from '../testing/render';
 import { SettingsPage } from './SettingsPage';
@@ -33,6 +34,28 @@ function api(user: typeof admin | typeof teacher) {
       body: { combat: { current: DEFAULT_COMBAT_SETTINGS, defaults: DEFAULT_COMBAT_SETTINGS } },
     }),
     'PUT /config/combat': (b) => ({ body: b }),
+    'GET /config/tutorial': () => ({
+      body: {
+        tutorial: { current: DEFAULT_TUTORIAL_SETTINGS, defaults: DEFAULT_TUTORIAL_SETTINGS },
+      },
+    }),
+    'PUT /config/tutorial': (b) => ({ body: b }),
+    'GET /questions': () => ({
+      body: {
+        questions: [...Object.values(DEFAULT_TUTORIAL_SETTINGS.questions), 't1-light-loot'].map(
+          (slug, i) => ({
+            id: i + 1,
+            slug,
+            title: `Question ${i + 1}`,
+            tier: 1,
+            topics: [],
+            enabled: true,
+            version: 1,
+            updatedAt: '',
+          }),
+        ),
+      },
+    }),
     'PUT /config/settings': (b) => ({ body: b }),
     'PUT /config/reward-map': (b) => ({ body: b }),
   });
@@ -80,6 +103,21 @@ describe('SettingsPage', () => {
       .combat.weapons;
     expect(weapons.smg?.damage).toBe(14);
     expect(weapons.sniper).toEqual(DEFAULT_COMBAT_SETTINGS.weapons.sniper);
+  });
+
+  it('admins pick a tutorial question', async () => {
+    const calls = api(admin);
+    renderWithProviders(<SettingsPage />);
+    const user = userEvent.setup();
+    const gun = await screen.findByLabelText('Gun task');
+    await screen.findAllByText(/t1-light-loot/);
+    await user.selectOptions(gun, 't1-light-loot');
+    await user.click(screen.getByRole('button', { name: 'Save tutorial' }));
+    await screen.findByText('Saved ✓');
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/config/tutorial');
+    expect(put?.body).toEqual({
+      tutorial: { questions: { ...DEFAULT_TUTORIAL_SETTINGS.questions, gun: 't1-light-loot' } },
+    });
   });
 
   it('teachers see values read-only', async () => {
