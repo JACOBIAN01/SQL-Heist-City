@@ -98,3 +98,14 @@ Cars are solid to people on foot: after each movement step a body is pushed out 
 
 ## Hearing (Phase 8.10)
 Sound is information. Gunshots carry 220 m and stay loud for 18 m, so a fight is heard streets away and roughly where it is. Footsteps carry only 28 m, and crouching makes them a third as loud: sneaking up works. A cracked vault lock rings that bank's alarm for 18 s, out to 160 m, which tells everyone nearby that a vault is being worked. All of these numbers are in `shared/src/config/audio.ts`. Design and code: frontend.md "Audio".
+
+## Alarms, bounties and the feed (Phase 9.7)
+- **Alarm:** every cracked vault lock puts a red line in everyone's feed: "ALARM · Metro Capital (bank 3): lock 2/3 cracked". The bank's minimap marker pulses and its bell rings. It says where, never who: the crackers stay anonymous until they carry the cash.
+- **Vault open:** the last lock is announced as "Metro Capital vault is OPEN", in gold.
+- **Banked:** "Ana banked $30,000", in green.
+- **Bounty:** anyone alive carrying **$100k or more** is wanted (`bountyThreshold`).
+  - The feed says so ("Ana carries $120,000 · $10,000 bounty"), and the wanted player is told everyone can see them.
+  - Every 2 s (`bountyEverySec`) the server posts where every wanted player is to everyone. The minimap shows them as orange `$` diamonds, on the rim when far.
+  - Whoever kills a wanted player collects **$10,000** (`bountyReward`) on top of the kill bonus and the cash they drop, and the feed says who claimed it.
+  - Banking the cash, or dropping below the threshold, lifts the bounty.
+- **Server:** the heist rules publish events on one bus (`HeistEvents`, Observer: lock opened, vault opened, banked, wanted, bounty claimed). `FeedReporter` and `BountyBoard` subscribe or publish there, so later features (round awards, metrics) can listen without touching the vault or banking code.
