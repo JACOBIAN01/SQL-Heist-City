@@ -197,7 +197,7 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 9.1 | Bank 2 (new layout, same kit pieces and grammar) | playable | ✅ "City Trust", 4 storeys, on the tier-2 city site (backend.md "Bank layouts") |
-| 9.2 | Bank 3 | playable | ⬜ |
+| 9.2 | Bank 3 | playable | ✅ "Metro Capital", 4 storeys, door and vault off-centre (backend.md "Bank layouts") |
 | 9.3 | Bank 4 | playable | ⬜ |
 | 9.4 | Bank 5 | playable | ⬜ |
 | 9.5 | Remaining weapon tiers (SMG, shotgun, rifle, sniper) | stats from config | ⬜ |
