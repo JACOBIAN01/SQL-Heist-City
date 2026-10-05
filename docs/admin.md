@@ -44,7 +44,7 @@ POST /questions/:id/duplicate | /enable | /disable
 GET  /questions/:id/versions   POST /questions/:id/rollback/:v
 POST /questions/:id/preview
 POST /questions/import   GET /questions/export
-GET/PUT /config/reward-map | /config/settings
+GET/PUT /config/reward-map | /config/settings | /config/combat
 GET/POST/PUT /pools     GET/POST/PUT/DELETE /users (admin)
 GET  /analytics/questions   GET /audit
 ```

@@ -80,7 +80,7 @@ All routes below are under the `/api` prefix (e.g. `POST /api/auth/login`), so t
 | POST | /questions/:id/preview | teacher+ | `{seeds[], studentSql?}` |
 | POST | /questions/import?dryRun= | teacher+ | JSON or CSV |
 | GET | /questions/export?format= | teacher+ | |
-| GET/PUT | /config/reward-map, /config/settings | admin (settings), teacher (pools) | zod validated |
+| GET/PUT | /config/reward-map, /config/settings, /config/combat | admin (settings), teacher (pools) | zod validated |
 | GET/POST/PUT | /pools | teacher+ | |
 | GET/POST/PUT/DELETE | /users | admin | |
 | GET | /analytics/questions | teacher+ | |
@@ -116,6 +116,8 @@ The SQL pop-up uses the same challenge messages as before, now over `json` frame
 - `banking { status: 'started', seconds }` / `{ status: 'done', amount }` / `{ status: 'cancelled', reason: 'hurt'|'moved'|'died' }` (server → client): banking is a channel the server counts down (`bankingSeconds`, default 4). `interact` on a safehouse answers `{action:'banking', seconds}` (or `denied` with `nothing_to_bank`).
 - `equip { weapon }` (client → server): hold a gun you own (the number keys 1–5).
 - `vehicle { ref, action: 'enter', vehicle }` / `{ ref, action: 'exit' }` (client → server): get into an empty car (within `enterRange` of its body) or out of yours (at most `exitMaxSpeed`; you step out by the driver's door, else the other door, behind or in front, whichever is free of walls and cars). Answer: `vehicle_result { ref, ok, reason? }` with `reason` one of `unknown_vehicle`, `too_far`, `taken`, `dead`, `already_driving`, `not_driving`, `too_fast`, `no_room`. While driving, `input` commands drive the car (moveY throttle/brake, moveX steering, jump = handbrake), Fire is ignored and anchors answer `denied`.
+- `weapons { weapons: { [id]: WeaponSpec } }` (server → client): every gun's numbers (damage, rpm, range, magazine, pellets, spread, falloff, move spread, aim spread, zoom, recoil); sent on join and to everyone when an admin's change takes effect at a new round. The client paces fire, zooms and kicks the view with these, never with its own defaults.
+- Input button `Aim` (16, right mouse): aiming down the sights. The server multiplies the shot's spread by the gun's `aimSpread`; the client zooms the view.
 - `arms { owned: [id], current }` (server → client): the guns owned this life and the one in hand; sent on join, unlock, equip and respawn. Rounds in the magazine travel in every snapshot (`self.ammo`) because they change with every shot.
 - `round { phase: 'playing', endsInSec }` / `{ phase: 'ended', nextInSec, winner, standings }` (server → client): the round clock (the client counts down locally) and the final standings (top 10, `winner` is null if nobody banked). Sent on join, when overtime starts, at the end and at the start of the next round.
 - `scores { top: [{id,name,banked,kills}], players }` (broadcast every `scoreboardEverySec`) and `standing { rank, players }` (per player, only when their rank or the player count changed).

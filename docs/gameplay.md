@@ -37,15 +37,19 @@ The world never pauses. While the pop-up is open the player stays vulnerable.
 - Pop-up can be minimised to fight; timer continues. Challenge expires after 5 min with no penalty.
 
 ## Combat (defaults, config-driven)
-| Gun | Dmg | RPM | Mag | Range |
-|---|---|---|---|---|
-| Pistol | 18 | 300 | 12 | 40 m |
-| SMG | 12 | 750 | 30 | 35 m |
-| Shotgun | 9×8 | 70 | 6 | 15 m |
-| Rifle | 28 | 450 | 25 | 80 m |
-| Sniper | 90 | 40 | 5 | 200 m |
+| Gun | Dmg | RPM | Mag | Range | Falloff | Job |
+|---|---|---|---|---|---|---|
+| Pistol | 18 | 300 | 12 | 40 m | from 20 m to 60% | a fair start |
+| SMG | 12 | 750 | 30 | 35 m | from 12 m to 50% | close range, keeps its aim on the run |
+| Shotgun | 9×8 | 70 | 6 | 15 m | from 6 m to 25% | owns a doorway, nothing past it |
+| Rifle | 28 | 450 | 25 | 80 m | from 45 m to 70% | mid range, aimed |
+| Sniper | 90 | 40 | 5 | 200 m | none | long sight lines, scoped and still |
 
-Hitscan, recoil/spread, headshot ×2. Guns are earned **per life**.
+Hitscan, headshot ×2. Guns are earned **per life**.
+
+**What sets the guns apart (9.5):** damage falls off linearly from the falloff distance to the minimum share at full range. Spread is the gun's base cone, widened on the move in proportion to speed (`moveSpread` at a sprint: small for the SMG, large for the rifle, crippling for the sniper) and multiplied by `aimSpread` while aiming. Right mouse aims: the view zooms by the gun's `aimZoom` (the sniper's 4× shows a scope and hides your own body), mouse look slows by the same factor, and the character raises the gun. Each shot kicks the view up by `recoil`; pulling it back down is the player's job. The server decides falloff and spread (from the shooter's speed and the Aim button); zoom and recoil are the shooter's view only.
+
+**Tuning:** all of it is in `shared/config/combat.ts` and editable by admins (Settings → Guns, settings key `combat`; stored guns override the defaults one field at a time). Matches pick changes up at their next round and send every client the new numbers.
 
 > **Sandbox map:** on the sandbox yard everyone still holds the rifle with unlimited ammo (`sandboxWeapon`); heist maps (`unarmedStart`) start everyone unarmed. Magazines are finite there: each shot spends a round (a shotgun blast one, all pellets), an empty gun clicks, and `ammo:refill` fills the held gun's magazine; guns are lost on death. Respawn is 5 s at 50 HP with 5 s protection, all from `shared/config/combat.ts`.
 
