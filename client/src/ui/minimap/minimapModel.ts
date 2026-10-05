@@ -26,7 +26,7 @@ export function pinToRim(p: MapPoint, radius: number): MapPoint & { readonly pin
   return { x: (p.x / d) * radius, y: (p.y / d) * radius, pinned: true };
 }
 
-export type MarkerKind = 'bank' | 'safehouse' | 'bag' | 'wanted';
+export type MarkerKind = 'bank' | 'safehouse' | 'bag' | 'wanted' | 'objective';
 
 export interface Marker {
   readonly kind: MarkerKind;
@@ -118,3 +118,12 @@ export function markersFor(
       });
   return out;
 }
+
+/** Where the tutorial wants you next (pinned: it is where to go). */
+export const objectiveMarker = (at: { readonly x: number; readonly z: number }): Marker => ({
+  kind: 'objective',
+  id: 'objective',
+  x: at.x,
+  z: at.z,
+  pinned: true,
+});

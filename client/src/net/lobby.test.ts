@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { chooseGameUrl } from './lobby';
+import { chooseGameUrl, tutorialUrl } from './lobby';
 
 const match = (port: number, players = 0) => ({ port, players, maxPlayers: 100 });
 
@@ -26,5 +26,11 @@ describe('chooseGameUrl', () => {
     expect(await chooseGameUrl('h', '8080', async () => ({ matches: [] }))).toBe(
       'ws://h:8080/ws/game',
     );
+  });
+});
+
+describe('tutorialUrl', () => {
+  it('is the tutorial socket on the lobby server itself', () => {
+    expect(tutorialUrl('example.test', '8080')).toBe('ws://example.test:8080/ws/tutorial');
   });
 });

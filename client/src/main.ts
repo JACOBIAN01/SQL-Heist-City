@@ -16,6 +16,7 @@ import {
   type SelfState,
   type WantedView,
   weaponFromWire,
+  TUTORIAL_STEPS,
 } from '@heist/shared';
 import { GameAudio, type HeardCar } from './audio/GameAudio';
 import { GestureAudio } from './audio/GestureAudio';
@@ -32,7 +33,7 @@ import { PredictedPlayer } from './game/PredictedPlayer';
 import { GameClient } from './net/GameClient';
 import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
 import { InputBatcher } from './net/InputBatcher';
-import { chooseGameUrl } from './net/lobby';
+import { chooseGameUrl, tutorialUrl } from './net/lobby';
 import { buildTaskOptions } from './heist/taskOptions';
 import { Hotkeys } from './input/Hotkeys';
 import { InputSampler } from './input/InputSampler';
@@ -52,7 +53,14 @@ import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
 import { AimView } from './render/AimView';
 import { WeaponTable } from './game/WeaponTable';
-import { markersFor, VaultAlerts } from './ui/minimap/minimapModel';
+import { markersFor, objectiveMarker, VaultAlerts } from './ui/minimap/minimapModel';
+import { TutorialBeacon } from './tutorial/TutorialBeacon';
+import {
+  realMatchSearch,
+  TutorialGuide,
+  tutorialInvite,
+  tutorialTarget,
+} from './tutorial/TutorialGuide';
 import { feedText } from './heist/feedText';
 import { MinimapView } from './ui/minimap/MinimapView';
 import { loadCarAssets, type CarAssets } from './vehicles/carAssets';
@@ -80,8 +88,10 @@ import { followServerMap } from './world/followServerMap';
 // Composition root for the client.
 // ?map=heist|city|city:<seed> picks the map; on joining, the page follows whatever map the server plays.
 const params = new URLSearchParams(location.search);
+// ?tutorial plays the tutorial: a private room on the tutorial map, with a guide.
+const tutorial = params.has('tutorial');
 // Without ?map the page builds the default city (the server's default too, so no reload).
-const MAP = mapById(params.get('map') ?? 'city') ?? TEST_MAP;
+const MAP = mapById(tutorial ? 'tutorial' : (params.get('map') ?? 'city')) ?? TEST_MAP;
 /** Remote players are drawn this far in the past (smooth interpolation); shots are rewound by it too. */
 const INTERP_DELAY_MS = 100;
 const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -166,8 +176,19 @@ hint.textContent =
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
+/** Browser storage, when the browser allows it (private windows may not). */
+const storage = (() => {
+  try {
+    return localStorage;
+  } catch {
+    return undefined;
+  }
+})();
+// Newcomers in a real match are pointed at the tutorial until they have finished it once.
+const invite = tutorial ? undefined : tutorialInvite(document.body, storage);
 const pointer = new PointerLock(renderer.domElement, input, (locked) => {
   hint.hidden = locked;
+  if (invite) invite.hidden = locked;
 });
 const rig = new CameraRig(camera, MAP);
 // Behind and above a car, centred (no shoulder), pulled in by walls like the on-foot camera.
@@ -179,7 +200,9 @@ let chaseYaw: number | undefined;
 const port = params.get('server') ?? '8080';
 const lag = Number(params.get('lag') ?? 0);
 // The lobby says which match (and which port, when matches run in their own threads) to join.
-const gameUrl = await chooseGameUrl(location.hostname, port);
+const gameUrl = tutorial
+  ? tutorialUrl(location.hostname, port)
+  : await chooseGameUrl(location.hostname, port);
 const thresholds = thresholdsFor(
   DEFAULT_MOVEMENT_SETTINGS.walkSpeed,
   DEFAULT_MOVEMENT_SETTINGS.sprintSpeed,
@@ -231,6 +254,17 @@ let wanted: readonly WantedView[] = [];
 const scoreboard = new ScoreboardView(document.body, () => client.playerId);
 const roundUi = new RoundUi(scoreboard);
 const tracers = new Tracers(scene);
+// The tutorial's card and its "go here" beacon; the server says which step the player is on.
+const guide = tutorial
+  ? new TutorialGuide(document.body, {
+      onPlay: () => (location.search = realMatchSearch(location.search)),
+      storage,
+    })
+  : undefined;
+const beacon = tutorial ? new TutorialBeacon() : undefined;
+if (beacon) scene.add(beacon.object);
+let objective: { readonly x: number; readonly y: number; readonly z: number } | undefined;
+let tutorialStep = 0;
 // ?debug draws the server's hit-boxes around other players.
 const hitboxes = params.has('debug')
   ? new HitboxDebug(scene, DEFAULT_COMBAT_SETTINGS, DEFAULT_MOVEMENT_SETTINGS)
@@ -318,8 +352,10 @@ client.subscribe({
       world.applyVaults(message.vaults);
       audio.onVaults(message.vaults);
       vaultAlerts.observe(message.vaults, performance.now() / 1000);
-    } else if (message.t === 'round') roundUi.onRound(message, performance.now());
-    else if (message.t === 'scores') roundUi.onScores(message);
+    } else if (message.t === 'round') {
+      // The tutorial has no round to race: its room closes long before the clock would matter.
+      if (!tutorial) roundUi.onRound(message, performance.now());
+    } else if (message.t === 'scores') roundUi.onScores(message);
     else if (message.t === 'standing') roundUi.onStanding(message);
     else if (message.t === 'arms') {
       ownedWeapons = message.owned;
@@ -337,6 +373,16 @@ client.subscribe({
       player.speedScale = message.speed;
       model.setCarrying(message.carried > 0 || params.has('bag'));
     } else if (message.t === 'notice') hud.toast(message.text);
+    else if (message.t === 'tutorial') {
+      if (message.step > tutorialStep)
+        hud.toast(`Done: ${TUTORIAL_STEPS[message.step - 1]?.title ?? 'step'}`);
+      tutorialStep = message.step;
+      guide?.show(message.step);
+      objective = tutorialTarget(message.step);
+      beacon?.setTarget(objective);
+      // The last card has a button: give the mouse back to press it.
+      if (message.step >= TUTORIAL_STEPS.length) pointer.release();
+    }
   },
 });
 // The SQL pop-up lives on the game connection: the server decides what each task is worth.
@@ -528,6 +574,7 @@ renderer.setAnimationLoop((now) => {
   predicted.smooth(frameMs / 1000);
   tracers.update(frameMs / 1000);
   loot.update(now / 1000);
+  beacon?.update(now / 1000);
   bankingProgress.update(now);
   roundUi.update(now);
   hitboxes?.update(remotes.poses());
@@ -632,15 +679,18 @@ renderer.setAnimationLoop((now) => {
     minimap.draw(
       // Turned the way the camera looks (behind the car when driving).
       { x: drawPos.x, z: drawPos.z, yaw: Math.atan2(-earForward.x, -earForward.z) },
-      markersFor(
-        MAP,
-        world.vaults,
-        loot.positions(),
-        vaultAlerts,
-        now / 1000,
-        wanted,
-        client.playerId,
-      ),
+      [
+        ...markersFor(
+          MAP,
+          world.vaults,
+          loot.positions(),
+          vaultAlerts,
+          now / 1000,
+          wanted,
+          client.playerId,
+        ),
+        ...(objective ? [objectiveMarker(objective)] : []),
+      ],
       now / 1000,
     );
   }

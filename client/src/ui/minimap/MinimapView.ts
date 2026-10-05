@@ -19,6 +19,7 @@ const COLOURS = {
   safehouse: '#3ddc84',
   bag: '#ffd34d',
   wanted: '#ff6a00',
+  objective: '#ffd34d',
   player: '#ffffff',
 };
 
@@ -164,6 +165,15 @@ export class MinimapView {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('$', at.x, at.y + 0.5);
+      return;
+    }
+    if (m.kind === 'objective') {
+      // The tutorial's "go here": a pulsing yellow ring.
+      ctx.strokeStyle = COLOURS.objective;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, 6 + 2 * Math.sin(now * 4), 0, Math.PI * 2);
+      ctx.stroke();
       return;
     }
     if (m.kind === 'safehouse') {

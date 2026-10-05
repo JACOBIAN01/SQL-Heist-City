@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HEIST_MAP, box, mapById, type GameMap } from '@heist/shared';
 import { MinimapView, drawStreetPlan } from './MinimapView';
-import { markersFor, pinToRim, project, VaultAlerts } from './minimapModel';
+import { markersFor, objectiveMarker, pinToRim, project, VaultAlerts } from './minimapModel';
 
 describe('project', () => {
   it('puts what is ahead above the centre and what is to the right on the right', () => {
@@ -34,6 +34,18 @@ describe('VaultAlerts', () => {
     alerts.observe([{ id: 'v', tier: 1, locks: 3, opened: 2 }], 5);
     expect(alerts.isAlert('v', 10)).toBe(true);
     expect(alerts.isAlert('v', 24)).toBe(false);
+  });
+});
+
+describe('objectiveMarker', () => {
+  it('marks where the tutorial wants you, kept on the rim when far', () => {
+    expect(objectiveMarker({ x: 4, z: -9 })).toEqual({
+      kind: 'objective',
+      id: 'objective',
+      x: 4,
+      z: -9,
+      pinned: true,
+    });
   });
 });
 

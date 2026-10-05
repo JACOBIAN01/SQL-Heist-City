@@ -32,3 +32,7 @@ export async function chooseGameUrl(
     return fallback;
   }
 }
+
+/** The tutorial: a private room on the lobby server itself (no match to choose). */
+export const tutorialUrl = (host: string, lobbyPort: string): string =>
+  `ws://${host}:${lobbyPort}/ws/tutorial`;
