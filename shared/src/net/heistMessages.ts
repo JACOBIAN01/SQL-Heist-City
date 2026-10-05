@@ -170,6 +170,59 @@ export type RoundMessage =
       readonly standings: readonly StandingView[];
     };
 
+/**
+ * One line of the event feed everyone sees (next to the kill feed): heists in
+ * progress, vaults opened, cash banked, bounties set and claimed. Names are
+ * resolved by the server, so the client only shows them.
+ */
+export type FeedItem =
+  | {
+      readonly kind: 'alarm';
+      readonly bank: string;
+      readonly tier: number;
+      readonly lock: number;
+      readonly locks: number;
+    }
+  | {
+      readonly kind: 'vault_open';
+      readonly bank: string;
+      readonly tier: number;
+    }
+  | { readonly kind: 'banked'; readonly name: string; readonly amount: number }
+  | {
+      readonly kind: 'wanted';
+      readonly name: string;
+      readonly cash: number;
+      readonly reward: number;
+    }
+  | {
+      readonly kind: 'bounty_claimed';
+      readonly killer: string;
+      readonly victim: string;
+      readonly reward: number;
+    };
+
+export interface FeedMessage {
+  readonly t: 'feed';
+  readonly item: FeedItem;
+}
+
+/** A player with a price on their head, where they were when the board was last posted. */
+export interface WantedView {
+  readonly id: number;
+  readonly name: string;
+  readonly x: number;
+  readonly z: number;
+  readonly cash: number;
+}
+
+/** Every wanted player, to everyone, every few seconds (and once empty when the last one goes). */
+export interface BountiesMessage {
+  readonly t: 'bounties';
+  readonly wanted: readonly WantedView[];
+  readonly reward: number;
+}
+
 /** A short message for the player ("Someone beat you to the lock"). */
 export interface NoticeMessage {
   readonly t: 'notice';
@@ -203,6 +256,8 @@ export type HeistServerMessage =
   | BankingMessage
   | ArmsMessage
   | WeaponsMessage
+  | FeedMessage
+  | BountiesMessage
   | ScoresMessage
   | StandingMessage
   | RoundMessage

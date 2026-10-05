@@ -20,6 +20,14 @@ export const heistSettingsSchema = z.object({
     .default({ small: 20, medium: 50, full: 1000 }),
   /** Cash the killer takes from a kill, on top of what the victim drops. Keeps the hunters hunting. */
   killBonus: z.number().int().min(0).default(2_000),
+  /**
+   * Bounties: a player carrying at least `bountyThreshold` is wanted. Everyone
+   * sees where the wanted are on the minimap (refreshed every `bountyEverySec`),
+   * and whoever kills one is paid `bountyReward` on top of the dropped cash.
+   */
+  bountyThreshold: z.number().int().min(0).default(100_000),
+  bountyReward: z.number().int().min(0).default(10_000),
+  bountyEverySec: z.number().positive().default(2),
   /** Length of a round, and how long after it starts new players may still join. */
   roundMinutes: z.number().positive().default(15),
   joinWindowMinutes: z.number().min(0).default(3),
