@@ -198,3 +198,11 @@ Not measured here: real frame rates on an integrated GPU. Check on the target la
   - **Loose cash bags:** yellow dots.
 - **Out of range:** banks and safehouses sit on the rim in their direction (`pinToRim`); bags beyond the edge are not shown.
 - **Cost:** redrawn at most every 33 ms; a handful of canvas calls.
+
+## Tutorial (Phase 9.8)
+`?tutorial` loads the tutorial map and connects to `/ws/tutorial` on the lobby port instead of asking the lobby for a match (`tutorialUrl`).
+- **Card** (`tutorial/TutorialGuide.ts`): top-left. It shows the step the server sent, what to do, and the list of steps with the done ones struck through. A toast says "Done: …" as each one completes. The last card has a "Play a real match" button: the mouse is released for it, and it reloads the page without `?tutorial`. Finishing stores `heist:tutorialDone` in localStorage (read and written in try/catch).
+- **Beacon** (`tutorial/TutorialBeacon.ts`): a pulsing yellow column and floor ring where the step happens (`TUTORIAL_TARGETS`). The column draws through walls, so the vault console is findable from outside the bank. The minimap shows the same place as a yellow ring (`objectiveMarker`), on the rim when far.
+- **Invitation:** on normal pages a "New here? Play the tutorial" link shows while the mouse is free, until the tutorial has been finished in this browser.
+- The round clock is hidden in the tutorial.
+

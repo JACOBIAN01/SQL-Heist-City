@@ -203,7 +203,7 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 9.5 | Remaining weapon tiers (SMG, shotgun, rifle, sniper) | stats from config | ✅ falloff, move spread, aiming/zoom/scope, recoil; admin Guns editor; server sends the numbers (gameplay.md "Combat") |
 | 9.6 | Minimap + vault-progress markers | markers update live | ✅ rotating minimap, bank progress rings + alarm pulse, safehouses, bags (frontend.md "Minimap") |
 | 9.7 | Killfeed + alarm/bounty events | events visible | ✅ alarm / vault open / banked / bounty lines in the feed; wanted players on the minimap; bounty reward (gameplay.md "Alarms, bounties and the feed") |
-| 9.8 | Tutorial level | new player completes it | ⬜ |
+| 9.8 | Tutorial level | new player completes it | ✅ private room per player at `?tutorial`, 7 steps judged by the server, guide card + beacon; a scripted player completes it in tests (gameplay.md "Tutorial") |
 | 9.9 | Round-end awards screen | awards shown | ⬜ |
 
 ---

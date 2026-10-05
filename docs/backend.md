@@ -12,6 +12,8 @@ main process
 ```
 `MAX_PLAYERS`: 60 / **100 (default)** / 200. Matches are isolated; scale out with more processes.
 
+**Tutorial rooms (Phase 9.8):** `/ws/tutorial` on the main process (attached only when the question database exists). Each connection gets a `TutorialRoom`: its own `Match` on the tutorial map, three practice targets, a `TutorialCoach` and a `GameLoop` that stops when the player leaves (or after `maxMinutes`). Rooms prefix their player keys (`tutorial-<n>:p1`) because they share the one challenge system. The coach judges each step from server state (a Strategy per step id) and the `task_solved` heist event. A room costs one player's worth of ticking.
+
 **As built (Phase 6.8):** `MatchPool` starts each match in a worker thread (`matchWorker.ts`) that owns its own HTTP/WebSocket listener, so matches never share an event loop; the main process keeps `/lobby` (which match has room, on which port), `/metrics`, `/health` and the SQL challenge socket. `MATCH_WORKERS=0` (default) keeps one match in-process. Sockets cannot be handed between threads in Node, which is why a match listens itself instead of the main process routing connections.
 
 ## Tick loop (20 Hz = 50 ms)

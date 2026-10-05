@@ -109,3 +109,22 @@ Sound is information. Gunshots carry 220 m and stay loud for 18 m, so a fight is
   - Whoever kills a wanted player collects **$10,000** (`bountyReward`) on top of the kill bonus and the cash they drop, and the feed says who claimed it.
   - Banking the cash, or dropping below the threshold, lifts the bounty.
 - **Server:** the heist rules publish events on one bus (`HeistEvents`, Observer: lock opened, vault opened, banked, wanted, bounty claimed). `FeedReporter` and `BountyBoard` subscribe or publish there, so later features (round awards, metrics) can listen without touching the vault or banking code.
+
+## Tutorial (Phase 9.8)
+A new player opens the game with `?tutorial` (normal game pages show a "New here? Play the tutorial" link until it has been finished once in that browser). Each player gets a **private room**: a small walled yard with Bank 1, a firing range with three targets and one safehouse. The questions are real ones from the database.
+
+| # | Step | Done when (the server judges it) |
+|---|---|---|
+| 1 | Move | standing within 2.5 m of the marker |
+| 2 | Heal with SQL | a heal task solved (you start at 35 HP) |
+| 3 | Earn a gun | owning any gun |
+| 4 | Shoot | a practice target knocked down |
+| 5 | Crack the vault | the vault open (the tutorial vault has one lock) |
+| 6 | Grab the cash | carrying cash |
+| 7 | Bank it | cash banked |
+
+- Steps are taken in order, but one done early (a gun before the heal) counts when its turn comes.
+- A glowing beacon and a ring on the minimap mark where the current step happens. The card ticks steps off, and the last one offers a real match.
+- Tutorial heist rules sit on top of the game's own: one lock, $10,000 in the vault, no kill bonus (the targets would hand out cash), and a long round (`TUTORIAL_HEIST_OVERRIDES`).
+- Rooms: at most 40 at once (`maxRooms`), each closed after 30 minutes or when its player leaves. These numbers and the start HP are in `shared/src/config/tutorial.ts`; the steps' words are there too.
+
