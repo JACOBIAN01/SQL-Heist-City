@@ -684,7 +684,9 @@ export class Match implements MatchApi {
         Math.hypot(car.state.x - player.body.x, car.state.z - player.body.z) <= range;
       if (!near) continue;
       inRange.add(car.id);
-      out[n++] = car.wire();
+      // Reused across clients and ticks: the encoder copies what it compares.
+      out[n] = car.wireInto(out[n] ?? ({} as VehicleWire));
+      n++;
     }
     let removed = 0;
     for (const id of player.knownVehicles) {

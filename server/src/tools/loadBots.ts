@@ -1,4 +1,4 @@
-import { TEST_MAP } from '@heist/shared';
+import { mapById, TEST_MAP } from '@heist/shared';
 import { makeBenchMap } from '../loadtest/benchMap';
 import { formatBench } from '../loadtest/format';
 import { runHeadlessBench } from '../loadtest/HeadlessBench';
@@ -10,7 +10,8 @@ import { runSocketBots } from '../loadtest/SocketBots';
  *       in-process: server cost per tick with N scripted bots (no network)
  *   npm run load:bots -- --mode socket --players 50 [--url ws://localhost:8080/ws/game]
  *       real WebSocket clients against a running server
- * Add --map sandbox to use the small test yard instead of the city-sized bench map.
+ * Add --map sandbox to use the small test yard, or --map city[:seed] for the real city
+ * (with its parked cars), instead of the city-sized bench map.
  * Several sizes at once: --players 60,100,200
  */
 const args = new Map<string, string>();
@@ -35,7 +36,9 @@ if (mode === 'socket') {
     );
   }
 } else {
-  const map = args.get('map') === 'sandbox' ? TEST_MAP : makeBenchMap();
+  const name = args.get('map');
+  const map = name === 'sandbox' ? TEST_MAP : name ? mapById(name) : makeBenchMap();
+  if (!map) throw new Error(`unknown map ${name ?? ''}`);
   const results = sizes.map((players) => runHeadlessBench({ players, map, seconds, fireRate }));
   console.log(formatBench(results));
 }

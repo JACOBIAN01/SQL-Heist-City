@@ -40,18 +40,23 @@ export class Vehicle {
 
   /** The car as a client sees it. */
   wire(): VehicleWire {
+    return this.wireInto({} as VehicleWire);
+  }
+
+  /** The same, written into an existing object (snapshots reuse theirs every tick). */
+  wireInto(target: VehicleWire): VehicleWire {
+    const out = target as { -readonly [K in keyof VehicleWire]: VehicleWire[K] };
     const s = this.state;
-    return {
-      id: this.id,
-      kind: this.kind,
-      variant: this.variant,
-      x: s.x,
-      z: s.z,
-      yaw: s.yaw,
-      steer: s.steer,
-      speed: s.speed,
-      driver: this.driver,
-    };
+    out.id = this.id;
+    out.kind = this.kind;
+    out.variant = this.variant;
+    out.x = s.x;
+    out.z = s.z;
+    out.yaw = s.yaw;
+    out.steer = s.steer;
+    out.speed = s.speed;
+    out.driver = this.driver;
+    return out;
   }
 }
 
