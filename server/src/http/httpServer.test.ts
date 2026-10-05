@@ -1,3 +1,4 @@
+import { PROTOCOL_VERSION } from '@heist/shared';
 import type { AddressInfo } from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createHttpServer } from './httpServer';
@@ -16,7 +17,11 @@ describe('game server HTTP', () => {
   it('reports health with protocol version and uptime', async () => {
     const res = await get('/health');
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: 'ok', protocolVersion: 3, uptimeMs: 4_000 });
+    expect(await res.json()).toEqual({
+      status: 'ok',
+      protocolVersion: PROTOCOL_VERSION,
+      uptimeMs: 4_000,
+    });
   });
 
   it('serves metrics only when a source is provided', async () => {

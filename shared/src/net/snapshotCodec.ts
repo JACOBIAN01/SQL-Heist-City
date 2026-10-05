@@ -1,5 +1,6 @@
 import { CodecError, type Reader } from './binary';
-import type { EntityState, SelfState, SnapshotMessage } from './gameMessages';
+import { VEHICLE_KINDS } from '../config/vehicles';
+import type { EntityState, SelfState, SnapshotMessage, VehicleWire } from './gameMessages';
 
 /**
  * Compact snapshots for bandwidth (docs/api-protocol.md).
@@ -59,8 +60,82 @@ function toEntity(id: number, q: Quantised): EntityState {
   };
 }
 
-/** Header: tick u32, ackSeq u16, self (f32×3 position, i16×3 velocity in mm/s, flags, hp, weapon, ammo), counts u8 ×2. */
-const SELF_BYTES = 12 + 6 + 4;
+/** Header: tick u32, ackSeq u16, self (f32×3 position, i16×3 velocity in mm/s, flags, hp, weapon, ammo, vehicle u16), counts u8 ×2. */
+const SELF_BYTES = 12 + 6 + 4 + 2;
+
+/** Car on the wire: id u16, look u8 (kind × 16 + variant), x z i16, yaw u16, steer i8, speed i16, driver u16. */
+const VEHICLE_BYTES = 14;
+const STEER_UNIT = 0.01;
+const SPEED_UNIT = 0.01;
+const MAX_VARIANT = 15;
+
+interface QuantisedVehicle {
+  look: number;
+  x: number;
+  z: number;
+  yaw: number;
+  steer: number;
+  speed: number;
+  driver: number;
+}
+
+const qYaw16 = (rad: number): number =>
+  Math.round(((((rad % TAU) + TAU) % TAU) / TAU) * 65536) & 0xffff;
+const clampInt = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Math.round(v)));
+
+function quantiseVehicle(v: VehicleWire, out: QuantisedVehicle): QuantisedVehicle {
+  out.look = VEHICLE_KINDS.indexOf(v.kind) * 16 + Math.min(MAX_VARIANT, v.variant);
+  out.x = qPos(v.x);
+  out.z = qPos(v.z);
+  out.yaw = qYaw16(v.yaw);
+  out.steer = clampInt(v.steer / STEER_UNIT, -127, 127);
+  out.speed = clampInt(v.speed / SPEED_UNIT, -32768, 32767);
+  out.driver = v.driver;
+  return out;
+}
+
+function vehicleOf(id: number, q: QuantisedVehicle): VehicleWire {
+  const kind = VEHICLE_KINDS[q.look >> 4];
+  if (!kind) throw new CodecError('unknown vehicle kind');
+  return {
+    id,
+    kind,
+    variant: q.look & 15,
+    x: q.x * POSITION_UNIT,
+    z: q.z * POSITION_UNIT,
+    yaw: (q.yaw / 65536) * TAU,
+    steer: q.steer * STEER_UNIT,
+    speed: q.speed * SPEED_UNIT,
+    driver: q.driver,
+  };
+}
+
+const sameVehicle = (a: QuantisedVehicle, b: QuantisedVehicle) =>
+  a.look === b.look &&
+  a.x === b.x &&
+  a.z === b.z &&
+  a.yaw === b.yaw &&
+  a.steer === b.steer &&
+  a.speed === b.speed &&
+  a.driver === b.driver;
+
+/**
+ * The car a driver predicts must arrive exactly as the server holds it, so
+ * the server simulates on these same quantised values (see quantiseVehicleState).
+ */
+export function quantiseVehicleState(state: {
+  x: number;
+  z: number;
+  yaw: number;
+  steer: number;
+  speed: number;
+}): void {
+  state.x = qPos(state.x) * POSITION_UNIT;
+  state.z = qPos(state.z) * POSITION_UNIT;
+  state.yaw = (qYaw16(state.yaw) / 65536) * TAU;
+  state.steer = clampInt(state.steer / STEER_UNIT, -127, 127) * STEER_UNIT;
+  state.speed = clampInt(state.speed / SPEED_UNIT, -32768, 32767) * SPEED_UNIT;
+}
 const MAX_ENTITIES = 255;
 
 const velocityToWire = (v: number): number =>
@@ -83,6 +158,16 @@ const scratchView = new DataView(scratch.buffer);
  */
 export class SnapshotEncoder {
   private readonly baseline = new Map<number, Quantised>();
+  private readonly vehicleBaseline = new Map<number, QuantisedVehicle>();
+  private readonly vehicleScratch: QuantisedVehicle = {
+    look: 0,
+    x: 0,
+    z: 0,
+    yaw: 0,
+    steer: 0,
+    speed: 0,
+    driver: 0,
+  };
 
   /** Entities with a record for the client right now (for tests and metrics). */
   get known(): number {
@@ -98,9 +183,16 @@ export class SnapshotEncoder {
     writeType: number,
     entityCount = message.entities.length,
     removedCount = message.removed.length,
+    vehicleCount = message.vehicles.length,
+    vehicleRemovedCount = message.vehiclesRemoved.length,
   ): Uint8Array {
     const { entities, removed } = message;
-    if (entityCount > MAX_ENTITIES || removedCount > MAX_ENTITIES) {
+    if (
+      entityCount > MAX_ENTITIES ||
+      removedCount > MAX_ENTITIES ||
+      vehicleCount > MAX_ENTITIES ||
+      vehicleRemovedCount > MAX_ENTITIES
+    ) {
       throw new CodecError('too many entities in one snapshot');
     }
     const v = scratchView;
@@ -121,6 +213,7 @@ export class SnapshotEncoder {
     v.setUint8(o + 19, s.hp);
     v.setUint8(o + 20, s.weapon);
     v.setUint8(o + 21, Math.min(255, s.ammo));
+    v.setUint16(o + 22, s.vehicle, true);
     o += SELF_BYTES;
     const countAt = o;
     o += 2; // entity and removed counts, filled in below
@@ -194,6 +287,37 @@ export class SnapshotEncoder {
     }
     v.setUint8(countAt, written);
     v.setUint8(countAt + 1, removedCount);
+
+    // Cars: sent in full when anything about them changed for this client.
+    const carCountAt = o;
+    o += 2;
+    let carsWritten = 0;
+    for (let i = 0; i < vehicleCount; i++) {
+      const car = message.vehicles[i] as VehicleWire;
+      const q = quantiseVehicle(car, this.vehicleScratch);
+      const base = this.vehicleBaseline.get(car.id);
+      if (base && sameVehicle(base, q)) continue;
+      if (base) Object.assign(base, q);
+      else this.vehicleBaseline.set(car.id, { ...q });
+      v.setUint16(o, car.id, true);
+      v.setUint8(o + 2, q.look);
+      v.setInt16(o + 3, q.x, true);
+      v.setInt16(o + 5, q.z, true);
+      v.setUint16(o + 7, q.yaw, true);
+      v.setInt8(o + 9, q.steer);
+      v.setInt16(o + 10, q.speed, true);
+      v.setUint16(o + 12, q.driver, true);
+      o += VEHICLE_BYTES;
+      carsWritten++;
+    }
+    for (let i = 0; i < vehicleRemovedCount; i++) {
+      const id = message.vehiclesRemoved[i] as number;
+      v.setUint16(o, id, true);
+      o += 2;
+      this.vehicleBaseline.delete(id);
+    }
+    v.setUint8(carCountAt, carsWritten);
+    v.setUint8(carCountAt + 1, vehicleRemovedCount);
     return scratch.slice(0, o);
   }
 }
@@ -216,6 +340,7 @@ export class SnapshotDecoder {
       hp: r.u8(),
       weapon: r.u8(),
       ammo: r.u8(),
+      vehicle: r.u16(),
     };
     const count = r.u8();
     const removedCount = r.u8();
@@ -260,7 +385,25 @@ export class SnapshotDecoder {
       removed.push(id);
       this.baseline.delete(id);
     }
+    const carCount = r.u8();
+    const carRemovedCount = r.u8();
+    const vehicles: VehicleWire[] = [];
+    for (let i = 0; i < carCount; i++) {
+      const id = r.u16();
+      const q: QuantisedVehicle = {
+        look: r.u8(),
+        x: r.i16(),
+        z: r.i16(),
+        yaw: r.u16(),
+        steer: r.i8(),
+        speed: r.i16(),
+        driver: r.u16(),
+      };
+      vehicles.push(vehicleOf(id, q));
+    }
+    const vehiclesRemoved: number[] = [];
+    for (let i = 0; i < carRemovedCount; i++) vehiclesRemoved.push(r.u16());
     r.end();
-    return { t: 'snapshot', tick, ackSeq, self, entities, removed };
+    return { t: 'snapshot', tick, ackSeq, self, entities, removed, vehicles, vehiclesRemoved };
   }
 }

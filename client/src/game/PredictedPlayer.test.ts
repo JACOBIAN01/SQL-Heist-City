@@ -37,6 +37,7 @@ const selfOf = (b: BodyState): SelfState => ({
   hp: 100,
   weapon: 0,
   ammo: 0,
+  vehicle: 0,
 });
 
 /**

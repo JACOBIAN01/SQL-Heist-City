@@ -1,5 +1,5 @@
 /** Bumped whenever the client/server wire protocol changes incompatibly. */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 export * from './questions/template';
 export * from './random/Rng';

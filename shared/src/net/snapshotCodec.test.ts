@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { SeededRng } from '../random/Rng';
-import { CodecError } from './binary';
+import { CodecError, Reader } from './binary';
 import { decodeServerMessage, encodeServerMessage } from './codec';
-import { Flag, type EntityState, type SnapshotMessage } from './gameMessages';
-import { POSITION_UNIT, SnapshotDecoder, SnapshotEncoder } from './snapshotCodec';
+import { Flag, type EntityState, type SnapshotMessage, type VehicleWire } from './gameMessages';
+import {
+  POSITION_UNIT,
+  quantiseVehicleState,
+  SnapshotDecoder,
+  SnapshotEncoder,
+} from './snapshotCodec';
 
 const self = {
   x: 0,
@@ -16,6 +21,7 @@ const self = {
   hp: 100,
   weapon: 3,
   ammo: 20,
+  vehicle: 0,
 };
 const ent = (id: number, over: Partial<EntityState> = {}): EntityState => ({
   id,
@@ -28,13 +34,21 @@ const ent = (id: number, over: Partial<EntityState> = {}): EntityState => ({
   hp: 100,
   ...over,
 });
-const snap = (tick: number, entities: EntityState[], removed: number[] = []): SnapshotMessage => ({
+const snap = (
+  tick: number,
+  entities: EntityState[],
+  removed: number[] = [],
+  vehicles: VehicleWire[] = [],
+  vehiclesRemoved: number[] = [],
+): SnapshotMessage => ({
   t: 'snapshot',
   tick,
   ackSeq: tick,
   self,
   entities,
   removed,
+  vehicles,
+  vehiclesRemoved,
 });
 
 /** A server/client pair that share baselines, as over one WebSocket. */
@@ -165,5 +179,68 @@ describe('delta snapshots', () => {
         expect(e.flags).toBe(t.flags);
       }
     }
+  });
+});
+
+describe('vehicles in snapshots', () => {
+  const car = (over: Partial<VehicleWire> = {}): VehicleWire => ({
+    id: 7,
+    kind: 'sports',
+    variant: 3,
+    x: 12.34,
+    z: -56.78,
+    yaw: 1.2345,
+    steer: -0.31,
+    speed: 17.25,
+    driver: 4,
+    ...over,
+  });
+  const roundTrip = (enc: SnapshotEncoder, dec: SnapshotDecoder, m: SnapshotMessage) => {
+    const bytes = enc.encode(m, 0x81);
+    return dec.decode(new Reader(bytes.subarray(1)));
+  };
+
+  it('sends a car in full the first time, close to its true state', () => {
+    const out = roundTrip(new SnapshotEncoder(), new SnapshotDecoder(), snap(1, [], [], [car()]));
+    const got = out.vehicles[0];
+    expect(got).toMatchObject({ id: 7, kind: 'sports', variant: 3, driver: 4 });
+    expect(got?.x).toBeCloseTo(12.34, 1);
+    expect(got?.z).toBeCloseTo(-56.78, 1);
+    expect(got?.yaw).toBeCloseTo(1.2345, 3);
+    expect(got?.steer).toBeCloseTo(-0.31, 2);
+    expect(got?.speed).toBeCloseTo(17.25, 2);
+  });
+
+  it('sends nothing for a car that has not changed, and again when it moves or is removed', () => {
+    const enc = new SnapshotEncoder();
+    const dec = new SnapshotDecoder();
+    roundTrip(enc, dec, snap(1, [], [], [car()]));
+    expect(roundTrip(enc, dec, snap(2, [], [], [car()])).vehicles).toEqual([]);
+    expect(roundTrip(enc, dec, snap(3, [], [], [car({ x: 13 })])).vehicles).toHaveLength(1);
+    const gone = roundTrip(enc, dec, snap(4, [], [], [], [7]));
+    expect(gone.vehiclesRemoved).toEqual([7]);
+    // Back in range: full again.
+    expect(roundTrip(enc, dec, snap(5, [], [], [car({ x: 13 })])).vehicles).toHaveLength(1);
+  });
+
+  it('costs 14 bytes per changed car', () => {
+    const empty = new SnapshotEncoder().encode(snap(1, []), 0x81).length;
+    const one = new SnapshotEncoder().encode(snap(1, [], [], [car()]), 0x81).length;
+    expect(one - empty).toBe(14);
+  });
+
+  it('quantises a car state to exactly what the wire carries (so prediction replays match)', () => {
+    const state = { x: 12.3456, z: -7.891, yaw: 2.3456, steer: 0.123, speed: 9.8765 };
+    quantiseVehicleState(state);
+    const sent = roundTrip(
+      new SnapshotEncoder(),
+      new SnapshotDecoder(),
+      snap(1, [], [], [car(state)]),
+    ).vehicles[0];
+    expect(sent?.x).toBe(state.x);
+    expect(sent?.z).toBe(state.z);
+    expect(sent?.yaw).toBe(state.yaw);
+    expect(sent?.steer).toBe(state.steer);
+    expect(sent?.speed).toBe(state.speed);
   });
 });

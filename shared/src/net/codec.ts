@@ -155,7 +155,12 @@ export function encodeServerMessage(
   message: ServerMessage,
   snapshots?: SnapshotEncoder,
   /** For snapshots built in reused arrays: how many entries are live. */
-  counts?: { readonly entities: number; readonly removed: number },
+  counts?: {
+    readonly entities: number;
+    readonly removed: number;
+    readonly vehicles?: number;
+    readonly vehiclesRemoved?: number;
+  },
 ): Uint8Array {
   switch (message.t) {
     case 'welcome':
@@ -172,6 +177,8 @@ export function encodeServerMessage(
         ServerType.Snapshot,
         counts?.entities,
         counts?.removed,
+        counts?.vehicles,
+        counts?.vehiclesRemoved,
       );
     case 'event': {
       const ev = message.event;

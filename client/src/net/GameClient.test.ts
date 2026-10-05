@@ -12,9 +12,23 @@ const snapshot: SnapshotMessage = {
   t: 'snapshot',
   tick: 1,
   ackSeq: 0,
-  self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: Flag.Alive, hp: 100, weapon: 0, ammo: 0 },
+  self: {
+    x: 0,
+    y: 0,
+    z: 0,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    flags: Flag.Alive,
+    hp: 100,
+    weapon: 0,
+    ammo: 0,
+    vehicle: 0,
+  },
   entities: [],
   removed: [],
+  vehicles: [],
+  vehiclesRemoved: [],
 };
 const command = { seq: 1, moveX: 0, moveY: 127, yaw: 0, pitch: 0, buttons: 0, viewLagMs: 0 };
 

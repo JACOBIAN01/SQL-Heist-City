@@ -1,3 +1,4 @@
+import type { VehicleKind } from '../config/vehicles';
 import type { InputCommand } from '../sim/input';
 
 /**
@@ -97,6 +98,8 @@ export interface SelfState {
   readonly weapon: number;
   /** Rounds left in the magazine. */
   readonly ammo: number;
+  /** The vehicle this player is driving, 0 when on foot. */
+  readonly vehicle: number;
 }
 
 export interface EntityState {
@@ -108,6 +111,26 @@ export interface EntityState {
   readonly pitch: number;
   readonly flags: number;
   readonly hp: number;
+}
+
+/**
+ * A car as the client sees it. Sent in full whenever anything about it
+ * changed (cars are few; a parked one costs nothing after the first time).
+ */
+export interface VehicleWire {
+  readonly id: number;
+  readonly kind: VehicleKind;
+  /** Which look within the kind (the client maps it to a model). */
+  readonly variant: number;
+  readonly x: number;
+  readonly z: number;
+  readonly yaw: number;
+  /** Front-wheel angle, rad. */
+  readonly steer: number;
+  /** m/s along the car's forward. */
+  readonly speed: number;
+  /** Player driving it, 0 when empty. */
+  readonly driver: number;
 }
 
 export interface SnapshotMessage {
@@ -124,6 +147,10 @@ export interface SnapshotMessage {
   readonly entities: readonly EntityState[];
   /** Players that left this client's area of interest: forget them. */
   readonly removed: readonly number[];
+  /** Cars that changed since this client's last snapshot (or came into range). */
+  readonly vehicles: readonly VehicleWire[];
+  /** Cars that left this client's area of interest. */
+  readonly vehiclesRemoved: readonly number[];
 }
 
 export type HitKind = 'miss' | 'body' | 'head';

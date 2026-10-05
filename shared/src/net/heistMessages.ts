@@ -21,11 +21,28 @@ export const equipMessageSchema = z.object({
 });
 export type EquipMessage = z.infer<typeof equipMessageSchema>;
 
+/** Get into a car (by its id) or out of the one you drive. */
+export const vehicleMessageSchema = z.discriminatedUnion('action', [
+  z.object({
+    t: z.literal('vehicle'),
+    ref: z.number().int().nonnegative(),
+    action: z.literal('enter'),
+    vehicle: z.number().int().min(1).max(0xffff),
+  }),
+  z.object({
+    t: z.literal('vehicle'),
+    ref: z.number().int().nonnegative(),
+    action: z.literal('exit'),
+  }),
+]);
+export type VehicleMessage = z.infer<typeof vehicleMessageSchema>;
+
 /** Everything a client may send as JSON. The server validates it again; this is the shape check. */
 export const jsonClientMessageSchema = z.union([
   challengeClientMessageSchema,
   interactMessageSchema,
   equipMessageSchema,
+  vehicleMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -148,8 +165,27 @@ export interface NoticeMessage {
   readonly text: string;
 }
 
+export type VehicleDenial =
+  | 'unknown_vehicle'
+  | 'too_far'
+  | 'taken'
+  | 'dead'
+  | 'already_driving'
+  | 'not_driving'
+  | 'too_fast'
+  | 'no_room';
+
+/** Answer to a `vehicle` request: in (or out), or why not. */
+export interface VehicleReply {
+  readonly t: 'vehicle_result';
+  readonly ref: number;
+  readonly ok: boolean;
+  readonly reason?: VehicleDenial;
+}
+
 export type HeistServerMessage =
   | InteractReply
+  | VehicleReply
   | VaultsMessage
   | LootMessage
   | PurseMessage

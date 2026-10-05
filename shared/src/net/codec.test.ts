@@ -162,9 +162,12 @@ describe('server messages', () => {
         hp: 100,
         weapon: 4,
         ammo: 17,
+        vehicle: 0,
       },
       entities: Array.from({ length: 50 }, (_, i) => entity(i + 1)),
       removed: [900, 901],
+      vehicles: [],
+      vehiclesRemoved: [],
     };
     const decoded = decodeServerMessage(encodeServerMessage(m));
     if (decoded.t !== 'snapshot' || m.t !== 'snapshot') throw new Error('not a snapshot');
@@ -186,11 +189,25 @@ describe('server messages', () => {
       t: 'snapshot',
       tick: 1,
       ackSeq: 1,
-      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 0, hp: 0, weapon: 0, ammo: 0 },
+      self: {
+        x: 0,
+        y: 0,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        flags: 0,
+        hp: 0,
+        weapon: 0,
+        ammo: 0,
+        vehicle: 0,
+      },
       entities: [],
       removed: [],
+      vehicles: [],
+      vehiclesRemoved: [],
     });
-    bytes[1 + 4 + 2 + 22] = 200; // claim 200 entities that are not there
+    bytes[1 + 4 + 2 + 24] = 200; // claim 200 entities that are not there (after the 24-byte self block)
     expect(() => decodeServerMessage(bytes)).toThrow(CodecError);
   });
 
@@ -248,9 +265,23 @@ describe('bundles', () => {
       t: 'snapshot',
       tick: 1,
       ackSeq: 1,
-      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 4, hp: 100, weapon: 0, ammo: 0 },
+      self: {
+        x: 0,
+        y: 0,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        flags: 4,
+        hp: 100,
+        weapon: 0,
+        ammo: 0,
+        vehicle: 0,
+      },
       entities: [{ id: 2, x, y: 0, z: 0, yaw: 0, pitch: 0, flags: 6, hp: 100 }],
       removed: [],
+      vehicles: [],
+      vehiclesRemoved: [],
     });
     const first = decodeServerMessages(
       encodeBundle([encodeServerMessage(snap(10), encoder), encodeServerMessage(kill)]),

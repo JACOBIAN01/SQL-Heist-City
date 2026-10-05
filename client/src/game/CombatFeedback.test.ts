@@ -52,6 +52,7 @@ const self = (over: Partial<SelfState> = {}): SelfState => ({
   hp: 100,
   weapon: 4,
   ammo: 25,
+  vehicle: 0,
   ...over,
 });
 const firing = (over: Partial<InputCommand> = {}): InputCommand => ({

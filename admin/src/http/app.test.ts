@@ -1,3 +1,4 @@
+import { PROTOCOL_VERSION } from '@heist/shared';
 import { afterEach, describe, expect, it } from 'vitest';
 import { startTestServer, type TestClient } from '../testing/http';
 import { createAdminApp } from './app';
@@ -10,7 +11,7 @@ describe('admin app', () => {
     client = await startTestServer(createAdminApp({ logger: { error: () => {} } }));
     expect(await client.get('/health')).toMatchObject({
       status: 200,
-      body: { status: 'ok', service: 'admin', protocolVersion: 3 },
+      body: { status: 'ok', service: 'admin', protocolVersion: PROTOCOL_VERSION },
     });
   });
 

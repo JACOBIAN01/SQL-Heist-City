@@ -127,9 +127,23 @@ export class Match implements MatchApi {
       t: 'snapshot',
       tick: 0,
       ackSeq: 0,
-      self: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, flags: 0, hp: 0, weapon: 0, ammo: 0 },
+      self: {
+        x: 0,
+        y: 0,
+        z: 0,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        flags: 0,
+        hp: 0,
+        weapon: 0,
+        ammo: 0,
+        vehicle: 0,
+      },
       entities: this.entityPool,
       removed: this.scratchRemoved,
+      vehicles: [],
+      vehiclesRemoved: [],
     };
     // A bit more history than the rewind cap, so the oldest legal rewind is always covered.
     this.lagComp = new LagCompensator(
