@@ -77,11 +77,6 @@ export class PostFx {
   }
 }
 
-/** One step down the quality ladder, or undefined at the bottom. */
-export function lowerLevel(level: FxLevel): FxLevel | undefined {
-  return level === 'high' ? 'fxaa' : level === 'fxaa' ? 'off' : undefined;
-}
-
 /**
  * Watches frame times and says when to drop a quality level: when the
  * average over a few seconds stays above budget (60 fps = 16.7 ms, with a

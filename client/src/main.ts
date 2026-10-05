@@ -53,7 +53,8 @@ import { loadCarAssets, type CarAssets } from './vehicles/carAssets';
 import { followAngle, PredictedVehicle } from './vehicles/PredictedVehicle';
 import { RemoteVehicles } from './vehicles/RemoteVehicles';
 import { VehicleControls } from './vehicles/VehicleControls';
-import { FrameBudget, lowerLevel, PostFx } from './render/PostFx';
+import { FrameBudget, PostFx } from './render/PostFx';
+import { QualityLadder } from './render/quality';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
 import { sceneBudget } from './render/sceneBudget';
@@ -96,16 +97,23 @@ const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
 
 const camera = new PerspectiveCamera(70, 1, 0.1, 220);
-// Bloom + FXAA. ?fx=high|fxaa|off pins a level; otherwise it starts high and steps down when
-// frames stay over budget, so slow laptops keep their frame rate.
+// Bloom + FXAA. ?fx=high|fxaa|off pins a level; otherwise it starts high and, while frames stay
+// over budget, steps down the quality ladder (effects first, then resolution), so slow laptops
+// keep their frame rate.
 const fxParam = params.get('fx');
 const postFx = new PostFx(renderer, scene, camera);
 if (fxParam === 'high' || fxParam === 'fxaa' || fxParam === 'off') postFx.setLevel(fxParam);
-const fxBudget = fxParam ? undefined : new FrameBudget();
+const quality = fxParam ? undefined : new QualityLadder(window.devicePixelRatio);
+const fxBudget = quality ? new FrameBudget() : undefined;
 // The composer renders several passes a frame; count them all in the overlay.
 renderer.info.autoReset = false;
 const resize = (): void => {
-  const v = computeViewport(window.innerWidth, window.innerHeight, window.devicePixelRatio);
+  const v = computeViewport(
+    window.innerWidth,
+    window.innerHeight,
+    window.devicePixelRatio,
+    quality?.current.maxPixelRatio,
+  );
   renderer.setPixelRatio(v.pixelRatio);
   renderer.setSize(v.width, v.height);
   postFx.setSize(v.width, v.height, v.pixelRatio);
@@ -472,12 +480,12 @@ renderer.setAnimationLoop((now) => {
   last = now;
   stats.push(frameMs);
   renderer.info.reset();
-  if (fxBudget?.push(frameMs)) {
-    const lower = lowerLevel(postFx.level);
-    if (lower) {
-      postFx.setLevel(lower);
-      console.info(`frames over budget: post-processing down to "${lower}"`);
-    }
+  if (quality && fxBudget?.push(frameMs) && quality.stepDown()) {
+    postFx.setLevel(quality.current.fx);
+    resize();
+    console.info(
+      `frames over budget: quality down to ${quality.current.fx} at ${quality.pixelRatio}× pixels`,
+    );
   }
   input.setViewLag(client.rttMs / 2 + INTERP_DELAY_MS);
   loop.advance(frameMs / 1000);
@@ -579,6 +587,6 @@ renderer.setAnimationLoop((now) => {
   if (now - lastOverlay > 500) {
     lastOverlay = now;
     const { calls, triangles } = renderer.info.render;
-    overlay.textContent = `${client.status} · rtt ${client.rttMs.toFixed(0)} ms · players ${remotes.count + 1} · pending ${predicted.pendingCount} · corr ${predicted.lastCorrection.toFixed(3)} m · ${stats.fps.toFixed(0)} fps · worst ${stats.worstMs.toFixed(0)} ms · ${calls} calls · ${(triangles / 1000).toFixed(1)}k tris · fx ${postFx.level}`;
+    overlay.textContent = `${client.status} · rtt ${client.rttMs.toFixed(0)} ms · players ${remotes.count + 1} · pending ${predicted.pendingCount} · corr ${predicted.lastCorrection.toFixed(3)} m · ${stats.fps.toFixed(0)} fps · worst ${stats.worstMs.toFixed(0)} ms · ${calls} calls · ${(triangles / 1000).toFixed(1)}k tris · fx ${postFx.level} @${renderer.getPixelRatio()}×`;
   }
 });

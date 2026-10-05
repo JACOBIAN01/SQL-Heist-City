@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bloomStrength, FrameBudget, lowerLevel } from './PostFx';
+import { bloomStrength, FrameBudget } from './PostFx';
 
 describe('bloomStrength', () => {
   it('blooms gently by day and more at night, when windows glow', () => {
@@ -7,14 +7,6 @@ describe('bloomStrength', () => {
     expect(bloomStrength(1)).toBeGreaterThan(0.6);
     expect(bloomStrength(0.5)).toBeCloseTo((bloomStrength(0) + bloomStrength(1)) / 2);
     expect(bloomStrength(5)).toBe(bloomStrength(1));
-  });
-});
-
-describe('quality ladder', () => {
-  it('drops bloom first, then FXAA, then stops', () => {
-    expect(lowerLevel('high')).toBe('fxaa');
-    expect(lowerLevel('fxaa')).toBe('off');
-    expect(lowerLevel('off')).toBeUndefined();
   });
 });
 

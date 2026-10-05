@@ -11,13 +11,23 @@ export interface Viewport {
   aspect: number;
 }
 
-export function computeViewport(width: number, height: number, devicePixelRatio: number): Viewport {
+export function computeViewport(
+  width: number,
+  height: number,
+  devicePixelRatio: number,
+  /** A lower cap when frames are too slow (see QualityLadder). */
+  maxPixelRatio = MAX_PIXEL_RATIO,
+): Viewport {
   const safeWidth = Math.max(1, Math.floor(width));
   const safeHeight = Math.max(1, Math.floor(height));
   return {
     width: safeWidth,
     height: safeHeight,
-    pixelRatio: Math.min(Math.max(devicePixelRatio, 1), MAX_PIXEL_RATIO),
+    pixelRatio: Math.min(
+      Math.max(devicePixelRatio, 1),
+      MAX_PIXEL_RATIO,
+      Math.max(1, maxPixelRatio),
+    ),
     aspect: safeWidth / safeHeight,
   };
 }
