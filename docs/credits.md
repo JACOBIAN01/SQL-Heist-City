@@ -30,7 +30,7 @@ Modified: simplified to ~5k triangles, body split into recolourable skin/shirt/t
 **Cars** pack (Cop, NormalCar1/2, SUV, SportsCar, SportsCar2, Taxi) by [Quaternius](https://quaternius.com), CC0 1.0. Modified: colours baked into vertices, normals dropped (flat shading), wheels split out. Build steps: `tools/city/README.md`.
 
 ## Interior furniture
-**Ultimate House Interior** pack by [Quaternius](https://quaternius.com), CC0 1.0. Used for bank interiors (Phase 11). Build steps will be in `tools/city/README.md`.
+**Ultimate House Interior** pack by [Quaternius](https://quaternius.com), CC0 1.0. Used for bank interiors (Phase 11). Modified: 64 pieces kept, halved to life size, colours baked into vertices, normals dropped. Build steps: `tools/city/README.md`.
 
 ## Sounds
 None from outside: every sound is generated in code (`client/src/audio/synth.ts`) as a stand-in until recordings are chosen. Recordings added later get their source and licence listed here.

@@ -27,8 +27,8 @@
 | 7 | Heist loop v1 | ✅ Done |
 | 8 | City, vehicles, atmosphere | ✅ Done |
 | 9 | Banks 2–5, weapons, UX | ✅ Done |
-| 10 | Polish: sound, SQL pop-up, tutorial | 🟨 In review |
-| 11 | Bank design | ⬜ |
+| 10 | Polish: sound, SQL pop-up, tutorial | ✅ Done |
+| 11 | Bank design | 🟦 In progress |
 | — | Todo (later): harden & ship | ⬜ |
 
 ---
@@ -209,7 +209,7 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 9.9 | Round-end awards screen | awards shown | ✅ six awards tallied from heist events, shown as cards above the final standings (gameplay.md "Round awards") |
 
 ---
-## Phase 10 — Polish: sound, SQL pop-up, tutorial  🟨
+## Phase 10 — Polish: sound, SQL pop-up, tutorial  ✅
 Quick fixes that improve play right away, before the bank work.
 
 | # | Subphase | Done when | Status |
@@ -219,12 +219,12 @@ Quick fixes that improve play right away, before the bank work.
 | 10.3 | Tutorial: one fixed question per task (heal, gun, vault), same for everyone every run, solution free | every tutorial run asks the same 3 questions; "Show solution" fills the editor at no cost | ✅ fixed slug + seed per task, `solution` only in tutorial rooms, free hints; admin "Tutorial questions" card (gameplay.md "Tutorial") |
 
 ---
-## Phase 11 — Bank design  ⬜
+## Phase 11 — Bank design  🟦
 The bank is the most important place in the game: realistic interiors and a realistic vault, built from the House Pack (Quaternius, CC0) plus procedural pieces the pack lacks. Bank 1 is finished first as a showcase and reviewed, then the kit rolls out to Banks 2–5. Art is derived from the layout, so it never changes play; furniture with a collider goes through the shared layout so the server and the route tests see it.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 11.1 | Interior kit pipeline (`tools/city/build-interior.mjs` → `client/public/interior/`) | ~40 pieces built and previewed in `kit.html?set=interior`; size budget checked | ⬜ |
+| 11.1 | Interior kit pipeline (`tools/city/build-interior.mjs` → `client/public/interior/`) | ~40 pieces built and previewed in `kit.html?set=interior`; size budget checked | ✅ 64 pieces, 26k triangles, 415 KB, life size, one material with night-glowing lamps; `InteriorKit` loader (tools/city/README.md "Interior furniture") |
 | 11.2 | Furniture in the bank layout (piece, storey, x, z, yaw, solid) | solid pieces compile to colliders; every bank route/anchor test still passes | ⬜ |
 | 11.3 | Interior shell & materials (Bank 1) | marble lobby, wood/carpet offices, steel vault, door frames, skirting, ceiling lights; no grey boxes | ⬜ |
 | 11.4 | The vault (Bank 1) | round steel door (bolts, hinge, wheel) swings open on the last lock; deposit-box walls, cash carts, keypad console, alarm light | ⬜ |
