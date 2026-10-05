@@ -1,4 +1,4 @@
-import type { ChallengeSettings, HeistSettings, TierRange } from '@heist/shared';
+import type { ChallengeSettings, CombatSettings, HeistSettings, TierRange } from '@heist/shared';
 import type { SettingsReader } from './SettingsReader';
 
 // Pattern: Decorator — Why: same caching-with-invalidate idea as
@@ -6,6 +6,7 @@ import type { SettingsReader } from './SettingsReader';
 export class CachedSettingsReader implements SettingsReader {
   private challenges: ChallengeSettings | undefined;
   private heist: HeistSettings | undefined;
+  private combat: CombatSettings | undefined;
   private tiers = new Map<string, TierRange | undefined>();
 
   constructor(private readonly inner: SettingsReader) {}
@@ -20,6 +21,11 @@ export class CachedSettingsReader implements SettingsReader {
     return this.heist;
   }
 
+  combatSettings(): CombatSettings {
+    this.combat ??= this.inner.combatSettings();
+    return this.combat;
+  }
+
   rewardTiers(rewardKey: string): TierRange | undefined {
     if (!this.tiers.has(rewardKey)) this.tiers.set(rewardKey, this.inner.rewardTiers(rewardKey));
     return this.tiers.get(rewardKey);
@@ -28,6 +34,7 @@ export class CachedSettingsReader implements SettingsReader {
   invalidate(): void {
     this.challenges = undefined;
     this.heist = undefined;
+    this.combat = undefined;
     this.tiers = new Map();
   }
 }

@@ -47,7 +47,7 @@ const stack =
 const heist = data.heist ?? stack?.heistSettings();
 const game = startGame(http, data.settings, mapByName(data.map), {
   ...(heist ? { heist } : {}),
-  ...(stack ? { challenges: stack.handler } : {}),
+  ...(stack ? { combat: () => stack.combatSettings(), challenges: stack.handler } : {}),
 });
 
 http.listen(data.port, () => {

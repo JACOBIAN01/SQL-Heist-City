@@ -22,6 +22,8 @@ import {
   resolveShotInto,
   stepBody,
   pushBodyOutOfCars,
+  damageAt,
+  spreadFor,
   type CombatSettings,
   type EntityState,
   type GameEvent,
@@ -70,6 +72,8 @@ export interface MatchDeps {
   readonly settings: MatchSettings;
   readonly movement?: MovementSettings;
   readonly combat?: CombatSettings;
+  /** Where to read combat settings again at each new round (admin edits); none keeps `combat`. */
+  readonly combatSource?: () => CombatSettings;
   readonly heist?: HeistSettings;
   readonly vehicles?: VehicleSettings;
   /** SQL tasks; without it every task request is answered "unavailable". */
@@ -97,7 +101,7 @@ export class Match implements MatchApi {
   private readonly spawnPolicy: SpawnPolicy;
   private readonly now: () => number;
   private readonly movement: MovementSettings;
-  private readonly combat: CombatSettings;
+  private combat: CombatSettings;
   /** The heist rules (vaults, loot, tasks); public so tests and tools can drive them. */
   readonly heist: HeistController;
   /** Every car in the match; the server drives them (docs/gameplay.md "Vehicles"). */
@@ -192,6 +196,23 @@ export class Match implements MatchApi {
 
   weaponSpec(id: string): WeaponSpec | undefined {
     return this.combat.weapons[id];
+  }
+
+  /** Every gun's numbers, as clients need them to predict fire and draw what they see. */
+  get weapons(): CombatSettings['weapons'] {
+    return this.combat.weapons;
+  }
+
+  /**
+   * Picks up combat settings the admin changed, between rounds, and tells
+   * every client. The lag-compensation window stays as the match started
+   * (it sized the position history).
+   */
+  refreshCombat(): void {
+    const next = this.deps.combatSource?.();
+    if (!next) return;
+    this.combat = { ...next, maxLagCompMs: this.combat.maxLagCompMs };
+    this.broadcastJson({ t: 'weapons', weapons: this.combat.weapons });
   }
 
   get unarmedStart(): boolean {
@@ -452,12 +473,19 @@ export class Match implements MatchApi {
 
     const origin = aimOriginInto(this.aimFrom, shooter.body, command.yaw, this.movement);
     const targets = this.targetsFor(shooter, command, weapon.range);
+    // Running spoils a rifle's aim more than an SMG's; aiming down the sights tightens every gun.
+    const spread = spreadFor(
+      weapon,
+      Math.hypot(shooter.body.vx, shooter.body.vz),
+      this.movement.sprintSpeed,
+      hasButton(command.buttons, Button.Aim),
+    );
     const rng = this.shotRng;
     rng.reseed(this.seedNumber, this.tick, shooter.id, command.seq);
 
     for (let pellet = 0; pellet < weapon.pellets; pellet++) {
       // Random point in a cone: uniform over the disc, so spread is not biased to the centre.
-      const radius = weapon.spread * Math.sqrt(rng.next());
+      const radius = spread * Math.sqrt(rng.next());
       const angle = rng.next() * Math.PI * 2;
       const dir = aimDirectionInto(
         this.aimDir,
@@ -486,7 +514,9 @@ export class Match implements MatchApi {
       if (result.hit === 'miss') continue;
       const victim = this.players.get(result.target);
       if (!victim) continue;
-      const damage = weapon.damage * (result.hit === 'head' ? this.combat.headshotMultiplier : 1);
+      const damage =
+        damageAt(weapon, result.distance) *
+        (result.hit === 'head' ? this.combat.headshotMultiplier : 1);
       this.damage(victim, damage, shooter);
     }
   }

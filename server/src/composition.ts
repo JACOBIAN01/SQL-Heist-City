@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
-import type { HeistSettings } from '@heist/shared';
+import type { CombatSettings, HeistSettings } from '@heist/shared';
 import { ChallengeMessageHandler } from './challenges/ChallengeMessageHandler';
 import { ChallengeService, type ChallengeLogger } from './challenges/ChallengeService';
 import { QuestionSelector } from './challenges/QuestionSelector';
@@ -18,6 +18,8 @@ export interface ChallengeStack {
   readonly handler: ChallengeMessageHandler;
   /** Heist rules as the admin has set them (read when a match starts). */
   heistSettings(): HeistSettings;
+  /** Guns as the admin has set them (read when a match starts and at each new round). */
+  combatSettings(): CombatSettings;
   /** Drop cached questions and settings (admin edited something). */
   invalidate(): void;
   close(): Promise<void>;
@@ -55,6 +57,7 @@ export function buildChallengeStack(
   return {
     handler: new ChallengeMessageHandler(service, settings, options.now),
     heistSettings: () => settings.heistSettings(),
+    combatSettings: () => settings.combatSettings(),
     invalidate: () => {
       questions.invalidate();
       settings.invalidate();

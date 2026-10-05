@@ -29,6 +29,7 @@ describe('CachedSettingsReader', () => {
     const counting = {
       challengeSettings: () => (calls++, inner.challengeSettings()),
       heistSettings: () => (calls++, inner.heistSettings()),
+      combatSettings: () => (calls++, inner.combatSettings()),
       rewardTiers: (k: string) => (calls++, inner.rewardTiers(k)),
     };
     const cached = new CachedSettingsReader(counting);

@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CHALLENGE_SETTINGS, DEFAULT_HEIST_SETTINGS } from '@heist/shared';
+import {
+  DEFAULT_CHALLENGE_SETTINGS,
+  DEFAULT_COMBAT_SETTINGS,
+  DEFAULT_HEIST_SETTINGS,
+} from '@heist/shared';
 import { openDatabase } from '../db/database';
-import { CHALLENGE_SETTINGS_KEY, HEIST_SETTINGS_KEY, SqliteSettingsReader } from './SettingsReader';
+import {
+  CHALLENGE_SETTINGS_KEY,
+  COMBAT_SETTINGS_KEY,
+  combatFrom,
+  HEIST_SETTINGS_KEY,
+  SqliteSettingsReader,
+} from './SettingsReader';
 
 function setup() {
   const db = openDatabase({ path: ':memory:' });
@@ -49,5 +59,31 @@ describe('SqliteSettingsReader', () => {
       HEIST_SETTINGS_KEY,
     );
     expect(reader.heistSettings()).toEqual(DEFAULT_HEIST_SETTINGS);
+  });
+});
+
+describe('combat settings', () => {
+  it('are the defaults until an admin stores some', () => {
+    expect(setup().reader.combatSettings()).toEqual(DEFAULT_COMBAT_SETTINGS);
+  });
+
+  it('retune one gun without losing the others', () => {
+    const { db, reader } = setup();
+    db.prepare('INSERT INTO settings VALUES (?, ?)').run(
+      COMBAT_SETTINGS_KEY,
+      JSON.stringify({
+        headshotMultiplier: 3,
+        weapons: { smg: { damage: 15, rpm: 800, range: 30, magSize: 40 } },
+      }),
+    );
+    const combat = reader.combatSettings();
+    expect(combat.headshotMultiplier).toBe(3);
+    expect(combat.weapons.smg).toMatchObject({ damage: 15, magSize: 40, aimZoom: 1 });
+    expect(combat.weapons.sniper).toEqual(DEFAULT_COMBAT_SETTINGS.weapons.sniper);
+  });
+
+  it('fall back to the defaults when what is stored is broken', () => {
+    expect(combatFrom({ weapons: { smg: { damage: -1 } } })).toEqual(DEFAULT_COMBAT_SETTINGS);
+    expect(combatFrom('nonsense')).toEqual(DEFAULT_COMBAT_SETTINGS);
   });
 });

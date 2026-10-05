@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   Button,
   DEFAULT_COMBAT_SETTINGS,
+  weaponSpecSchema,
   DEFAULT_MATCH_SETTINGS,
   Flag,
   PROTOCOL_VERSION,
@@ -28,8 +29,15 @@ const exact: CombatSettings = {
   spawnProtectionSec: 0,
   weapons: {
     ...DEFAULT_COMBAT_SETTINGS.weapons,
-    rifle: { damage: 28, rpm: 450, range: 80, magSize: 25, pellets: 1, spread: 0 },
-    shotgun: { damage: 9, rpm: 70, range: 15, magSize: 6, pellets: 8, spread: 0.06 },
+    rifle: weaponSpecSchema.parse({ damage: 28, rpm: 450, range: 80, magSize: 25, spread: 0 }),
+    shotgun: weaponSpecSchema.parse({
+      damage: 9,
+      rpm: 70,
+      range: 15,
+      magSize: 6,
+      pellets: 8,
+      spread: 0.06,
+    }),
   },
 };
 

@@ -102,6 +102,7 @@ export class HeistController implements ArmsControl {
     if (gone.length > 0) this.match.broadcastJson({ t: 'loot', add: [], remove: gone });
     this.match.broadcastJson({ t: 'vaults', vaults: this.vaults.views() });
     this.banking.cancelAll('round_over');
+    this.match.refreshCombat();
     this.match.resetPlayersForRound();
     for (const p of this.match.playerList()) {
       this.setCash(p, 0);
@@ -109,8 +110,9 @@ export class HeistController implements ArmsControl {
     }
   }
 
-  /** A player just joined: tell them where every vault stands. */
+  /** A player just joined: tell them the guns' numbers and where every vault stands. */
   onJoin(player: Player): void {
+    this.match.sendJson(player, { t: 'weapons', weapons: this.match.weapons });
     this.match.sendJson(player, { t: 'vaults', vaults: this.vaults.views() });
     this.match.sendJson(player, { t: 'loot', add: this.loot.all(), remove: [] });
     this.sendPurse(player);

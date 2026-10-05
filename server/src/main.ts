@@ -67,7 +67,13 @@ if (workers > 0) {
   }
 } else {
   running.game = startGame(server, matchSettings, mapByName(mapName), {
-    ...(challenges ? { heist: challenges.heistSettings(), challenges: challenges.handler } : {}),
+    ...(challenges
+      ? {
+          heist: challenges.heistSettings(),
+          combat: () => challenges.combatSettings(),
+          challenges: challenges.handler,
+        }
+      : {}),
   });
 }
 

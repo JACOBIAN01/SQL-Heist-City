@@ -19,6 +19,10 @@ export interface MatchApi {
   /** Heist maps start everyone unarmed. */
   readonly unarmedStart: boolean;
   weaponSpec(id: string): WeaponSpec | undefined;
+  /** Every gun's numbers (sent to each client on join). */
+  readonly weapons: Readonly<Record<string, WeaponSpec>>;
+  /** Re-reads combat settings the admin changed and tells every client (between rounds). */
+  refreshCombat(): void;
   readonly map: GameMap;
   getPlayer(id: number): Player | undefined;
   playerList(): Iterable<Player>;

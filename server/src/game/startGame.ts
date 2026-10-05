@@ -2,6 +2,7 @@ import type { Server } from 'node:http';
 import {
   DEFAULT_MATCH_SETTINGS,
   TEST_MAP,
+  type CombatSettings,
   type GameMap,
   type HeistSettings,
   type MatchSettings,
@@ -37,6 +38,8 @@ export interface RunningGame {
 
 export interface GameOptions {
   readonly heist?: HeistSettings;
+  /** Read at the start and again at each new round, so admin edits to guns apply next round. */
+  readonly combat?: () => CombatSettings;
   readonly challenges?: ChallengeGateway;
 }
 
@@ -51,6 +54,7 @@ export function startGame(
     map,
     settings,
     ...(options.heist ? { heist: options.heist } : {}),
+    ...(options.combat ? { combat: options.combat(), combatSource: options.combat } : {}),
     ...(options.challenges ? { challenges: options.challenges } : {}),
   });
   (map.dummies ?? [])
