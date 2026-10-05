@@ -29,6 +29,8 @@ export * from './world/city/cityMaps';
 export * from './config/movement';
 export * from './sim/input';
 export * from './sim/movement';
+export * from './config/vehicles';
+export * from './sim/vehicle';
 export * from './world/raycast';
 export * from './net/gameMessages';
 export * from './net/codec';
