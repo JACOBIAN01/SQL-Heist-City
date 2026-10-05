@@ -27,7 +27,8 @@ export class SandboxTemplateValidator implements TemplateValidator {
   ) {}
 
   async assertValid(template: QuestionTemplate): Promise<void> {
-    const report = await this.tester.test(template, [...this.seeds]);
+    // Saving only needs the reference query to work; worked examples are the preview's business.
+    const report = await this.tester.test(template, [...this.seeds], undefined, 0);
     const failed = report.seeds.filter((s) => s.issues.some((i) => i !== 'slow'));
     if (failed.length === 0) return;
     throw new HttpError(
