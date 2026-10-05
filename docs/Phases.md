@@ -199,7 +199,7 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 9.1 | Bank 2 (new layout, same kit pieces and grammar) | playable | ✅ "City Trust", 4 storeys, on the tier-2 city site (backend.md "Bank layouts") |
 | 9.2 | Bank 3 | playable | ✅ "Metro Capital", 4 storeys, door and vault off-centre (backend.md "Bank layouts") |
 | 9.3 | Bank 4 | playable | ✅ "Grand Reserve", 5 storeys, two stair cores (backend.md "Bank layouts") |
-| 9.4 | Bank 5 | playable | ⬜ |
+| 9.4 | Bank 5 | playable | ✅ "Federal Vault", 6 storeys, split climb, vault behind an anteroom (backend.md "Bank layouts") |
 | 9.5 | Remaining weapon tiers (SMG, shotgun, rifle, sniper) | stats from config | ⬜ |
 | 9.6 | Minimap + vault-progress markers | markers update live | ⬜ |
 | 9.7 | Killfeed + alarm/bounty events | events visible | ⬜ |
