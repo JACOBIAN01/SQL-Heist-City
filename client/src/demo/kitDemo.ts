@@ -8,6 +8,7 @@ import { BANK_LAYOUTS, mapById } from '@heist/shared';
 import { loadCityKit } from '../world/city/CityKit';
 import { createCityArt, DEFAULT_STREAM } from '../world/city/CityRenderer';
 import { layoutPreview } from '../world/city/kitPreview';
+import { loadInteriorKit } from '../world/bank/InteriorKit';
 
 // Standalone page (kit.html): every kit piece laid out on a grid, to check the build by eye.
 // ?piece=Name shows one piece close up; ?city[=seed] draws the whole city (?lod: as streamed
@@ -23,6 +24,9 @@ const lighting = addLighting(scene);
 // ?hour=21 shows the kit at that time of day (lit windows glow at night).
 lighting.apply(skyAt(Number(params.get('hour') ?? 11)));
 
+// ?set=interior shows the bank furniture instead (?piece=Name for one of them).
+const interiorSet = params.get('set') === 'interior';
+const furniture = interiorSet ? await loadInteriorKit() : undefined;
 const kit = await loadCityKit().catch((error: unknown) => {
   if (info) info.textContent = `Kit failed to load: ${String(error)}`;
   throw error;
@@ -50,6 +54,15 @@ if (cityLayout) {
   }
   const st = art.stats;
   summary = `${st.chunks} chunks · ${st.detailed} detailed · ${st.impostors} impostors · ${st.drawCalls} draw calls`;
+} else if (furniture) {
+  const pieces = only ? [only] : furniture.pieceIds;
+  root = layoutPreview(
+    { info: (id) => furniture.info(id), createPiece: (id) => furniture.create(id) },
+    pieces,
+    24,
+  ).root;
+  furniture.nightGlow.value = lighting.state.night;
+  summary = `${pieces.length} furniture pieces · ${pieces.reduce((n, id) => n + furniture.info(id).tris, 0)} triangles (front faces +z, toward the camera)`;
 } else {
   root = layoutPreview(kit, ids).root;
   summary = `${ids.length} pieces · ${ids.reduce((sum, id) => sum + kit.info(id).tris, 0)} triangles`;

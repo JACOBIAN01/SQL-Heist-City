@@ -1,5 +1,10 @@
-import { Group, Vector3 } from 'three';
-import type { CityKit } from './CityKit';
+import { Group, Vector3, type Object3D } from 'three';
+
+/** Anything with sized pieces: the city kit, the bank furniture. */
+export interface PreviewSource {
+  info(id: string): { readonly min: readonly number[]; readonly size: readonly number[] };
+  createPiece(id: string): Object3D;
+}
 
 const GAP = 1.5;
 
@@ -9,7 +14,7 @@ const GAP = 1.5;
  * preview page.
  */
 export function layoutPreview(
-  kit: CityKit,
+  kit: PreviewSource,
   ids: readonly string[],
   rowWidth = 60,
 ): { root: Group; extent: Vector3 } {
@@ -23,22 +28,24 @@ export function layoutPreview(
   let width = 0;
   for (const id of sorted) {
     const { min, size } = kit.info(id);
-    if (x > 0 && x + size[0] > rowWidth) {
+    const [minX = 0, minY = 0, minZ = 0] = min;
+    const [sizeX = 0, sizeY = 0, sizeZ = 0] = size;
+    if (x > 0 && x + sizeX > rowWidth) {
       x = 0;
       z += rowDepth + GAP;
       rowDepth = 0;
     }
     const piece = kit.createPiece(id);
-    piece.position.set(x - min[0], -min[1] + (size[1] < 0.05 ? 0.02 : 0), z - min[2]);
+    piece.position.set(x - minX, -minY + (sizeY < 0.05 ? 0.02 : 0), z - minZ);
     root.add(piece);
-    x += size[0] + GAP;
+    x += sizeX + GAP;
     width = Math.max(width, x);
-    rowDepth = Math.max(rowDepth, size[2]);
+    rowDepth = Math.max(rowDepth, sizeZ);
   }
   return { root, extent: new Vector3(width, 0, z + rowDepth) };
 }
 
-function footprint(kit: CityKit, id: string): number {
-  const [x, , z] = kit.info(id).size;
+function footprint(kit: PreviewSource, id: string): number {
+  const [x = 0, , z = 0] = kit.info(id).size;
   return x * z;
 }

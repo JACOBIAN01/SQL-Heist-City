@@ -30,3 +30,17 @@ Input: the **OBJ** folder of Quaternius' free *Cars* pack (CC0, hand-downloaded 
 - **No normals:** the cars are flat-shaded, so no normals are stored; the game uses `flatShading`, and the corners weld into shared vertices, about a fifth of the size.
 - **Orientation:** cars are turned to face −z.
 - **Parts:** each car node holds `<id>_body`, `<id>_wheel_fl`, `<id>_wheel_fr` and `<id>_wheels_back`. The wheel origins are their axles. Part names carry the id because loaders rename duplicate node names.
+
+## Interior furniture
+```
+node build-interior.mjs inbox/interior/Interior ../../client/public/interior/interior.glb
+```
+Input: the `Interior` folder of Quaternius' free **Ultimate House Interior** pack (CC0, OBJ + MTL, hand-downloaded into `inbox/interior/`). Output: `interior.glb` (64 pieces, ~26k triangles, ~415 KB) and `interior.json` (each piece's bounds, triangles and whether it has lamps). Used for the bank interiors (Phase 11); the game loads it only when a bank interior is drawn.
+- **Pieces:** the ~60 listed in `PIECES` (columns, doors, windows, curtains, lights, chairs, couches, tables, drawers, shelves, plants, carpets, bins, washroom fittings). The pack's kitchens, beds and cutlery are left out.
+- **Scale:** the pack is about twice life size, so pieces are halved (doors come out 2.1 m, chairs 0.9 m). A few get their own scale: tables 0.65 (desk height), carpets and the mirror 1, the chandelier 0.8.
+- **Frame:** base at y = 0, centred on x and z, front facing +z (the pack's own convention, checked by eye in the preview). Ceiling lights hang from y = 0. Single doors keep their hinge at x = 0, so they can swing.
+- **Colours and lamps:** `.mtl` colours are baked into the vertices (one material for everything). The `Light` material gets a `_GLOW` flag, so lamps shine at night like the cars' (`client/src/render/bakedColourMaterial.ts`).
+- **Size:** no normals (flat-shaded), welded, positions quantised.
+
+Preview: `http://localhost:5173/kit.html?set=interior` (or `&piece=Couch_Large1`).
+
