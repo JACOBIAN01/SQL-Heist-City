@@ -63,7 +63,7 @@ Carrying: visible bag, −10% speed per $100k (cap −30%). **Banking** at one o
 Sedan (balanced), sports car (fast, fragile), bike (light); enter/exit with F; collision damage; can be shot out; can carry cash bags.
 
 ## Engagement levers
-Alarm/bounty markers, killfeed, day/night (night = reduced visibility), vault progress on map, round-end awards (fastest solver, most vaults cracked), streak bonuses for consecutive correct answers.
+Alarm/bounty markers, killfeed, day/night (night = reduced visibility), vault progress on map, round-end awards (see "Round awards"), streak bonuses for consecutive correct answers.
 
 ## Tuning
 Tier 1 ≈ 30–60 s, tier 5 ≈ 4–6 min. Admin analytics show real medians; teachers retune tiers, not code.
@@ -127,4 +127,20 @@ A new player opens the game with `?tutorial` (normal game pages show a "New here
 - A glowing beacon and a ring on the minimap mark where the current step happens. The card ticks steps off, and the last one offers a real match.
 - Tutorial heist rules sit on top of the game's own: one lock, $10,000 in the vault, no kill bonus (the targets would hand out cash), and a long round (`TUTORIAL_HEIST_OVERRIDES`).
 - Rooms: at most 40 at once (`maxRooms`), each closed after 30 minutes or when its player leaves. These numbers and the start HP are in `shared/src/config/tutorial.ts`; the steps' words are there too.
+
+## Round awards (Phase 9.9)
+When a round ends, the results card shows the winner, then one card per award somebody earned, then the top 10.
+
+| Award | For | Counted from |
+|---|---|---|
+| Safecracker | most vault locks cracked | `lock_opened` with its solver |
+| Quick Draw | fastest correct SQL answer | `task_solved`: seconds from the question being issued to the correct submit (server clock) |
+| SQL Brain | most SQL tasks solved | `task_solved` |
+| Top Gun | most kills | `kill` (practice targets do not count) |
+| Bounty Hunter | most bounty cash claimed | `bounty_claimed` |
+| Big Haul | biggest single banking | `banked` |
+
+- Ties go to whoever got there first. A player who left before the end is passed over, and an award nobody earned is not shown.
+- `RoundAwards` (server) listens on the heist event bus; each award is one rule (Strategy). Tallies reset when the next round starts. Players joining during the intermission see the same card.
+- The award names and units are in `shared/src/config/awards.ts`; the server sends only the award id, the winner and the number (`awards` on the `round` ended message).
 
