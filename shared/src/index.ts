@@ -20,6 +20,8 @@ export * from './world/bank/bank3';
 export * from './world/bank/bank4';
 export * from './world/bank/bank5';
 export * from './world/heistMap';
+export * from './world/tutorialMap';
+export * from './config/tutorial';
 export * from './world/variant';
 export * from './config/heist';
 export * from './world/maps';

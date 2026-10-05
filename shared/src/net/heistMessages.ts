@@ -232,6 +232,15 @@ export interface NoticeMessage {
   readonly text: string;
 }
 
+/**
+ * Which tutorial step the player is on (an index into TUTORIAL_STEPS; equal
+ * to its length once every step is done). Sent on join and on every change.
+ */
+export interface TutorialMessage {
+  readonly t: 'tutorial';
+  readonly step: number;
+}
+
 export type VehicleDenial =
   | 'unknown_vehicle'
   | 'too_far'
@@ -264,6 +273,7 @@ export type HeistServerMessage =
   | ScoresMessage
   | StandingMessage
   | RoundMessage
-  | NoticeMessage;
+  | NoticeMessage
+  | TutorialMessage;
 
 export type JsonServerMessage = ChallengeServerMessage | HeistServerMessage;
