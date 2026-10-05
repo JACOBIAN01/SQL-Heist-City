@@ -3,11 +3,12 @@ import { fileURLToPath } from 'node:url';
 import { attachChallengeSocket } from './challenges/ChallengeSocket';
 import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
-import { DEFAULT_MATCH_SETTINGS } from '@heist/shared';
+import { DEFAULT_MATCH_SETTINGS, DEFAULT_TUTORIAL_SETTINGS } from '@heist/shared';
 import { MatchPool } from './game/MatchPool';
 import { mapByName, parseMapName } from './game/maps';
 import { startGame, type RunningGame } from './game/startGame';
 import { createHttpServer } from './http/httpServer';
+import { attachTutorialSocket } from './tutorial/TutorialRooms';
 
 // Entry point: reads the environment, then wires concrete dependencies.
 const port = Number(process.env.PORT ?? 8080);
@@ -53,7 +54,17 @@ const server = createHttpServer({
     console.log('reloaded questions and settings');
   },
 });
-if (challenges) attachChallengeSocket(server, challenges.handler);
+if (challenges) {
+  attachChallengeSocket(server, challenges.handler);
+  // The tutorial: a private room per player, always on this port (it needs the questions).
+  attachTutorialSocket(server, {
+    settings: DEFAULT_TUTORIAL_SETTINGS,
+    match: matchSettings,
+    heist: challenges.heistSettings(),
+    combat: () => challenges.combatSettings(),
+    challenges: challenges.handler,
+  });
+}
 // MATCH_WORKERS=N runs N matches, each in its own thread on its own port (the lobby tells
 // clients where); 0 (default) runs one match in this process.
 const workers = Number(process.env.MATCH_WORKERS ?? 0);
@@ -82,4 +93,5 @@ server.listen(port, () => {
   if (!running.pool) console.log(`game socket: ws://localhost:${port}/ws/game`);
   console.log(`lobby: http://localhost:${port}/lobby`);
   if (challenges) console.log(`challenge socket: ws://localhost:${port}/ws/challenge`);
+  if (challenges) console.log(`tutorial socket: ws://localhost:${port}/ws/tutorial`);
 });
