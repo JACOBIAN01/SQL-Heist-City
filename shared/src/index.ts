@@ -14,6 +14,8 @@ export * from './world/map';
 export * from './world/testMap';
 export * from './world/bank/BankLayout';
 export * from './world/bank/compileBank';
+export * from './world/bank/furniture';
+export * from './world/bank/furniturePieces';
 export * from './world/bank/bank1';
 export * from './world/bank/bank2';
 export * from './world/bank/bank3';

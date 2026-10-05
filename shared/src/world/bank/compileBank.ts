@@ -20,6 +20,9 @@ import {
   type WallSpec,
 } from './BankLayout';
 
+import { ceilingHeight, placeFurniture } from './furniture';
+import { isFurniturePiece } from './furniturePieces';
+
 const EPS = 1e-6;
 
 /** Throws a readable error for a layout that could not be built or walked. */
@@ -76,6 +79,18 @@ export function validateBank(layout: BankLayout): void {
       if (Math.abs(b.x) + b.width / 2 > hw || Math.abs(b.z) + b.depth / 2 > hd)
         fail(`storey ${storey} block at (${b.x},${b.z}) leaves the footprint`);
   });
+  for (const f of layout.furniture ?? []) {
+    const where = `${f.piece} at (${f.x},${f.z})`;
+    if (!isFurniturePiece(f.piece)) fail(`${where} is not a furniture piece`);
+    if (f.storey < 0 || f.storey >= layout.storeys) fail(`${where} is on a missing storey`);
+  }
+  for (const p of placeFurniture(layout, { x: 0, z: 0 })) {
+    const b = p.bounds;
+    if (b.minX < -hw - EPS || b.maxX > hw + EPS || b.minZ < -hd - EPS || b.maxZ > hd + EPS)
+      fail(`${p.piece} on storey ${p.storey} leaves the footprint`);
+    if (b.maxY > p.storey * layout.storeyHeight + layout.storeyHeight + EPS)
+      fail(`${p.piece} on storey ${p.storey} goes through the ceiling`);
+  }
 }
 
 /** Floor-plan rectangle covered by a flight. */
@@ -329,6 +344,16 @@ export function compileBank(layout: BankLayout, at: Point2): MapBox[] {
     boxes.push(...slabBoxes(layout, s * layout.storeyHeight, holes, at));
   }
   for (const st of stairs) boxes.push(...stairBoxes(layout, st, at));
+
+  // Solid furniture blocks like any other box (never above its ceiling).
+  for (const p of placeFurniture(layout, at)) {
+    if (!p.solid) continue;
+    const top = Math.min(
+      p.bounds.maxY,
+      p.storey * layout.storeyHeight + ceilingHeight(layout, p.storey),
+    );
+    boxes.push({ kind: 'furniture', ...p.bounds, maxY: top });
+  }
 
   layout.floors.forEach((plan, s) => {
     const bottom = s * layout.storeyHeight;

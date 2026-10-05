@@ -78,4 +78,13 @@ export const BANK_1: BankLayout = {
       blocks: [],
     },
   ],
+  // A first waiting area in the lobby (11.2); 11.3–11.6 furnish the rest.
+  furniture: [
+    { piece: 'Couch_Medium1', storey: 0, x: -7, z: 7.9, facing: '-z', solid: true },
+    { piece: 'Houseplant_8', storey: 0, x: -11.2, z: 8.3 },
+    { piece: 'Houseplant_8', storey: 0, x: -2.9, z: 8.3 },
+    { piece: 'Carpet_2', storey: 0, x: -7, z: 5.9 },
+    { piece: 'Light_Chandelier', storey: 0, x: -7, z: 4 },
+    { piece: 'Light_Chandelier', storey: 0, x: 2, z: 4 },
+  ],
 };

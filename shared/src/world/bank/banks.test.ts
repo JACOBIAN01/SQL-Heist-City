@@ -10,7 +10,7 @@ import { BANK_3 } from './bank3';
 import { BANK_4 } from './bank4';
 import { BANK_5 } from './bank5';
 import { BANK_LAYOUTS, bankFootprint } from './banks';
-import { compileBankWorld, validateBank } from './compileBank';
+import { compileBankWorld, stairFootprint, validateBank } from './compileBank';
 
 /** One bank alone on open ground, as the city places it (front door toward +z). */
 function lone(layout: BankLayout): GameMap {
@@ -90,6 +90,64 @@ describe.each([...BANK_LAYOUTS.values()].map((b) => [b.name, b] as const))(
       for (const spot of vault?.loot ?? []) {
         expect(spot.y).toBe(console_?.y);
         expect(solidAt(map.boxes, spot.x, spot.y + 0.5, spot.z)).toBe(false);
+      }
+    });
+
+    it('keeps solid furniture clear of the stairs, the door, every anchor, the loot and the vault door', () => {
+      const h = layout.storeyHeight;
+      const solid = map.boxes.filter((b) => b.kind === 'furniture');
+      const storeyOf = (b: MapBox) => Math.round(b.minY / h);
+      /** Gap (m) on the ground plane between a box and a point (0 inside). */
+      const gap = (b: MapBox, x: number, z: number) =>
+        Math.hypot(Math.max(b.minX - x, 0, x - b.maxX), Math.max(b.minZ - z, 0, z - b.maxZ));
+      const overlaps = (b: MapBox, r: { minX: number; maxX: number; minZ: number; maxZ: number }) =>
+        b.minX < r.maxX && b.maxX > r.minX && b.minZ < r.maxZ && b.maxZ > r.minZ;
+      for (const b of solid) {
+        const s = storeyOf(b);
+        for (const st of layout.stairs ?? []) {
+          if (st.storey !== s && st.storey + 1 !== s) continue;
+          // The flight and a metre and a half to walk on and off it.
+          const f = stairFootprint(st);
+          const run =
+            st.heading === '+z' || st.heading === '-z' ? { x: 0, z: 1.5 } : { x: 1.5, z: 0 };
+          expect(
+            overlaps(b, {
+              minX: f.minX - run.x,
+              maxX: f.maxX + run.x,
+              minZ: f.minZ - run.z,
+              maxZ: f.maxZ + run.z,
+            }),
+            `furniture at storey ${s} blocks stairs at (${st.x},${st.z})`,
+          ).toBe(false);
+        }
+        for (const a of map.anchors ?? [])
+          if (a.storey === s)
+            expect(gap(b, a.x, a.z), `furniture crowds ${a.id}`).toBeGreaterThan(0.8);
+        for (const spot of vault?.loot ?? [])
+          if (Math.round(spot.y / h) === s) expect(gap(b, spot.x, spot.z)).toBeGreaterThan(0.6);
+        if (door && Math.round(door.box.minY / h) === s) {
+          const d = door.box;
+          expect(
+            overlaps(b, {
+              minX: d.minX - 1.5,
+              maxX: d.maxX + 1.5,
+              minZ: d.minZ - 1.5,
+              maxZ: d.maxZ + 1.5,
+            }),
+          ).toBe(false);
+        }
+        if (s === 0) {
+          const e = layout.entrance;
+          expect(
+            overlaps(b, {
+              minX: e.x - e.width / 2 - 0.5,
+              maxX: e.x + e.width / 2 + 0.5,
+              minZ: layout.depth / 2 - 3,
+              maxZ: layout.depth / 2,
+            }),
+            'furniture blocks the street door',
+          ).toBe(false);
+        }
       }
     });
 

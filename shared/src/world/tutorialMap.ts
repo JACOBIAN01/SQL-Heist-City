@@ -52,6 +52,7 @@ export const TUTORIAL_MAP: GameMap = {
   anchors: [...BANK.anchors, SAFEHOUSE],
   doors: BANK.doors,
   vaults: BANK.vaults,
+  banks: [{ tier: BANK_1.tier, x: 0, z: -8 }],
 };
 
 /** Where each step happens, for the marker (steps done anywhere, like healing, have none). */

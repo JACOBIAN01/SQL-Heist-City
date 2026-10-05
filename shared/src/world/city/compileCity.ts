@@ -7,6 +7,7 @@ import {
   type MapBox,
   type MapDoor,
   type MapVault,
+  type PlacedBank,
 } from '../map';
 import type { CityLayout, Rect } from './CityLayout';
 
@@ -66,6 +67,7 @@ export function compileCity(
       for (const b of lot.buildings) boxes.push(rectBox('shell', b.rect, b.storeys * storey));
   }
 
+  const banks: PlacedBank[] = [];
   for (const site of city.banks) {
     const layout = bankLayouts.get(site.tier);
     if (!layout) {
@@ -77,6 +79,7 @@ export function compileCity(
     if (layout.width !== site.width || layout.depth !== site.depth)
       throw new Error(`city: ${layout.id} does not fit the site reserved for tier ${site.tier}`);
     const world = compileBankWorld(layout, { x: site.x, z: site.z });
+    banks.push({ tier: site.tier, x: site.x, z: site.z });
     boxes.push(...world.boxes);
     anchors.push(...world.anchors);
     doors.push(...world.doors);
@@ -108,6 +111,7 @@ export function compileCity(
     anchors,
     doors,
     vaults,
+    banks,
     city,
   };
 }

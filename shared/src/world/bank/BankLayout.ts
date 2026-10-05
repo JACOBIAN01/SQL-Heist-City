@@ -99,6 +99,27 @@ export interface VaultSpec {
   readonly loot: readonly Point2[];
 }
 
+/**
+ * A piece of furniture (an interior-kit piece, see furniturePieces.ts). Its
+ * art is drawn by the client; a `solid` piece also blocks movement and shots
+ * with its footprint, so it is part of the shared geometry.
+ */
+export interface FurnitureSpec {
+  readonly piece: string;
+  readonly storey: number;
+  /** Centre of the piece (its own origin; a single door's is its hinge), local coordinates. */
+  readonly x: number;
+  readonly z: number;
+  /** Which way its front faces. Defaults to +z (toward the street). */
+  readonly facing?: Heading;
+  /** Size multiplier on the built piece. Defaults to 1. */
+  readonly scale?: number;
+  /** Height above the storey floor (a lamp on a desk); hanging lights hang from the ceiling. */
+  readonly y?: number;
+  /** Blocks movement and bullets. Decoration (plants, carpets, lights) is not solid. */
+  readonly solid?: boolean;
+}
+
 export interface BankLayout {
   readonly id: string;
   readonly name: string;
@@ -119,6 +140,8 @@ export interface BankLayout {
   /** Elevators, the vault console… */
   readonly anchors?: readonly AnchorSpec[];
   readonly vaults?: readonly VaultSpec[];
+  /** Furniture and fittings (Phase 11): the realistic interior. */
+  readonly furniture?: readonly FurnitureSpec[];
 }
 
 export const DEFAULT_ANCHOR_RADIUS = 1.5;

@@ -19,9 +19,10 @@ export interface Aabb {
  * Drives the client's material only; the server treats every kind the same.
  * `shell` (a city building) and `kerb` (a sidewalk) are drawn with kit
  * pieces once the city kit has loaded; until then, or without it, as boxes.
+ * `furniture` is a solid bank fitting, drawn with the interior kit the same way.
  */
 export type MapBoxKind =
-  'wall' | 'building' | 'interior' | 'crate' | 'step' | 'cover' | 'shell' | 'kerb';
+  'wall' | 'building' | 'interior' | 'crate' | 'step' | 'cover' | 'shell' | 'kerb' | 'furniture';
 
 export interface MapBox extends Aabb {
   readonly kind: MapBoxKind;
@@ -93,6 +94,13 @@ export interface ParkedCar {
   readonly variant: number;
 }
 
+/** A bank built from a layout (BANK_LAYOUTS by tier), placed with its centre here. */
+export interface PlacedBank {
+  readonly tier: number;
+  readonly x: number;
+  readonly z: number;
+}
+
 export interface GameMap {
   readonly id: string;
   /** The ground plane (y = 0) spans [-halfSize, halfSize] on x and z. */
@@ -109,6 +117,8 @@ export interface GameMap {
   readonly unarmedStart?: boolean;
   readonly doors?: readonly MapDoor[];
   readonly vaults?: readonly MapVault[];
+  /** Banks with a real interior: the client dresses them (furniture) from their layouts. */
+  readonly banks?: readonly PlacedBank[];
   /** Cars parked at the start of each round. */
   readonly parkedCars?: readonly ParkedCar[];
   /** The layout a generated city was compiled from; the client builds its art from it. */
