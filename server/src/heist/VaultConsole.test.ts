@@ -4,6 +4,7 @@ import {
   DEFAULT_HEIST_SETTINGS,
   DEFAULT_MATCH_SETTINGS,
   HEIST_MAP,
+  mapById,
   PROTOCOL_VERSION,
   type InputCommand,
 } from '@heist/shared';
@@ -112,5 +113,28 @@ describe('vault state', () => {
     s.match.heist.openLock('bank-1:vault', 1);
     s.walkEast(30);
     expect(s.player.body.x).toBeLessThan(3.8);
+  });
+});
+
+describe('vault consoles in the city', () => {
+  it('offers each laid-out bank’s own locks, tiered by that bank', () => {
+    const map = mapById('city');
+    if (!map) throw new Error('no city');
+    const match = new Match({ map, settings: DEFAULT_MATCH_SETTINGS });
+    const connection = new FakeConnection();
+    const joined = match.join(PROTOCOL_VERSION, 'A', connection);
+    if (!joined.ok) throw new Error('join failed');
+    const console2 = map.anchors?.find((a) => a.id === 'bank-2:vault:console');
+    if (!console2) throw new Error('no bank 2 console');
+    Object.assign(joined.player.body, { x: console2.x, y: console2.y, z: console2.z });
+    match.receiveJson(
+      joined.player.id,
+      JSON.stringify({ t: 'interact', ref: 1, anchor: 'bank-2:vault:console' }),
+    );
+    expect(connection.jsonOf('interact_result')[0]?.result).toEqual({
+      action: 'open_task',
+      rewardKey: 'vault:bank-2:lock-1',
+      target: 'bank-2:vault',
+    });
   });
 });
