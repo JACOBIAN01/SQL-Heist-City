@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sound board</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #0b0d10;
+        color: #e8ebf0;
+        font:
+          14px system-ui,
+          sans-serif;
+      }
+      #sounds {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+        max-width: 760px;
+      }
+      button {
+        padding: 10px;
+        border: 1px solid #39404a;
+        border-radius: 6px;
+        background: #181c22;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+      button[aria-pressed='true'] {
+        background: #2d4a2f;
+      }
+      label {
+        display: block;
+        margin: 12px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <p>Every game sound, made in code. Click to hear one; loops play until clicked again.</p>
+    <label
+      >Distance <input id="distance" type="range" min="0" max="120" value="0" />
+      <span id="metres">0 m</span></label
+    >
+    <div id="sounds"></div>
+    <script type="module" src="/src/demo/soundBoard.ts"></script>
+  </body>
+</html>

@@ -12,7 +12,12 @@ export default defineConfig({
     // Three.js alone is ~500 kB minified (~130 kB gz); our budget is on gzipped first load.
     chunkSizeWarningLimit: 700,
     rollupOptions: {
-      input: { main: page('index.html'), sqlDemo: page('sql-demo.html'), kit: page('kit.html') },
+      input: {
+        main: page('index.html'),
+        sqlDemo: page('sql-demo.html'),
+        kit: page('kit.html'),
+        sounds: page('sounds.html'),
+      },
     },
   },
 });
