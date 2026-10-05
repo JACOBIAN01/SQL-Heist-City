@@ -56,6 +56,7 @@ import { VehicleControls } from './vehicles/VehicleControls';
 import { FrameBudget, lowerLevel, PostFx } from './render/PostFx';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
+import { sceneBudget } from './render/sceneBudget';
 import { ChannelChallengeApi } from './net/ChannelChallengeApi';
 import { SqlPanel } from './ui/sql/SqlPanel';
 import { StorageDraftStore } from './ui/sql/DraftStore';
@@ -441,6 +442,10 @@ if (previewPose === 'aim') {
 
 /** ?turn=<radians> turns the model away from the camera, to inspect poses from the side or front. */
 const debugTurn = Number(params.get('turn') ?? 0);
+
+// ?perf: `__budget()` in the console lists the triangles in view per part of the scene.
+if (params.has('perf'))
+  Object.assign(window, { __budget: () => sceneBudget(scene, camera), __renderer: renderer });
 
 const stats = new FrameStats();
 const overlay = document.createElement('div');
