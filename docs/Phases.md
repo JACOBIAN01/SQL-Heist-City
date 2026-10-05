@@ -175,7 +175,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 7.12 | Scoreboard + round timer + win condition | round ends with winner | ✅ |
 
 ---
-## Phase 8 — City, vehicles, atmosphere  🟨
+## Phase 8 — City, vehicles, atmosphere  🟨 (all subphases done; awaiting approval)
 Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 
 | # | Subphase | Done when | Status |
@@ -190,7 +190,7 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 8.8 | Vehicle enter/exit + networking | other players see it | ✅ server-owned cars, F in/out, protocol 4 vehicle records, predicted driving (gameplay.md "Vehicles") |
 | 8.9 | Sports car + bike | all 3 drivable | ✅ sedan, sports, SUV drivable; bike dropped by decision (no model in the pack) |
 | 8.10 | Spatial audio | footsteps, shots, ambience | ✅ every sound made in code as a stand-in (0 KB), 3D via Web Audio (frontend.md "Audio") |
-| 8.11 | Perf pass | 60 fps, <8 MB load | ⬜ |
+| 8.11 | Perf pass | 60 fps, <8 MB load | ✅ 2.9 MB load (CI-enforced), ~250k tris / 55 calls in the city, 100 players 1.4 ms a tick (frontend.md "Perf pass"); fps on a real integrated GPU still to confirm by hand |
 
 ---
 ## Phase 9 — Banks 2–5, weapons, UX  ⬜

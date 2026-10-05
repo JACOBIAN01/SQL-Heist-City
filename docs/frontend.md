@@ -150,10 +150,11 @@ Preview: `kit.html?city&lod` shows the city as streamed from its centre, with fo
 `PostFx` (`render/PostFx.ts`) chains render → bloom (`UnrealBloomPass`) → output (tone mapping and colour space) → FXAA.
 - **Bloom:** works at half resolution with a high threshold (0.82), so only really bright things glow: the sun, lit windows at night, muzzle flashes. Its strength follows the sky's `night` factor, 0.22 by day and 0.75 at night.
 - **Quality levels:** `high` (bloom + FXAA), `fxaa`, `off` (plain render, where the canvas's MSAA does the edges).
-- **Frame budget:** `FrameBudget` averages frame times over 3 s windows. If a window averages over 18 ms (60 fps plus a little slack), the game steps down one level and logs it. Single spikes, such as a chunk being built, do not count.
+- **Frame budget:** `FrameBudget` averages frame times over 3 s windows. If a window averages over 18 ms (60 fps plus a little slack), the game steps one rung down the `QualityLadder` and logs it. Single spikes, such as a chunk being built, do not count.
+- **The ladder** (8.11): bloom + FXAA at up to 2× pixels → FXAA at 2× → FXAA at 1.5× → off at 1.5× → off at 1×. Effects go first; resolution goes in two steps, because on a high-DPI laptop screen 2× pixels is the costliest thing of all and 1.5× still looks sharp. Rungs that change nothing on this screen are skipped (a 1× screen has three).
 - **Pinning:** `?fx=high|fxaa|off` pins a level and turns the automatic step-down off.
 
-The overlay shows the current level, and its draw-call and triangle counts now cover every pass (`renderer.info.autoReset` is off and is reset once per frame). Bundle cost: about 4 kB gzipped.
+The overlay shows the current level and pixel ratio, and its draw-call and triangle counts now cover every pass (`renderer.info.autoReset` is off and is reset once per frame). Bundle cost: about 4 kB gzipped.
 
 ## Audio (Phase 8.10)
 Every sound is **generated in code** for now: no files, nothing to download (about 7 kB of gzipped code). They are stand-ins, meant to be replaced by recordings later.
@@ -166,3 +167,21 @@ Every sound is **generated in code** for now: no files, nothing to download (abo
 - **Sound board:** `sounds.html` plays every sound at a chosen distance, to judge them by ear or compare a recording before it replaces one.
 
 **Replacing a sound with a recording:** add a bank that decodes files into buffers for the names it has, falling back to the generated one for the rest, and pass it to `AudioEngine` in `GestureAudio`. Nothing that plays sounds changes. Record the source and licence in `credits.md`.
+
+## Perf pass (Phase 8.11)
+Measured in the city (1280×720, headless Chrome on a software GPU, so draw calls and triangles are real but frame rates are not):
+
+| Scene | Draw calls | Triangles | Script per frame |
+|---|---|---|---|
+| Walking a street, alone (before) | 65 | ~570k | ~1 ms |
+| Walking a street, alone (after) | 55 | ~250k | ~1 ms |
+| The same with 30 players in view | 175 | ~380k | ~3.5 ms |
+
+Budgets: < 200 draw calls, < 400k triangles, 60 fps on an integrated GPU.
+- **Building shadows from outlines.** The shadow pass drew every detailed chunk a second time. Buildings now cast from four plain walls just inside each one, up to its cornice (`buildShadowGeometry`, from `ChunkPlan.casters`), only for chunks near enough to be in the shadow map. The walls have no lid, so roofs are not shaded by their own block, and they write nothing on screen (no colour, no depth), costing one empty draw each. Shadows look the same; the frame's triangles halved.
+- **Resolution on the quality ladder** (see "Post-processing").
+- **First load:** 2.9 MB (367 kB gzipped code + 2.6 MB of models and textures). `npm run size` (part of CI) now fails if code passes 1 MB gzipped or code plus assets passes 8 MB.
+- **Players:** each remote player costs 2–4 draw calls (light body beyond 26 m, eyes hidden there, gun). The server sends each client at most the nearest few dozen players, which keeps a crowd inside the budget.
+- **Finding the fat:** `?perf` adds `__budget()` to the console: triangles in view per top-level part of the scene and how many of them cast shadows (`sceneBudget`).
+
+Not measured here: real frame rates on an integrated GPU. Check on the target laptop with the overlay (fps, worst frame, calls, triangles, quality rung).

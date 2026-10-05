@@ -104,7 +104,17 @@ Defaults in `shared/config/defaults.ts`; DB `settings` override; hot-reloaded on
 Validate speed/teleport, fire rate, ammo, line of sight, challenge binding. Client trust = none.
 
 ## Load testing
-`npm run load:bots -- --players 100 --latency 100 --loss 0.05`.
+`npm run load:bots -- --players 60,100,200 --seconds 20` runs a whole match in-process with scripted bots and prints the tick cost, bandwidth and garbage per tick. `--map city[:seed]` runs it in the real city with its parked cars, `--map sandbox` in the small yard, and the default is the city-sized bench map. `--mode socket --url ws://…` connects real WebSocket bots to a running server instead.
+
+Measured in the perf pass (8.11, one laptop core, city map):
+
+| players | tick mean | p99 | KB/s per client | garbage per tick |
+|---|---|---|---|---|
+| 60 | 0.8 ms | 1.3 ms | 2.9 | 0.4 MB |
+| 100 | 1.4 ms | 1.8 ms | 3.5 | 0.5 MB |
+| 200 | 3.7 ms | 5.4 ms | 4.3 | 1.0 MB |
+
+All far inside the 15 ms budget. Car records in snapshots are reused like player records (the encoder copies what it compares), which took garbage at 100 players from 1.0 to 0.5 MB per tick.
 
 ## Bank layouts (Phase 7.1)
 A bank is data: `BankLayout` (`shared/src/world/bank/`) lists the footprint, storeys, street entrance and, per storey, interior walls (with door/window openings) and blocks (counters). `compileBank(layout, at)` turns it into `MapBox` colliders; the outer shell is generated from the footprint, and the entrance cuts only the ground storey. `validateBank` rejects diagonal walls, overlapping openings and anything outside the footprint. Server and client call the same function, so they cannot disagree about a wall. Bank 1 ("Corner Savings") is `bank1.ts`; the `heist` map (`heistMap.ts`) puts it on a walled lot. Select a map with `MATCH_MAP=heist` on the server and `?map=heist` on the client (both resolve through `mapById`).

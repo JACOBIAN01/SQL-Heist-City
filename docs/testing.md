@@ -6,7 +6,7 @@
 | Contract | Vitest | every `RewardStrategy`/`DataGenerator`/`Weapon` implementation passes the same suite (Liskov) |
 | Integration | Vitest + in-process server | challenge flow, admin→reload→server, WS join/input/snapshot |
 | UI | Playwright | SQL pop-up flow vs mock server; admin question edit |
-| Load | `load:bots` | 60/100/200 bots; tick ms, bytes/s, grader queue |
+| Load | `load:bots` | 60/100/200 bots (`--map city` for the real city); tick ms, bytes/s, garbage |
 | Perf | scripted fly-through | fps, draw calls, triangles, first-load size |
 | Question QA | `questions:validate` | each reference × 100 seeds |
 
