@@ -26,8 +26,8 @@
 | 6 | Scale core (60/100/200) | ✅ Done |
 | 7 | Heist loop v1 | ✅ Done |
 | 8 | City, vehicles, atmosphere | ✅ Done |
-| 9 | Banks 2–5, weapons, UX | 🟨 In review |
-| 10 | Polish: sound, SQL pop-up, tutorial | ⬜ |
+| 9 | Banks 2–5, weapons, UX | ✅ Done |
+| 10 | Polish: sound, SQL pop-up, tutorial | 🟦 In progress |
 | 11 | Bank design | ⬜ |
 | — | Todo (later): harden & ship | ⬜ |
 
@@ -195,7 +195,7 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 8.11 | Perf pass | 60 fps, <8 MB load | ✅ 2.9 MB load (CI-enforced), ~250k tris / 55 calls in the city, 100 players 1.4 ms a tick (frontend.md "Perf pass"); fps on a real integrated GPU still to confirm by hand |
 
 ---
-## Phase 9 — Banks 2–5, weapons, UX  🟨
+## Phase 9 — Banks 2–5, weapons, UX  ✅
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 9.1 | Bank 2 (new layout, same kit pieces and grammar) | playable | ✅ "City Trust", 4 storeys, on the tier-2 city site (backend.md "Bank layouts") |
@@ -209,12 +209,12 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 9.9 | Round-end awards screen | awards shown | ✅ six awards tallied from heist events, shown as cards above the final standings (gameplay.md "Round awards") |
 
 ---
-## Phase 10 — Polish: sound, SQL pop-up, tutorial  ⬜
+## Phase 10 — Polish: sound, SQL pop-up, tutorial  🟦
 Quick fixes that improve play right away, before the bank work.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 10.1 | Quieter wind | default ambience lower everywhere; the sound board still plays it | ⬜ |
+| 10.1 | Quieter wind | default ambience lower everywhere; the sound board still plays it | ✅ 0.18 → 0.08 (`ambienceVolume`) |
 | 10.2 | Expected output in the SQL pop-up: output columns + a worked example on separate example data (never the real answer) | every challenge shows it; the QA gate passes for all 150 questions | ⬜ |
 | 10.3 | Tutorial: one fixed question per task (heal, gun, vault), same for everyone every run, solution free | every tutorial run asks the same 3 questions; "Show solution" fills the editor at no cost | ⬜ |
 

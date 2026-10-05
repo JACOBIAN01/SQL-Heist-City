@@ -45,8 +45,8 @@ export const audioSettingsSchema = z.object({
   echoDelay: z.number().positive().default(0.21),
   echoFeedback: z.number().min(0).max(0.9).default(0.35),
   echoSend: z.number().min(0).max(1).default(0.35),
-  /** Background wind volume, 0–1, and seconds between far-off sirens (min, max). */
-  ambienceVolume: z.number().min(0).max(1).default(0.18),
+  /** Background wind volume, 0–1 (kept low: it plays the whole time), and seconds between far-off sirens (min, max). */
+  ambienceVolume: z.number().min(0).max(1).default(0.08),
   sirenMinSeconds: z.number().positive().default(45),
   sirenMaxSeconds: z.number().positive().default(120),
 });

@@ -8,6 +8,12 @@ describe('audio settings', () => {
     expect(s.footstepRange).toBeGreaterThan(s.refDistance);
   });
 
+  it('keeps the wind a quiet background, well under the master volume', () => {
+    const s = DEFAULT_AUDIO_SETTINGS;
+    expect(s.ambienceVolume).toBeLessThanOrEqual(0.1);
+    expect(s.ambienceVolume).toBeGreaterThan(0);
+  });
+
   it('takes longer strides the faster a body goes', () => {
     const s = DEFAULT_AUDIO_SETTINGS;
     // About three steps a second at a jog (4 m/s), four sprinting (7 m/s).
