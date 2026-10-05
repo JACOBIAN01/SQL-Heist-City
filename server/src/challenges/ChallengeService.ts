@@ -19,7 +19,15 @@ import type { Variant, VariantBuilder } from '../variants/VariantBuilder';
 import type { QuestionSelector } from './QuestionSelector';
 import { ExampleBuilder, type WorkedExample } from './ExampleBuilder';
 
-export interface ChallengeRequest {
+/** How a match may want a task issued (the tutorial: always the same question, solution free). */
+export interface IssueOptions {
+  /** Always this question (by slug) with this seed: the same tables and parameters every time. */
+  readonly fixed?: { readonly slug: string; readonly seed: string };
+  /** Send the reference query with the task, and make its hints free. */
+  readonly revealSolution?: boolean;
+}
+
+export interface ChallengeRequest extends IssueOptions {
   readonly player: string;
   /** e.g. "heal:small", "gun:rifle", "vault:bank-2:lock-1". */
   readonly rewardKey: string;
@@ -60,6 +68,8 @@ interface ActiveChallenge {
   /** Hints of the question version this challenge was issued from. */
   readonly hints: readonly Hint[];
   readonly hintCostMode: 'fraction' | 'absolute';
+  /** Tutorial: the reference query goes to the player, and hints cost nothing. */
+  readonly revealSolution: boolean;
   /** How many hints (in order) the player has revealed and been charged for. */
   hintsRevealed: number;
   lockedUntil: number;
@@ -112,13 +122,24 @@ export class ChallengeService {
 
     for (let i = 0; i < MAX_ISSUE_ATTEMPTS; i++) {
       const attempt = this.nextAttempt(request.player, request.rewardKey);
-      const seed = seedOf(this.deps.matchSeed, request.player, request.rewardKey, attempt);
-      const question = this.deps.selector.select(
-        request.player,
-        request.rewardKey,
-        tiers,
-        new SeededRng(`${seed}/select`),
-      );
+      const fixed =
+        i === 0 && request.fixed ? this.deps.selector.bySlug(request.fixed.slug) : undefined;
+      if (request.fixed && i === 0 && !fixed)
+        this.deps.logger?.warn('fixed question missing or disabled, picking another', {
+          slug: request.fixed.slug,
+        });
+      const seed =
+        fixed && request.fixed
+          ? request.fixed.seed
+          : seedOf(this.deps.matchSeed, request.player, request.rewardKey, attempt);
+      const question =
+        fixed ??
+        this.deps.selector.select(
+          request.player,
+          request.rewardKey,
+          tiers,
+          new SeededRng(`${seed}/select`),
+        );
       if (!question) return { ok: false, reason: 'no_questions' };
 
       const variant = this.deps.variants.build(question.template, seed);
@@ -150,8 +171,12 @@ export class ChallengeService {
         expected,
         example,
         expiresAt: now + settings.ttlSec * 1000,
-        hints: question.template.hints,
+        // Tutorial hints are free.
+        hints: request.revealSolution
+          ? question.template.hints.map((h) => ({ ...h, cost: 0 }))
+          : question.template.hints,
         hintCostMode: settings.hintCostMode,
+        revealSolution: request.revealSolution ?? false,
         hintsRevealed: 0,
         lockedUntil: 0,
         lastRunAt: Number.NEGATIVE_INFINITY,
@@ -295,6 +320,7 @@ function toPublic(c: ActiveChallenge, sampleRows: number, shownRows: number): Pu
     ...(c.example ? { example: toExampleView(c.example, shownRows) } : {}),
     columnsMatter: c.variant.compare.names,
     orderMatters: c.variant.orderMatters,
+    ...(c.revealSolution ? { solution: c.variant.referenceSql } : {}),
     hintCosts: c.hints.map((h) => h.cost),
     hintCostMode: c.hintCostMode,
     expiresAt: c.expiresAt,

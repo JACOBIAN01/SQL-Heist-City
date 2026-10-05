@@ -11,6 +11,9 @@ import {
   type HeistSettings,
   type ChallengeSettings,
   type TierRange,
+  DEFAULT_TUTORIAL_SETTINGS,
+  tutorialSettingsSchema,
+  type TutorialSettings,
 } from '@heist/shared';
 
 // SOLID: I + D — Why: game code needs to *read* tunable numbers and nothing
@@ -21,6 +24,8 @@ export interface SettingsReader {
   heistSettings(): HeistSettings;
   /** Guns and damage rules; stored guns override the defaults one by one. */
   combatSettings(): CombatSettings;
+  /** The tutorial: room limits and the fixed question of each task. */
+  tutorialSettings(): TutorialSettings;
   /** Tier range for a reward key, or undefined if the reward is unknown. */
   rewardTiers(rewardKey: string): TierRange | undefined;
 }
@@ -32,7 +37,12 @@ export class StaticSettings implements SettingsReader {
     private readonly tiers: Readonly<Record<string, TierRange>> = DEFAULT_REWARD_TIERS,
     private readonly heist: HeistSettings = DEFAULT_HEIST_SETTINGS,
     private readonly combat: CombatSettings = DEFAULT_COMBAT_SETTINGS,
+    private readonly tutorial: TutorialSettings = DEFAULT_TUTORIAL_SETTINGS,
   ) {}
+
+  tutorialSettings(): TutorialSettings {
+    return this.tutorial;
+  }
 
   heistSettings(): HeistSettings {
     return this.heist;
@@ -54,6 +64,7 @@ export class StaticSettings implements SettingsReader {
 export const CHALLENGE_SETTINGS_KEY = 'challenges';
 export const HEIST_SETTINGS_KEY = 'heist';
 export const COMBAT_SETTINGS_KEY = 'combat';
+export const TUTORIAL_SETTINGS_KEY = 'tutorial';
 
 /**
  * Stored combat settings over the defaults. Guns merge one by one, so an
@@ -103,6 +114,15 @@ export class SqliteSettingsReader implements SettingsReader {
       .prepare('SELECT value_json FROM settings WHERE key = ?')
       .get(COMBAT_SETTINGS_KEY) as { value_json: string } | undefined;
     return row ? combatFrom(safeJson(row.value_json)) : DEFAULT_COMBAT_SETTINGS;
+  }
+
+  tutorialSettings(): TutorialSettings {
+    const row = this.db
+      .prepare('SELECT value_json FROM settings WHERE key = ?')
+      .get(TUTORIAL_SETTINGS_KEY) as { value_json: string } | undefined;
+    if (!row) return DEFAULT_TUTORIAL_SETTINGS;
+    const parsed = tutorialSettingsSchema.safeParse(safeJson(row.value_json));
+    return parsed.success ? parsed.data : DEFAULT_TUTORIAL_SETTINGS;
   }
 
   rewardTiers(rewardKey: string): TierRange | undefined {

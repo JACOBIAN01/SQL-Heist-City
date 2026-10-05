@@ -4,7 +4,7 @@ import {
   type ChallengeServerMessage,
 } from '@heist/shared';
 import type { SettingsReader } from '../config/SettingsReader';
-import type { ChallengeService } from './ChallengeService';
+import type { ChallengeService, IssueOptions } from './ChallengeService';
 import { tiersForReward } from './tiers';
 
 // Pattern: Command (message → handler) — Why: each client message is a small
@@ -18,8 +18,15 @@ export class ChallengeMessageHandler {
     private readonly now: () => number = Date.now,
   ) {}
 
-  /** Handles one raw (already JSON-parsed) message from a player and returns the reply. */
-  async handle(player: string, raw: unknown): Promise<ChallengeServerMessage> {
+  /**
+   * Handles one raw (already JSON-parsed) message from a player and returns the
+   * reply. `options` shape how a requested task is issued (the tutorial's).
+   */
+  async handle(
+    player: string,
+    raw: unknown,
+    options: IssueOptions = {},
+  ): Promise<ChallengeServerMessage> {
     const parsed = challengeClientMessageSchema.safeParse(raw);
     if (!parsed.success) {
       const ref =
@@ -32,7 +39,7 @@ export class ChallengeMessageHandler {
         message: parsed.error.issues[0]?.message ?? 'Invalid message',
       };
     }
-    return this.dispatch(player, parsed.data);
+    return this.dispatch(player, parsed.data, options);
   }
 
   playerLeft(player: string): void {
@@ -42,6 +49,7 @@ export class ChallengeMessageHandler {
   private async dispatch(
     player: string,
     msg: ChallengeClientMessage,
+    options: IssueOptions,
   ): Promise<ChallengeServerMessage> {
     switch (msg.t) {
       case 'challenge_request': {
@@ -52,6 +60,7 @@ export class ChallengeMessageHandler {
               rewardKey: msg.rewardKey,
               ...(msg.target === undefined ? {} : { target: msg.target }),
               tiers,
+              ...options,
             })
           : ({ ok: false, reason: 'unknown_reward' } as const);
         return { t: 'challenge', ref: msg.ref, now: this.now(), result };

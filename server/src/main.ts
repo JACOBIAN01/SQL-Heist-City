@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { attachChallengeSocket } from './challenges/ChallengeSocket';
 import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
-import { DEFAULT_MATCH_SETTINGS, DEFAULT_TUTORIAL_SETTINGS } from '@heist/shared';
+import { DEFAULT_MATCH_SETTINGS } from '@heist/shared';
 import { MatchPool } from './game/MatchPool';
 import { mapByName, parseMapName } from './game/maps';
 import { startGame, type RunningGame } from './game/startGame';
@@ -58,7 +58,7 @@ if (challenges) {
   attachChallengeSocket(server, challenges.handler);
   // The tutorial: a private room per player, always on this port (it needs the questions).
   attachTutorialSocket(server, {
-    settings: DEFAULT_TUTORIAL_SETTINGS,
+    settings: () => challenges.tutorialSettings(),
     match: matchSettings,
     heist: challenges.heistSettings(),
     combat: () => challenges.combatSettings(),

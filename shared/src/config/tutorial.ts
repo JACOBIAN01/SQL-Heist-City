@@ -22,7 +22,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
     id: 'heal',
     title: 'Heal with SQL',
-    text: 'You are hurt. Press Tab and pick a Heal task, write the query and Submit. The world keeps running while you type.',
+    text: 'You are hurt. Press Tab and pick a Heal task, write the query and Submit. Stuck? "Show solution" is free in the tutorial. The world keeps running while you type.',
   },
   {
     id: 'gun',
@@ -61,7 +61,24 @@ export const tutorialSettingsSchema = z.object({
   startHp: z.number().int().positive().default(35),
   /** How close (m) to the marker counts as "got there". */
   markerRadius: z.number().positive().default(2.5),
+  /**
+   * The question each tutorial task always asks (by slug), the same for
+   * everyone on every run, with its solution free. Teachers pick them in the
+   * admin; a missing or disabled slug falls back to a normal pick.
+   */
+  questions: z
+    .object({
+      heal: z.string().min(1).default('t1-staff-roster'),
+      gun: z.string().min(1).default('t1-big-earners'),
+      vault: z.string().min(1).default('t1-dept-staff'),
+    })
+    .default({ heal: 't1-staff-roster', gun: 't1-big-earners', vault: 't1-dept-staff' }),
+  /** Fixes the questions' parameters and data, so every run sees the same tables. */
+  seed: z.string().min(1).default('tutorial'),
 });
+
+/** The tutorial tasks that have a fixed question. */
+export type TutorialTask = keyof TutorialSettings['questions'];
 
 export type TutorialSettings = z.infer<typeof tutorialSettingsSchema>;
 export const DEFAULT_TUTORIAL_SETTINGS: TutorialSettings = tutorialSettingsSchema.parse({});

@@ -320,3 +320,45 @@ describe('ChallengeService.run', () => {
     });
   });
 });
+
+describe('ChallengeService.issue with a fixed question (the tutorial)', () => {
+  const fixed = { fixed: { slug: base.slug, seed: 'tutorial:heal' }, revealSolution: true };
+
+  async function issueFixed(player: string, options: object = fixed): Promise<PublicChallenge> {
+    const result = await service.issue({ player, rewardKey: 'heal:small', ...options });
+    if (!result.ok) throw new Error(`issue failed: ${result.reason}`);
+    return result.challenge;
+  }
+
+  it('gives everyone the same question on the same tables, every time', async () => {
+    const a = await issueFixed('p1');
+    clock += settings.requestCooldownMs;
+    const again = await issueFixed('p1');
+    const b = await issueFixed('p2');
+    for (const c of [again, b]) {
+      expect(c.story).toBe(a.story);
+      expect(c.tables).toEqual(a.tables);
+      expect(c.example).toEqual(a.example);
+    }
+  });
+
+  it('sends the solution and makes hints free', async () => {
+    const c = await issueFixed('p1');
+    expect(c.solution).toBe(variants.build(base, 'tutorial:heal').referenceSql);
+    expect(c.hintCosts).toEqual([0]);
+    const hint = service.hint('p1', c.id, 0);
+    expect(hint.ok && hint.hint.cost).toBe(0);
+  });
+
+  it('never sends a solution otherwise', async () => {
+    const c = await issueFixed('p1', { fixed: fixed.fixed });
+    expect(c.solution).toBeUndefined();
+    expect(JSON.stringify(await issue('p2'))).not.toContain('solution');
+  });
+
+  it('falls back to a normal pick when the fixed question is missing or disabled', async () => {
+    const c = await issueFixed('p1', { fixed: { slug: 'gone', seed: 's' } });
+    expect(c.title).toBe(base.title);
+    expect(warnings).toContain('fixed question missing or disabled, picking another');
+  });
+});

@@ -19,10 +19,15 @@ import {
 } from '@heist/shared';
 import { FakeConnection } from '../game/testing';
 import { ScriptedGateway, correctAnswer } from '../heist/testing';
-import { attachTutorialSocket, TutorialRoom, type TutorialSocket } from './TutorialRooms';
+import {
+  attachTutorialSocket,
+  TutorialRoom,
+  tutorialTaskOptions,
+  type TutorialSocket,
+} from './TutorialRooms';
 
 const deps = (gateway = new ScriptedGateway()) => ({
-  settings: DEFAULT_TUTORIAL_SETTINGS,
+  settings: () => DEFAULT_TUTORIAL_SETTINGS,
   match: DEFAULT_MATCH_SETTINGS,
   heist: DEFAULT_HEIST_SETTINGS,
   combat: () => ({ ...DEFAULT_COMBAT_SETTINGS, spawnProtectionSec: 0 }),
@@ -54,7 +59,7 @@ function setup() {
     await new Promise((resolve) => setImmediate(resolve));
     room.step();
   };
-  return { room, player, connection, steps, at, solve };
+  return { room, player, connection, steps, at, solve, gateway };
 }
 
 describe('tutorial room', () => {
@@ -131,6 +136,31 @@ describe('tutorial room', () => {
   });
 });
 
+describe('tutorial questions', () => {
+  it('fixes the question and seed of heal, gun and vault tasks, and reveals the solution', () => {
+    const s = DEFAULT_TUTORIAL_SETTINGS;
+    expect(tutorialTaskOptions(s, 'heal:small')).toEqual({
+      fixed: { slug: s.questions.heal, seed: `${s.seed}:heal` },
+      revealSolution: true,
+    });
+    expect(tutorialTaskOptions(s, 'gun:pistol')?.fixed?.slug).toBe(s.questions.gun);
+    expect(tutorialTaskOptions(s, 'vault:bank-1:lock-1')?.fixed?.slug).toBe(s.questions.vault);
+    expect(tutorialTaskOptions(s, 'ammo:refill')).toBeUndefined();
+  });
+
+  it('asks for them when the player requests a task in the room', async () => {
+    const s = setup();
+    s.room.match.receiveJson(
+      s.player.id,
+      JSON.stringify({ t: 'challenge_request', ref: 1, rewardKey: 'heal:small' }),
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(s.gateway.calls.at(-1)?.options?.fixed?.slug).toBe(
+      DEFAULT_TUTORIAL_SETTINGS.questions.heal,
+    );
+  });
+});
+
 describe('tutorial socket', () => {
   let http: Server | undefined;
   let socket: TutorialSocket | undefined;
@@ -145,7 +175,7 @@ describe('tutorial socket', () => {
     http = createServer();
     socket = attachTutorialSocket(http, {
       ...deps(),
-      settings: { ...DEFAULT_TUTORIAL_SETTINGS, maxRooms },
+      settings: () => ({ ...DEFAULT_TUTORIAL_SETTINGS, maxRooms }),
     });
     await new Promise<void>((resolve) => http?.listen(0, resolve));
     return `ws://localhost:${(http.address() as AddressInfo).port}/ws/tutorial`;

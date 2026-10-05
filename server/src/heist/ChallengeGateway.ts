@@ -1,4 +1,5 @@
 import type { ChallengeServerMessage } from '@heist/shared';
+import type { IssueOptions } from '../challenges/ChallengeService';
 
 /**
  * What the heist rules need from the SQL challenge system: hand it one
@@ -7,6 +8,7 @@ import type { ChallengeServerMessage } from '@heist/shared';
  * grader, sandbox or database, so a match runs with or without them).
  */
 export interface ChallengeGateway {
-  handle(player: string, raw: unknown): Promise<ChallengeServerMessage>;
+  /** `options` only matter for a task request (see IssueOptions). */
+  handle(player: string, raw: unknown, options?: IssueOptions): Promise<ChallengeServerMessage>;
   playerLeft(player: string): void;
 }

@@ -17,6 +17,7 @@ import { RoundAwards } from './RoundAwards';
 import { FeedReporter } from './FeedReporter';
 import { HeistEvents } from './HeistEvents';
 import type { ChallengeGateway } from './ChallengeGateway';
+import type { IssueOptions } from '../challenges/ChallengeService';
 import { HealRule } from './HealRule';
 import { LootManager } from './LootManager';
 import { ElevatorHandler } from './ElevatorHandler';
@@ -58,6 +59,7 @@ export class HeistController implements ArmsControl {
     readonly settings: HeistSettings = DEFAULT_HEIST_SETTINGS,
     private readonly challenges?: ChallengeGateway,
     private readonly now: () => number = Date.now,
+    private readonly taskOptions?: (rewardKey: string) => IssueOptions | undefined,
   ) {
     this.vaults = new VaultRegistry(match.map, settings.locksPerVault);
     new FeedReporter(match, this.events);
@@ -316,8 +318,10 @@ export class HeistController implements ArmsControl {
       const reason = rule.check(player, message.rewardKey, message.target);
       if (reason) return this.reply(player, this.refuse(message.ref, reason));
     }
+    const options =
+      message.t === 'challenge_request' ? this.taskOptions?.(message.rewardKey) : undefined;
     void this.challenges
-      .handle(player.key, raw)
+      .handle(player.key, raw, options)
       .then((reply) => {
         if (reply.t === 'challenge_hint' && reply.result.ok && reply.result.hint.charged)
           this.chargeHint(player, reply.result.hint.cost, reply.result.hint.costMode);

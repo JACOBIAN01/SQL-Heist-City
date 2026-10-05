@@ -8,7 +8,9 @@ import {
   type HeistSettings,
   type MatchSettings,
   type TutorialSettings,
+  type TutorialTask,
 } from '@heist/shared';
+import type { IssueOptions } from '../challenges/ChallengeService';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import { GameLoop } from '../game/GameLoop';
 import { serveGameConnection } from '../game/GameSocket';
@@ -17,7 +19,8 @@ import { upgradeRouterFor } from '../net/UpgradeRouter';
 import { TutorialCoach } from './TutorialCoach';
 
 export interface TutorialDeps {
-  readonly settings: TutorialSettings;
+  /** Read for every new room, so admin edits apply to the next tutorial. */
+  readonly settings: () => TutorialSettings;
   readonly match: MatchSettings;
   /** The game's heist rules; the tutorial's overrides go on top. */
   readonly heist: HeistSettings;
@@ -35,6 +38,7 @@ export class TutorialRoom {
   private readonly loop: GameLoop;
 
   constructor(deps: TutorialDeps, key: string) {
+    const settings = deps.settings();
     this.match = new Match({
       map: TUTORIAL_MAP,
       // One player; the targets count as players too.
@@ -42,6 +46,7 @@ export class TutorialRoom {
       heist: { ...deps.heist, ...TUTORIAL_HEIST_OVERRIDES },
       ...(deps.combat ? { combat: deps.combat() } : {}),
       challenges: deps.challenges,
+      taskOptions: (rewardKey) => tutorialTaskOptions(settings, rewardKey),
       keyPrefix: `${key}:`,
       seed: key,
     });
@@ -54,7 +59,7 @@ export class TutorialRoom {
         anyVaultOpen: () => [...vaults.all()].some((v) => v.isOpen),
         events: this.match.heist.events,
       },
-      deps.settings,
+      settings,
     );
     this.loop = new GameLoop(1000 / deps.match.tickRate, () => this.step());
   }
@@ -72,6 +77,25 @@ export class TutorialRoom {
   stop(): void {
     this.loop.stop();
   }
+}
+
+const TASKS: readonly TutorialTask[] = ['heal', 'gun', 'vault'];
+
+/**
+ * The tutorial asks the same question for each task, every run, with the
+ * solution free: heal, gun and vault tasks get their configured question and
+ * seed; anything else (ammo) is issued the normal way.
+ */
+export function tutorialTaskOptions(
+  settings: TutorialSettings,
+  rewardKey: string,
+): IssueOptions | undefined {
+  const task = TASKS.find((t) => rewardKey.startsWith(`${t}:`));
+  if (!task) return undefined;
+  return {
+    fixed: { slug: settings.questions[task], seed: `${settings.seed}:${task}` },
+    revealSolution: true,
+  };
 }
 
 export interface TutorialSocket {
@@ -96,7 +120,7 @@ export function attachTutorialSocket(
   let made = 0;
 
   wss.on('connection', (socket: WebSocket) => {
-    if (open >= deps.settings.maxRooms) {
+    if (open >= deps.settings().maxRooms) {
       socket.close(CLOSE_FULL, 'Every tutorial is busy, try again in a minute');
       return;
     }
@@ -105,7 +129,7 @@ export function attachTutorialSocket(
     room.start();
     const timeUp = setTimeout(
       () => socket.close(CLOSE_ROUND, 'Tutorial time is up'),
-      deps.settings.maxMinutes * 60_000,
+      deps.settings().maxMinutes * 60_000,
     );
     serveGameConnection(room.match, {
       ...(options.joinTimeoutMs !== undefined ? { joinTimeoutMs: options.joinTimeoutMs } : {}),

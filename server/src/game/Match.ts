@@ -47,6 +47,7 @@ import {
 } from '@heist/shared';
 import { VehicleFleet, type Vehicle } from './VehicleFleet';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
+import type { IssueOptions } from '../challenges/ChallengeService';
 import { HeistController } from '../heist/HeistController';
 import type { MatchApi } from '../heist/MatchApi';
 import { InterestManager } from './InterestManager';
@@ -78,6 +79,8 @@ export interface MatchDeps {
   readonly vehicles?: VehicleSettings;
   /** SQL tasks; without it every task request is answered "unavailable". */
   readonly challenges?: ChallengeGateway;
+  /** How this match wants each task issued (the tutorial fixes the questions); none: the normal way. */
+  readonly taskOptions?: (rewardKey: string) => IssueOptions | undefined;
   /** Starts every player key (`p1`, `p2`…), so matches sharing one challenge system never share a key. */
   readonly keyPrefix?: string;
   /** Seeds bullet spread so a match is reproducible in tests. */
@@ -177,7 +180,13 @@ export class Match implements MatchApi {
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
     this.vehicles = new VehicleFleet(deps.map, deps.vehicles ?? DEFAULT_VEHICLE_SETTINGS);
-    this.heist = new HeistController(this, deps.heist, deps.challenges);
+    this.heist = new HeistController(
+      this,
+      deps.heist,
+      deps.challenges,
+      undefined,
+      deps.taskOptions,
+    );
   }
 
   get map(): GameMap {

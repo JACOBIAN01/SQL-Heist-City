@@ -41,6 +41,8 @@ export interface PublicChallenge {
   readonly columnsMatter: boolean;
   /** Whether the rows must come in a particular order. */
   readonly orderMatters: boolean;
+  /** The reference query, sent only in the tutorial (rules.md: the one exception). */
+  readonly solution?: string;
   /** Cost of each hint, in order (as authored; see hintCostMode). Hint text is only sent when revealed. */
   readonly hintCosts: readonly number[];
   readonly hintCostMode: 'fraction' | 'absolute';

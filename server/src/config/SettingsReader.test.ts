@@ -3,6 +3,7 @@ import {
   DEFAULT_CHALLENGE_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_HEIST_SETTINGS,
+  DEFAULT_TUTORIAL_SETTINGS,
 } from '@heist/shared';
 import { openDatabase } from '../db/database';
 import {
@@ -11,6 +12,7 @@ import {
   combatFrom,
   HEIST_SETTINGS_KEY,
   SqliteSettingsReader,
+  TUTORIAL_SETTINGS_KEY,
 } from './SettingsReader';
 
 function setup() {
@@ -59,6 +61,21 @@ describe('SqliteSettingsReader', () => {
       HEIST_SETTINGS_KEY,
     );
     expect(reader.heistSettings()).toEqual(DEFAULT_HEIST_SETTINGS);
+  });
+});
+
+describe('tutorial settings', () => {
+  it('let an admin change one fixed question and keep the others', () => {
+    const { db, reader } = setup();
+    expect(reader.tutorialSettings()).toEqual(DEFAULT_TUTORIAL_SETTINGS);
+    db.prepare('INSERT INTO settings VALUES (?, ?)').run(
+      TUTORIAL_SETTINGS_KEY,
+      '{"questions": {"gun": "t1-light-loot"}}',
+    );
+    expect(reader.tutorialSettings().questions).toEqual({
+      ...DEFAULT_TUTORIAL_SETTINGS.questions,
+      gun: 't1-light-loot',
+    });
   });
 });
 

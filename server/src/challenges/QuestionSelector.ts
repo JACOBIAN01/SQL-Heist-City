@@ -39,6 +39,12 @@ export class QuestionSelector {
     return chosen;
   }
 
+  /** One question by slug, if it exists and is enabled (the tutorial's fixed questions). */
+  bySlug(slug: string): StoredQuestion | undefined {
+    const q = this.questions.getBySlug(slug);
+    return q?.enabled ? q : undefined;
+  }
+
   /** Forget a player's history (e.g. they left the match). */
   forgetPlayer(player: string): void {
     const prefix = `${player}\0`;

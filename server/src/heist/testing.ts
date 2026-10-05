@@ -1,9 +1,10 @@
 import type { ChallengeServerMessage } from '@heist/shared';
+import type { IssueOptions } from '../challenges/ChallengeService';
 import type { ChallengeGateway } from './ChallengeGateway';
 
 /** A gateway that records calls and answers from a script. */
 export class ScriptedGateway implements ChallengeGateway {
-  readonly calls: { player: string; raw: unknown }[] = [];
+  readonly calls: { player: string; raw: unknown; options?: IssueOptions }[] = [];
   readonly left: string[] = [];
   /** What the next call returns (set by the test). */
   answer: (raw: { t: string; ref: number }) => ChallengeServerMessage = (raw) => ({
@@ -12,8 +13,8 @@ export class ScriptedGateway implements ChallengeGateway {
     now: 0,
   });
 
-  handle(player: string, raw: unknown): Promise<ChallengeServerMessage> {
-    this.calls.push({ player, raw });
+  handle(player: string, raw: unknown, options?: IssueOptions): Promise<ChallengeServerMessage> {
+    this.calls.push({ player, raw, ...(options ? { options } : {}) });
     return Promise.resolve(this.answer(raw as { t: string; ref: number }));
   }
 
