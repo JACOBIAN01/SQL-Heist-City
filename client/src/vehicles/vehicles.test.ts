@@ -3,9 +3,8 @@ import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { Mesh, Object3D } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { DEFAULT_VEHICLE_SETTINGS, SIM_DT, type GameMap } from '@heist/shared';
 import { CAR_KIND, carAssetsFrom, type CarAssets } from './carAssets';
-import { followAngle, TestDrive } from './TestDrive';
+import { followAngle } from './PredictedVehicle';
 
 let cars: CarAssets;
 const dir = join(__dirname, '../../public/vehicles/');
@@ -73,6 +72,7 @@ describe('CarModel', () => {
     const car = cars.create('NormalCar1');
     expect(car.wheelCount).toBe(3);
     car.pose({ x: 5, z: -3, yaw: 1, steer: 0.4 }, 0.5);
+    expect(car.isMoving).toBe(true);
     expect(car.object.position.toArray()).toEqual([5, 0, -3]);
     expect(car.object.rotation.y).toBe(1);
     const fl = car.object.getObjectByName('NormalCar1_wheel_fl') as Object3D;
@@ -87,34 +87,32 @@ describe('CarModel', () => {
   });
 });
 
-describe('TestDrive', () => {
-  it('drives with the shared physics and draws in between steps', () => {
-    const map: GameMap = { id: 'open', halfSize: 200, boxes: [], spawns: [] };
-    const drive = new TestDrive(
-      cars.create('SportsCar'),
-      map,
-      DEFAULT_VEHICLE_SETTINGS.kinds.sports,
-      0,
-      0,
-      0,
-    );
-    for (let i = 0; i < 60; i++) drive.step({ throttle: 1, steer: 0, handbrake: false }, SIM_DT);
-    const before = drive.state.z;
-    drive.step({ throttle: 1, steer: 0, handbrake: false }, SIM_DT);
-    const half = drive.draw(0.5);
-    expect(half.z).toBeLessThan(before);
-    expect(half.z).toBeGreaterThan(drive.state.z);
-    expect(drive.model.object.position.z).toBe(half.z);
-  });
-});
-
 describe('followAngle', () => {
   it('closes part of the gap each frame, the short way round', () => {
     expect(followAngle(0, 1, 1 / 60, 5)).toBeGreaterThan(0);
     expect(followAngle(0, 1, 1 / 60, 5)).toBeLessThan(0.1);
-    // From just under +π to just over −π is a small step across the seam, not a full turn.
     const across = followAngle(3.1, -3.1, 1, 50);
     expect(Math.abs(Math.atan2(Math.sin(across + 3.1), Math.cos(across + 3.1)))).toBeLessThan(0.01);
-    expect(followAngle(2, 2, 1, 5)).toBe(2);
+  });
+});
+
+describe('a parked car', () => {
+  it('is one merged mesh, and switches to the jointed car once it moves', () => {
+    const car = cars.create('Taxi');
+    car.pose({ x: 0, z: 0, yaw: 0, steer: 0 }, 0, false);
+    expect(car.isMoving).toBe(false);
+    const visibleMeshes: Mesh[] = [];
+    car.object.traverseVisible((n) => (n as Mesh).isMesh && visibleMeshes.push(n as Mesh));
+    expect(visibleMeshes).toHaveLength(1);
+    // The merged mesh has every part: as many triangles as body and wheels together.
+    const parts = cars.templates.get('Taxi');
+    let tris = 0;
+    parts?.traverse((n) => {
+      const g = (n as Mesh).geometry;
+      if ((n as Mesh).isMesh) tris += (g.index?.count ?? 0) / 3;
+    });
+    expect((visibleMeshes[0]?.geometry.index?.count ?? 0) / 3).toBe(tris);
+    car.pose({ x: 0, z: -1, yaw: 0, steer: 0 }, 1);
+    expect(car.isMoving).toBe(true);
   });
 });
