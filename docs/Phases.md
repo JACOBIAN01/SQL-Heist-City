@@ -27,7 +27,7 @@
 | 7 | Heist loop v1 | ✅ Done |
 | 8 | City, vehicles, atmosphere | ✅ Done |
 | 9 | Banks 2–5, weapons, UX | ✅ Done |
-| 10 | Polish: sound, SQL pop-up, tutorial | 🟦 In progress |
+| 10 | Polish: sound, SQL pop-up, tutorial | 🟨 In review |
 | 11 | Bank design | ⬜ |
 | — | Todo (later): harden & ship | ⬜ |
 
@@ -209,14 +209,14 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 9.9 | Round-end awards screen | awards shown | ✅ six awards tallied from heist events, shown as cards above the final standings (gameplay.md "Round awards") |
 
 ---
-## Phase 10 — Polish: sound, SQL pop-up, tutorial  🟦
+## Phase 10 — Polish: sound, SQL pop-up, tutorial  🟨
 Quick fixes that improve play right away, before the bank work.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 10.1 | Quieter wind | default ambience lower everywhere; the sound board still plays it | ✅ 0.18 → 0.08 (`ambienceVolume`) |
 | 10.2 | Expected output in the SQL pop-up: output columns + a worked example on separate example data (never the real answer) | every challenge shows it; the QA gate passes for all 150 questions | ✅ `ExampleBuilder`; pop-up, admin preview and QA gate show/check it (questions.md "Worked example") |
-| 10.3 | Tutorial: one fixed question per task (heal, gun, vault), same for everyone every run, solution free | every tutorial run asks the same 3 questions; "Show solution" fills the editor at no cost | ⬜ |
+| 10.3 | Tutorial: one fixed question per task (heal, gun, vault), same for everyone every run, solution free | every tutorial run asks the same 3 questions; "Show solution" fills the editor at no cost | ✅ fixed slug + seed per task, `solution` only in tutorial rooms, free hints; admin "Tutorial questions" card (gameplay.md "Tutorial") |
 
 ---
 ## Phase 11 — Bank design  ⬜

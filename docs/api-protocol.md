@@ -24,7 +24,7 @@ Binary frames for high-rate data, JSON frames (`{t, ...}`) for rare messages. Fi
 | `welcome` | once | playerId, matchSeed, config subset, map seed |
 | `snapshot` | 5–20 Hz | tick, ackSeq, quantised entities (id, x,y,z, yaw, state bits, hp bucket) — delta vs last ack |
 | `event` | event | shot, hit, kill, loot, bank, lock_opened, alarm |
-| `challenge` | reply | ref, now, result: `IssueResult` (challenge: id, rewardKey, tier, title, story, schemaSql, tables[name, columns, sampleRows, rowCount], example?{tables[…], output{columns, rows, rowCount}}, columnsMatter, orderMatters, hintCosts[], hintCostMode, expiresAt). `example` is the worked example on separate data (questions.md "Worked example") or a refusal reason |
+| `challenge` | reply | ref, now, result: `IssueResult` (challenge: id, rewardKey, tier, title, story, schemaSql, tables[name, columns, sampleRows, rowCount], example?{tables[…], output{columns, rows, rowCount}}, columnsMatter, orderMatters, solution? (tutorial rooms only: the reference query), hintCosts[], hintCostMode, expiresAt). `example` is the worked example on separate data (questions.md "Worked example") or a refusal reason |
 | `challenge_preview` | reply | ref, now, result: `RunResult` (columns, rows ≤5, truncated) or SQL error feedback / refusal |
 | `challenge_result` | reply | ref, now, result: `SubmitResult` (`correct` / `wrong` + feedback + lockedUntil / `locked` / `rejected`) |
 | `challenge_hint` | reply | ref, now, result: `HintResult` (hint: index, text, cost, costMode, charged — the game deducts `cost` once when `charged`) |
@@ -80,7 +80,7 @@ All routes below are under the `/api` prefix (e.g. `POST /api/auth/login`), so t
 | POST | /questions/:id/preview | teacher+ | `{seeds[], studentSql?}` |
 | POST | /questions/import?dryRun= | teacher+ | JSON or CSV |
 | GET | /questions/export?format= | teacher+ | |
-| GET/PUT | /config/reward-map, /config/settings, /config/combat | admin (settings), teacher (pools) | zod validated |
+| GET/PUT | /config/reward-map, /config/settings, /config/combat, /config/tutorial | admin (settings), teacher (pools) | zod validated |
 | GET/POST/PUT | /pools | teacher+ | |
 | GET/POST/PUT/DELETE | /users | admin | |
 | GET | /analytics/questions | teacher+ | |

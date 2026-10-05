@@ -126,7 +126,8 @@ A new player opens the game with `?tutorial` (normal game pages show a "New here
 - Steps are taken in order, but one done early (a gun before the heal) counts when its turn comes.
 - A glowing beacon and a ring on the minimap mark where the current step happens. The card ticks steps off, and the last one offers a real match.
 - Tutorial heist rules sit on top of the game's own: one lock, $10,000 in the vault, no kill bonus (the targets would hand out cash), and a long round (`TUTORIAL_HEIST_OVERRIDES`).
-- Rooms: at most 40 at once (`maxRooms`), each closed after 30 minutes or when its player leaves. These numbers and the start HP are in `shared/src/config/tutorial.ts`; the steps' words are there too.
+- **Same questions, solution free (Phase 10.3):** the heal, gun and vault tasks each always ask one fixed question (defaults: `t1-staff-roster`, `t1-big-earners`, `t1-dept-staff`), built from a fixed seed, so every player on every run sees the same tables. The pop-up has a "Show solution (free)" button that shows the query and puts it in the editor, and hints cost nothing. Admins pick the three questions on the Settings page ("Tutorial questions"); a missing or disabled one falls back to a normal pick. Ammo refills are issued the normal way.
+- Rooms: at most 40 at once (`maxRooms`), each closed after 30 minutes or when its player leaves. These numbers, the start HP and the fixed questions are tutorial settings (`shared/src/config/tutorial.ts`, settings key `tutorial`); the steps' words are there too.
 
 ## Round awards (Phase 9.9)
 When a round ends, the results card shows the winner, then one card per award somebody earned, then the top 10.
