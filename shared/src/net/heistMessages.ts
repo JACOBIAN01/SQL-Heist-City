@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { WeaponSpec } from '../config/combat';
 import { challengeClientMessageSchema, type ChallengeServerMessage } from './challengeMessages';
 
 /**
@@ -124,6 +125,16 @@ export interface ArmsMessage {
   readonly current: string;
 }
 
+/**
+ * Every gun's numbers, on join and whenever an admin retunes them (at a new
+ * round): the client predicts fire rate and range, zooms and kicks the view
+ * with these, so they must be the server's, not the client's defaults.
+ */
+export interface WeaponsMessage {
+  readonly t: 'weapons';
+  readonly weapons: Readonly<Record<string, WeaponSpec>>;
+}
+
 /** One line of the scoreboard. */
 export interface StandingView {
   readonly id: number;
@@ -191,6 +202,7 @@ export type HeistServerMessage =
   | PurseMessage
   | BankingMessage
   | ArmsMessage
+  | WeaponsMessage
   | ScoresMessage
   | StandingMessage
   | RoundMessage

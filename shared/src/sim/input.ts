@@ -28,6 +28,8 @@ export const Button = {
   Crouch: 2,
   Sprint: 4,
   Fire: 8,
+  /** Right mouse: aim down the sights (tighter spread; the shooter's view zooms). */
+  Aim: 16,
 } as const;
 
 export const hasButton = (buttons: number, button: number): boolean => (buttons & button) !== 0;
