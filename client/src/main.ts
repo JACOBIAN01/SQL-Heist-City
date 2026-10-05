@@ -1,5 +1,6 @@
-import { PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
 import {
+  DEFAULT_AUDIO_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
@@ -11,9 +12,13 @@ import {
   mapById,
   nearestAnchor,
   WEAPON_IDS,
+  Flag,
   type SelfState,
   weaponFromWire,
 } from '@heist/shared';
+import { GameAudio, type HeardCar } from './audio/GameAudio';
+import { GestureAudio } from './audio/GestureAudio';
+import { prepareSounds } from './audio/synth';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { RemotePlayers } from './entities/RemotePlayers';
 import { loadCharacterAssets, gltfCharacterFactory } from './entities/characterAssets';
@@ -132,7 +137,7 @@ const input = new InputSampler();
 input.setLook(spawn.yaw);
 const hint = document.createElement('div');
 hint.textContent =
-  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · 1–5 guns · Esc release mouse';
+  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · 1–5 guns · M mute · Esc release mouse';
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
@@ -198,13 +203,33 @@ const hitboxes = params.has('debug')
   ? new HitboxDebug(scene, DEFAULT_COMBAT_SETTINGS, DEFAULT_MOVEMENT_SETTINGS)
   : undefined;
 const playerName = params.get('name') ?? 'Player';
+// Sound: silent until the first click or key press (browsers insist), then made in code. ?mute starts muted.
+const sound = new GestureAudio(DEFAULT_AUDIO_SETTINGS, undefined, undefined, params.has('mute'));
+prepareSounds((work) =>
+  'requestIdleCallback' in window ? requestIdleCallback(work) : setTimeout(work, 50),
+);
+for (const gesture of ['pointerdown', 'keydown'] as const)
+  window.addEventListener(gesture, () => sound.start());
+const audio = new GameAudio({
+  out: sound,
+  settings: DEFAULT_AUDIO_SETTINGS,
+  vehicles: DEFAULT_VEHICLE_SETTINGS,
+  map: MAP,
+  myId: () => client.playerId,
+  positionOf: (id) => remotes.positionOf(id),
+  weaponOf: (id) => remotes.weaponOf(id),
+});
 const feedback = new CombatFeedback({
   hud,
   tracers,
   map: MAP,
   movement: DEFAULT_MOVEMENT_SETTINGS,
   combat: DEFAULT_COMBAT_SETTINGS,
-  onLocalShot: () => model.fired(),
+  onLocalShot: (weapon) => {
+    model.fired();
+    audio.localShot(weapon);
+  },
+  onDryFire: () => audio.dryFire(),
   myId: () => client.playerId,
   myName: () => playerName,
   nameOf: (id) => remotes.nameOf(id),
@@ -234,12 +259,14 @@ client.subscribe({
     if (myCar) predicted.follow(snapshot.self);
     else predicted.reconcile(snapshot.self, snapshot.ackSeq);
     feedback.onSnapshot(snapshot.self, performance.now() / 1000, snapshot.ackSeq);
+    audio.onHealth(snapshot.self.hp, (snapshot.self.flags & Flag.Alive) !== 0);
     serverClock.observe(snapshot.tick, client.tickRate, performance.now());
     remotes.onSnapshot(serverMs, snapshot.entities, snapshot.removed);
   },
   event: (event) => {
     remotes.onEvent(event);
     feedback.onEvent(event);
+    audio.onEvent(event);
   },
   closed: (reason) => {
     // The server said why (round under way, match full, out of date): show it and stay on screen.
@@ -249,8 +276,10 @@ client.subscribe({
   json: (message) => {
     if (challengeApi.handle(message) || interactions.handle(message)) return;
     if (vehicleControls.handle(message)) return;
-    if (message.t === 'vaults') world.applyVaults(message.vaults);
-    else if (message.t === 'round') roundUi.onRound(message, performance.now());
+    if (message.t === 'vaults') {
+      world.applyVaults(message.vaults);
+      audio.onVaults(message.vaults);
+    } else if (message.t === 'round') roundUi.onRound(message, performance.now());
     else if (message.t === 'scores') roundUi.onScores(message);
     else if (message.t === 'standing') roundUi.onStanding(message);
     else if (message.t === 'arms') {
@@ -260,6 +289,7 @@ client.subscribe({
     else if (message.t === 'loot') loot.apply(message.add, message.remove);
     else if (message.t === 'purse') {
       hud.setPurse(message.carried, message.banked);
+      audio.onPurse(message.carried, message.banked);
       player.speedScale = message.speed;
       model.setCarrying(message.carried > 0 || params.has('bag'));
     } else if (message.t === 'notice') hud.toast(message.text);
@@ -332,6 +362,7 @@ new Hotkeys()
     sqlTasks.pick();
   })
   .hold('KeyB', (down) => scoreboard.setBoardVisible(down))
+  .bind(['KeyM'], () => hud.toast(sound.toggleMute() ? 'Sound off (M)' : 'Sound on (M)'))
   .bind(['KeyF'], () => {
     if (!feedback.isAlive) return;
     // A lift, vault or safehouse in reach comes first; otherwise F is for cars.
@@ -418,6 +449,17 @@ overlay.style.cssText =
 document.body.appendChild(overlay);
 
 const drawPos = { x: 0, y: 0, z: 0 };
+const earForward = new Vector3();
+const earUp = new Vector3();
+/** Cars as audio hears them: the one you drive where your prediction has it, the rest as last sent. */
+function* heardCars(): Iterable<HeardCar> {
+  for (const car of vehicles.states()) {
+    if (myCar && car.id === myCar.id) {
+      const { x, z, speed } = myCar.state;
+      yield { ...car, x, z, speed };
+    } else yield car;
+  }
+}
 let last = performance.now();
 let lastOverlay = 0;
 renderer.setAnimationLoop((now) => {
@@ -507,6 +549,24 @@ renderer.setAnimationLoop((now) => {
     if (cityKit) setNightGlow(cityKit.materials, lighting.state.night);
     if (carAssets) carAssets.nightGlow.value = lighting.state.night;
   }
+  camera.getWorldDirection(earForward);
+  earUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  audio.update({
+    dt: frameMs / 1000,
+    listener: { at: camera.position, forward: earForward, up: earUp },
+    me: {
+      x: player.body.x,
+      y: player.body.y,
+      z: player.body.z,
+      onGround: player.body.onGround,
+      crouching: player.body.crouching,
+      alive: feedback.isAlive,
+      driving: !!myCar,
+    },
+    others: remotes.poses(),
+    drivers: driverIds,
+    cars: heardCars(),
+  });
   lighting.frame(camera);
   lighting.follow(myCar ? myCar.model.object : model.object);
   postFx.render(scene, camera);

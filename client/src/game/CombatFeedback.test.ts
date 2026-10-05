@@ -12,6 +12,8 @@ import {
 import { CombatFeedback } from './CombatFeedback';
 
 function setup() {
+  const shots: string[] = [];
+  let dry = 0;
   const hud = {
     setHealth: vi.fn(),
     setProtected: vi.fn(),
@@ -37,8 +39,10 @@ function setup() {
     myName: () => 'Me',
     nameOf: (id) => `P${id}`,
     positionOf: (id) => (id === 2 ? { x: 5, y: 0, z: 5 } : undefined),
+    onLocalShot: (weapon) => shots.push(weapon),
+    onDryFire: () => dry++,
   });
-  return { hud, tracers, feedback };
+  return { hud, tracers, feedback, shots, dryFires: () => dry };
 }
 
 const self = (over: Partial<SelfState> = {}): SelfState => ({
@@ -162,11 +166,20 @@ describe('CombatFeedback ammo and weapons', () => {
   });
 
   it('draws no trail with an empty magazine, and shows the rounds left', () => {
-    const { feedback, tracers, hud } = setup();
+    const { feedback, tracers, hud, shots, dryFires } = setup();
     feedback.onSnapshot(self({ weapon: 4, ammo: 0 }), 0);
     expect(hud.setAmmo).toHaveBeenLastCalledWith(0);
     feedback.onLocalCommand(firing(), { x: 0, y: 0, z: 0, crouching: false });
     expect(tracers).toHaveLength(0);
+    expect(shots).toEqual([]);
+    expect(dryFires()).toBe(1); // click
+  });
+
+  it('reports each shot fired with the gun in hand (for the bang)', () => {
+    const { feedback, shots } = setup();
+    feedback.onSnapshot(self({ weapon: 4, ammo: 5 }), 0);
+    feedback.onLocalCommand(firing(), body);
+    expect(shots).toEqual(['rifle']);
   });
 
   it('stops drawing trails once the shots already sent would empty the magazine', () => {

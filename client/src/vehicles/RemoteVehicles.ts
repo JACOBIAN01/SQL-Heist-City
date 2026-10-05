@@ -111,6 +111,11 @@ export class RemoteVehicles {
     return { [Symbol.iterator]: () => this.solid.values() };
   }
 
+  /** Every car's newest state from the server. */
+  *states(): IterableIterator<VehicleWire> {
+    for (const { latest } of this.cars.values()) yield latest;
+  }
+
   /** Players at the wheel of a car: their bodies are hidden inside it. */
   drivers(out: Set<number>): Set<number> {
     out.clear();

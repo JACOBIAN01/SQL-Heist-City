@@ -422,8 +422,33 @@ const RECIPES: Readonly<Record<SoundName, (rng: Rng) => Float32Array>> = {
   alarm,
 };
 
-/** Every variation of one sound, the same on every call (seeded by name and variation). */
+const made = new Map<SoundName, Float32Array[]>();
+
+/** Every variation of one sound, the same on every call (seeded by name and variation; made once). */
 export function synthesise(name: SoundName): Float32Array[] {
-  const seedBase = [...name].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619), 2166136261);
-  return Array.from({ length: VARIANTS[name] }, (_, v) => RECIPES[name](seeded(seedBase + v)));
+  let list = made.get(name);
+  if (!list) {
+    const seedBase = [...name].reduce(
+      (h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619),
+      2166136261,
+    );
+    list = Array.from({ length: VARIANTS[name] }, (_, v) => RECIPES[name](seeded(seedBase + v)));
+    made.set(name, list);
+  }
+  return list;
+}
+
+/**
+ * Makes every sound ahead of time, one per idle moment (~90 ms in all), so
+ * the first click that turns sound on does not stall a frame.
+ */
+export function prepareSounds(schedule: (work: () => void) => void): void {
+  const queue = [...SOUND_NAMES];
+  const next = () => {
+    const name = queue.shift();
+    if (!name) return;
+    synthesise(name);
+    schedule(next);
+  };
+  schedule(next);
 }

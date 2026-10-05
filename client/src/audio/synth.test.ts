@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { SynthSoundBank, type BufferFactory } from './SoundBank';
-import { LOOPS, SOUND_NAMES, SYNTH_RATE, synthesise, VARIANTS, type SoundName } from './synth';
+import {
+  LOOPS,
+  prepareSounds,
+  SOUND_NAMES,
+  SYNTH_RATE,
+  synthesise,
+  VARIANTS,
+  type SoundName,
+} from './synth';
 
 const all = new Map<SoundName, Float32Array[]>(SOUND_NAMES.map((n) => [n, synthesise(n)]));
 const peak = (pcm: Float32Array) => pcm.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
@@ -25,7 +33,9 @@ describe('synthesised sounds', () => {
   });
 
   it('is the same on every load, and varies between variations', () => {
-    expect(synthesise('step-concrete')).toEqual(all.get('step-concrete'));
+    const fresh = synthesise('step-concrete');
+    expect(fresh).toBe(all.get('step-concrete')); // made once
+    expect(fresh).toEqual(all.get('step-concrete'));
     const [a, b] = all.get('step-concrete') ?? [];
     expect(a).not.toEqual(b);
   });
@@ -72,6 +82,19 @@ describe('synthesised sounds', () => {
     let total = 0;
     for (const list of all.values()) for (const pcm of list) total += pcm.length;
     expect(total * 4).toBeLessThan(2.5e6);
+  });
+});
+
+describe('prepareSounds', () => {
+  it('makes one sound per idle slot until all are made', () => {
+    const slots: (() => void)[] = [];
+    prepareSounds((work) => slots.push(work));
+    let ran = 0;
+    while (slots.length) {
+      (slots.shift() as () => void)();
+      ran++;
+    }
+    expect(ran).toBe(SOUND_NAMES.length + 1); // the last slot finds nothing left
   });
 });
 

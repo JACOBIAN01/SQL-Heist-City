@@ -65,6 +65,11 @@ export class RemotePlayers {
     return this.remotes.get(id)?.position;
   }
 
+  /** The gun another player holds (wire number, 0 = none), as last drawn. */
+  weaponOf(id: number): number {
+    return this.remotes.get(id)?.weapon ?? 0;
+  }
+
   nameOf(id: number): string {
     return this.remotes.get(id)?.name ?? this.names.get(id) ?? `Player ${id}`;
   }

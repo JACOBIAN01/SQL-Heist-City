@@ -78,6 +78,11 @@ const param = () => new FakeParam();
 
 export class FakeAudioContext {
   currentTime = 0;
+  state: 'suspended' | 'running' = 'suspended';
+  resume(): Promise<void> {
+    this.state = 'running';
+    return Promise.resolve();
+  }
   readonly destination = new FakeNode('destination');
   readonly sources: FakeSource[] = [];
   readonly panners: FakePanner[] = [];
