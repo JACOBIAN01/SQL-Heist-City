@@ -53,7 +53,12 @@ describe('event feed', () => {
     match.heist.setCash(a.player, 30_000);
     match.heist.banking.start(a.player, pad);
     for (let i = 0; i < DEFAULT_HEIST_SETTINGS.bankingSeconds * 20 + 2; i++) match.step();
-    expect(feed(b.connection)).toContainEqual({ kind: 'banked', name: 'Ana', amount: 30_000 });
+    expect(feed(b.connection)).toContainEqual({
+      kind: 'banked',
+      id: a.player.id,
+      name: 'Ana',
+      amount: 30_000,
+    });
   });
 });
 
@@ -68,6 +73,7 @@ describe('bounties', () => {
     match.step();
     expect(feed(b.connection)).toContainEqual({
       kind: 'wanted',
+      id: a.player.id,
       name: 'Ana',
       cash: rich,
       reward: DEFAULT_HEIST_SETTINGS.bountyReward,
@@ -104,7 +110,9 @@ describe('bounties', () => {
     );
     expect(feed(b.connection)).toContainEqual({
       kind: 'bounty_claimed',
+      killerId: b.player.id,
       killer: 'Ben',
+      victimId: a.player.id,
       victim: 'Ana',
       reward: DEFAULT_HEIST_SETTINGS.bountyReward,
     });

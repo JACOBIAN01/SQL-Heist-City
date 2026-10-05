@@ -43,13 +43,26 @@ export class FeedReporter {
           tier: event.vault.spec.tier,
         };
       case 'banked':
-        return { kind: 'banked', name: event.player.name, amount: event.amount };
+        return {
+          kind: 'banked',
+          id: event.player.id,
+          name: event.player.name,
+          amount: event.amount,
+        };
       case 'wanted':
-        return { kind: 'wanted', name: event.player.name, cash: event.cash, reward: event.reward };
+        return {
+          kind: 'wanted',
+          id: event.player.id,
+          name: event.player.name,
+          cash: event.cash,
+          reward: event.reward,
+        };
       case 'bounty_claimed':
         return {
           kind: 'bounty_claimed',
+          killerId: event.killer.id,
           killer: event.killer.name,
+          victimId: event.victim.id,
           victim: event.victim.name,
           reward: event.reward,
         };

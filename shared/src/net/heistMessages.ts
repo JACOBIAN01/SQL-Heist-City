@@ -188,16 +188,19 @@ export type FeedItem =
       readonly bank: string;
       readonly tier: number;
     }
-  | { readonly kind: 'banked'; readonly name: string; readonly amount: number }
+  | { readonly kind: 'banked'; readonly id: number; readonly name: string; readonly amount: number }
   | {
       readonly kind: 'wanted';
+      readonly id: number;
       readonly name: string;
       readonly cash: number;
       readonly reward: number;
     }
   | {
       readonly kind: 'bounty_claimed';
+      readonly killerId: number;
       readonly killer: string;
+      readonly victimId: number;
       readonly victim: string;
       readonly reward: number;
     };
