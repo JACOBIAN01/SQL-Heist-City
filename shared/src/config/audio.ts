@@ -10,8 +10,16 @@ import { z } from 'zod';
 export const audioSettingsSchema = z.object({
   /** Overall volume, 0–1. */
   volume: z.number().min(0).max(1).default(0.8),
-  /** Within this distance (m) a sound plays at full volume; beyond it, it fades. */
+  /**
+   * Within this distance (m) a sound plays at full volume; beyond it, it
+   * fades. Footsteps and small sounds use `refDistance`; louder things reach
+   * further before fading.
+   */
   refDistance: z.number().positive().default(3),
+  shotReach: z.number().positive().default(18),
+  engineReach: z.number().positive().default(6),
+  crashReach: z.number().positive().default(10),
+  alarmReach: z.number().positive().default(14),
   /** How quickly sounds fade with distance (inverse-distance rolloff). */
   rolloff: z.number().positive().default(1.1),
   /** Beyond these distances (m) a sound is not played at all. */

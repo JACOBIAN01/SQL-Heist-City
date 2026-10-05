@@ -13,6 +13,8 @@ export interface PlayOptions {
   readonly at?: Point;
   /** Beyond this (m) it is not played at all. */
   readonly range?: number;
+  /** Full volume within this (m), fading beyond; default the settings' refDistance. Loud things reach further. */
+  readonly reach?: number;
   readonly volume?: number;
   /** Playback speed: 1 as made, higher is faster and higher-pitched. */
   readonly rate?: number;
@@ -43,9 +45,9 @@ export interface AudioOut {
 }
 
 /** How loud a sound `distance` m away is, 0–1: the inverse-distance fade the panners use. */
-export function distanceGain(distance: number, s: AudioSettings): number {
-  const d = Math.max(distance, s.refDistance);
-  return s.refDistance / (s.refDistance + s.rolloff * (d - s.refDistance));
+export function distanceGain(distance: number, s: AudioSettings, reach = s.refDistance): number {
+  const d = Math.max(distance, reach);
+  return reach / (reach + s.rolloff * (d - reach));
 }
 
 interface Voice {
@@ -184,7 +186,7 @@ export class AudioEngine implements AudioOut {
       options.at.z - this.listener.z,
     );
     if (options.range !== undefined && d > options.range) return 0;
-    return volume * distanceGain(d, this.settings);
+    return volume * distanceGain(d, this.settings, options.reach);
   }
 
   private buffer(name: SoundName, variation: number | undefined): AudioBuffer | undefined {
@@ -208,7 +210,7 @@ export class AudioEngine implements AudioOut {
       panner = ctx.createPanner();
       panner.panningModel = 'equalpower';
       panner.distanceModel = 'inverse';
-      panner.refDistance = this.settings.refDistance;
+      panner.refDistance = options.reach ?? this.settings.refDistance;
       panner.rolloffFactor = this.settings.rolloff;
       panner.maxDistance = options.range ?? 10_000;
       place(panner, options.at);
