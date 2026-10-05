@@ -117,13 +117,15 @@ export class RemotePlayers {
     dtSeconds: number,
     baseDelayMs: number,
     viewer?: { readonly x: number; readonly z: number },
+    /** Players not drawn (drivers, inside their cars). */
+    hidden?: ReadonlySet<number>,
   ): void {
-    for (const remote of this.remotes.values()) {
+    for (const [id, remote] of this.remotes) {
       const delay = Math.max(baseDelayMs, remote.buffer.averageIntervalMs * 1.5);
       const pose = remote.buffer.sample(serverTimeMs - delay);
       if (!pose) continue;
       const alive = (pose.flags & Flag.Alive) !== 0;
-      remote.model.object.visible = alive;
+      remote.model.object.visible = alive && !hidden?.has(id);
       remote.model.object.position.set(pose.x, pose.y, pose.z);
       remote.position = { x: pose.x, y: pose.y, z: pose.z };
       remote.flags = pose.flags;

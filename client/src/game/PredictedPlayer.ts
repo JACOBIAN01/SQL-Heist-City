@@ -40,6 +40,26 @@ export class PredictedPlayer {
     if (this.pending.length > MAX_PENDING) this.pending.shift();
   }
 
+  /**
+   * Take the server's state as it is, with nothing to replay: while driving the
+   * body only rides in the car, and the car is what is predicted.
+   */
+  follow(server: SelfState): void {
+    this.pending = [];
+    this.offset = { x: 0, y: 0, z: 0 };
+    this.lastCorrection = 0;
+    this.player.loadState({
+      x: server.x,
+      y: server.y,
+      z: server.z,
+      vx: server.vx,
+      vy: server.vy,
+      vz: server.vz,
+      onGround: (server.flags & Flag.OnGround) !== 0,
+      crouching: (server.flags & Flag.Crouching) !== 0,
+    });
+  }
+
   /** Commands to send that the server has not acknowledged yet are exactly `pending`. */
   reconcile(server: SelfState, ackSeq: number): void {
     const body = this.player.body;

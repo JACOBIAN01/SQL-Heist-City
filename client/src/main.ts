@@ -4,8 +4,6 @@ import {
   DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
   DEFAULT_VEHICLE_SETTINGS,
-  controlsOf,
-  idleCommand,
   hourAt,
   SIM_DT,
   TEST_MAP,
@@ -46,8 +44,10 @@ import { Tracers } from './render/Tracers';
 import { Hud } from './ui/hud/Hud';
 import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
-import { CAR_KIND, loadCarAssets, type CarAssets } from './vehicles/carAssets';
-import { followAngle, TestDrive } from './vehicles/TestDrive';
+import { loadCarAssets, type CarAssets } from './vehicles/carAssets';
+import { followAngle, PredictedVehicle } from './vehicles/PredictedVehicle';
+import { RemoteVehicles } from './vehicles/RemoteVehicles';
+import { VehicleControls } from './vehicles/VehicleControls';
 import { FrameBudget, lowerLevel, PostFx } from './render/PostFx';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
@@ -171,6 +171,21 @@ const createRig: CharacterFactory = assets
         thresholds,
       );
 const remotes = new RemotePlayers(scene, createRig);
+// Cars: the server owns them; this draws them, and predicts the one you drive.
+const vehicles = new RemoteVehicles(scene, DEFAULT_VEHICLE_SETTINGS);
+let myCar: PredictedVehicle | undefined;
+let carAssets: CarAssets | undefined;
+/** What movement collides with right now (vault doors change it); the driven car uses it too. */
+let collisionMap = MAP;
+const driverIds = new Set<number>();
+if (MAP.parkedCars?.length)
+  loadCarAssets()
+    .then((cars) => {
+      carAssets = cars;
+      cars.nightGlow.value = lighting.state.night;
+      vehicles.setAssets(cars);
+    })
+    .catch((error: unknown) => console.warn('car models unavailable', error));
 const serverClock = new SnapshotClock();
 const hud = new Hud(document.body);
 const bankingProgress = new BankingProgress(hud);
@@ -211,14 +226,15 @@ client.subscribe({
       const id = WEAPON_IDS[heldWeapon - 1];
       model.holdItem(id ? createGun(id) : undefined);
     }
-    predicted.reconcile(snapshot.self, snapshot.ackSeq);
+    const serverMs = (snapshot.tick * 1000) / client.tickRate;
+    vehicles.onSnapshot(serverMs, snapshot.vehicles, snapshot.vehiclesRemoved);
+    syncOwnCar(snapshot.self.vehicle, snapshot.ackSeq);
+    // At the wheel the body just rides along; on foot it is predicted and reconciled.
+    if (myCar) predicted.follow(snapshot.self);
+    else predicted.reconcile(snapshot.self, snapshot.ackSeq);
     feedback.onSnapshot(snapshot.self, performance.now() / 1000, snapshot.ackSeq);
     serverClock.observe(snapshot.tick, client.tickRate, performance.now());
-    remotes.onSnapshot(
-      (snapshot.tick * 1000) / client.tickRate,
-      snapshot.entities,
-      snapshot.removed,
-    );
+    remotes.onSnapshot(serverMs, snapshot.entities, snapshot.removed);
   },
   event: (event) => {
     remotes.onEvent(event);
@@ -231,6 +247,7 @@ client.subscribe({
   },
   json: (message) => {
     if (challengeApi.handle(message) || interactions.handle(message)) return;
+    if (vehicleControls.handle(message)) return;
     if (message.t === 'vaults') world.applyVaults(message.vaults);
     else if (message.t === 'round') roundUi.onRound(message, performance.now());
     else if (message.t === 'scores') roundUi.onScores(message);
@@ -283,6 +300,8 @@ const sqlTasks = new SqlPanelController({
 });
 // A vault door opening changes what everyone collides with.
 world.onChange((map, closedDoors) => {
+  collisionMap = map;
+  myCar?.setMap(map);
   player.setMap(map);
   rig.setMap(map);
   carRig.setMap(map);
@@ -313,7 +332,10 @@ new Hotkeys()
   })
   .hold('KeyB', (down) => scoreboard.setBoardVisible(down))
   .bind(['KeyF'], () => {
-    if (feedback.isAlive) void interactions.use();
+    if (!feedback.isAlive) return;
+    // A lift, vault or safehouse in reach comes first; otherwise F is for cars.
+    if (vehicleControls.available && !interactions.hasTarget) void vehicleControls.use();
+    else void interactions.use();
   })
   .bind(['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'], (code) => {
     const weapon = WEAPON_IDS[Number(code.slice(-1)) - 1];
@@ -321,31 +343,43 @@ new Hotkeys()
   });
 const batcher = new InputBatcher((commands) => client.sendInput(commands));
 
-// ?drive[=Taxi|SportsCar|SUV|…] tries driving: a car on your spawn street, simulated locally
-// with the shared physics. Entering, leaving and other players seeing it come in 8.8.
-const driveParam = params.get('drive');
-let testDrive: TestDrive | undefined;
-let carAssets: CarAssets | undefined;
-if (driveParam !== null)
-  loadCarAssets()
-    .then((cars) => {
-      carAssets = cars;
-      cars.nightGlow.value = lighting.state.night;
-      const id = cars.templates.has(driveParam) ? driveParam : 'NormalCar1';
-      const spec = DEFAULT_VEHICLE_SETTINGS.kinds[CAR_KIND[id] ?? 'sedan'];
-      const car = cars.create(id);
-      scene.add(car.object);
-      testDrive = new TestDrive(car, MAP, spec, spawn.x, spawn.z, spawn.yaw);
-    })
-    .catch((error: unknown) => console.warn('cars unavailable', error));
+/** Starts, keeps or stops predicting the car the server says you drive. */
+function syncOwnCar(id: number, ackSeq: number): void {
+  vehicles.ownId = id;
+  if (!id) {
+    myCar = undefined;
+    chaseYaw = undefined;
+    return;
+  }
+  const server = vehicles.latest(id);
+  const model = vehicles.modelOf(id);
+  if (!server || !model) return;
+  if (myCar?.id === id) myCar.reconcile(server, ackSeq);
+  else {
+    myCar = new PredictedVehicle(
+      id,
+      model,
+      collisionMap,
+      DEFAULT_VEHICLE_SETTINGS.kinds[server.kind],
+      server,
+    );
+    chaseYaw = server.yaw;
+  }
+}
+
+const vehicleControls = new VehicleControls({
+  send: (message) => client.sendJson(message),
+  view: hud,
+  vehicles,
+});
 
 // Move now (prediction); the server confirms or corrects later. Offline play still works.
 const loop = new FixedStepLoop(SIM_DT, () => {
   const command = input.sample();
-  if (testDrive) {
-    // The stick drives the car; the player on foot stands still (the server still hears from us).
-    testDrive.step(controlsOf(command), SIM_DT);
-    batcher.push(idleCommand(command.seq, command.yaw));
+  if (myCar && feedback.isAlive) {
+    // At the wheel the stick drives the car, here at once and on the server from the same command.
+    myCar.predict(command);
+    batcher.push(command);
     return;
   }
   // Dead players do not move (the server ignores their input too); keep sending so it can acknowledge it.
@@ -407,13 +441,28 @@ renderer.setAnimationLoop((now) => {
   roundUi.update(now);
   hitboxes?.update(remotes.poses());
   if (serverClock.ready)
-    remotes.update(serverClock.serverTimeAt(now), frameMs / 1000, INTERP_DELAY_MS, camera.position);
+    remotes.update(
+      serverClock.serverTimeAt(now),
+      frameMs / 1000,
+      INTERP_DELAY_MS,
+      camera.position,
+      vehicles.drivers(driverIds),
+    );
+  if (serverClock.ready)
+    vehicles.update(serverClock.serverTimeAt(now), INTERP_DELAY_MS, camera.position);
 
   predicted.drawPosition(loop.alpha, drawPos);
   cityArt?.update(camera.position.x, camera.position.z);
-  interactions.update(player.body.x, player.body.y, player.body.z, feedback.isAlive);
-  model.object.visible = feedback.isAlive && !testDrive;
-  const driven = testDrive?.draw(loop.alpha);
+  interactions.update(player.body.x, player.body.y, player.body.z, feedback.isAlive && !myCar);
+  vehicleControls.update(
+    player.body.x,
+    player.body.z,
+    !!myCar,
+    feedback.isAlive,
+    interactions.hasTarget,
+  );
+  model.object.visible = feedback.isAlive && !myCar;
+  const driven = myCar?.draw(loop.alpha, frameMs / 1000);
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
   model.object.rotation.y = input.currentYaw + debugTurn;
   model.setAimPitch(input.currentPitch);
@@ -458,7 +507,7 @@ renderer.setAnimationLoop((now) => {
     if (carAssets) carAssets.nightGlow.value = lighting.state.night;
   }
   lighting.frame(camera);
-  lighting.follow(testDrive ? testDrive.model.object : model.object);
+  lighting.follow(myCar ? myCar.model.object : model.object);
   postFx.render(scene, camera);
 
   if (now - lastOverlay > 500) {

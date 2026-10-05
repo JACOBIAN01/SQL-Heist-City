@@ -59,6 +59,11 @@ export class Interactions {
     this.rpc = new JsonRpc((m) => deps.send(m), 5_000);
   }
 
+  /** True while an anchor is offered (other F actions, such as cars, then wait). */
+  get hasTarget(): boolean {
+    return this.current !== undefined;
+  }
+
   /** Call each frame (or tick) with the local player's position and whether they can act. */
   update(x: number, y: number, z: number, enabled: boolean): void {
     const anchor = enabled ? nearestAnchor(this.deps.map, x, y, z) : undefined;
