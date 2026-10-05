@@ -63,3 +63,24 @@ Alarm/bounty markers, killfeed, day/night (night = reduced visibility), vault pr
 
 ## Tuning
 Tier 1 ≈ 30–60 s, tier 5 ≈ 4–6 min. Admin analytics show real medians; teachers retune tiers, not code.
+
+## Vehicles (Phase 8.7)
+**Physics:** `stepVehicle` (`shared/src/sim/vehicle.ts`) is shared and deterministic like `stepBody`, so the server can own cars in 8.8 and clients can predict them.
+- **Steering:** a bicycle model: yaw rate = speed · tan(wheel angle) / wheelbase. The wheels turn toward the stick at `steerSpeed`, and the full lock shrinks to `highSpeedSteer` at top speed.
+- **Pedals:** pressing against the motion brakes first, then drives the other way. Coasting slows the car; Jump is the handbrake.
+- **Collision:** the car's footprint (an oriented rectangle) is pushed out of map boxes by the separating-axis test.
+  - Boxes lower than 0.3 m (kerbs) are driven over.
+  - A head-on hit bounces the car back with `bounce` × its speed.
+  - A glancing hit scrapes along the wall, losing some speed.
+
+**Kinds:** the numbers per kind (`sedan`, `sports`, `suv`) are in `VehicleSettings` (`shared/src/config/vehicles.ts`, defaults only).
+
+| | top speed | accel | brake | full lock | footprint |
+|---|---|---|---|---|---|
+| sedan | 20 m/s (72 km/h) | 7 m/s² | 16 m/s² | 0.6 rad | 4.2 × 1.8 m |
+| sports | 26 m/s | 10 | 20 | 0.55 | 4.0 × 1.85 |
+| suv | 17 m/s | 6 | 14 | 0.6 | 4.2 × 2.1 |
+
+**Models:** Quaternius *Cars* (CC0): NormalCar1/2, Taxi and Cop are sedans; SportsCar and SportsCar2 are sports; SUV is an SUV (`CAR_KIND`, client). The pack has no motorbike, which 8.9 must find or build.
+
+**Try it:** `?drive` (or `?drive=SportsCar` and so on) puts you in a car on your spawn street. The car is simulated locally for now: W/S throttle and brake, A/D steer, Space handbrake, with a chase camera. Lamps glow at night. While you drive, the server keeps you standing on foot. 8.8 adds getting in and out, server ownership and other players seeing the car.
