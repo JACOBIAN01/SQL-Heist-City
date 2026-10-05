@@ -8,6 +8,7 @@ import type { BankLayout } from './BankLayout';
 import { BANK_2 } from './bank2';
 import { BANK_3 } from './bank3';
 import { BANK_4 } from './bank4';
+import { BANK_5 } from './bank5';
 import { BANK_LAYOUTS, bankFootprint } from './banks';
 import { compileBankWorld, validateBank } from './compileBank';
 
@@ -259,5 +260,49 @@ describe('Bank 4 "Grand Reserve"', () => {
     expect(atCounter.y).toBeLessThan(0.1);
     expect(atCounter.z).toBeGreaterThan(-1.5);
     expect(atCounter.z).toBeLessThan(0);
+  });
+});
+
+describe('Bank 5 "Federal Vault"', () => {
+  const map = lone(BANK_5);
+  const outside = () => createBody(0, 0, 22);
+  // Up the west core: lane A to the back landing, lane B forward, lane A again → storey 3.
+  const toStorey3: [number, number][] = [
+    [0, 11],
+    [-7, 6],
+    [-12, -6], // foot of a lane-A flight
+    [-12, -13.2], // the back landing
+    [-9.5, -13.2], // foot of lane B, a metre off the back wall
+    [-9.5, -7],
+    [-9.5, -6],
+    [-12, -6],
+    [-12, -13.2],
+  ];
+  // Across the trading floor to the front-east core, up lane A to the front landing, back down lane B.
+  const toTop: [number, number][] = [
+    ...toStorey3,
+    [-9, -11],
+    [8, -7],
+    [12, 6],
+    [12, 13.2], // the front landing (storey 4)
+    [9.5, 13.2], // foot of lane B
+    [9.5, 7],
+  ];
+
+  it('climbs only to storey 3 up the west stairs', () => {
+    expect(route(map, toStorey3, outside()).y).toBeCloseTo(9, 1);
+  });
+
+  it('reaches the top only by crossing storey 3 to the east stairs', () => {
+    expect(route(map, toTop, outside()).y).toBeCloseTo(15, 1);
+    // Staying in the west corner and walking on up gets you nowhere higher.
+    const stuck = route(map, [...toStorey3, [-9.5, -13.2], [-9.5, -6]], outside());
+    expect(stuck.y).toBeCloseTo(9, 1);
+  });
+
+  it('puts the console in the anteroom, through its open door', () => {
+    const body = route(map, [...toTop, [0, 4], [0, -3.4]], outside());
+    expect(body.y).toBeCloseTo(15, 1);
+    expect(Math.hypot(body.x, body.z + 3.4)).toBeLessThan(0.5);
   });
 });

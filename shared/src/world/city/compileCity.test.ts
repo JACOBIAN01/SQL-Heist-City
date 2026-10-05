@@ -77,13 +77,21 @@ describe('compileCity', () => {
     expect(map.doors).toHaveLength(BANK_LAYOUTS.size);
   });
 
-  it('stands a closed building on bank sites that have no layout yet', () => {
+  it('stands a closed building on a bank site that has no layout', () => {
     const site = city.banks.find((b) => b.tier === 3);
-    const shell = map.boxes.find(
-      (b) =>
-        b.kind === 'shell' && b.minX === (site?.x ?? 0) - (site?.width ?? 0) / 2 && b.minY === 0,
-    );
-    expect(shell).toBeDefined();
+    if (!site) throw new Error('no tier-3 site');
+    const without3 = new Map([...BANK_LAYOUTS].filter(([tier]) => tier !== 3));
+    const shellAt = (m: GameMap) =>
+      m.boxes.find(
+        (b) =>
+          b.kind === 'shell' &&
+          b.minX === site.x - site.width / 2 &&
+          b.maxX === site.x + site.width / 2 &&
+          b.minY === 0,
+      );
+    expect(shellAt(compileCity('city:closed', city, without3))).toBeDefined();
+    expect(shellAt(map)).toBeUndefined(); // every tier has a layout now
+    expect(map.vaults).toHaveLength(5);
   });
 
   it('keeps the streets clear: no collider stands on the asphalt', () => {
