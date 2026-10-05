@@ -239,8 +239,14 @@ export class HeistController implements ArmsControl {
         anchor: message.anchor,
         result: this.roundOver
           ? { action: 'denied', reason: 'round_over' }
-          : this.interactions.use(player, message.anchor),
+          : player.vehicleId !== 0
+            ? { action: 'denied', reason: 'not_available' } // no banking or lifts from a car
+            : this.interactions.use(player, message.anchor),
       });
+      return;
+    }
+    if (message.t === 'vehicle') {
+      this.match.sendJson(player, this.match.vehicleRequest(player, message));
       return;
     }
     if (message.t === 'equip') {

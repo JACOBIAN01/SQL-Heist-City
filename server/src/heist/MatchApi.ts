@@ -1,4 +1,10 @@
-import type { GameMap, JsonServerMessage, WeaponSpec } from '@heist/shared';
+import type {
+  GameMap,
+  JsonServerMessage,
+  VehicleMessage,
+  VehicleReply,
+  WeaponSpec,
+} from '@heist/shared';
 import type { Player } from '../game/Player';
 
 /**
@@ -28,4 +34,6 @@ export interface MatchApi {
   resetPlayersForRound(): void;
   /** Moves a player instantly (elevators); their velocity is cleared. */
   teleport(player: Player, x: number, y: number, z: number): void;
+  /** Get into or out of a car; the match checks range, speed and room to step out. */
+  vehicleRequest(player: Player, message: VehicleMessage): VehicleReply;
 }

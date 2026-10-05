@@ -57,6 +57,10 @@ export class Player {
   pendingCount = 0;
   /** Marks "already got this shot" while a shot event is delivered. */
   shotStamp = 0;
+  /** The car this player drives, 0 on foot. */
+  vehicleId = 0;
+  /** Cars this client has been told about (so cars leaving its range can be removed). */
+  readonly knownVehicles = new Set<number>();
   /** Earliest tick this player may use an anchor again. */
   interactReadyTick = 0;
   /** Cash on the player: dropped as a bag on death, banked at a safehouse. */

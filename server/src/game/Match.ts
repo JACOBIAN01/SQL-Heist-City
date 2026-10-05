@@ -2,6 +2,11 @@ import {
   Button,
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
+  DEFAULT_VEHICLE_SETTINGS,
+  colliderGridFor,
+  controlsOf,
+  distanceToCar,
+  exitSpots,
   Flag,
   PROTOCOL_VERSION,
   SIM_DT,
@@ -31,7 +36,13 @@ import {
   type SnapshotMessage,
   type WeaponSpec,
   type SpawnPoint,
+  type Aabb,
+  type VehicleMessage,
+  type VehicleReply,
+  type VehicleSettings,
+  type VehicleWire,
 } from '@heist/shared';
+import { VehicleFleet, type Vehicle } from './VehicleFleet';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import { HeistController } from '../heist/HeistController';
 import type { MatchApi } from '../heist/MatchApi';
@@ -59,6 +70,7 @@ export interface MatchDeps {
   readonly movement?: MovementSettings;
   readonly combat?: CombatSettings;
   readonly heist?: HeistSettings;
+  readonly vehicles?: VehicleSettings;
   /** SQL tasks; without it every task request is answered "unavailable". */
   readonly challenges?: ChallengeGateway;
   /** Seeds bullet spread so a match is reproducible in tests. */
@@ -87,6 +99,12 @@ export class Match implements MatchApi {
   private readonly combat: CombatSettings;
   /** The heist rules (vaults, loot, tasks); public so tests and tools can drive them. */
   readonly heist: HeistController;
+  /** Every car in the match; the server drives them (docs/gameplay.md "Vehicles"). */
+  readonly vehicles: VehicleFleet;
+  private readonly vehicleScratch: VehicleWire[] = [];
+  private readonly vehicleRemoved: number[] = [];
+  private readonly inRange = new Set<number>();
+  private readonly nearBoxes: Aabb[] = [];
   /** The map as it stands (open vault doors change it); the base map is `deps.map`. */
   private collisionMap: GameMap;
   /** The map as the respawn picker sees it: hospital spots in place of street spawns, when there are any. */
@@ -97,7 +115,7 @@ export class Match implements MatchApi {
   private readonly scratchIds: number[] = [];
   private readonly scratchRemoved: number[] = [];
   private readonly entityPool: Mutable<EntityState>[] = [];
-  private readonly snapshotCounts = { entities: 0, removed: 0 };
+  private readonly snapshotCounts = { entities: 0, removed: 0, vehicles: 0, vehiclesRemoved: 0 };
   private readonly snapshotMessage: Mutable<SnapshotMessage>;
   private readonly positionOf = (id: number) => this.players.get(id)?.body;
   // Shot scratch: a tick can fire dozens of bullets and none of this is allocated per shot.
@@ -142,8 +160,8 @@ export class Match implements MatchApi {
       },
       entities: this.entityPool,
       removed: this.scratchRemoved,
-      vehicles: [],
-      vehiclesRemoved: [],
+      vehicles: this.vehicleScratch,
+      vehiclesRemoved: this.vehicleRemoved,
     };
     // A bit more history than the rewind cap, so the oldest legal rewind is always covered.
     this.lagComp = new LagCompensator(
@@ -151,6 +169,7 @@ export class Match implements MatchApi {
     );
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
+    this.vehicles = new VehicleFleet(deps.map, deps.vehicles ?? DEFAULT_VEHICLE_SETTINGS);
     this.heist = new HeistController(this, deps.heist, deps.challenges);
   }
 
@@ -212,6 +231,9 @@ export class Match implements MatchApi {
   }
 
   resetPlayersForRound(): void {
+    // Everyone on foot again and every car back in its spot.
+    for (const p of this.players.values()) p.vehicleId = 0;
+    this.vehicles.reset();
     for (const p of this.players.values()) {
       p.kills = 0;
       p.deaths = 0;
@@ -329,6 +351,7 @@ export class Match implements MatchApi {
   leave(id: number): void {
     const leaving = this.players.get(id);
     if (!leaving || !this.players.delete(id)) return;
+    this.releaseVehicle(leaving);
     this.heist.onLeave(leaving);
     this.lagComp.forget(id);
     this.interest.remove(id);
@@ -357,6 +380,13 @@ export class Match implements MatchApi {
     // Positions can change outside movement (respawns, joins): refresh the grid before shots use it.
     for (const p of this.players.values()) this.interest.update(p.id, p.body.x, p.body.z);
     for (const player of this.players.values()) this.applyInput(player);
+    this.vehicles.coast(this.collisionMap, 1 / this.deps.settings.tickRate);
+    this.vehicles.settle();
+    // Drivers sit exactly where their (settled) car is.
+    for (const player of this.players.values()) {
+      const car = player.vehicleId ? this.vehicles.get(player.vehicleId) : undefined;
+      if (car) this.ride(player, car);
+    }
     this.recordHistory();
     this.heist.onTick();
     this.sendSnapshots();
@@ -376,9 +406,19 @@ export class Match implements MatchApi {
       return;
     }
     const budget = Math.min(this.deps.settings.maxCommandsPerTick, player.queue.length);
+    const car = player.vehicleId ? this.vehicles.get(player.vehicleId) : undefined;
     for (let i = 0; i < budget; i++) {
       const command = player.queue.shift();
       if (!command) break;
+      if (car) {
+        // At the wheel: the stick drives the car, the body rides along, nobody shoots.
+        this.vehicles.drive(car, controlsOf(command), this.collisionMap);
+        this.ride(player, car);
+        player.yaw = command.yaw;
+        player.pitch = command.pitch;
+        player.lastAppliedSeq = command.seq;
+        continue;
+      }
       stepBody(player.body, command, SIM_DT, this.collisionMap, this.movement, player.speedScale);
       player.yaw = command.yaw;
       player.pitch = command.pitch;
@@ -512,6 +552,7 @@ export class Match implements MatchApi {
     this.heist.onDamaged(victim);
     if (victim.hp > 0) return;
     victim.alive = false;
+    this.releaseVehicle(victim);
     victim.deaths++;
     attacker.kills++;
     victim.respawnAtTick = this.tick + this.ticksFor(this.combat.respawnDelaySec);
@@ -614,6 +655,8 @@ export class Match implements MatchApi {
       self.flags = flagsOf(player, this.isProtected(player));
       self.hp = player.hp;
       self.weapon = player.weaponWire;
+      self.vehicle = player.vehicleId;
+      this.selectVehicles(player, counts);
       self.ammo = player.infiniteAmmo
         ? (this.combat.weapons[player.weaponId]?.magSize ?? 0)
         : player.ammo;
@@ -621,6 +664,106 @@ export class Match implements MatchApi {
       snapshot.ackSeq = player.lastAppliedSeq;
       this.sendTo(player, snapshot, counts);
     }
+  }
+
+  /** Cars within this client's far range (and their own, always), plus the ones that left it. */
+  private selectVehicles(
+    player: Player,
+    counts: { vehicles?: number; vehiclesRemoved?: number },
+  ): void {
+    const range = this.deps.settings.interest.farRange;
+    const out = this.vehicleScratch;
+    const inRange = this.inRange;
+    inRange.clear();
+    let n = 0;
+    for (const car of this.vehicles.all()) {
+      const near =
+        car.id === player.vehicleId ||
+        Math.hypot(car.state.x - player.body.x, car.state.z - player.body.z) <= range;
+      if (!near) continue;
+      inRange.add(car.id);
+      out[n++] = car.wire();
+    }
+    let removed = 0;
+    for (const id of player.knownVehicles) {
+      if (inRange.has(id)) continue;
+      this.vehicleRemoved[removed++] = id;
+      player.knownVehicles.delete(id);
+    }
+    for (const id of inRange) player.knownVehicles.add(id);
+    counts.vehicles = n;
+    counts.vehiclesRemoved = removed;
+  }
+
+  vehicleRequest(player: Player, message: VehicleMessage): VehicleReply {
+    const deny = (reason: NonNullable<VehicleReply['reason']>): VehicleReply => ({
+      t: 'vehicle_result',
+      ref: message.ref,
+      ok: false,
+      reason,
+    });
+    if (!player.alive) return deny('dead');
+    if (message.action === 'enter') {
+      if (player.vehicleId !== 0) return deny('already_driving');
+      const car = this.vehicles.get(message.vehicle);
+      if (!car) return deny('unknown_vehicle');
+      if (car.driver !== 0) return deny('taken');
+      if (
+        distanceToCar(car.state, car.spec, player.body.x, player.body.z) > this.vehicles.enterRange
+      )
+        return deny('too_far');
+      car.driver = player.id;
+      player.vehicleId = car.id;
+      this.ride(player, car);
+      return { t: 'vehicle_result', ref: message.ref, ok: true };
+    }
+    const car = player.vehicleId ? this.vehicles.get(player.vehicleId) : undefined;
+    if (!car) return deny('not_driving');
+    if (Math.abs(car.state.speed) > this.vehicles.exitMaxSpeed) return deny('too_fast');
+    const spot = exitSpots(car.state, car.spec).find((p) => this.standable(p.x, p.z, car));
+    if (!spot) return deny('no_room');
+    car.driver = 0;
+    player.vehicleId = 0;
+    Object.assign(player.body, createBody(spot.x, 0, spot.z));
+    this.lagComp.forget(player.id);
+    return { t: 'vehicle_result', ref: message.ref, ok: true };
+  }
+
+  /** The driver's body sits in the car (shots can still find them through the window). */
+  private ride(player: Player, car: Vehicle): void {
+    const b = player.body;
+    b.x = car.state.x;
+    b.z = car.state.z;
+    b.y = 0;
+    b.vx = 0;
+    b.vy = 0;
+    b.vz = 0;
+    b.onGround = true;
+    b.crouching = false;
+  }
+
+  /** Lets a player out of the car they drive where they are (death, leaving): the car rolls on. */
+  private releaseVehicle(player: Player): void {
+    const car = player.vehicleId ? this.vehicles.get(player.vehicleId) : undefined;
+    if (car) car.driver = 0;
+    player.vehicleId = 0;
+  }
+
+  /** Whether a standing body fits at (x, z): no wall, no building, no other car. */
+  private standable(x: number, z: number, except: Vehicle): boolean {
+    const r = this.movement.radius;
+    const n = colliderGridFor(this.collisionMap).query(x - r, z - r, x + r, z + r, this.nearBoxes);
+    for (let i = 0; i < n; i++) {
+      const b = this.nearBoxes[i] as Aabb;
+      const overlaps = x + r > b.minX && x - r < b.maxX && z + r > b.minZ && z - r < b.maxZ;
+      if (overlaps && b.maxY > this.movement.stepHeight && b.minY < this.movement.standHeight)
+        return false;
+    }
+    if (Math.abs(x) > this.collisionMap.halfSize || Math.abs(z) > this.collisionMap.halfSize)
+      return false;
+    for (const car of this.vehicles.all())
+      if (car !== except && distanceToCar(car.state, car.spec, x, z) < r) return false;
+    return true;
   }
 
   /** Sends a shot only to players close enough to see or hear it (shooter or impact within range). */
@@ -675,7 +818,12 @@ export class Match implements MatchApi {
   private sendTo(
     player: Player,
     message: ServerMessage,
-    counts?: { readonly entities: number; readonly removed: number },
+    counts?: {
+      readonly entities: number;
+      readonly removed: number;
+      readonly vehicles?: number;
+      readonly vehiclesRemoved?: number;
+    },
   ): void {
     // Snapshots go through this client's own encoder: it sends only what changed since the last one.
     let bytes = encodeServerMessage(message, player.snapshots, counts);
