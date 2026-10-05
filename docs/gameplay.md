@@ -83,4 +83,11 @@ Tier 1 ≈ 30–60 s, tier 5 ≈ 4–6 min. Admin analytics show real medians; t
 
 **Models:** Quaternius *Cars* (CC0): NormalCar1/2, Taxi and Cop are sedans; SportsCar and SportsCar2 are sports; SUV is an SUV (`CAR_KIND`, client). The pack has no motorbike, which 8.9 must find or build.
 
-**Try it:** `?drive` (or `?drive=SportsCar` and so on) puts you in a car on your spawn street. The car is simulated locally for now: W/S throttle and brake, A/D steer, Space handbrake, with a chase camera. Lamps glow at night. While you drive, the server keeps you standing on foot. 8.8 adds getting in and out, server ownership and other players seeing the car.
+**Getting in and out (8.8):** every car belongs to the server.
+- **Parked cars:** the city parks about 50 cars along the kerbs (`parkedCarChance` per slot, facing the traffic on that side, clear of the lane spawns). They are back in their spots at the start of each round.
+- **Driving:** F next to an empty car (within 1.6 m of its body) gets in; F again gets out, if the car is going no faster than 4 m/s and there is room by a door, behind or in front. While you drive, your movement input drives the car on the server, and your client predicts it (`PredictedVehicle`, reconciled each snapshot like on foot).
+- **The driver:** sits in the car. Other players do not see the body, but bullets still find it; you cannot shoot or use a lift, vault or safehouse from the wheel. Dying or leaving frees the car, which rolls to a stop.
+- **Crashes:** cars shove each other: a head-on hit bounces the moving car back and pushes the other.
+- **Drawing:** a car standing still is drawn as one merged mesh (one draw call); a moving one has steering and rolling wheels. Cars further than 110 m are not drawn.
+
+Not yet: people walking through cars (bodies do not collide with cars), running people over, and car damage.
