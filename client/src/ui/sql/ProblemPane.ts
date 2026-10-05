@@ -13,7 +13,11 @@ import { hintCostText } from './labels';
 export class ProblemPane {
   private hints: HTMLElement | null = null;
 
-  constructor(private readonly host: HTMLElement) {}
+  constructor(
+    private readonly host: HTMLElement,
+    /** The tutorial's free solution was asked for: put it in the editor. */
+    private readonly onUseSolution: (sql: string) => void = () => {},
+  ) {}
 
   show(challenge: PublicChallenge): void {
     clear(this.host);
@@ -21,6 +25,7 @@ export class ProblemPane {
     this.host.append(
       h('h2', { class: 'sqlp-h2', text: 'Task' }),
       story(challenge.story),
+      ...(challenge.solution === undefined ? [] : [this.solution(challenge.solution)]),
       h('h2', { class: 'sqlp-h2', text: challenge.tables.length === 1 ? 'Table' : 'Tables' }),
       ...challenge.tables.map(tableCard),
       ...expectedOutput(challenge),
@@ -33,6 +38,31 @@ export class ProblemPane {
       this.hints,
     );
     this.host.scrollTop = 0;
+  }
+
+  /** The tutorial gives the answer away: a button shows it and puts it in the editor. */
+  private solution(sql: string): HTMLElement {
+    const code = h('pre', { class: 'sqlp-solution-sql', text: sql });
+    code.hidden = true;
+    const button = h('button', {
+      class: 'sqlp-btn sqlp-solution-btn',
+      text: 'Show solution (free)',
+      attrs: { type: 'button' },
+      on: {
+        click: () => {
+          code.hidden = false;
+          button.textContent = 'Put it in the editor again';
+          this.onUseSolution(sql);
+        },
+      },
+    });
+    return h(
+      'div',
+      { class: 'sqlp-solution' },
+      h('p', { class: 'sqlp-muted', text: 'Tutorial: the answer is free. Read it, then Submit.' }),
+      button,
+      code,
+    );
   }
 
   /** Shows the hints revealed so far, in order, with what each one cost. */

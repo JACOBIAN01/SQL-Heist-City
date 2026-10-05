@@ -53,7 +53,11 @@ export class SqlPanelController {
       deps.tasks ?? [],
       (task) => void this.start(task),
     );
-    this.problem = new ProblemPane(deps.panel.slots.problem);
+    this.problem = new ProblemPane(deps.panel.slots.problem, (sql) => {
+      this.work.editor.setValue(sql);
+      if (this.task) this.drafts.set(this.task.key, sql);
+      this.work.editor.focus();
+    });
     this.work = new WorkPane(deps.panel.slots.work, {
       onRun: () => void this.run(),
       onSubmit: () => void this.submit(),

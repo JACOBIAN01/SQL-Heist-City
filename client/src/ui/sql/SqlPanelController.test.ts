@@ -53,6 +53,16 @@ describe('SqlPanelController: starting a task', () => {
     expect($('.sqlp-card code').textContent).toBe('employees');
   });
 
+  it('puts the tutorial solution in the editor when asked', async () => {
+    api.onRequest = async () => ({
+      ok: true,
+      challenge: sampleChallenge({ solution: 'SELECT * FROM employees;' }),
+    });
+    await controller.start(task('heal:small'));
+    button(/Show solution/).click();
+    expect(controller['work'].editor.getValue()).toBe('SELECT * FROM employees;');
+  });
+
   it("shows the server's refusal in plain words and keeps Run disabled", async () => {
     api.onRequest = async () => ({ ok: false, reason: 'no_questions' });
     await controller.start(task('heal:small'));

@@ -102,6 +102,23 @@ describe('ProblemPane', () => {
     expect(host.textContent).not.toContain('Expected output');
   });
 
+  it('gives the tutorial solution away on request and hands it to the editor', () => {
+    const used: string[] = [];
+    pane = new ProblemPane(host, (sql) => used.push(sql));
+    pane.show({ ...challenge, solution: 'SELECT name FROM employees;' });
+    const sql = host.querySelector('.sqlp-solution-sql') as HTMLElement;
+    expect(sql.hidden).toBe(true);
+    (host.querySelector('.sqlp-solution-btn') as HTMLButtonElement).click();
+    expect(sql.hidden).toBe(false);
+    expect(sql.textContent).toBe('SELECT name FROM employees;');
+    expect(used).toEqual(['SELECT name FROM employees;']);
+  });
+
+  it('shows no solution outside the tutorial', () => {
+    pane.show(challenge);
+    expect(host.querySelector('.sqlp-solution')).toBeNull();
+  });
+
   it('offers the CREATE TABLE text on demand', () => {
     pane.show(challenge);
     expect(host.querySelector('.sqlp-schema pre')?.textContent).toBe(challenge.schemaSql);

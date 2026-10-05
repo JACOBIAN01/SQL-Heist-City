@@ -283,6 +283,20 @@
   font-size: 12px;
 }
 
+/* Tutorial solution */
+.sqlp-solution {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-left: 3px solid #ffd34d;
+  background: var(--sqlp-panel);
+  border-radius: 6px;
+}
+.sqlp-solution-sql {
+  white-space: pre-wrap;
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
 /* Expected output */
 .sqlp-rules {
   margin-top: 0;
