@@ -77,6 +77,43 @@ export function buildImpostorGeometry(kit: CityKit, plan: ChunkPlan): ChunkGeome
   return { opaque: out.build(true) ?? new BufferGeometry(), triangles: out.index.length / 3 };
 }
 
+/** How far (m) a shadow block sits inside its building, so recessed windows on a sunlit wall stay lit. */
+export const SHADOW_INSET = 0.3;
+
+/**
+ * Each building of a chunk as four plain walls (positions only, 8
+ * triangles) up to its cornice, for the sun's shadow map. Buildings cast
+ * their shadows from these rather than from their detailed facades: the
+ * outline casts almost the same shadow for a tiny share of the triangles.
+ * No lid: a lid would shade the roof it sits above; open, the walls shade
+ * a strip of roof like a real parapet.
+ */
+export function buildShadowGeometry(plan: ChunkPlan, inset = SHADOW_INSET): BufferGeometry {
+  const position: number[] = [];
+  const index: number[] = [];
+  for (const { rect, height } of plan.casters) {
+    const x0 = rect.minX + inset;
+    const x1 = rect.maxX - inset;
+    const z0 = rect.minZ + inset;
+    const z1 = rect.maxZ - inset;
+    const top = height;
+    if (x1 <= x0 || z1 <= z0 || top <= 0) continue;
+    const base = position.length / 3;
+    // Four ground corners, then the same four at the top.
+    for (const y of [0, top]) position.push(x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0);
+    for (let k = 0; k < 4; k++) {
+      const a = base + k;
+      const b = base + ((k + 1) % 4);
+      index.push(a, b, b + 4, a, b + 4, a + 4);
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array(position), 3));
+  geometry.setIndex(index);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
 function appendMass(out: GeometryBuilder, m: Mass, kit: CityKit): void {
   const r = m.rect;
   const layer = kit.layer(m.layer);

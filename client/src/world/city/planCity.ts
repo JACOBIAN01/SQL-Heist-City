@@ -10,6 +10,7 @@ import {
   type Rng,
 } from '@heist/shared';
 import {
+  CORNICE_HEIGHT,
   FACADE_STYLES,
   placeFacade,
   STYLE_IDS,
@@ -20,6 +21,7 @@ import {
   subtractRects,
   type ChunkPlan,
   type GroundQuad,
+  type Caster,
   type Mass,
   type Placement,
   type Turn,
@@ -88,6 +90,7 @@ export function planChunk(
   const ground: GroundQuad[] = [];
   const walls: WallQuad[] = [];
   const masses: Mass[] = [];
+  const casters: Caster[] = [];
 
   // Asphalt around the block, the sidewalk ring (top and kerb faces), paving or plaza inside.
   for (const r of subtractRects(bounds, [block.outer])) ground.push({ rect: r, y: 0, ...ASPHALT });
@@ -152,6 +155,7 @@ export function planChunk(
       sides: ([0, 1, 2, 3] as Turn[]).map((turn) => sideFor(b, turn, block, buildings)),
     };
     placements.push(...placeFacade(facade, rng));
+    casters.push({ rect: b.rect, height: b.storeys * s.storeyHeight + CORNICE_HEIGHT });
     if (b.roof) {
       const top = b.storeys * s.storeyHeight;
       ground.push({ rect: b.rect, y: top, ...ROOF });
@@ -167,7 +171,15 @@ export function planChunk(
       if (rng.bool(0.6))
         placements.push({ piece: 'Prop_Planter_Single', ...corner, y: 0, turn: 0 });
 
-  return { id: `chunk-${block.ix}-${block.iz}`, bounds, placements, ground, walls, masses };
+  return {
+    id: `chunk-${block.ix}-${block.iz}`,
+    bounds,
+    placements,
+    ground,
+    walls,
+    masses,
+    casters,
+  };
 }
 
 /** How deep the ring of buildings outside the city wall is, m. */
@@ -231,6 +243,7 @@ export function planOutskirts(city: CityLayout): ChunkPlan[] {
         ground,
         walls: [],
         masses,
+        casters: masses.map(({ rect, height }) => ({ rect, height: height + CORNICE_HEIGHT })),
       });
     }
   }

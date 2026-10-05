@@ -45,6 +45,13 @@ export interface Mass {
   readonly layer: string;
 }
 
+/** A building's outline for the sun's shadow map: every building, including banks drawn without a mass. */
+export interface Caster {
+  readonly rect: Rect;
+  /** Up to the top of the cornice. */
+  readonly height: number;
+}
+
 export interface ChunkPlan {
   readonly id: string;
   /** The ground this chunk owns: its block and the streets to its north and west (and the outer ring at the edge). */
@@ -53,6 +60,7 @@ export interface ChunkPlan {
   readonly ground: readonly GroundQuad[];
   readonly walls: readonly WallQuad[];
   readonly masses: readonly Mass[];
+  readonly casters: readonly Caster[];
 }
 
 /** Outward normal of a piece turned by `turn`. */

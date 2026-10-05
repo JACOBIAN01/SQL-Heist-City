@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { BANK_1, BANK_LAYOUTS, KERB_HEIGHT, mapById, type Rect } from '@heist/shared';
 import { parseKitManifest } from './kitManifest';
 import { subtractRects, wallNormal, type WallQuad } from './plan';
+import { CORNICE_HEIGHT } from './facades';
 import { planCity } from './planCity';
 
 const city = mapById('city')?.city;
@@ -66,6 +67,16 @@ describe('planCity', () => {
     const paved = plans.flatMap((p) => p.ground.filter((q) => q.y <= KERB_HEIGHT));
     const total = paved.reduce((a, q) => a + area(q.rect), 0);
     expect(total).toBeCloseTo((2 * city.halfSize) ** 2, 3);
+  });
+
+  it('gives every building a shadow outline up to its cornice, banks included', () => {
+    for (const p of plans)
+      for (const m of p.masses)
+        expect(p.casters).toContainEqual({ rect: m.rect, height: m.height + CORNICE_HEIGHT });
+    // Bank 1 has a real interior, so no mass, but it still casts.
+    const casters = plans.flatMap((p) => p.casters);
+    const masses = plans.flatMap((p) => p.masses);
+    expect(casters.length).toBeGreaterThan(masses.length);
   });
 
   it('keeps every placement in or at the edge of its chunk', () => {

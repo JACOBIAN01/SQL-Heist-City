@@ -1,7 +1,7 @@
-import { Group, Mesh } from 'three';
+import { DoubleSide, Group, Mesh, MeshBasicMaterial } from 'three';
 import type { BankLayout, CityLayout, Rect } from '@heist/shared';
 import type { CityKit } from './CityKit';
-import { buildChunkGeometry, buildImpostorGeometry } from './chunkGeometry';
+import { buildChunkGeometry, buildImpostorGeometry, buildShadowGeometry } from './chunkGeometry';
 import type { ChunkPlan } from './plan';
 import { planCity, planOutskirts } from './planCity';
 
@@ -41,10 +41,23 @@ export function distanceToRect(r: Rect, x: number, z: number): number {
   return Math.hypot(dx, dz);
 }
 
+/**
+ * Shadow blocks write nothing on screen (no colour, no depth), so only the
+ * shadow map sees them. A material that is not `visible` would be skipped by
+ * the shadow pass too, hence this; on screen each costs one empty draw.
+ */
+const SHADOW_BLOCK_MATERIAL = new MeshBasicMaterial({
+  side: DoubleSide,
+  colorWrite: false,
+  depthWrite: false,
+});
+
 class StreamedChunk {
   readonly group = new Group();
   detail: Group | undefined;
   readonly impostor: Mesh;
+  /** The buildings as plain boxes, seen only by the sun's shadow map (near chunks only). */
+  readonly shadow: Mesh;
   showingDetail = false;
 
   constructor(
@@ -58,6 +71,13 @@ class StreamedChunk {
     this.impostor.name = `${plan.id}-impostor`;
     this.impostor.receiveShadow = true;
     this.group.add(this.impostor);
+    // Buildings cast from boxes, not from their facades: the shadow pass would otherwise draw
+    // every detailed chunk a second time.
+    this.shadow = new Mesh(buildShadowGeometry(plan), SHADOW_BLOCK_MATERIAL);
+    this.shadow.name = `${plan.id}-shadow`;
+    this.shadow.castShadow = true;
+    this.shadow.visible = false;
+    this.group.add(this.shadow);
   }
 
   build(kit: CityKit): void {
@@ -65,7 +85,6 @@ class StreamedChunk {
     const detail = new Group();
     detail.name = `${this.plan.id}-detail`;
     const body = new Mesh(geometry.opaque, kit.materials.opaque);
-    body.castShadow = true;
     body.receiveShadow = true;
     detail.add(body);
     if (geometry.decal) {
@@ -122,6 +141,8 @@ export class CityStreamer {
       c.showingDetail = want && c.detail !== undefined;
       if (c.detail) c.detail.visible = c.showingDetail;
       c.impostor.visible = !c.showingDetail;
+      // The shadow map covers only ~45 m around the player: well inside the detailed ring.
+      c.shadow.visible = c.showingDetail;
     }
     queue.sort((a, b) => a.d - b.d);
     for (const { chunk } of queue.slice(0, this.settings.buildsPerUpdate)) chunk.build(this.kit);
@@ -138,7 +159,7 @@ export class CityStreamer {
       if (!c.group.visible) hidden++;
       else if (c.showingDetail) {
         detailed++;
-        drawCalls += c.detail?.children.length ?? 0;
+        drawCalls += (c.detail?.children.length ?? 0) + 1; // + its shadow block
       } else {
         impostors++;
         drawCalls++;

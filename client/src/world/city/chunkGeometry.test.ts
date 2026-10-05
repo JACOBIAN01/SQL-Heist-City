@@ -9,7 +9,12 @@ import {
   Vector3,
 } from 'three';
 import { CityKit, piecesFromScene } from './CityKit';
-import { buildChunkGeometry, buildImpostorGeometry } from './chunkGeometry';
+import {
+  buildChunkGeometry,
+  buildImpostorGeometry,
+  buildShadowGeometry,
+  SHADOW_INSET,
+} from './chunkGeometry';
 import { parseKitManifest } from './kitManifest';
 import { createKitMaterials, layersTexture } from './kitMaterials';
 import type { ChunkPlan } from './plan';
@@ -51,6 +56,7 @@ const plan = (over: Partial<ChunkPlan>): ChunkPlan => ({
   ground: [],
   walls: [],
   masses: [],
+  casters: [],
   ...over,
 });
 
@@ -156,5 +162,27 @@ describe('buildImpostorGeometry', () => {
       }),
     );
     expect(g.triangles).toBe(2);
+  });
+});
+
+describe('buildShadowGeometry', () => {
+  it('outlines each building with four walls just inside it, up to its top, and no lid', () => {
+    const g = buildShadowGeometry(
+      plan({ casters: [{ rect: { minX: 0, maxX: 4, minZ: 0, maxZ: 6 }, height: 10 }] }),
+    );
+    expect(g.index?.count).toBe(4 * 6); // 8 triangles
+    g.computeBoundingBox();
+    const box = g.boundingBox;
+    expect(box?.min.x).toBeCloseTo(SHADOW_INSET);
+    expect(box?.max.z).toBeCloseTo(6 - SHADOW_INSET);
+    expect([box?.min.y, box?.max.y]).toEqual([0, 10]);
+    expect(g.getAttribute('uv')).toBeUndefined(); // positions only
+  });
+
+  it('skips buildings too thin to inset', () => {
+    const g = buildShadowGeometry(
+      plan({ casters: [{ rect: { minX: 0, maxX: 0.5, minZ: 0, maxZ: 6 }, height: 10 }] }),
+    );
+    expect(g.index?.count).toBe(0);
   });
 });

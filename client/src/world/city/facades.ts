@@ -92,6 +92,9 @@ export function sideOf(rect: Rect, turn: Turn): { x: number; z: number; length: 
   }
 }
 
+/** The kit's cornice pieces stand this high (m) above the roof line. */
+export const CORNICE_HEIGHT = 1;
+
 /**
  * Places a building's facade pieces: per side, per storey, one 2 m module
  * at a time, then a cornice along the roof line.
