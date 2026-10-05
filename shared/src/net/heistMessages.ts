@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { AwardId } from '../config/awards';
 import type { WeaponSpec } from '../config/combat';
 import { challengeClientMessageSchema, type ChallengeServerMessage } from './challengeMessages';
 
@@ -156,6 +157,14 @@ export interface StandingMessage {
   readonly players: number;
 }
 
+/** An award at the end of a round: who won it, and the number that won it. */
+export interface AwardView {
+  readonly id: AwardId;
+  readonly playerId: number;
+  readonly name: string;
+  readonly value: number;
+}
+
 /**
  * Round state. `playing`: the round ends in `endsInSec`. `ended`: the final
  * standings, who won, and when the next round starts.
@@ -168,6 +177,8 @@ export type RoundMessage =
       readonly nextInSec: number;
       readonly winner: StandingView | null;
       readonly standings: readonly StandingView[];
+      /** Only the awards somebody earned this round. */
+      readonly awards: readonly AwardView[];
     };
 
 /**

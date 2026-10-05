@@ -3,11 +3,25 @@ import type { Vault } from './Vault';
 
 /** What happened in the heist, as rule code reports it. */
 export type HeistEvent =
-  | { readonly type: 'lock_opened'; readonly vault: Vault; readonly lock: number }
+  | {
+      readonly type: 'lock_opened';
+      readonly vault: Vault;
+      readonly lock: number;
+      /** Who solved it (absent when a tool or test opened it). */
+      readonly player?: Player;
+    }
   | { readonly type: 'vault_opened'; readonly vault: Vault }
   | { readonly type: 'banked'; readonly player: Player; readonly amount: number }
   /** A SQL task was answered correctly and its reward applied. */
-  | { readonly type: 'task_solved'; readonly player: Player; readonly rewardKey: string }
+  | {
+      readonly type: 'task_solved';
+      readonly player: Player;
+      readonly rewardKey: string;
+      /** From the question being issued to the correct answer, when known. */
+      readonly seconds?: number;
+    }
+  /** A player killed another (not themselves, not a practice target). */
+  | { readonly type: 'kill'; readonly killer: Player; readonly victim: Player }
   | {
       readonly type: 'wanted';
       readonly player: Player;
@@ -24,7 +38,7 @@ export type HeistEvent =
 /**
  * The heist's event bus.
  * Pattern: Observer — Why: vault, banking and bounty rules say what happened
- * once; the event feed (and anything later: awards, metrics) listens without
+ * once; the event feed and the round awards (and anything later) listen without
  * those rules knowing who cares.
  */
 export class HeistEvents {

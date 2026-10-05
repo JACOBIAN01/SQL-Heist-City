@@ -13,6 +13,7 @@ import type { Player } from '../game/Player';
 import { AmmoRule, GunRule, type ArmsControl } from './ArmsRules';
 import { BankingService } from './BankingService';
 import { BountyBoard } from './BountyBoard';
+import { RoundAwards } from './RoundAwards';
 import { FeedReporter } from './FeedReporter';
 import { HeistEvents } from './HeistEvents';
 import type { ChallengeGateway } from './ChallengeGateway';
@@ -45,6 +46,10 @@ export class HeistController implements ArmsControl {
   /** What happened (locks, vaults, banking, bounties), for the feed and anyone else listening. */
   readonly events = new HeistEvents();
   readonly bounties: BountyBoard;
+  /** Who did best at what this round, for the awards at its end. */
+  readonly awards: RoundAwards;
+  /** When each player's current question was issued (server clock), to time their answer. */
+  private readonly issuedAt = new Map<string, number>();
   /** The round clock and scoreboard; only on maps with vaults (the sandbox has no rounds). */
   readonly round: RoundController | undefined;
 
@@ -57,6 +62,7 @@ export class HeistController implements ArmsControl {
     this.vaults = new VaultRegistry(match.map, settings.locksPerVault);
     new FeedReporter(match, this.events);
     this.bounties = new BountyBoard(match, settings, this.events);
+    this.awards = new RoundAwards(this.events);
     this.banking = new BankingService(match, settings.bankingSeconds, {
       complete: (player) => {
         const amount = player.cash;
@@ -71,7 +77,7 @@ export class HeistController implements ArmsControl {
       .register('elevator', new ElevatorHandler())
       .register('vault_console', new VaultConsoleHandler(this.vaults));
     this.tasks.add(
-      new VaultLockRule(this.vaults, match, (id, lock) => this.openLock(id, lock), {
+      new VaultLockRule(this.vaults, match, (id, lock, by) => this.openLock(id, lock, by), {
         onSolved: (player, vaultId, lock, opened) => {
           if (!opened)
             this.match.sendJson(player, { t: 'notice', text: 'Someone opened that lock first.' });
@@ -88,6 +94,7 @@ export class HeistController implements ArmsControl {
         allVaultsEmptied: () =>
           [...this.vaults.all()].every((v) => v.isOpen) && this.loot.count === 0,
         reset: () => this.resetWorld(),
+        awards: () => this.awards.results((id) => this.match.getPlayer(id)),
         onEnd: () => this.banking.cancelAll('round_over'),
       });
     }
@@ -107,6 +114,7 @@ export class HeistController implements ArmsControl {
   private resetWorld(): void {
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
+    this.awards.reset();
     this.refreshDoors();
     const gone = this.loot.clear();
     if (gone.length > 0) this.match.broadcastJson({ t: 'loot', add: [], remove: gone });
@@ -155,6 +163,8 @@ export class HeistController implements ArmsControl {
   onDeath(victim: Player, killer?: Player): void {
     this.banking.cancel(victim, 'died');
     // The killer of a wanted player collects the bounty on top of the kill bonus.
+    if (killer && killer !== victim && !victim.isDummy)
+      this.events.publish({ type: 'kill', killer, victim });
     const bounty = this.bounties.claim(victim, killer);
     const earned =
       (killer && killer !== victim && killer.alive ? this.settings.killBonus : 0) + bounty;
@@ -216,12 +226,12 @@ export class HeistController implements ArmsControl {
    * Opens lock `lock` of a vault (the SQL reward calls this). Returns false if
    * it was not the next lock, e.g. a second player solved the same one.
    */
-  openLock(vaultId: string, lock: number): boolean {
+  openLock(vaultId: string, lock: number, by?: Player): boolean {
     const vault = this.vaults.get(vaultId);
     if (!vault || vault.openLock(lock) !== 'opened') return false;
     this.refreshDoors();
     this.match.broadcastJson({ t: 'vaults', vaults: this.vaults.views() });
-    this.events.publish({ type: 'lock_opened', vault, lock });
+    this.events.publish({ type: 'lock_opened', vault, lock, ...(by ? { player: by } : {}) });
     if (vault.isOpen) {
       this.spillLoot(vault);
       this.events.publish({ type: 'vault_opened', vault });
@@ -282,6 +292,7 @@ export class HeistController implements ArmsControl {
   /** A player left: their challenge state goes with them. */
   onLeave(player: Player): void {
     this.challenges?.playerLeft(player.key);
+    this.issuedAt.delete(player.key);
     this.onDeath(player); // cash does not vanish with a disconnect
   }
 
@@ -310,10 +321,18 @@ export class HeistController implements ArmsControl {
       .then((reply) => {
         if (reply.t === 'challenge_hint' && reply.result.ok && reply.result.hint.charged)
           this.chargeHint(player, reply.result.hint.cost, reply.result.hint.costMode);
+        if (reply.t === 'challenge' && reply.result.ok) this.issuedAt.set(player.key, reply.now);
         if (reply.t === 'challenge_result' && reply.result.status === 'correct') {
           const { rewardKey, target } = reply.result;
           this.tasks.find(rewardKey)?.grant(player, rewardKey, target);
-          this.events.publish({ type: 'task_solved', player, rewardKey });
+          const issued = this.issuedAt.get(player.key);
+          this.issuedAt.delete(player.key);
+          this.events.publish({
+            type: 'task_solved',
+            player,
+            rewardKey,
+            ...(issued !== undefined ? { seconds: Math.max(0, (reply.now - issued) / 1000) } : {}),
+          });
         }
         this.reply(player, reply);
       })

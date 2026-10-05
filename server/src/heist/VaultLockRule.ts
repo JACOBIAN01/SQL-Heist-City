@@ -22,7 +22,7 @@ export class VaultLockRule implements TaskRule {
   constructor(
     private readonly vaults: VaultRegistry,
     private readonly match: MatchApi,
-    private readonly open: (vaultId: string, lock: number) => boolean,
+    private readonly open: (vaultId: string, lock: number, by: Player) => boolean,
     private readonly hooks: VaultLockHooks,
   ) {}
 
@@ -48,6 +48,6 @@ export class VaultLockRule implements TaskRule {
     const lock = /:lock-(\d+)$/.exec(rewardKey)?.[1];
     if (!target || !lock) return;
     const k = Number(lock);
-    this.hooks.onSolved(player, target, k, this.open(target, k));
+    this.hooks.onSolved(player, target, k, this.open(target, k, player));
   }
 }

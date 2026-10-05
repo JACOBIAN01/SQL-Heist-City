@@ -30,8 +30,12 @@ describe('RoundUi', () => {
   it('shows the results and the countdown to the next round when the round ends', () => {
     const { view, ui } = setup();
     const winner = { id: 2, name: 'Ana', banked: 9_000, kills: 1 };
-    ui.onRound({ t: 'round', phase: 'ended', nextInSec: 20, winner, standings: [winner] }, 0);
-    expect(view.showResults).toHaveBeenCalledWith(winner, [winner]);
+    const awards = [{ id: 'top_gun' as const, playerId: 2, name: 'Ana', value: 3 }];
+    ui.onRound(
+      { t: 'round', phase: 'ended', nextInSec: 20, winner, standings: [winner], awards },
+      0,
+    );
+    expect(view.showResults).toHaveBeenCalledWith(winner, [winner], awards);
     expect(last(view.setTimer)).toBeUndefined();
     ui.update(5_000);
     expect(last(view.setNextIn)).toBeCloseTo(15, 0);
@@ -39,7 +43,10 @@ describe('RoundUi', () => {
 
   it('clears the results when the next round starts', () => {
     const { view, ui } = setup();
-    ui.onRound({ t: 'round', phase: 'ended', nextInSec: 1, winner: null, standings: [] }, 0);
+    ui.onRound(
+      { t: 'round', phase: 'ended', nextInSec: 1, winner: null, standings: [], awards: [] },
+      0,
+    );
     ui.onRound({ t: 'round', phase: 'playing', endsInSec: 900 }, 1_000);
     expect(view.hideResults).toHaveBeenCalled();
     expect(last(view.setTimer)).toBe('15:00');

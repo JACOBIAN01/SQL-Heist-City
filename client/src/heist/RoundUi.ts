@@ -24,7 +24,7 @@ export class RoundUi {
     this.phase = 'ended';
     this.deadline = nowMs + message.nextInSec * 1000;
     this.view.setTimer(undefined);
-    this.view.showResults(message.winner, message.standings);
+    this.view.showResults(message.winner, message.standings, message.awards);
     this.update(nowMs);
   }
 

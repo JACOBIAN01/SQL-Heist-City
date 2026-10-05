@@ -1,4 +1,4 @@
-import type { HeistSettings } from '@heist/shared';
+import type { AwardView, HeistSettings } from '@heist/shared';
 import type { Player } from '../game/Player';
 import type { MatchApi } from './MatchApi';
 import { rankPlayers, toStanding } from './Scoreboard';
@@ -12,6 +12,8 @@ export interface RoundHooks {
   reset(): void;
   /** The round just ended: stop banking and the like. */
   onEnd(): void;
+  /** Who earned what this round (asked when the round ends, and of anyone joining before the next). */
+  awards(): readonly AwardView[];
 }
 
 const TOP = 10;
@@ -113,6 +115,7 @@ export class RoundController {
       // Nobody banked anything: nobody won.
       winner: first && first.banked > 0 ? toStanding(first) : null,
       standings: ranked.slice(0, TOP).map(toStanding),
+      awards: this.hooks.awards(),
     };
   }
 
