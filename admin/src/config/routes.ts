@@ -20,6 +20,15 @@ export function configRoutes(settings: SettingsService): Router {
     });
   });
 
+  router.get('/config/combat', (_req, res) => {
+    res.json({ combat: settings.combatSettings() });
+  });
+
+  router.put('/config/combat', requireRole('admin'), (req, res) => {
+    const body = (req.body ?? {}) as { combat?: unknown };
+    res.json({ combat: settings.updateCombatSettings(body.combat ?? {}, requireUser(res)) });
+  });
+
   router.get('/config/reward-map', (_req, res) => {
     res.json({ rewards: settings.rewardMap() });
   });

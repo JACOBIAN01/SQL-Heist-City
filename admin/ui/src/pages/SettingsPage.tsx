@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { ChallengeSettings, RewardTierEntry } from '@heist/shared';
+import type { ChallengeSettings, CombatSettings, RewardTierEntry, WeaponSpec } from '@heist/shared';
 import {
   useChallengeSettings,
+  useCombatSettings,
   useRewardMap,
   useSaveChallengeSettings,
+  useSaveCombatSettings,
   useSaveRewardMap,
 } from '../api/config';
 import { useMe } from '../auth/useMe';
@@ -42,6 +44,106 @@ export function SettingsPage() {
         <ChallengeSettingsCard editable={isAdmin} />
         <RewardMapCard editable={isAdmin} />
       </div>
+      <GunsCard editable={isAdmin} />
+    </div>
+  );
+}
+
+type GunField = keyof WeaponSpec;
+
+const GUN_FIELDS: { key: GunField; label: string; step: number; title: string }[] = [
+  { key: 'damage', label: 'Damage', step: 1, title: 'Per bullet (per pellet for the shotgun)' },
+  { key: 'rpm', label: 'RPM', step: 10, title: 'Rounds per minute' },
+  { key: 'range', label: 'Range m', step: 5, title: 'Bullets stop here' },
+  { key: 'magSize', label: 'Mag', step: 1, title: 'Rounds per magazine' },
+  { key: 'pellets', label: 'Pellets', step: 1, title: 'Bullets per shot' },
+  { key: 'spread', label: 'Spread', step: 0.005, title: 'Cone half-angle (rad), hip, standing' },
+  { key: 'falloffStart', label: 'Falloff m', step: 1, title: 'Full damage to here' },
+  { key: 'falloffMin', label: 'Min dmg', step: 0.05, title: 'Damage share left at full range' },
+  { key: 'moveSpread', label: 'Move spread', step: 0.005, title: 'Extra spread at a sprint (rad)' },
+  { key: 'aimSpread', label: 'Aim spread', step: 0.05, title: 'Spread multiplier while aiming' },
+  { key: 'aimZoom', label: 'Zoom', step: 0.1, title: 'View zoom while aiming (1 = none)' },
+  { key: 'recoil', label: 'Recoil', step: 0.005, title: 'View kick per shot (rad)' },
+];
+
+/** Every gun's numbers. Changes reach matches at their next round. */
+function GunsCard({ editable }: { editable: boolean }) {
+  const settings = useCombatSettings();
+  const save = useSaveCombatSettings();
+  const [guns, setGuns] = useState<CombatSettings['weapons'] | null>(null);
+  useEffect(() => {
+    if (settings.data) setGuns(settings.data.current.weapons);
+  }, [settings.data]);
+
+  if (!guns || !settings.data) return <ErrorMessage error={settings.error} />;
+  const defaults = settings.data.defaults.weapons;
+  const setField = (id: string, key: GunField, value: string) =>
+    setGuns({
+      ...guns,
+      [id]: { ...guns[id], [key]: value === '' ? undefined : Number(value) } as WeaponSpec,
+    });
+
+  return (
+    <div className="card stack">
+      <h2>Guns</h2>
+      <p className="muted">
+        Each gun&apos;s numbers. Changes apply in every match from its next round. Hover a heading
+        for what it means.
+      </p>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Gun</th>
+              {GUN_FIELDS.map((f) => (
+                <th key={f.key} title={f.title}>
+                  {f.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(guns).map(([id, spec]) => (
+              <tr key={id}>
+                <td>{REWARD_LABELS[`gun:${id}`] ?? id}</td>
+                {GUN_FIELDS.map((f) => (
+                  <td key={f.key}>
+                    <input
+                      type="number"
+                      aria-label={`${id} ${f.label}`}
+                      step={f.step}
+                      min={0}
+                      disabled={!editable}
+                      value={spec[f.key] ?? ''}
+                      onChange={(e) => setField(id, f.key, e.target.value)}
+                      title={
+                        defaults[id] && spec[f.key] !== defaults[id][f.key]
+                          ? `default ${defaults[id][f.key] ?? 'none'}`
+                          : undefined
+                      }
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ErrorMessage error={save.error} />
+      {editable && (
+        <div className="row">
+          <button onClick={() => setGuns(defaults)}>Reset to defaults</button>
+          <span className="spacer" />
+          {save.isSuccess && <span className="notice">Saved ✓</span>}
+          <button
+            className="primary"
+            disabled={save.isPending}
+            onClick={() => save.mutate({ weapons: guns })}
+          >
+            Save guns
+          </button>
+        </div>
+      )}
     </div>
   );
 }

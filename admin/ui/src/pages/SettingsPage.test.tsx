@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { DEFAULT_CHALLENGE_SETTINGS, DEFAULT_REWARD_TIERS } from '@heist/shared';
+import {
+  DEFAULT_CHALLENGE_SETTINGS,
+  DEFAULT_COMBAT_SETTINGS,
+  DEFAULT_REWARD_TIERS,
+} from '@heist/shared';
 import { admin, fakeApi, renderWithProviders, teacher } from '../testing/render';
 import { SettingsPage } from './SettingsPage';
 
@@ -25,6 +29,10 @@ function api(user: typeof admin | typeof teacher) {
       },
     }),
     'GET /config/reward-map': () => ({ body: { rewards } }),
+    'GET /config/combat': () => ({
+      body: { combat: { current: DEFAULT_COMBAT_SETTINGS, defaults: DEFAULT_COMBAT_SETTINGS } },
+    }),
+    'PUT /config/combat': (b) => ({ body: b }),
     'PUT /config/settings': (b) => ({ body: b }),
     'PUT /config/reward-map': (b) => ({ body: b }),
   });
@@ -58,6 +66,22 @@ describe('SettingsPage', () => {
     });
   });
 
+  it('admins retune a gun and save every gun', async () => {
+    const calls = api(admin);
+    renderWithProviders(<SettingsPage />);
+    const user = userEvent.setup();
+    const damage = await screen.findByLabelText('smg Damage');
+    await user.clear(damage);
+    await user.type(damage, '14');
+    await user.click(screen.getByRole('button', { name: 'Save guns' }));
+    await screen.findByText('Saved ✓');
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/config/combat');
+    const weapons = (put?.body as { combat: { weapons: Record<string, { damage: number }> } })
+      .combat.weapons;
+    expect(weapons.smg?.damage).toBe(14);
+    expect(weapons.sniper).toEqual(DEFAULT_COMBAT_SETTINGS.weapons.sniper);
+  });
+
   it('teachers see values read-only', async () => {
     api(teacher);
     renderWithProviders(<SettingsPage />);
@@ -65,5 +89,6 @@ describe('SettingsPage', () => {
       ((await screen.findByLabelText(/Lockout after a wrong answer/)) as HTMLInputElement).disabled,
     ).toBe(true);
     expect(screen.queryByRole('button', { name: 'Save rules' })).toBeNull();
+    expect(((await screen.findByLabelText('rifle Zoom')) as HTMLInputElement).disabled).toBe(true);
   });
 });

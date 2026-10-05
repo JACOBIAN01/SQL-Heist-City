@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { DEFAULT_CHALLENGE_SETTINGS, type RewardTierEntry } from '@heist/shared';
+import {
+  DEFAULT_CHALLENGE_SETTINGS,
+  DEFAULT_COMBAT_SETTINGS,
+  type CombatSettings,
+  type RewardTierEntry,
+} from '@heist/shared';
 import { SqliteSettingsReader } from '@heist/server/config/SettingsReader';
 import { startAdmin } from '../testing/harness';
 
@@ -84,5 +89,36 @@ describe('reward map API', () => {
       '/api/audit?entity=settings',
     );
     expect(audit.body.entries[0]).toMatchObject({ entity: 'settings', entityId: 'challenges' });
+  });
+});
+
+describe('combat (guns) API', () => {
+  it('retunes one field of one gun, keeps the rest, and the game reader sees it', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    const before = (await h.client.get('/api/config/combat')).body as {
+      combat: { current: CombatSettings; defaults: CombatSettings };
+    };
+    expect(before.combat.current).toEqual(DEFAULT_COMBAT_SETTINGS);
+    const res = await h.client.put('/api/config/combat', {
+      combat: { headshotMultiplier: 2.5, weapons: { smg: { damage: 14 } } },
+    });
+    expect(res.status).toBe(200);
+    const game = new SqliteSettingsReader(h.db).combatSettings();
+    expect(game.headshotMultiplier).toBe(2.5);
+    expect(game.weapons.smg).toEqual({ ...DEFAULT_COMBAT_SETTINGS.weapons.smg, damage: 14 });
+    expect(game.weapons.rifle).toEqual(DEFAULT_COMBAT_SETTINGS.weapons.rifle);
+  });
+
+  it('rejects unknown guns, impossible numbers and non-admins', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    const put = (combat: unknown) => h?.client.put('/api/config/combat', { combat });
+    expect((await put({ weapons: { laser: { damage: 1 } } }))?.status).toBe(400);
+    expect((await put({ weapons: { sniper: { aimZoom: 20 } } }))?.status).toBe(400);
+    expect((await put({ weapons: { pistol: { magSize: 0 } } }))?.status).toBe(400);
+    h.client.clearCookie();
+    await h.loginAs('t@school.test', 'teacher');
+    expect((await put({ maxHp: 200 }))?.status).toBe(403);
   });
 });

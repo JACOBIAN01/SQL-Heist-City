@@ -1,6 +1,9 @@
 import type { DatabaseSync } from 'node:sqlite';
 import {
   DEFAULT_CHALLENGE_SETTINGS,
+  DEFAULT_COMBAT_SETTINGS,
+  combatSettingsSchema,
+  type CombatSettings,
   DEFAULT_REWARD_TIERS,
   challengeSettingsSchema,
   type AdminUser,
@@ -8,7 +11,11 @@ import {
   type RewardMapUpdate,
   type RewardTierEntry,
 } from '@heist/shared';
-import { CHALLENGE_SETTINGS_KEY, SqliteSettingsReader } from '@heist/server/config/SettingsReader';
+import {
+  CHALLENGE_SETTINGS_KEY,
+  COMBAT_SETTINGS_KEY,
+  SqliteSettingsReader,
+} from '@heist/server/config/SettingsReader';
 import { HttpError } from '../http/errors';
 import type { AdminEventBus } from '../events/AdminEvents';
 
@@ -47,6 +54,52 @@ export class SettingsService {
     this.events.publish({
       type: 'settings_changed',
       key: CHALLENGE_SETTINGS_KEY,
+      actor: { id: actor.id, email: actor.email },
+      before,
+      after: parsed.data,
+    });
+    return parsed.data;
+  }
+
+  combatSettings(): { current: CombatSettings; defaults: CombatSettings } {
+    return { current: this.reader.combatSettings(), defaults: DEFAULT_COMBAT_SETTINGS };
+  }
+
+  /**
+   * Merges a partial change (top-level numbers, and per gun only the fields
+   * given) into the current values; the full result is validated. Applies
+   * in matches from their next round.
+   */
+  updateCombatSettings(changes: unknown, actor: AdminUser): CombatSettings {
+    const before = this.reader.combatSettings();
+    const given = (changes ?? {}) as Partial<CombatSettings> & {
+      weapons?: Record<string, object>;
+    };
+    if (typeof given !== 'object' || Array.isArray(given))
+      throw new HttpError(400, 'validation_failed', 'Combat settings must be an object');
+    const weapons: Record<string, unknown> = { ...before.weapons };
+    for (const [id, spec] of Object.entries(given.weapons ?? {})) {
+      if (!(id in DEFAULT_COMBAT_SETTINGS.weapons))
+        throw new HttpError(400, 'unknown_weapon', `Unknown gun "${id}"`);
+      weapons[id] = { ...before.weapons[id], ...spec };
+    }
+    const parsed = combatSettingsSchema.safeParse({ ...before, ...given, weapons });
+    if (!parsed.success) {
+      throw new HttpError(
+        400,
+        'validation_failed',
+        'Some settings are invalid',
+        parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      );
+    }
+    this.db
+      .prepare(
+        'INSERT INTO settings (key, value_json) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json',
+      )
+      .run(COMBAT_SETTINGS_KEY, JSON.stringify(parsed.data));
+    this.events.publish({
+      type: 'settings_changed',
+      key: COMBAT_SETTINGS_KEY,
       actor: { id: actor.id, email: actor.email },
       before,
       after: parsed.data,

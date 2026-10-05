@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ChallengeSettings, RewardTierEntry } from '@heist/shared';
+import type { ChallengeSettings, CombatSettings, RewardTierEntry } from '@heist/shared';
 import { api } from './client';
 
 export function useChallengeSettings() {
@@ -40,6 +40,30 @@ export function useSaveRewardMap() {
       api<{ rewards: RewardTierEntry[] }>('/config/reward-map', {
         method: 'PUT',
         body: { rewards },
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['config'] }),
+  });
+}
+
+export function useCombatSettings() {
+  return useQuery({
+    queryKey: ['config', 'combat'],
+    queryFn: async () =>
+      (
+        await api<{ combat: { current: CombatSettings; defaults: CombatSettings } }>(
+          '/config/combat',
+        )
+      ).combat,
+  });
+}
+
+export function useSaveCombatSettings() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (changes: Partial<CombatSettings>) =>
+      api<{ combat: CombatSettings }>('/config/combat', {
+        method: 'PUT',
+        body: { combat: changes },
       }),
     onSuccess: () => client.invalidateQueries({ queryKey: ['config'] }),
   });
