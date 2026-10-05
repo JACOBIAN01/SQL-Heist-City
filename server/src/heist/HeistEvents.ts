@@ -6,6 +6,8 @@ export type HeistEvent =
   | { readonly type: 'lock_opened'; readonly vault: Vault; readonly lock: number }
   | { readonly type: 'vault_opened'; readonly vault: Vault }
   | { readonly type: 'banked'; readonly player: Player; readonly amount: number }
+  /** A SQL task was answered correctly and its reward applied. */
+  | { readonly type: 'task_solved'; readonly player: Player; readonly rewardKey: string }
   | {
       readonly type: 'wanted';
       readonly player: Player;

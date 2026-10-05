@@ -24,6 +24,8 @@ export class FeedReporter {
 
   private itemFor(event: HeistEvent): FeedItem | undefined {
     switch (event.type) {
+      case 'task_solved':
+        return undefined; // what someone is working on is their business
       case 'lock_opened': {
         const { spec, lockCount } = event.vault;
         // The last lock is reported as the vault opening instead.

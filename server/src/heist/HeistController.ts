@@ -310,10 +310,11 @@ export class HeistController implements ArmsControl {
       .then((reply) => {
         if (reply.t === 'challenge_hint' && reply.result.ok && reply.result.hint.charged)
           this.chargeHint(player, reply.result.hint.cost, reply.result.hint.costMode);
-        if (reply.t === 'challenge_result' && reply.result.status === 'correct')
-          this.tasks
-            .find(reply.result.rewardKey)
-            ?.grant(player, reply.result.rewardKey, reply.result.target);
+        if (reply.t === 'challenge_result' && reply.result.status === 'correct') {
+          const { rewardKey, target } = reply.result;
+          this.tasks.find(rewardKey)?.grant(player, rewardKey, target);
+          this.events.publish({ type: 'task_solved', player, rewardKey });
+        }
         this.reply(player, reply);
       })
       .catch(() => this.reply(player, this.refuse(message.ref, 'unavailable')));

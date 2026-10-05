@@ -9,7 +9,7 @@ import {
 import { TokenBucket } from '../net/TokenBucket';
 import { upgradeRouterFor } from '../net/UpgradeRouter';
 import type { Match } from './Match';
-import type { PlayerConnection } from './Player';
+import type { Player, PlayerConnection } from './Player';
 
 export interface GameSocketOptions {
   readonly path?: string;
@@ -59,10 +59,38 @@ export function attachGameSocket(
     maxPayload: options.maxPayload ?? MAX_JSON_BYTES + 16,
   });
   upgradeRouterFor(http).route(options.path ?? '/ws/game', wss);
+
+  const serve = serveGameConnection(match, options);
+  wss.on('connection', (socket: WebSocket) => serve(socket));
+
+  return {
+    close: () =>
+      new Promise((resolve) => {
+        for (const client of wss.clients) client.terminate();
+        wss.close(() => resolve());
+      }),
+  };
+}
+
+/** What the owner of a connection may want to hear about it. */
+export interface ConnectionHooks {
+  /** The client joined: it is a player of the match now. */
+  onJoined?(player: Player): void;
+  /** The socket closed (after the player, if any, left the match). */
+  onClosed?(): void;
+}
+
+/**
+ * One client's conversation with a match: join first, then input, pings and
+ * JSON. Shared by the public match and the private tutorial rooms.
+ */
+export function serveGameConnection(
+  match: Match,
+  options: GameSocketOptions = {},
+): (socket: WebSocket, hooks?: ConnectionHooks) => void {
   const maxBuffered = options.maxBufferedBytes ?? 1_000_000;
   const rate = options.messagesPerSecond ?? 120;
-
-  wss.on('connection', (socket: WebSocket) => {
+  return (socket, hooks = {}) => {
     const connection = adapt(socket, maxBuffered);
     const bucket = new TokenBucket(rate, rate);
     let playerId: number | undefined;
@@ -97,6 +125,7 @@ export function attachGameSocket(
         }
         playerId = result.player.id;
         clearTimeout(joinTimer);
+        hooks.onJoined?.(result.player);
         return;
       }
 
@@ -122,16 +151,9 @@ export function attachGameSocket(
     socket.on('close', () => {
       clearTimeout(joinTimer);
       if (playerId !== undefined) match.leave(playerId);
+      hooks.onClosed?.();
     });
     socket.on('error', () => socket.terminate());
-  });
-
-  return {
-    close: () =>
-      new Promise((resolve) => {
-        for (const client of wss.clients) client.terminate();
-        wss.close(() => resolve());
-      }),
   };
 }
 

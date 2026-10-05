@@ -78,6 +78,8 @@ export interface MatchDeps {
   readonly vehicles?: VehicleSettings;
   /** SQL tasks; without it every task request is answered "unavailable". */
   readonly challenges?: ChallengeGateway;
+  /** Starts every player key (`p1`, `p2`…), so matches sharing one challenge system never share a key. */
+  readonly keyPrefix?: string;
   /** Seeds bullet spread so a match is reproducible in tests. */
   readonly seed?: string;
   readonly spawnPolicy?: SpawnPolicy;
@@ -311,7 +313,7 @@ export class Match implements MatchApi {
       };
     }
     const id = this.allocateId();
-    const key = `p${++this.joinCount}`;
+    const key = `${this.deps.keyPrefix ?? ''}p${++this.joinCount}`;
     const spawn = this.spawnPolicy.pick(
       this.deps.map,
       [...this.players.values()].map((p) => p.body),
