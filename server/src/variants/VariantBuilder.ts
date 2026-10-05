@@ -1,4 +1,4 @@
-import { SeededRng, type QuestionTemplate } from '@heist/shared';
+import { SeededRng, type QuestionTemplate, type Rng } from '@heist/shared';
 import type { DatasetRegistry } from './datasets';
 import { generateTables, type GeneratedTables } from './dataGenerators';
 import { resolveParams, type ResolvedParams } from './params';
@@ -31,8 +31,38 @@ export class VariantBuilder {
 
   build(template: QuestionTemplate, seed: string): Variant {
     const rng = new SeededRng(seed);
+    return this.assemble(template, seed, rng, rng.fork('data'), Number.POSITIVE_INFINITY);
+  }
+
+  /**
+   * The same question for the same player (same parameters: same filter, same
+   * threshold) on different, smaller data: what the task's worked example is
+   * computed on. Its answer is not the real answer, so it can be shown.
+   */
+  buildExample(
+    template: QuestionTemplate,
+    seed: string,
+    dataSeed: string,
+    maxRows: number,
+  ): Variant {
+    return this.assemble(
+      template,
+      seed,
+      new SeededRng(seed),
+      new SeededRng(dataSeed).fork('data'),
+      maxRows,
+    );
+  }
+
+  private assemble(
+    template: QuestionTemplate,
+    seed: string,
+    rng: Rng,
+    dataRng: Rng,
+    maxRows: number,
+  ): Variant {
     const params = resolveParams(template.params, rng.fork('params'), this.datasets);
-    const tables = generateTables(template.data_gen, rng.fork('data'), this.datasets);
+    const tables = generateTables(template.data_gen, dataRng, this.datasets, maxRows);
     return {
       slug: template.slug,
       seed,

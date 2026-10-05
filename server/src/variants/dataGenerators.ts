@@ -129,13 +129,16 @@ export function generateTables(
   dataGen: Readonly<Record<string, TableSpec>>,
   rng: Rng,
   datasets: DatasetRegistry,
+  /** Caps every table at this many rows (the small example data shown with a task). */
+  maxRows = Number.POSITIVE_INFINITY,
 ): GeneratedTables {
   const tables = new Map<string, GeneratedTable>();
   for (const [table, spec] of Object.entries(dataGen)) {
     const tableRng = rng.fork(`table:${table}`);
-    const rowCount = Array.isArray(spec.rows)
-      ? tableRng.fork('rows').int(spec.rows[0], spec.rows[1])
-      : spec.rows;
+    const rowCount = Math.min(
+      maxRows,
+      Array.isArray(spec.rows) ? tableRng.fork('rows').int(spec.rows[0], spec.rows[1]) : spec.rows,
+    );
     const columns = Object.keys(spec.columns);
     const generators = Object.entries(spec.columns).map(([column, colSpec]) =>
       createColumnGenerator(colSpec, { rng: tableRng.fork(`col:${column}`), datasets, tables }),

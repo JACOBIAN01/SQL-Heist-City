@@ -23,6 +23,15 @@ export const challengeSettingsSchema = z.object({
   hintCostMode: z.enum(['fraction', 'absolute']).default('fraction'),
   /** Rows per table shown to the student as samples. */
   sampleRows: z.number().int().min(0).max(20).default(3),
+  /**
+   * The worked example ("expected output") is computed on separate small data:
+   * this many rows per table at first, more on each of `exampleTries` tries,
+   * then full-size data, until the answer has rows.
+   */
+  exampleRows: z.number().int().min(1).max(50).default(6),
+  exampleTries: z.number().int().min(0).max(10).default(3),
+  /** Rows of each example table and of its output shown to the student. */
+  exampleShownRows: z.number().int().min(1).max(50).default(10),
 });
 
 export type ChallengeSettings = z.infer<typeof challengeSettingsSchema>;

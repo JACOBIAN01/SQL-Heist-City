@@ -72,6 +72,17 @@ describe('ChallengeService.issue', () => {
     expect(serialized).not.toContain('reference');
   });
 
+  it('shows the expected output: its columns and a worked example on other data', async () => {
+    const c = await issue();
+    expect(c.columnsMatter).toBe(false);
+    expect(c.orderMatters).toBe(false);
+    expect(c.example?.output.columns).toEqual(['name']);
+    expect(c.example?.output.rows.length).toBeGreaterThan(0);
+    expect(c.example?.tables[0]?.name).toBe('employees');
+    // The example's rows are not the real table's rows.
+    expect(c.example?.tables[0]?.sampleRows.slice(0, 3)).not.toEqual(c.tables[0]?.sampleRows);
+  });
+
   it('gives different players different variants of the same question', async () => {
     const a = await issue('p1');
     const b = await issue('p2');

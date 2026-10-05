@@ -3,6 +3,7 @@ import {
   type HintReveal,
   type PublicChallenge,
   type PublicTable,
+  type WorkedExampleView,
 } from '@heist/shared';
 import { clear, h } from '../dom';
 import { dataTable } from './DataTable';
@@ -22,6 +23,7 @@ export class ProblemPane {
       story(challenge.story),
       h('h2', { class: 'sqlp-h2', text: challenge.tables.length === 1 ? 'Table' : 'Tables' }),
       ...challenge.tables.map(tableCard),
+      ...expectedOutput(challenge),
       h(
         'details',
         { class: 'sqlp-schema' },
@@ -94,5 +96,56 @@ function tableCard(table: PublicTable): HTMLElement {
     ),
     dataTable(table.columns, table.sampleRows),
     more > 0 ? h('p', { class: 'sqlp-muted', text: `…and ${more} more rows` }) : null,
+  );
+}
+
+/** What the answer must look like, in words. */
+export function answerRules(challenge: PublicChallenge): string {
+  const columns = challenge.columnsMatter
+    ? 'Use exactly these column names, in this order.'
+    : "Return these columns in this order; their names don't have to match.";
+  const rows = challenge.orderMatters
+    ? 'Rows must come in this order.'
+    : 'Rows can come in any order.';
+  return `${columns} ${rows}`;
+}
+
+/**
+ * The expected output: its columns, then a worked example (the same task on
+ * made-up rows, never the player's real tables) showing input and output.
+ */
+function expectedOutput(challenge: PublicChallenge): HTMLElement[] {
+  const example = challenge.example;
+  if (!example) return [];
+  return [
+    h('h2', { class: 'sqlp-h2', text: 'Expected output' }),
+    h('p', { class: 'sqlp-muted sqlp-rules', text: answerRules(challenge) }),
+    h('div', { class: 'sqlp-card sqlp-output-shape' }, dataTable(example.output.columns, [])),
+    workedExample(example),
+  ];
+}
+
+function workedExample(example: WorkedExampleView): HTMLElement {
+  const { output } = example;
+  const more = output.rowCount - output.rows.length;
+  return h(
+    'details',
+    { class: 'sqlp-example', attrs: { open: '' } },
+    h('summary', { text: 'Example' }),
+    h('p', {
+      class: 'sqlp-muted',
+      text: 'Made-up example rows (not your tables). On these rows, the right query returns the output below.',
+    }),
+    h('div', { class: 'sqlp-example-label', text: 'Input' }),
+    ...example.tables.map(tableCard),
+    h('div', { class: 'sqlp-example-label', text: 'Output' }),
+    h(
+      'div',
+      { class: 'sqlp-card' },
+      output.rowCount === 0
+        ? h('p', { class: 'sqlp-muted', text: '(no rows)' })
+        : dataTable(output.columns, output.rows),
+      more > 0 ? h('p', { class: 'sqlp-muted', text: `…and ${more} more rows` }) : null,
+    ),
   );
 }

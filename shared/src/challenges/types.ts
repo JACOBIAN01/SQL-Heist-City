@@ -1,6 +1,7 @@
 /**
  * What a player's client may see about a challenge. Deliberately has no
- * reference SQL and no expected result (rules.md §2.5).
+ * reference SQL and no expected result (rules.md §2.5); the worked example
+ * is computed on separate data.
  */
 export type SqlCell = string | number | null;
 
@@ -9,6 +10,20 @@ export interface PublicTable {
   readonly columns: readonly string[];
   readonly sampleRows: readonly (readonly SqlCell[])[];
   readonly rowCount: number;
+}
+
+/**
+ * A worked example, LeetCode style: the player's own question (same
+ * parameters) run on separate example data, never on the real tables, so the
+ * output shows the shape of the answer without being the answer.
+ */
+export interface WorkedExampleView {
+  readonly tables: readonly PublicTable[];
+  readonly output: {
+    readonly columns: readonly string[];
+    readonly rows: readonly (readonly SqlCell[])[];
+    readonly rowCount: number;
+  };
 }
 
 export interface PublicChallenge {
@@ -20,6 +35,12 @@ export interface PublicChallenge {
   readonly story: string;
   readonly schemaSql: string;
   readonly tables: readonly PublicTable[];
+  /** Expected output: its columns and an example (absent only if the example could not be built). */
+  readonly example?: WorkedExampleView;
+  /** Whether the answer's column names must match (otherwise only their order does). */
+  readonly columnsMatter: boolean;
+  /** Whether the rows must come in a particular order. */
+  readonly orderMatters: boolean;
   /** Cost of each hint, in order (as authored; see hintCostMode). Hint text is only sent when revealed. */
   readonly hintCosts: readonly number[];
   readonly hintCostMode: 'fraction' | 'absolute';

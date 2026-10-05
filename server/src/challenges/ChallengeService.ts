@@ -9,6 +9,7 @@ import {
   type RunResult,
   type SubmitResult,
   type TierRange,
+  type WorkedExampleView,
 } from '@heist/shared';
 import type { SettingsReader } from '../config/SettingsReader';
 import type { Grader } from '../sql/Grader';
@@ -16,6 +17,7 @@ import { ReferenceQueryError } from '../sql/Grader';
 import type { QueryResult } from '../sql/SqlSandbox';
 import type { Variant, VariantBuilder } from '../variants/VariantBuilder';
 import type { QuestionSelector } from './QuestionSelector';
+import { ExampleBuilder, type WorkedExample } from './ExampleBuilder';
 
 export interface ChallengeRequest {
   readonly player: string;
@@ -52,6 +54,8 @@ interface ActiveChallenge {
   readonly questionVersion: number;
   readonly variant: Variant;
   readonly expected: QueryResult;
+  /** The worked example shown with the task (separate data; safe to show). */
+  readonly example: WorkedExample | undefined;
   readonly expiresAt: number;
   /** Hints of the question version this challenge was issued from. */
   readonly hints: readonly Hint[];
@@ -79,10 +83,12 @@ export class ChallengeService {
   private readonly lastRequestAt = new Map<string, number>();
   private readonly now: () => number;
   private readonly newId: () => string;
+  private readonly examples: ExampleBuilder;
 
   constructor(private readonly deps: ChallengeServiceDeps) {
     this.now = deps.now ?? Date.now;
     this.newId = deps.newId ?? randomUUID;
+    this.examples = new ExampleBuilder(deps.variants, deps.grader);
   }
 
   async issue(request: ChallengeRequest): Promise<IssueResult> {
@@ -129,6 +135,10 @@ export class ChallengeService {
         continue;
       }
 
+      const example = await this.examples.build(question.template, seed, {
+        rows: settings.exampleRows,
+        tries: settings.exampleTries,
+      });
       const challenge: ActiveChallenge = {
         id: this.newId(),
         player: request.player,
@@ -138,6 +148,7 @@ export class ChallengeService {
         questionVersion: question.version,
         variant,
         expected,
+        example,
         expiresAt: now + settings.ttlSec * 1000,
         hints: question.template.hints,
         hintCostMode: settings.hintCostMode,
@@ -150,7 +161,7 @@ export class ChallengeService {
       this.byPlayer.set(request.player, challenge);
       return {
         ok: true,
-        challenge: toPublic(challenge, settings.sampleRows),
+        challenge: toPublic(challenge, settings.sampleRows, settings.exampleShownRows),
       };
     }
     return { ok: false, reason: 'unavailable' };
@@ -267,7 +278,7 @@ export class ChallengeService {
   }
 }
 
-function toPublic(c: ActiveChallenge, sampleRows: number): PublicChallenge {
+function toPublic(c: ActiveChallenge, sampleRows: number, shownRows: number): PublicChallenge {
   return {
     id: c.id,
     rewardKey: c.rewardKey,
@@ -281,8 +292,28 @@ function toPublic(c: ActiveChallenge, sampleRows: number): PublicChallenge {
       sampleRows: table.rows.slice(0, sampleRows),
       rowCount: table.rows.length,
     })),
+    ...(c.example ? { example: toExampleView(c.example, shownRows) } : {}),
+    columnsMatter: c.variant.compare.names,
+    orderMatters: c.variant.orderMatters,
     hintCosts: c.hints.map((h) => h.cost),
     hintCostMode: c.hintCostMode,
     expiresAt: c.expiresAt,
+  };
+}
+
+/** The example as the client sees it: the first rows of each table and of the output. */
+function toExampleView(e: WorkedExample, shownRows: number): WorkedExampleView {
+  return {
+    tables: [...e.tables].map(([name, table]) => ({
+      name,
+      columns: table.columns,
+      sampleRows: table.rows.slice(0, shownRows),
+      rowCount: table.rows.length,
+    })),
+    output: {
+      columns: e.output.columns,
+      rows: e.output.rows.slice(0, shownRows),
+      rowCount: e.output.rows.length,
+    },
   };
 }

@@ -20,6 +20,22 @@ const challenge: PublicChallenge = {
       rowCount: 40,
     },
   ],
+  example: {
+    tables: [
+      {
+        name: 'employees',
+        columns: ['id', 'name', 'boss'],
+        sampleRows: [
+          [1, 'Zoe', null],
+          [2, 'Yan', 1],
+        ],
+        rowCount: 2,
+      },
+    ],
+    output: { columns: ['name'], rows: [['Yan']], rowCount: 12 },
+  },
+  columnsMatter: false,
+  orderMatters: false,
   hintCosts: [0.05, 0.1],
   hintCostMode: 'fraction',
   expiresAt: 0,
@@ -43,9 +59,10 @@ describe('ProblemPane', () => {
 
   it('shows each table with columns, sample rows, NULLs and the hidden row count', () => {
     pane.show(challenge);
-    const headers = [...host.querySelectorAll('th')].map((t) => t.textContent);
+    const card = host.querySelector('.sqlp-card') as HTMLElement;
+    const headers = [...card.querySelectorAll('th')].map((t) => t.textContent);
     expect(headers).toEqual(['id', 'name', 'boss']);
-    const rows = [...host.querySelectorAll('tbody tr')].map((r) =>
+    const rows = [...card.querySelectorAll('tbody tr')].map((r) =>
       [...r.querySelectorAll('td')].map((c) => c.textContent),
     );
     expect(rows).toEqual([
@@ -54,6 +71,35 @@ describe('ProblemPane', () => {
     ]);
     expect(host.querySelector('.sqlp-card')?.textContent).toContain('40 rows');
     expect(host.textContent).toContain('…and 38 more rows');
+  });
+
+  it('shows the expected output: the columns, the rules, and a worked example', () => {
+    pane.show(challenge);
+    const shape = host.querySelector('.sqlp-output-shape') as HTMLElement;
+    expect([...shape.querySelectorAll('th')].map((t) => t.textContent)).toEqual(['name']);
+    expect(host.querySelector('.sqlp-rules')?.textContent).toBe(
+      "Return these columns in this order; their names don't have to match. Rows can come in any order.",
+    );
+    const example = host.querySelector('.sqlp-example') as HTMLDetailsElement;
+    expect(example.open).toBe(true);
+    expect(example.textContent).toContain('Zoe');
+    const cards = example.querySelectorAll('.sqlp-card');
+    expect(cards[cards.length - 1]?.textContent).toContain('Yan');
+    expect(example.textContent).toContain('…and 11 more rows');
+  });
+
+  it('says when names and order matter', () => {
+    pane.show({ ...challenge, columnsMatter: true, orderMatters: true });
+    expect(host.querySelector('.sqlp-rules')?.textContent).toBe(
+      'Use exactly these column names, in this order. Rows must come in this order.',
+    );
+  });
+
+  it('leaves the section out when there is no example', () => {
+    const { example: _example, ...without } = challenge;
+    pane.show(without);
+    expect(host.querySelector('.sqlp-example')).toBeNull();
+    expect(host.textContent).not.toContain('Expected output');
   });
 
   it('offers the CREATE TABLE text on demand', () => {

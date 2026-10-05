@@ -53,6 +53,16 @@ export interface SeedPreview {
     readonly columns: readonly string[];
     readonly rows: readonly (readonly (string | number | null)[])[];
   };
+  /** The worked example players see with this seed (separate data; see ExampleBuilder). */
+  readonly example?: {
+    readonly tables: readonly PreviewTable[];
+    readonly output: {
+      readonly columns: readonly string[];
+      readonly rows: readonly (readonly (string | number | null)[])[];
+    };
+    /** False when no example data produced any rows. */
+    readonly found: boolean;
+  };
   readonly runtimeMs: number;
   readonly issues: readonly PreviewIssue[];
   readonly error?: string;

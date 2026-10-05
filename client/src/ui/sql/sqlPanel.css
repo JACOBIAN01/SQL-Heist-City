@@ -283,6 +283,29 @@
   font-size: 12px;
 }
 
+/* Expected output */
+.sqlp-rules {
+  margin-top: 0;
+}
+.sqlp-output-shape .sqlp-table tbody {
+  display: none;
+}
+.sqlp-example {
+  margin-top: 8px;
+}
+.sqlp-example > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.sqlp-example-label {
+  margin: 8px 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sqlp-muted);
+}
+
 /* Editor */
 .sqlp-editor {
   border: 1px solid var(--sqlp-border);
