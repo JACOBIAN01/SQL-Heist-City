@@ -225,7 +225,7 @@ The bank is the most important place in the game: realistic interiors and a real
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 11.1 | Interior kit pipeline (`tools/city/build-interior.mjs` → `client/public/interior/`) | ~40 pieces built and previewed in `kit.html?set=interior`; size budget checked | ✅ 64 pieces, 26k triangles, 415 KB, life size, one material with night-glowing lamps; `InteriorKit` loader (tools/city/README.md "Interior furniture") |
-| 11.2 | Furniture in the bank layout (piece, storey, x, z, yaw, solid) | solid pieces compile to colliders; every bank route/anchor test still passes | ⬜ |
+| 11.2 | Furniture in the bank layout (piece, storey, x, z, yaw, solid) | solid pieces compile to colliders; every bank route/anchor test still passes | ✅ `furniture` in `BankLayout`, `placeFurniture`, `furniture` colliders, clearance tests, client art from the same placements; a first waiting area in Bank 1 (backend.md "Furniture") |
 | 11.3 | Interior shell & materials (Bank 1) | marble lobby, wood/carpet offices, steel vault, door frames, skirting, ceiling lights; no grey boxes | ⬜ |
 | 11.4 | The vault (Bank 1) | round steel door (bolts, hinge, wheel) swings open on the last lock; deposit-box walls, cash carts, keypad console, alarm light | ⬜ |
 | 11.5 | Lobby & teller hall (Bank 1) | glass-screened teller counter, queue stanchions, waiting area, columns, chandeliers, security room | ⬜ |
