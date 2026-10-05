@@ -1,7 +1,7 @@
 import type { BankLayout } from './BankLayout';
 
 /**
- * Bank 2 "Harbor Trust": a 26 × 22 m, four-storey tier-2 bank. One storey
+ * Bank 2 "City Trust": a 26 × 22 m, four-storey tier-2 bank. One storey
  * taller than Bank 1, so the climb to the vault is longer and more exposed.
  * Different from Bank 1 inside: a split teller counter with two stone
  * pillars in the lobby (cover for a fight at the door), offices behind a
@@ -10,7 +10,7 @@ import type { BankLayout } from './BankLayout';
  */
 export const BANK_2: BankLayout = {
   id: 'bank-2',
-  name: 'Harbor Trust',
+  name: 'City Trust',
   tier: 2,
   width: 26,
   depth: 22,

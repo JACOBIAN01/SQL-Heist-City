@@ -144,6 +144,8 @@ Preview: `kit.html?city&lod` shows the city as streamed from its centre, with fo
 - **Lit windows:** at night the fake-interior window layers of the lit offices glow. The kit shader adds `uNightGlow` × texture as emission for the layers in `uLitLayers`; the dark-office layer stays dark.
 - **Cost:** the game re-applies the sky only when the hour has moved by 0.005 h (about 10 s of a 30-minute day).
 
+`?at=x,z[,y[,yaw]]` starts the player at a spot (offline, with `?server=1`; a live server puts you back) to look at a place.
+
 `?hour=22` pins the time of day in the game (and in `kit.html`) for screenshots. Overriding `dayMinutes` from the admin is deferred: the client would need to receive it, like the city seed.
 
 ## Post-processing (Phase 8.6)

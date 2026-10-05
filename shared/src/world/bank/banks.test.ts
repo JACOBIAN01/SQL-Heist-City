@@ -113,7 +113,7 @@ describe.each([...BANK_LAYOUTS.values()].map((b) => [b.name, b] as const))(
   },
 );
 
-describe('Bank 2 "Harbor Trust"', () => {
+describe('Bank 2 "City Trust"', () => {
   const map = lone(BANK_2);
   const outside = () => createBody(0, 0, 18);
   // In by the front door, round the pillars and the counter, to the foot of the stairs.

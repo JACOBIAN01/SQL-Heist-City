@@ -175,7 +175,7 @@ Goal: movement and combat feel good with 2+ real players.
 | 7.12 | Scoreboard + round timer + win condition | round ends with winner | ✅ |
 
 ---
-## Phase 8 — City, vehicles, atmosphere  🟨 (all subphases done; awaiting approval)
+## Phase 8 — City, vehicles, atmosphere  ✅
 Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 
 | # | Subphase | Done when | Status |
@@ -193,10 +193,10 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 8.11 | Perf pass | 60 fps, <8 MB load | ✅ 2.9 MB load (CI-enforced), ~250k tris / 55 calls in the city, 100 players 1.4 ms a tick (frontend.md "Perf pass"); fps on a real integrated GPU still to confirm by hand |
 
 ---
-## Phase 9 — Banks 2–5, weapons, UX  ⬜
+## Phase 9 — Banks 2–5, weapons, UX  🟨
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 9.1 | Bank 2 (new layout, same kit pieces and grammar) | playable | ⬜ |
+| 9.1 | Bank 2 (new layout, same kit pieces and grammar) | playable | ✅ "City Trust", 4 storeys, on the tier-2 city site (backend.md "Bank layouts") |
 | 9.2 | Bank 3 | playable | ⬜ |
 | 9.3 | Bank 4 | playable | ⬜ |
 | 9.4 | Bank 5 | playable | ⬜ |
