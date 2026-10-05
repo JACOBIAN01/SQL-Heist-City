@@ -187,3 +187,14 @@ Budgets: < 200 draw calls, < 400k triangles, 60 fps on an integrated GPU.
 - **Finding the fat:** `?perf` adds `__budget()` to the console: triangles in view per top-level part of the scene and how many of them cast shadows (`sceneBudget`).
 
 Not measured here: real frame rates on an integrated GPU. Check on the target laptop with the overlay (fps, worst frame, calls, triangles, quality rung).
+
+## Minimap (Phase 9.6)
+`ui/minimap/`: a 180 px round minimap bottom-left, above the health bar, showing 110 m around you.
+- **Turning:** it rotates with the camera, so you stay at the centre facing up (when driving, it follows the chase camera). An `N` on the rim marks north.
+- **Plan:** drawn once at load from the map's colliders (`drawStreetPlan`): streets, sidewalks (kerb boxes) and the footprints of everything at street level taller than 1.2 m. It works for the city and the test maps alike. Each frame the plan is turned and scaled into the circle with one `drawImage`.
+- **Markers** (`markersFor`, pure):
+  - **Banks:** every bank is its tier number in a dark disc. A gold ring fills as its vault's locks open, and the disc turns gold when the vault is open. While its alarm rings (18 s after a lock is cracked, `VaultAlerts`) a red ring pulses around it: the bait that draws players to a heist in progress.
+  - **Safehouses:** green `S` squares.
+  - **Loose cash bags:** yellow dots.
+- **Out of range:** banks and safehouses sit on the rim in their direction (`pinToRim`); bags beyond the edge are not shown.
+- **Cost:** redrawn at most every 33 ms; a handful of canvas calls.
