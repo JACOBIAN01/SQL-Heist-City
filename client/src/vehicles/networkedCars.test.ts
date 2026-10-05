@@ -4,7 +4,9 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { Scene } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import {
+  DEFAULT_MOVEMENT_SETTINGS,
   DEFAULT_VEHICLE_SETTINGS,
+  idleCommand,
   SIM_DT,
   VEHICLE_KINDS,
   createVehicle,
@@ -15,6 +17,7 @@ import {
   type JsonClientMessage,
   type VehicleWire,
 } from '@heist/shared';
+import { LocalPlayer } from '../game/LocalPlayer';
 import { carAssetsFrom, type CarAssets } from './carAssets';
 import { PredictedVehicle } from './PredictedVehicle';
 import { MODELS_FOR, modelFor, RemoteVehicles } from './RemoteVehicles';
@@ -53,6 +56,18 @@ describe('modelFor', () => {
 });
 
 describe('RemoteVehicles', () => {
+  it('makes the cars it knows solid for the local player', () => {
+    const v = new RemoteVehicles(new Scene(), DEFAULT_VEHICLE_SETTINGS);
+    const player = new LocalPlayer(open, DEFAULT_MOVEMENT_SETTINGS, { x: 4, z: 0, yaw: 0 });
+    player.cars = v.footprints();
+    v.onSnapshot(0, [wire()], []); // after wiring: the view is live
+    for (let i = 0; i < 120; i++) player.apply({ ...idleCommand(i, Math.PI / 2), moveY: 127 });
+    expect(player.body.x).toBeGreaterThan(0.9); // stopped at the side of the car
+    v.onSnapshot(50, [], [1]);
+    for (let i = 0; i < 120; i++) player.apply({ ...idleCommand(i, Math.PI / 2), moveY: 127 });
+    expect(player.body.x).toBeLessThan(-3); // gone: walks straight through
+  });
+
   it('adds a model per car once the models have loaded, and removes cars that left', () => {
     const scene = new Scene();
     const v = new RemoteVehicles(scene, DEFAULT_VEHICLE_SETTINGS);

@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   Button,
   DEFAULT_MATCH_SETTINGS,
+  DEFAULT_MOVEMENT_SETTINGS,
+  DEFAULT_VEHICLE_SETTINGS,
   PROTOCOL_VERSION,
   box,
   type GameMap,
@@ -78,6 +80,17 @@ describe('Match: cars in snapshots', () => {
     const last = connection.of('snapshot').at(-1);
     expect(last?.vehiclesRemoved).toEqual([1]);
     expect(last?.vehicles.map((v) => v.id)).toEqual([2]);
+  });
+});
+
+describe('Match: cars are solid', () => {
+  it('stops a player walking into a parked car', () => {
+    const { join, input } = setup();
+    const { player } = join('Ana'); // spawns at x 3, beside the sedan
+    for (let i = 0; i < 40; i++) input(player, { moveY: 127, yaw: Math.PI / 2 }); // toward −x
+    expect(player.body.x).toBeGreaterThanOrEqual(
+      DEFAULT_VEHICLE_SETTINGS.kinds.sedan.width / 2 + DEFAULT_MOVEMENT_SETTINGS.radius - 1e-6,
+    );
   });
 });
 

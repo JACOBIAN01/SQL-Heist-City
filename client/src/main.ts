@@ -173,6 +173,7 @@ const createRig: CharacterFactory = assets
 const remotes = new RemotePlayers(scene, createRig);
 // Cars: the server owns them; this draws them, and predicts the one you drive.
 const vehicles = new RemoteVehicles(scene, DEFAULT_VEHICLE_SETTINGS);
+player.cars = vehicles.footprints();
 let myCar: PredictedVehicle | undefined;
 let carAssets: CarAssets | undefined;
 /** What movement collides with right now (vault doors change it); the driven car uses it too. */

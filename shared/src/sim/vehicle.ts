@@ -1,7 +1,9 @@
+import type { MovementSettings } from '../config/movement';
 import type { VehicleSpec } from '../config/vehicles';
 import { colliderGridFor } from '../world/ColliderGrid';
 import type { Aabb, GameMap } from '../world/map';
 import { Button, hasButton, type InputCommand } from './input';
+import { bodyHeight, type BodyState } from './movement';
 
 /** A car on the ground. Plain data, so it can be copied, replayed and sent. */
 export interface VehicleState {
@@ -183,6 +185,113 @@ export function distanceToCar(car: VehicleState, spec: VehicleSpec, x: number, z
   const ox = Math.max(0, Math.abs(along) - spec.length / 2);
   const oz = Math.max(0, Math.abs(across) - spec.width / 2);
   return Math.hypot(ox, oz);
+}
+
+/** A car as something to bump into: where it stands and how big it is. */
+export interface CarFootprint {
+  readonly state: VehicleState;
+  readonly spec: VehicleSpec;
+}
+
+/** Bodies standing this high or higher (an upper floor) are above every car. */
+const BODY_ABOVE_CARS = VEHICLE_ROOF;
+const BODY_GAP = 1e-4;
+const bodyNear: Aabb[] = [];
+
+/**
+ * Pushes a body (a circle of `radius` on the ground plane) out of every car
+ * footprint it overlaps, after its movement step: cars are solid, but they
+ * move, so they cannot live in the static collision map. A push that would
+ * shove the body into a wall is skipped (the car scrapes past instead), so a
+ * body is never wedged inside the map. Shared by server and client
+ * prediction, like stepBody. Returns whether the body moved.
+ */
+export function pushBodyOutOfCars(
+  body: BodyState,
+  cfg: MovementSettings,
+  cars: Iterable<CarFootprint>,
+  map: GameMap,
+): boolean {
+  if (body.y >= BODY_ABOVE_CARS) return false;
+  const radius = cfg.radius;
+  const height = bodyHeight(body, cfg);
+  let moved = false;
+  for (const { state: car, spec } of cars) {
+    const reach = (spec.length + spec.width) / 2 + radius;
+    if (Math.abs(car.x - body.x) > reach || Math.abs(car.z - body.z) > reach) continue;
+    const fx = -Math.sin(car.yaw);
+    const fz = -Math.cos(car.yaw);
+    const dx = body.x - car.x;
+    const dz = body.z - car.z;
+    // Into the car's frame: along its forward and its right (−fz, fx).
+    const along = dx * fx + dz * fz;
+    const across = dx * -fz + dz * fx;
+    const hl = spec.length / 2;
+    const hw = spec.width / 2;
+    const ca = Math.max(-hl, Math.min(hl, along));
+    const cc = Math.max(-hw, Math.min(hw, across));
+    let na = along - ca;
+    let nc = across - cc;
+    const d = Math.hypot(na, nc);
+    if (d >= radius) continue;
+    let push: number;
+    if (d > 1e-9) {
+      na /= d;
+      nc /= d;
+      push = radius - d + BODY_GAP;
+    } else {
+      // The centre is inside the footprint: leave by the nearest side.
+      const outA = hl - Math.abs(along);
+      const outC = hw - Math.abs(across);
+      if (outA < outC) [na, nc, push] = [Math.sign(along) || 1, 0, outA + radius + BODY_GAP];
+      else [na, nc, push] = [0, Math.sign(across) || 1, outC + radius + BODY_GAP];
+    }
+    // Back to world axes.
+    const wx = (na * fx - nc * fz) * push;
+    const wz = (na * fz + nc * fx) * push;
+    if (blockedByMap(map, body.x + wx, body.y, body.z + wz, radius, height, cfg.stepHeight))
+      continue;
+    body.x += wx;
+    body.z += wz;
+    // Lose the speed that was driving into the car.
+    const nx = wx / push;
+    const nz = wz / push;
+    const into = body.vx * nx + body.vz * nz;
+    if (into < 0) {
+      body.vx -= into * nx;
+      body.vz -= into * nz;
+    }
+    moved = true;
+  }
+  return moved;
+}
+
+function blockedByMap(
+  map: GameMap,
+  x: number,
+  y: number,
+  z: number,
+  r: number,
+  h: number,
+  /** Ledges this low (a kerb) do not block: the next movement step climbs them. */
+  stepHeight: number,
+): boolean {
+  const n = colliderGridFor(map).query(x - r, z - r, x + r, z + r, bodyNear);
+  for (let i = 0; i < n; i++) {
+    const b = bodyNear[i] as Aabb;
+    if (
+      b.maxY - y > stepHeight &&
+      x - r < b.maxX &&
+      x + r > b.minX &&
+      y < b.maxY &&
+      y + h > b.minY &&
+      z - r < b.maxZ &&
+      z + r > b.minZ
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /** How far from the car's side a driver steps out, m. */

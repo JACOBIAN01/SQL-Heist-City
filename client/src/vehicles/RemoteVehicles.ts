@@ -1,6 +1,7 @@
 import type { Scene } from 'three';
 import {
   distanceToCar,
+  type CarFootprint,
   type VehicleKind,
   type VehicleSettings,
   type VehicleWire,
@@ -46,6 +47,7 @@ const lerpAngle = (a: number, b: number, t: number) =>
  */
 export class RemoteVehicles {
   private readonly cars = new Map<number, Tracked>();
+  private readonly solid = new Map<number, CarFootprint>();
   private assets: CarAssets | undefined;
   /** The car the local player drives (drawn by prediction, not here). */
   ownId = 0;
@@ -78,6 +80,7 @@ export class RemoteVehicles {
         this.ensureModel(tracked);
       }
       tracked.latest = car;
+      this.solid.set(car.id, { state: car, spec: this.settings.kinds[car.kind] });
       tracked.samples.push({ t: serverTimeMs, car });
       if (tracked.samples.length > MAX_SAMPLES) tracked.samples.shift();
     }
@@ -85,6 +88,7 @@ export class RemoteVehicles {
       const tracked = this.cars.get(id);
       if (tracked?.model) this.scene.remove(tracked.model.object);
       this.cars.delete(id);
+      this.solid.delete(id);
     }
   }
 
@@ -95,6 +99,16 @@ export class RemoteVehicles {
 
   modelOf(id: number): CarModel | undefined {
     return this.cars.get(id)?.model;
+  }
+
+  /**
+   * Every car as the server last placed it, for the local player to bump into.
+   * The newest state, not the drawn (past) one: the server collides against
+   * where cars are now, and prediction should agree with it.
+   */
+  footprints(): Iterable<CarFootprint> {
+    // A live view: each walk sees the cars as they are then.
+    return { [Symbol.iterator]: () => this.solid.values() };
   }
 
   /** Players at the wheel of a car: their bodies are hidden inside it. */

@@ -21,6 +21,7 @@ import {
   hasButton,
   resolveShotInto,
   stepBody,
+  pushBodyOutOfCars,
   type CombatSettings,
   type EntityState,
   type GameEvent,
@@ -420,6 +421,7 @@ export class Match implements MatchApi {
         continue;
       }
       stepBody(player.body, command, SIM_DT, this.collisionMap, this.movement, player.speedScale);
+      pushBodyOutOfCars(player.body, this.movement, this.vehicles.all(), this.collisionMap);
       player.yaw = command.yaw;
       player.pitch = command.pitch;
       player.lastAppliedSeq = command.seq;

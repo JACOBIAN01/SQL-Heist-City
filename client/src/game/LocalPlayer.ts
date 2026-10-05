@@ -2,8 +2,10 @@ import {
   SIM_DT,
   copyBody,
   createBody,
+  pushBodyOutOfCars,
   stepBody,
   type BodyState,
+  type CarFootprint,
   type GameMap,
   type InputCommand,
   type MovementSettings,
@@ -20,6 +22,8 @@ export class LocalPlayer {
   private readonly previous: BodyState;
   /** Top-speed multiplier the server told us (cash carried slows you). */
   speedScale = 1;
+  /** Cars to bump into (they move, so they are not in the collision map). */
+  cars: Iterable<CarFootprint> = [];
 
   constructor(
     private map: GameMap,
@@ -38,6 +42,7 @@ export class LocalPlayer {
   apply(command: InputCommand): void {
     copyBody(this.body, this.previous);
     stepBody(this.body, command, SIM_DT, this.map, this.settings, this.speedScale);
+    pushBodyOutOfCars(this.body, this.settings, this.cars, this.map);
   }
 
   /** Where to draw, `alpha` (0..1) of the way from the last tick to this one. */

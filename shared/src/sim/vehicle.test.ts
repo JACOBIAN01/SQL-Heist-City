@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_VEHICLE_SETTINGS, vehicleSettingsSchema } from '../config/vehicles';
 import { box, type GameMap } from '../world/map';
 import { mapById } from '../world/maps';
+import { DEFAULT_MOVEMENT_SETTINGS } from '../config/movement';
 import { Button, SIM_DT } from './input';
+import { createBody, idleCommand, stepBody } from './movement';
 import {
   collideCars,
   controlsOf,
   createVehicle,
   distanceToCar,
   exitSpots,
+  pushBodyOutOfCars,
   stepVehicle,
   type DriveControls,
 } from './vehicle';
@@ -207,5 +210,50 @@ describe('collideCars', () => {
     const b = createVehicle(3, 0, 0); // side by side with a gap
     expect(collideCars(a, sedan, b, sedan)).toBe(false);
     expect(a.x).toBe(0);
+  });
+});
+
+describe('pushBodyOutOfCars', () => {
+  const cfg = DEFAULT_MOVEMENT_SETTINGS;
+  const parked = { state: createVehicle(0, 0, 0), spec: sedan }; // faces −z
+  const walk = (body: ReturnType<typeof createBody>, map: GameMap, moveY: number, yaw: number) => {
+    for (let i = 0; i < 120; i++) {
+      stepBody(body, { ...idleCommand(i, yaw), moveY }, SIM_DT, map, cfg);
+      pushBodyOutOfCars(body, cfg, [parked], map);
+    }
+  };
+
+  it('stops a body walking into the side of a car', () => {
+    const body = createBody(4, 0, 0);
+    walk(body, open, 127, Math.PI / 2); // yaw π/2 walks toward −x
+    expect(body.x).toBeGreaterThanOrEqual(sedan.width / 2 + cfg.radius - 1e-6);
+    expect(body.vx).toBeCloseTo(0, 6);
+  });
+
+  it('stops a body at the bumper, and lets it walk round the car', () => {
+    const front = createBody(0, 0, -6);
+    walk(front, open, -127, 0); // walking backwards toward +z
+    expect(front.z).toBeLessThanOrEqual(-(sedan.length / 2 + cfg.radius) + 1e-6);
+    const beside = createBody(sedan.width / 2 + cfg.radius + 0.05, 0, -6);
+    walk(beside, open, -127, 0);
+    expect(beside.z).toBeGreaterThan(sedan.length / 2); // slid past the side
+  });
+
+  it('turns a car that rolls onto a body into a shove, from inside too', () => {
+    const body = createBody(0.2, 0, 0.5); // inside the footprint
+    expect(pushBodyOutOfCars(body, cfg, [parked], open)).toBe(true);
+    expect(distanceToCar(parked.state, sedan, body.x, body.z)).toBeGreaterThanOrEqual(
+      cfg.radius - 1e-6,
+    );
+  });
+
+  it('never shoves a body into a wall, and ignores cars below an upper floor', () => {
+    const walled: GameMap = { ...open, boxes: [box('wall', 1.6, 0, 0.2, 3, 10)] };
+    const body = createBody(1, 0, 0); // pinned between the car's side and the wall
+    const x = body.x;
+    pushBodyOutOfCars(body, cfg, [parked], walled);
+    expect(body.x).toBe(x);
+    const upstairs = createBody(0, 4, 0);
+    expect(pushBodyOutOfCars(upstairs, cfg, [parked], open)).toBe(false);
   });
 });

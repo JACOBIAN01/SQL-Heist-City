@@ -90,4 +90,4 @@ Tier 1 ≈ 30–60 s, tier 5 ≈ 4–6 min. Admin analytics show real medians; t
 - **Crashes:** cars shove each other: a head-on hit bounces the moving car back and pushes the other.
 - **Drawing:** a car standing still is drawn as one merged mesh (one draw call); a moving one has steering and rolling wheels. Cars further than 110 m are not drawn.
 
-Not yet: people walking through cars (bodies do not collide with cars), running people over, and car damage.
+Cars are solid to people on foot: after each movement step a body is pushed out of any car footprint it overlaps (`pushBodyOutOfCars`, shared by the server and client prediction), losing the speed it had into the car. A car rolling into someone shoves them aside, never into a wall (that push is skipped). Bodies on an upper floor (y ≥ 1.4 m) ignore cars. Not yet: running people over (no damage from cars) and car damage.
