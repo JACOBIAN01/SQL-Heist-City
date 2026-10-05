@@ -23,5 +23,8 @@ The player model and its animations are from [Quaternius](https://quaternius.com
 
 Modified: simplified to ~5k triangles, body split into recolourable skin/shirt/trousers/shoes parts, textures shrunk to WebP, 13 clips kept. Build steps: `tools/characters/README.md`.
 
-## City kit (planned, Phase 8)
-[Downtown City MegaKit [Standard]](https://quaternius.itch.io/downtown-city-megakit) by Quaternius, CC0 1.0. Design notes: `city-kit.md`.
+## City kit
+[Downtown City MegaKit [Standard]](https://quaternius.itch.io/downtown-city-megakit) by Quaternius, CC0 1.0. Modified: 66 pieces kept, textures merged into a texture array, AO baked in. Design notes: `city-kit.md`; build steps: `tools/city/README.md`.
+
+## Cars
+**Cars** pack (Cop, NormalCar1/2, SUV, SportsCar, SportsCar2, Taxi) by [Quaternius](https://quaternius.com), CC0 1.0. Modified: colours baked into vertices, normals dropped (flat shading), wheels split out. Build steps: `tools/city/README.md`.
