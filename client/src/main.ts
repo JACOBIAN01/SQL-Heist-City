@@ -144,6 +144,13 @@ if (city)
 const predicted = new PredictedPlayer(player);
 const input = new InputSampler();
 input.setLook(spawn.yaw);
+// ?at=x,z[,y[,yaw]] starts the player there, to look at a place (offline: a server puts you back).
+const atParam = params.get('at')?.split(',').map(Number);
+if (atParam && atParam.length >= 2 && atParam.every(Number.isFinite)) {
+  const [x = 0, z = 0, y = 0, yaw] = atParam;
+  player.teleport(x, y, z);
+  if (yaw !== undefined) input.setLook(yaw);
+}
 const hint = document.createElement('div');
 hint.textContent =
   'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · 1–5 guns · M mute · Esc release mouse';
