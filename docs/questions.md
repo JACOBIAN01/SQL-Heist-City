@@ -38,6 +38,12 @@ Seed = hash(matchSeed, playerId, rewardType, attemptCounter).
 5. Selector never repeats a question for the same player+reward until the pool is exhausted.
 6. Guards at save and in `questions:validate`: ≥1 row (unless allowed), ≤ row cap, at most 5% of player pairs (seed pairs) share the same answer, measured on 100 seeds, runtime <200 ms.
 
+## Worked example ("Expected output", Phase 10.2)
+Every issued task also carries a worked example, LeetCode style: the player's own question (same parameters: same filter, same threshold) run on **separate example data**, never on the player's real tables. The pop-up shows the output's columns, the comparison rules (do names matter, does row order) and the example's input tables and output.
+- Example data comes from its own seed (`<seed>/example-k`) and is small: `exampleRows` (6) rows per table, then 12, then 18 over `exampleTries` (3) tries, then one full-size try. The first try whose answer has rows is kept. Rows on show are capped at `exampleShownRows` (10). All three are challenge settings.
+- Why it is safe: grading runs on the real data, so writing the example's rows out as literals is graded wrong (a test checks this).
+- Built by `ExampleBuilder` (server) for the game, the admin preview ("Players' worked example") and the QA gate. `questions:validate` fails a question if any of its first 10 seeds gets no example with rows; all 150 pass.
+
 ## Tiers
 | Tier | Level | Topics |
 |---|---|---|

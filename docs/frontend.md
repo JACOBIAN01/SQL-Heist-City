@@ -56,7 +56,7 @@ Non-blocking right-side panel (~46% width on desktop, full screen under 760 px);
 |---|---|---|
 | Shell | `SqlPanel.ts` | frame, open / minimise (slim bar) / close, observable state (game can auto-crouch) |
 | Controller (Facade) | `SqlPanelController.ts` | the one object the game calls: `start(task)`; owns timer, lockout, hints, drafts |
-| Problem pane | `ProblemPane.ts` | story (shared inline-Markdown tokens → elements, never innerHTML), tables with sample rows, hints |
+| Problem pane | `ProblemPane.ts` | story (shared inline-Markdown tokens → elements, never innerHTML), tables with sample rows, **Expected output** (the answer's columns, the rules on names and row order, and an open "Example" with made-up input tables and the output they give), hints |
 | Work pane | `WorkPane.ts`, `SqlEditor.ts`, `ResultView.ts` | CodeMirror SQL editor, Run / Submit / Hint, preview rows and verdicts |
 | Task switcher | `TaskSwitcher.ts`, `DraftStore.ts` | header menu of tasks; per-task drafts kept (memory or sessionStorage) |
 | Network | `net/ChallengeApi.ts`, `net/WebSocketChallengeApi.ts` | interface + WebSocket adapter (connect on demand, ref matching, timeouts, server-clock sync) |

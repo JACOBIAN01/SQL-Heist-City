@@ -215,7 +215,7 @@ Quick fixes that improve play right away, before the bank work.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 10.1 | Quieter wind | default ambience lower everywhere; the sound board still plays it | ✅ 0.18 → 0.08 (`ambienceVolume`) |
-| 10.2 | Expected output in the SQL pop-up: output columns + a worked example on separate example data (never the real answer) | every challenge shows it; the QA gate passes for all 150 questions | ⬜ |
+| 10.2 | Expected output in the SQL pop-up: output columns + a worked example on separate example data (never the real answer) | every challenge shows it; the QA gate passes for all 150 questions | ✅ `ExampleBuilder`; pop-up, admin preview and QA gate show/check it (questions.md "Worked example") |
 | 10.3 | Tutorial: one fixed question per task (heal, gun, vault), same for everyone every run, solution free | every tutorial run asks the same 3 questions; "Show solution" fills the editor at no cost | ⬜ |
 
 ---

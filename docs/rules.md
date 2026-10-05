@@ -17,7 +17,7 @@
 2. **A teacher/admin can** create, edit, disable, duplicate, import, export, and version questions, and change reward→tier mappings and gameplay numbers, without a deploy.
 3. **Same reward ≠ same question.** Per-player, per-attempt seeds; pool rotation; no repeat until pool exhausted.
 4. **Server-authoritative:** damage, health, cash, inventory, vault state, grading, cooldowns.
-5. **Reference solutions never leave the server** (not in WS payloads, not in client bundles, not in logs at info level).
+5. **Reference solutions never leave the server** (not in WS payloads, not in client bundles, not in logs at info level). Neither does the real expected result. A worked example computed on separate example data may be shown (questions.md "Worked example").
 6. **The world never pauses** during a SQL pop-up.
 
 ## 3. Security rules

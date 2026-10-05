@@ -24,7 +24,7 @@ Binary frames for high-rate data, JSON frames (`{t, ...}`) for rare messages. Fi
 | `welcome` | once | playerId, matchSeed, config subset, map seed |
 | `snapshot` | 5–20 Hz | tick, ackSeq, quantised entities (id, x,y,z, yaw, state bits, hp bucket) — delta vs last ack |
 | `event` | event | shot, hit, kill, loot, bank, lock_opened, alarm |
-| `challenge` | reply | ref, now, result: `IssueResult` (challenge: id, rewardKey, tier, title, story, schemaSql, tables[name, columns, sampleRows, rowCount], hintCosts[], hintCostMode, expiresAt) or a refusal reason |
+| `challenge` | reply | ref, now, result: `IssueResult` (challenge: id, rewardKey, tier, title, story, schemaSql, tables[name, columns, sampleRows, rowCount], example?{tables[…], output{columns, rows, rowCount}}, columnsMatter, orderMatters, hintCosts[], hintCostMode, expiresAt). `example` is the worked example on separate data (questions.md "Worked example") or a refusal reason |
 | `challenge_preview` | reply | ref, now, result: `RunResult` (columns, rows ≤5, truncated) or SQL error feedback / refusal |
 | `challenge_result` | reply | ref, now, result: `SubmitResult` (`correct` / `wrong` + feedback + lockedUntil / `locked` / `rejected`) |
 | `challenge_hint` | reply | ref, now, result: `HintResult` (hint: index, text, cost, costMode, charged — the game deducts `cost` once when `charged`) |
