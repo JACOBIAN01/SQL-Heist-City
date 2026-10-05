@@ -4,7 +4,6 @@ import { DEFAULT_MOVEMENT_SETTINGS } from '../../config/movement';
 import { SIM_DT } from '../../sim/input';
 import { createBody, stepBody } from '../../sim/movement';
 import { BANK_LAYOUTS, bankFootprint } from '../bank/banks';
-import { BANK_1 } from '../bank/bank1';
 import { anchorInReach, type GameMap, type MapBox } from '../map';
 import { mapById } from '../maps';
 import { cityMapById, isCityMapId } from './cityMaps';
@@ -65,7 +64,7 @@ describe('city map ids', () => {
 });
 
 describe('compileCity', () => {
-  it('is a heist map: unarmed start, hospital respawns, safehouses and the Bank 1 vault', () => {
+  it('is a heist map: unarmed start, hospital respawns, safehouses and a vault per laid-out bank', () => {
     expect(map.unarmedStart).toBe(true);
     expect(map.halfSize).toBe(city.halfSize);
     expect(map.respawns).toEqual(city.hospital.beds);
@@ -74,8 +73,8 @@ describe('compileCity', () => {
       'safehouse-2',
       'safehouse-3',
     ]);
-    expect(map.vaults?.map((v) => v.bank)).toEqual(['bank-1']);
-    expect(map.doors).toHaveLength(1);
+    expect(map.vaults?.map((v) => v.bank)).toEqual([...BANK_LAYOUTS.values()].map((b) => b.id));
+    expect(map.doors).toHaveLength(BANK_LAYOUTS.size);
   });
 
   it('stands a closed building on bank sites that have no layout yet', () => {
@@ -112,26 +111,29 @@ describe('compileCity', () => {
     expect(end.z).toBeLessThan(block.outer.maxZ - 1);
   });
 
-  it('lets a player walk off the street, over the sidewalk and into Bank 1', () => {
-    const site = city.banks.find((b) => b.tier === 1);
-    const block = city.blocks.find((b) =>
-      b.lots.some(
-        (l) =>
-          l.use === 'bank' &&
-          site &&
-          l.rect.minX <= site.x &&
-          site.x <= l.rect.maxX &&
-          l.rect.maxZ === site.z + site.depth / 2,
-      ),
-    );
-    if (!site || !block) throw new Error('no tier-1 bank site');
-    const doorX = site.x + BANK_1.entrance.x;
-    const front = site.z + site.depth / 2;
-    const end = walk(map, doorX, block.outer.maxZ + 4, 0, 4);
-    // Across the lobby to the teller counter, 10 m inside (as on the heist lot).
-    expect(end.z).toBeLessThan(front - 8);
-    expect(end.y).toBeLessThan(0.1); // inside, on the lobby floor
-  });
+  it.each([...BANK_LAYOUTS.values()].map((b) => [b.name, b] as const))(
+    'lets a player walk off the street, over the sidewalk and into %s',
+    (_name, layout) => {
+      const site = city.banks.find((b) => b.tier === layout.tier);
+      const block = city.blocks.find((b) =>
+        b.lots.some(
+          (l) =>
+            l.use === 'bank' &&
+            site &&
+            l.rect.minX <= site.x &&
+            site.x <= l.rect.maxX &&
+            l.rect.maxZ === site.z + site.depth / 2,
+        ),
+      );
+      if (!site || !block) throw new Error(`no tier-${layout.tier} bank site`);
+      const doorX = site.x + layout.entrance.x;
+      const front = site.z + site.depth / 2;
+      const end = walk(map, doorX, block.outer.maxZ + 4, 0, 4);
+      // Well across the lobby (to the teller counter, or through its staff gap).
+      expect(end.z).toBeLessThan(front - 8);
+      expect(end.y).toBeLessThan(0.1); // inside, on the lobby floor
+    },
+  );
 
   it('can reach a safehouse pad from the street', () => {
     const pad = map.anchors?.find((a) => a.id === 'safehouse-1');
