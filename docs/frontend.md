@@ -10,7 +10,7 @@ Stack: TypeScript, Vite, Three.js, CodeMirror 6 (SQL). No UI framework for the H
 | Draw calls | < 200 |
 | Triangles on screen | < 400k |
 | Textures | city: one texture array (512 px layers, WebP) + a decal sheet; max 2k |
-| Audio | sprite sheets < 1 MB total |
+| Audio | < 1 MB total (today 0 KB: every sound is generated in code) |
 
 ## Modules
 ```
@@ -23,7 +23,7 @@ src/
   net/               ws client, binary codec (from shared/), prediction, interpolation
   ui/                HUD, minimap, quick menu, killfeed, scoreboard
   ui/sql/            SQL pop-up (below)
-  audio/             spatial Web Audio, sprite player
+  audio/             sounds made in code, spatial Web Audio, what the game sounds like
 ```
 
 ## Patterns used (why / how) — see design-principles.md
@@ -154,3 +154,15 @@ Preview: `kit.html?city&lod` shows the city as streamed from its centre, with fo
 - **Pinning:** `?fx=high|fxaa|off` pins a level and turns the automatic step-down off.
 
 The overlay shows the current level, and its draw-call and triangle counts now cover every pass (`renderer.info.autoReset` is off and is reset once per frame). Bundle cost: about 4 kB gzipped.
+
+## Audio (Phase 8.10)
+Every sound is **generated in code** for now: no files, nothing to download (about 7 kB of gzipped code). They are stand-ins, meant to be replaced by recordings later.
+- **Sounds** (`audio/synth.ts`): footsteps on concrete, tile and metal; a shot per gun (pistol, SMG, shotgun, rifle, sniper); empty-gun click; hit tick; hurt; car crash; cash and banking chimes. Loops: engine, wind, police siren, vault alarm bell. Each is seeded noise, pitch sweeps and filters written into plain sample arrays (24 kHz mono), with a few variations of the sounds that repeat. Loops are built so their end runs into their start without a click. All of them are made in idle time after the page loads (~90 ms in all), about 2 MB in memory.
+- **Bank** (`SoundBank`, Strategy): turns the samples into Web Audio buffers. A bank that decodes recorded files can replace it without anything else changing.
+- **Engine** (`AudioEngine`, Facade): plays a sound through a panner where it happens (the camera is the listener); sounds without a place (your own gun, chimes, wind) play in your head. It skips anything beyond its hearing range, sends gunshots into a street echo (a delay feeding back through a dull filter), and keeps to a voice limit: a louder new sound replaces the quietest playing one, a quieter one is dropped.
+- **Start** (`GestureAudio`, Proxy): browsers allow sound only after a click or key press, so sounds go nowhere until the first one. `M` mutes and unmutes (remembered in this browser); `?mute` starts muted.
+- **What is heard** (`GameAudio`, Mediator): your gun at once, and a hit tick when the server confirms a hit; other players' guns from where they stand. Footsteps for you and players within 28 m are paced by stride (`FootstepTracker`), quieter when crouching, never for drivers, and the surface comes from the box underfoot (`surfaceAt`). Engines run for the nearest four running cars, pitched up with speed. A car losing 4 m/s or more at once crashes. A newly cracked vault lock rings that bank's alarm for 18 s. Wind blows throughout, and every 45–120 s a siren passes somewhere far off.
+- **Numbers** (`shared/src/config/audio.ts`): hearing ranges, how far each kind of sound stays loud (`reach`: gunshots 18 m, footsteps 3 m), voices, stride, echo, alarm length and ambience. How far a sound carries changes play (you hear a fight two streets away, a sneaking player only up close), so they are config, not client constants.
+- **Sound board:** `sounds.html` plays every sound at a chosen distance, to judge them by ear or compare a recording before it replaces one.
+
+**Replacing a sound with a recording:** add a bank that decodes files into buffers for the names it has, falling back to the generated one for the rest, and pass it to `AudioEngine` in `GestureAudio`. Nothing that plays sounds changes. Record the source and licence in `credits.md`.

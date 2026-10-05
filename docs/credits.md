@@ -28,3 +28,6 @@ Modified: simplified to ~5k triangles, body split into recolourable skin/shirt/t
 
 ## Cars
 **Cars** pack (Cop, NormalCar1/2, SUV, SportsCar, SportsCar2, Taxi) by [Quaternius](https://quaternius.com), CC0 1.0. Modified: colours baked into vertices, normals dropped (flat shading), wheels split out. Build steps: `tools/city/README.md`.
+
+## Sounds
+None from outside: every sound is generated in code (`client/src/audio/synth.ts`) as a stand-in until recordings are chosen. Recordings added later get their source and licence listed here.

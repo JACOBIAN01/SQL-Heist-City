@@ -91,3 +91,6 @@ Tier 1 ≈ 30–60 s, tier 5 ≈ 4–6 min. Admin analytics show real medians; t
 - **Drawing:** a car standing still is drawn as one merged mesh (one draw call); a moving one has steering and rolling wheels. Cars further than 110 m are not drawn.
 
 Cars are solid to people on foot: after each movement step a body is pushed out of any car footprint it overlaps (`pushBodyOutOfCars`, shared by the server and client prediction), losing the speed it had into the car. A car rolling into someone shoves them aside, never into a wall (that push is skipped). Bodies on an upper floor (y ≥ 1.4 m) ignore cars. Not yet: running people over (no damage from cars) and car damage.
+
+## Hearing (Phase 8.10)
+Sound is information. Gunshots carry 220 m and stay loud for 18 m, so a fight is heard streets away and roughly where it is. Footsteps carry only 28 m, and crouching makes them a third as loud: sneaking up works. A cracked vault lock rings that bank's alarm for 18 s, out to 160 m, which tells everyone nearby that a vault is being worked. All of these numbers are in `shared/src/config/audio.ts`. Design and code: frontend.md "Audio".

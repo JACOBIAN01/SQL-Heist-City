@@ -188,8 +188,8 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 8.6 | Post-FX (FXAA + bloom) | fps budget kept | ✅ steps down automatically when frames stay over 18 ms (frontend.md "Post-processing") |
 | 8.7 | Vehicle physics (sedan; car models hand-downloaded or procedural) | drive and collide | ✅ Quaternius Cars pack; shared `stepVehicle`; `?drive` test drive (gameplay.md "Vehicles") |
 | 8.8 | Vehicle enter/exit + networking | other players see it | ✅ server-owned cars, F in/out, protocol 4 vehicle records, predicted driving (gameplay.md "Vehicles") |
-| 8.9 | Sports car + bike | all 3 drivable | ⬜ |
-| 8.10 | Spatial audio | footsteps, shots, ambience | ⬜ |
+| 8.9 | Sports car + bike | all 3 drivable | ✅ sedan, sports, SUV drivable; bike dropped by decision (no model in the pack) |
+| 8.10 | Spatial audio | footsteps, shots, ambience | ✅ every sound made in code as a stand-in (0 KB), 3D via Web Audio (frontend.md "Audio") |
 | 8.11 | Perf pass | 60 fps, <8 MB load | ⬜ |
 
 ---
