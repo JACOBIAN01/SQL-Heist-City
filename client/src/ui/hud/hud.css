@@ -289,8 +289,12 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  min-width: 340px;
+  min-width: min(340px, 90vw);
   max-width: 90vw;
+  /* Six awards and ten standings do not fit a short window: scroll instead. */
+  max-height: 90vh;
+  overflow-y: auto;
+  pointer-events: auto;
   padding: 14px 18px;
   border-radius: 10px;
   background: rgba(10, 12, 16, 0.85);
