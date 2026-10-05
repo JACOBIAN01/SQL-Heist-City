@@ -20,3 +20,13 @@ The input directory is the unzipped kit: it has `Exports/glTF (Godot)/` and `Tex
 Piece frame: y is up, the base is at y = 0, the facade face is at z = 0 and the wall runs into −z. Street surfaces are at y = −0.15, with the kerb and sidewalk top at y = 0.
 
 Preview every piece: `npm run dev:client`, then open `http://localhost:5173/kit.html` (or `kit.html?piece=Brick_Plain_3`).
+
+## Cars
+```
+node build-cars.mjs inbox/cars/OBJ ../../client/public/vehicles/cars.glb
+```
+Input: the **OBJ** folder of Quaternius' free *Cars* pack (CC0, hand-downloaded into `inbox/cars/`). Output: `cars.glb` (seven cars, 379 KB) and `cars.json` (sizes, wheel positions).
+- **Colours and lamps:** the `.mtl` colours are baked into the vertices, so every car shares one material. Lamp materials (head/tail/police lights) get a `_GLOW` vertex flag.
+- **No normals:** the cars are flat-shaded, so no normals are stored; the game uses `flatShading`, and the corners weld into shared vertices, about a fifth of the size.
+- **Orientation:** cars are turned to face −z.
+- **Parts:** each car node holds `<id>_body`, `<id>_wheel_fl`, `<id>_wheel_fr` and `<id>_wheels_back`. The wheel origins are their axles. Part names carry the id because loaders rename duplicate node names.

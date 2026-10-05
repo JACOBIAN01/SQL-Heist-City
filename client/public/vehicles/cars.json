@@ -1,0 +1,236 @@
+{
+  "version": 1,
+  "cars": [
+    {
+      "id": "Cop",
+      "tris": 3232,
+      "length": 3.73,
+      "width": 1.78,
+      "height": 1.24,
+      "wheels": {
+        "wheels_back": {
+          "at": [
+            0,
+            0.259,
+            1.155
+          ],
+          "radius": 0.275
+        },
+        "wheel_fl": {
+          "at": [
+            -0.712,
+            0.259,
+            -1.141
+          ],
+          "radius": 0.275
+        },
+        "wheel_fr": {
+          "at": [
+            0.712,
+            0.259,
+            -1.141
+          ],
+          "radius": 0.275
+        }
+      }
+    },
+    {
+      "id": "NormalCar1",
+      "tris": 2954,
+      "length": 4.22,
+      "width": 1.81,
+      "height": 1.18,
+      "wheels": {
+        "wheels_back": {
+          "at": [
+            -0.001,
+            0.268,
+            1.243
+          ],
+          "radius": 0.262
+        },
+        "wheel_fl": {
+          "at": [
+            -0.691,
+            0.268,
+            -1.196
+          ],
+          "radius": 0.262
+        },
+        "wheel_fr": {
+          "at": [
+            0.689,
+            0.268,
+            -1.196
+          ],
+          "radius": 0.262
+        }
+      }
+    },
+    {
+      "id": "NormalCar2",
+      "tris": 3124,
+      "length": 3.31,
+      "width": 1.64,
+      "height": 1.15,
+      "wheels": {
+        "wheels_back": {
+          "at": [
+            -0.001,
+            0.219,
+            0.955
+          ],
+          "radius": 0.248
+        },
+        "wheel_fl": {
+          "at": [
+            -0.659,
+            0.219,
+            -1.04
+          ],
+          "radius": 0.248
+        },
+        "wheel_fr": {
+          "at": [
+            0.658,
+            0.219,
+            -1.04
+          ],
+          "radius": 0.248
+        }
+      }
+    },
+    {
+      "id": "SUV",
+      "tris": 3294,
+      "length": 4.21,
+      "width": 2.11,
+      "height": 1.53,
+      "wheels": {
+        "wheels_back": {
+          "at": [
+            -0.005,
+            0.309,
+            1.251
+          ],
+          "radius": 0.327
+        },
+        "wheel_fl": {
+          "at": [
+            -0.773,
+            0.309,
+            -1.317
+          ],
+          "radius": 0.327
+        },
+        "wheel_fr": {
+          "at": [
+            0.762,
+            0.309,
+            -1.317
+          ],
+          "radius": 0.327
+        }
+      }
+    },
+    {
+      "id": "SportsCar",
+      "tris": 3078,
+      "length": 3.97,
+      "width": 1.8,
+      "height": 1.16,
+      "wheels": {
+        "wheels_back": {
+          "at": [
+            -0.003,
+            0.25,
+            1.255
+          ],
+          "radius": 0.26
+        },
+        "wheel_fl": {
+          "at": [
+            -0.72,
+            0.25,
+            -1.188
+          ],
+          "radius": 0.26
+        },
+        "wheel_fr": {
+          "at": [
+            0.714,
+            0.25,
+            -1.188
+          ],
+          "radius": 0.26
+        }
+      }
+    },
+    {
+      "id": "SportsCar2",
+      "tris": 3148,
+      "length": 3.93,
+      "width": 1.87,
+      "height": 1.2,
+      "wheels": {
+        "wheels_back": {
+          "at": [
+            -0.001,
+            0.265,
+            1.321
+          ],
+          "radius": 0.28
+        },
+        "wheel_fl": {
+          "at": [
+            -0.726,
+            0.265,
+            -1.186
+          ],
+          "radius": 0.28
+        },
+        "wheel_fr": {
+          "at": [
+            0.724,
+            0.265,
+            -1.186
+          ],
+          "radius": 0.28
+        }
+      }
+    },
+    {
+      "id": "Taxi",
+      "tris": 3278,
+      "length": 4.22,
+      "width": 1.81,
+      "height": 1.31,
+      "wheels": {
+        "wheels_back": {
+          "at": [
+            0,
+            0.251,
+            1.143
+          ],
+          "radius": 0.262
+        },
+        "wheel_fl": {
+          "at": [
+            -0.689,
+            0.251,
+            -1.296
+          ],
+          "radius": 0.262
+        },
+        "wheel_fr": {
+          "at": [
+            0.69,
+            0.251,
+            -1.296
+          ],
+          "radius": 0.262
+        }
+      }
+    }
+  ]
+}
