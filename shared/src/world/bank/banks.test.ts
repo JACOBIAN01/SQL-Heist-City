@@ -6,6 +6,7 @@ import type { GameMap, MapBox } from '../map';
 import { mapWithClosedDoors } from '../variant';
 import type { BankLayout } from './BankLayout';
 import { BANK_2 } from './bank2';
+import { BANK_3 } from './bank3';
 import { BANK_LAYOUTS, bankFootprint } from './banks';
 import { compileBankWorld, validateBank } from './compileBank';
 
@@ -169,5 +170,44 @@ describe('Bank 2 "City Trust"', () => {
     expect(body.y).toBeCloseTo(3, 1);
     expect(body.z).toBeGreaterThan(4);
     expect(lift1).toMatchObject({ x: 11, z: 7, y: 3 });
+  });
+});
+
+describe('Bank 3 "Metro Capital"', () => {
+  const map = lone(BANK_3);
+  // In by the door on the left, round the counter's east end, to the foot of the stairs.
+  const outside = () => createBody(-6, 0, 16);
+  const toStorey1: [number, number][] = [
+    [-6, 4],
+    [6, 4],
+    [6, -7], // foot of flight 1 (lane A)
+    [12.8, -7], // the landing at the east wall
+  ];
+  const toStorey2: [number, number][] = [
+    ...toStorey1,
+    [12.8, -4.5], // foot of flight 2 (lane B)
+    [7, -4.5],
+  ];
+  const toStorey3: [number, number][] = [...toStorey2, [6, -4.5], [6, -7], [12.8, -7]];
+
+  it('climbs storey by storey to the top', () => {
+    expect(route(map, toStorey1, outside()).y).toBeCloseTo(3, 1);
+    expect(route(map, toStorey2, outside()).y).toBeCloseTo(6, 1);
+    expect(route(map, toStorey3, outside()).y).toBeCloseTo(9, 1);
+  });
+
+  it('makes you cross the whole top floor to the vault above the door', () => {
+    const body = route(map, [...toStorey3, [12.8, -2], [-2.4, -2], [-2.4, 5.2]], outside());
+    expect(body.y).toBeCloseTo(9, 1);
+    expect(Math.hypot(body.x + 2.4, body.z - 5.2)).toBeLessThan(0.5);
+  });
+
+  it('opens its door off-centre, onto the counter', () => {
+    const body = route(map, [[-6, -6]], outside());
+    expect(body.y).toBeLessThan(0.1);
+    expect(body.z).toBeGreaterThan(-1.5); // stopped by the counter
+    expect(body.z).toBeLessThan(0);
+    // Straight at the facade away from the door: the front wall stops you.
+    expect(route(map, [[6, 4]], createBody(6, 0, 16)).z).toBeGreaterThan(10);
   });
 });

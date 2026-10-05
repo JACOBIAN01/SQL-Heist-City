@@ -16,6 +16,7 @@ export * from './world/bank/BankLayout';
 export * from './world/bank/compileBank';
 export * from './world/bank/bank1';
 export * from './world/bank/bank2';
+export * from './world/bank/bank3';
 export * from './world/heistMap';
 export * from './world/variant';
 export * from './config/heist';
