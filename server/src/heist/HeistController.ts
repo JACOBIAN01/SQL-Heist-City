@@ -12,6 +12,9 @@ import {
 import type { Player } from '../game/Player';
 import { AmmoRule, GunRule, type ArmsControl } from './ArmsRules';
 import { BankingService } from './BankingService';
+import { BountyBoard } from './BountyBoard';
+import { FeedReporter } from './FeedReporter';
+import { HeistEvents } from './HeistEvents';
 import type { ChallengeGateway } from './ChallengeGateway';
 import { HealRule } from './HealRule';
 import { LootManager } from './LootManager';
@@ -39,6 +42,9 @@ export class HeistController implements ArmsControl {
   readonly tasks = new TaskRules();
   readonly loot = new LootManager();
   readonly banking: BankingService;
+  /** What happened (locks, vaults, banking, bounties), for the feed and anyone else listening. */
+  readonly events = new HeistEvents();
+  readonly bounties: BountyBoard;
   /** The round clock and scoreboard; only on maps with vaults (the sandbox has no rounds). */
   readonly round: RoundController | undefined;
 
@@ -49,11 +55,14 @@ export class HeistController implements ArmsControl {
     private readonly now: () => number = Date.now,
   ) {
     this.vaults = new VaultRegistry(match.map, settings.locksPerVault);
+    new FeedReporter(match, this.events);
+    this.bounties = new BountyBoard(match, settings, this.events);
     this.banking = new BankingService(match, settings.bankingSeconds, {
       complete: (player) => {
         const amount = player.cash;
         player.banked += amount;
         this.setCash(player, 0);
+        if (amount > 0) this.events.publish({ type: 'banked', player, amount });
         return amount;
       },
     });
@@ -97,6 +106,7 @@ export class HeistController implements ArmsControl {
   /** A new round: vaults shut, bags gone, scores and players reset. */
   private resetWorld(): void {
     for (const v of this.vaults.all()) v.reset();
+    this.bounties.forget();
     this.refreshDoors();
     const gone = this.loot.clear();
     if (gone.length > 0) this.match.broadcastJson({ t: 'loot', add: [], remove: gone });
@@ -117,13 +127,17 @@ export class HeistController implements ArmsControl {
     this.match.sendJson(player, { t: 'loot', add: this.loot.all(), remove: [] });
     this.sendPurse(player);
     this.sendArms(player);
+    this.bounties.post(player);
     this.round?.onJoin(player);
   }
 
   /** Every tick: players walking over a bag pick it up. */
   onTick(): void {
     this.round?.onTick();
-    if (!this.roundOver) this.banking.onTick();
+    if (!this.roundOver) {
+      this.banking.onTick();
+      this.bounties.onTick();
+    }
     if (this.loot.count === 0) return;
     const reach = this.settings.bagPickupRadius;
     for (const bag of this.loot.all()) {
@@ -140,8 +154,11 @@ export class HeistController implements ArmsControl {
   /** A player died: what they carried drops where they fell. */
   onDeath(victim: Player, killer?: Player): void {
     this.banking.cancel(victim, 'died');
-    if (killer && killer !== victim && killer.alive && this.settings.killBonus > 0)
-      this.setCash(killer, killer.cash + this.settings.killBonus);
+    // The killer of a wanted player collects the bounty on top of the kill bonus.
+    const bounty = this.bounties.claim(victim, killer);
+    const earned =
+      (killer && killer !== victim && killer.alive ? this.settings.killBonus : 0) + bounty;
+    if (killer && earned > 0) this.setCash(killer, killer.cash + earned);
     if (victim.cash <= 0) return;
     const bag = this.loot.add(victim.body.x, victim.body.y, victim.body.z, victim.cash);
     this.setCash(victim, 0);
@@ -204,7 +221,11 @@ export class HeistController implements ArmsControl {
     if (!vault || vault.openLock(lock) !== 'opened') return false;
     this.refreshDoors();
     this.match.broadcastJson({ t: 'vaults', vaults: this.vaults.views() });
-    if (vault.isOpen) this.spillLoot(vault);
+    this.events.publish({ type: 'lock_opened', vault, lock });
+    if (vault.isOpen) {
+      this.spillLoot(vault);
+      this.events.publish({ type: 'vault_opened', vault });
+    }
     return true;
   }
 
