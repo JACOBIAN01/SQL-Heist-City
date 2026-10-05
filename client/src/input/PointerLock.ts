@@ -14,6 +14,8 @@ export class PointerLock {
     element.addEventListener('click', this.onClick);
     element.addEventListener('mousedown', this.onMouse);
     window.addEventListener('mouseup', this.onMouse);
+    // Right mouse aims: never open the browser's menu over the game.
+    element.addEventListener('contextmenu', this.onContextMenu);
     document.addEventListener('pointerlockchange', this.onLockChange);
   }
 
@@ -30,6 +32,7 @@ export class PointerLock {
     this.element.removeEventListener('click', this.onClick);
     this.element.removeEventListener('mousedown', this.onMouse);
     window.removeEventListener('mouseup', this.onMouse);
+    this.element.removeEventListener('contextmenu', this.onContextMenu);
     document.removeEventListener('pointerlockchange', this.onLockChange);
   }
 
@@ -39,6 +42,10 @@ export class PointerLock {
 
   private readonly onMouse = (event: MouseEvent): void => {
     this.input.pressMouse(event.button, event.type === 'mousedown');
+  };
+
+  private readonly onContextMenu = (event: Event): void => {
+    event.preventDefault();
   };
 
   private readonly onLockChange = (): void => {

@@ -8,10 +8,11 @@ import {
   type InputCommand,
   type SelfState,
   type Vec3,
+  type WeaponSpec,
 } from '@heist/shared';
-import { CombatFeedback } from './CombatFeedback';
+import { CombatFeedback, type CombatFeedbackDeps } from './CombatFeedback';
 
-function setup() {
+function setup(over: Partial<CombatFeedbackDeps> = {}) {
   const shots: string[] = [];
   let dry = 0;
   const hud = {
@@ -41,6 +42,7 @@ function setup() {
     positionOf: (id) => (id === 2 ? { x: 5, y: 0, z: 5 } : undefined),
     onLocalShot: (weapon) => shots.push(weapon),
     onDryFire: () => dry++,
+    ...over,
   });
   return { hud, tracers, feedback, shots, dryFires: () => dry };
 }
@@ -173,6 +175,16 @@ describe('CombatFeedback ammo and weapons', () => {
     expect(tracers).toHaveLength(0);
     expect(shots).toEqual([]);
     expect(dryFires()).toBe(1); // click
+  });
+
+  it('paces fire by the server’s numbers once they arrive', () => {
+    const slow = { ...DEFAULT_COMBAT_SETTINGS.weapons.rifle, rpm: 60 } as WeaponSpec;
+    const { feedback, shots } = setup({
+      weapons: { get: (id) => (id === 'rifle' ? slow : undefined) },
+    });
+    feedback.onSnapshot(self({ weapon: 4, ammo: 25 }), 0);
+    for (let i = 0; i < 30; i++) feedback.onLocalCommand(firing({ seq: i + 1 }), body);
+    expect(shots).toHaveLength(1); // one round a second, not 450 a minute
   });
 
   it('reports each shot fired with the gun in hand (for the bang)', () => {

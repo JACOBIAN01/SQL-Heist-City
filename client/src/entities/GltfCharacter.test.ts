@@ -246,6 +246,22 @@ describe('GltfCharacter gun handling', () => {
     expect(c.gunIn).toBe('back');
   });
 
+  it('raises the gun while aim is held, without a flash, and lowers it soon after', () => {
+    const { c, gun } = armed();
+    const flash = new Group();
+    flash.name = 'muzzle-flash';
+    gun.add(flash);
+    for (let i = 0; i < 30; i++) {
+      c.raise();
+      c.update(still, 1 / 60);
+    }
+    expect(c.isAiming).toBe(true);
+    expect(c.gunIn).toBe('hand');
+    expect(flash.visible).toBe(false);
+    c.update(still, 0.4); // let go
+    expect(c.isAiming).toBe(false);
+  });
+
   it('keeps walking with the legs while the arms aim', () => {
     const { c } = armed();
     c.fired();

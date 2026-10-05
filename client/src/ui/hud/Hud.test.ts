@@ -29,6 +29,14 @@ describe('Hud', () => {
     expect(q('.hud-health-fill').style.width).toBe('0%');
   });
 
+  it('puts a scope over the view only while scoped', () => {
+    expect(q('.hud-scope').hidden).toBe(true);
+    hud.setScoped(true);
+    expect(q('.hud-scope').hidden).toBe(false);
+    hud.setScoped(false);
+    expect(q('.hud-scope').hidden).toBe(true);
+  });
+
   it('shows and hides the spawn-protection note', () => {
     expect(q('.hud-shield').hidden).toBe(true);
     hud.setProtected(true);

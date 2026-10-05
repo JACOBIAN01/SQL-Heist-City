@@ -75,6 +75,25 @@ describe('InputSampler', () => {
     expect(input.currentPitch).toBeCloseTo(0.3);
   });
 
+  it('aims with the right mouse button, and slows look while zoomed', () => {
+    input.setLooking(true);
+    input.pressMouse(2, true);
+    expect(input.aiming).toBe(true);
+    expect(input.sample().buttons & Button.Aim).toBe(Button.Aim);
+    input.setLookScale(0.25);
+    move(100, 0);
+    expect(input.currentYaw).toBeCloseTo(-0.25);
+    input.pressMouse(2, false);
+    expect(input.sample().buttons & Button.Aim).toBe(0);
+  });
+
+  it('kicks the view up for recoil, within the pitch limit', () => {
+    input.kick(0.1);
+    expect(input.currentPitch).toBeCloseTo(0.1);
+    input.kick(5);
+    expect(input.currentPitch).toBeLessThan(1.5);
+  });
+
   it('clamps pitch so the camera cannot flip over', () => {
     input.setLooking(true);
     move(0, -100000);

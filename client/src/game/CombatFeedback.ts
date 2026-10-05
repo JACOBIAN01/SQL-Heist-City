@@ -15,6 +15,7 @@ import {
   seqNewer,
   weaponFromWire,
   type Vec3,
+  type WeaponSpec,
 } from '@heist/shared';
 import type { HudView } from '../ui/hud/Hud';
 
@@ -28,6 +29,8 @@ export interface CombatFeedbackDeps {
   readonly map: GameMap;
   readonly movement: MovementSettings;
   readonly combat: CombatSettings;
+  /** The guns' numbers as the server sent them; without it, the shared defaults in `combat`. */
+  readonly weapons?: { get(id: string | undefined): WeaponSpec | undefined };
   /** The local player fired a shot (to play the aim and recoil animation, and the bang). */
   readonly onLocalShot?: (weapon: string) => void;
   /** The local player pulled the trigger on an empty gun. */
@@ -90,7 +93,12 @@ export class CombatFeedback {
     command: InputCommand,
     body: { x: number; y: number; z: number; crouching: boolean },
   ): void {
-    const weapon = this.weaponId ? this.deps.combat.weapons[this.weaponId] : undefined;
+    const id = this.weaponId;
+    const weapon = this.deps.weapons
+      ? this.deps.weapons.get(id)
+      : id
+        ? this.deps.combat.weapons[id]
+        : undefined;
     this.cooldown = Math.max(0, this.cooldown - SIM_DT);
     if (!weapon || !this.alive) return;
     if (!hasButton(command.buttons, Button.Fire) || this.cooldown > 1e-9) return;
@@ -100,7 +108,7 @@ export class CombatFeedback {
       return;
     }
     this.inFlight.push(command.seq);
-    this.deps.onLocalShot?.(this.weaponId ?? '');
+    this.deps.onLocalShot?.(id ?? '');
     this.cooldown += 60 / weapon.rpm;
 
     const origin = aimOrigin(body, command.yaw, this.deps.movement);

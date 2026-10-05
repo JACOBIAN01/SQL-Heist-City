@@ -112,6 +112,8 @@ export class CharacterModel implements CharacterRig {
 
   fired(): void {}
 
+  raise(): void {}
+
   private bag: Object3D | undefined;
 
   setCarrying(carrying: boolean): void {

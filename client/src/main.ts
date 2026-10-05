@@ -49,6 +49,8 @@ import { Tracers } from './render/Tracers';
 import { Hud } from './ui/hud/Hud';
 import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
+import { AimView } from './render/AimView';
+import { WeaponTable } from './game/WeaponTable';
 import { loadCarAssets, type CarAssets } from './vehicles/carAssets';
 import { followAngle, PredictedVehicle } from './vehicles/PredictedVehicle';
 import { RemoteVehicles } from './vehicles/RemoteVehicles';
@@ -96,7 +98,10 @@ scene.add(mapObject);
 const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
 
-const camera = new PerspectiveCamera(70, 1, 0.1, 220);
+/** Field of view (deg) when not aiming; aiming narrows it by the gun's zoom. */
+const BASE_FOV = 70;
+const camera = new PerspectiveCamera(BASE_FOV, 1, 0.1, 220);
+const aimView = new AimView(BASE_FOV);
 // Bloom + FXAA. ?fx=high|fxaa|off pins a level; otherwise it starts high and, while frames stay
 // over budget, steps down the quality ladder (effects first, then resolution), so slow laptops
 // keep their frame rate.
@@ -153,7 +158,7 @@ if (atParam && atParam.length >= 2 && atParam.every(Number.isFinite)) {
 }
 const hint = document.createElement('div');
 hint.textContent =
-  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · 1–5 guns · M mute · Esc release mouse';
+  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · right mouse aim · 1–5 guns · M mute · Esc release mouse';
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
@@ -235,15 +240,20 @@ const audio = new GameAudio({
   positionOf: (id) => remotes.positionOf(id),
   weaponOf: (id) => remotes.weaponOf(id),
 });
+// The guns' numbers: the server sends its own on join (an admin may have retuned them).
+const weaponTable = new WeaponTable();
 const feedback = new CombatFeedback({
   hud,
   tracers,
   map: MAP,
   movement: DEFAULT_MOVEMENT_SETTINGS,
   combat: DEFAULT_COMBAT_SETTINGS,
+  weapons: weaponTable,
   onLocalShot: (weapon) => {
     model.fired();
     audio.localShot(weapon);
+    // Recoil: the view jumps; pulling it back down is the player's job.
+    input.kick(weaponTable.get(weapon)?.recoil ?? 0);
   },
   onDryFire: () => audio.dryFire(),
   myId: () => client.playerId,
@@ -301,7 +311,8 @@ client.subscribe({
     else if (message.t === 'arms') {
       ownedWeapons = message.owned;
       hud.setArms(message.owned, message.current);
-    } else if (message.t === 'banking') bankingProgress.handle(message, performance.now());
+    } else if (message.t === 'weapons') weaponTable.set(message.weapons);
+    else if (message.t === 'banking') bankingProgress.handle(message, performance.now());
     else if (message.t === 'loot') loot.apply(message.add, message.remove);
     else if (message.t === 'purse') {
       hud.setPurse(message.carried, message.banked);
@@ -334,7 +345,7 @@ const taskContext = () => {
     owned: ownedWeapons,
     weapon,
     ammo: self?.ammo ?? 0,
-    magSize: weapon ? (DEFAULT_COMBAT_SETTINGS.weapons[weapon]?.magSize ?? 0) : 0,
+    magSize: weaponTable.get(weapon)?.magSize ?? 0,
     ...(view ? { vault: view } : {}),
   };
 };
@@ -524,7 +535,19 @@ renderer.setAnimationLoop((now) => {
     feedback.isAlive,
     interactions.hasTarget,
   );
-  model.object.visible = feedback.isAlive && !myCar;
+  // Aiming: the view zooms to the held gun's zoom (a scope at 3× and more), and look slows with it.
+  const held = weaponTable.get(WEAPON_IDS[heldWeapon - 1]);
+  const aiming = input.aiming && feedback.isAlive && !myCar && held !== undefined;
+  if (aiming) model.raise();
+  const fov = aimView.update(aiming ? held.aimZoom : 1, frameMs / 1000);
+  if (Math.abs(camera.fov - fov) > 1e-3) {
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+  }
+  input.setLookScale(aimView.lookScale);
+  hud.setScoped(aimView.scoped);
+  // Through a scope your own body would fill the view.
+  model.object.visible = feedback.isAlive && !myCar && !aimView.scoped;
   const driven = myCar?.draw(loop.alpha, frameMs / 1000);
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
   model.object.rotation.y = input.currentYaw + debugTurn;

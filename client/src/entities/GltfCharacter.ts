@@ -63,6 +63,8 @@ const CROSSFADE_SECONDS = 0.15;
 
 /** How long a soldier stays at the ready after the last shot before lowering the gun. */
 const AIM_HOLD_SECONDS = 2;
+/** After the aim button is let go, the gun stays up this long. */
+const RAISE_HOLD_SECONDS = 0.3;
 /** Arms come up a little faster than the gun travels, so the hands meet it. */
 const DRAW_FADE_SECONDS = 0.25;
 const LOWER_FADE_SECONDS = 0.4;
@@ -194,6 +196,13 @@ export class GltfCharacter implements CharacterRig {
     if (!this.aiming) this.setAiming(true);
     this.gun.fire();
     this.flashLeft = FLASH_SECONDS;
+  }
+
+  /** Aim button held: the gun comes up and stays up a moment after it is let go. */
+  raise(): void {
+    if (!this.held) return;
+    this.aimTimer = Math.max(this.aimTimer, RAISE_HOLD_SECONDS);
+    if (!this.aiming) this.setAiming(true);
   }
 
   private setAiming(on: boolean): void {

@@ -26,6 +26,8 @@ export class InputSampler {
   private viewLagMs = 0;
   /** While false (pointer not locked) mouse movement does not turn the camera. */
   private looking = false;
+  /** Mouse-look speed multiplier: lower while zoomed in, so aim stays steady. */
+  private lookScale = 1;
 
   constructor(
     private readonly target: EventTarget = window,
@@ -40,6 +42,21 @@ export class InputSampler {
   setLooking(looking: boolean): void {
     this.looking = looking;
     if (!looking) this.releaseAll();
+  }
+
+  /** Slows (or restores) mouse look, e.g. while a scope zooms the view in. */
+  setLookScale(scale: number): void {
+    this.lookScale = scale;
+  }
+
+  /** Recoil: the view jumps up by `pitch` radians; the player pulls it back down. */
+  kick(pitch: number): void {
+    this.pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, this.pitch + pitch));
+  }
+
+  /** Whether the aim button (right mouse) is held. */
+  get aiming(): boolean {
+    return this.down.has('Mouse2');
   }
 
   /** Network delay + interpolation delay as the player sees the world; the server rewinds shots by it. */
@@ -76,6 +93,7 @@ export class InputSampler {
     if (held('ControlLeft', 'KeyC')) buttons |= Button.Crouch;
     if (held('ShiftLeft', 'ShiftRight')) buttons |= Button.Sprint;
     if (this.down.has('Mouse0') || held('KeyK')) buttons |= Button.Fire;
+    if (this.aiming) buttons |= Button.Aim;
     this.seq = (this.seq + 1) & 0xffff;
     return {
       seq: this.seq,
@@ -114,14 +132,12 @@ export class InputSampler {
 
   private readonly onMouseMove = (event: MouseEvent): void => {
     if (!this.looking) return;
-    this.yaw -= event.movementX * this.sensitivity;
-    this.pitch = Math.max(
-      -MAX_PITCH,
-      Math.min(MAX_PITCH, this.pitch - event.movementY * this.sensitivity),
-    );
+    const speed = this.sensitivity * this.lookScale;
+    this.yaw -= event.movementX * speed;
+    this.pitch = Math.max(-MAX_PITCH, Math.min(MAX_PITCH, this.pitch - event.movementY * speed));
   };
 
-  /** Mouse buttons come through the same set as keys (`Mouse0` = left). */
+  /** Mouse buttons come through the same set as keys (`Mouse0` = left, `Mouse2` = right). */
   pressMouse(button: number, pressed: boolean): void {
     const code = `Mouse${button}`;
     if (pressed && this.looking) this.down.add(code);

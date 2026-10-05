@@ -50,6 +50,7 @@ export class Hud implements HudView {
   private readonly progressLabel: HTMLElement;
   private readonly prompt: HTMLElement;
   private readonly toastBox: HTMLElement;
+  private readonly scope: HTMLElement;
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
   private markerTimer: ReturnType<typeof setTimeout> | undefined;
   private flashTimer: ReturnType<typeof setTimeout> | undefined;
@@ -80,10 +81,13 @@ export class Hud implements HudView {
     this.prompt.hidden = true;
     this.toastBox = h('div', { class: 'hud-toast', attrs: { 'aria-live': 'polite' } });
     this.toastBox.hidden = true;
+    this.scope = h('div', { class: 'hud-scope', attrs: { 'aria-hidden': 'true' } });
+    this.scope.hidden = true;
 
     this.root = h(
       'div',
       { class: 'hud' },
+      this.scope,
       this.flash,
       h('div', { class: 'hud-crosshair' }),
       this.marker,
@@ -115,6 +119,11 @@ export class Hud implements HudView {
     this.fill.style.width = `${fraction * 100}%`;
     this.fill.dataset.low = String(fraction <= 0.3);
     this.hpText.textContent = String(Math.max(0, Math.round(hp)));
+  }
+
+  /** A sniper scope over the view while zoomed far in. */
+  setScoped(scoped: boolean): void {
+    this.scope.hidden = !scoped;
   }
 
   setProtected(isProtected: boolean): void {
