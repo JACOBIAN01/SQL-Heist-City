@@ -25,9 +25,11 @@
 | 5 | Walk & shoot sandbox | ✅ Done |
 | 6 | Scale core (60/100/200) | ✅ Done |
 | 7 | Heist loop v1 | ✅ Done |
-| 8 | City, vehicles, atmosphere | 🟨 In progress |
-| 9 | Banks 2–5, weapons, UX | ⬜ |
-| 10 | Harden & ship | ⬜ |
+| 8 | City, vehicles, atmosphere | ✅ Done |
+| 9 | Banks 2–5, weapons, UX | 🟨 In review |
+| 10 | Polish: sound, SQL pop-up, tutorial | ⬜ |
+| 11 | Bank design | ⬜ |
+| — | Todo (later): harden & ship | ⬜ |
 
 ---
 ## Phase 0 — Docs & scaffold  ✅
@@ -207,12 +209,42 @@ Built from the Quaternius Downtown City MegaKit (CC0). Design: `city-kit.md`.
 | 9.9 | Round-end awards screen | awards shown | ✅ six awards tallied from heist events, shown as cards above the final standings (gameplay.md "Round awards") |
 
 ---
-## Phase 10 — Harden & ship  ⬜
+## Phase 10 — Polish: sound, SQL pop-up, tutorial  ⬜
+Quick fixes that improve play right away, before the bank work.
+
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 10.1 | Rate limits on every message/route | limits tested | ⬜ |
-| 10.2 | Anti-cheat validation (speed, fire rate, LOS) | cheat tests fail | ⬜ |
-| 10.3 | 100 and 200 player load test | report in docs | ⬜ |
-| 10.4 | Logging, metrics dashboards, backups | documented + working | ⬜ |
-| 10.5 | Containers + deploy scripts | staging deploy works | ⬜ |
-| 10.6 | Production deploy + release checklist | live | ⬜ |
+| 10.1 | Quieter wind | default ambience lower everywhere; the sound board still plays it | ⬜ |
+| 10.2 | Expected output in the SQL pop-up: output columns + a worked example on separate example data (never the real answer) | every challenge shows it; the QA gate passes for all 150 questions | ⬜ |
+| 10.3 | Tutorial: one fixed question per task (heal, gun, vault), same for everyone every run, solution free | every tutorial run asks the same 3 questions; "Show solution" fills the editor at no cost | ⬜ |
+
+---
+## Phase 11 — Bank design  ⬜
+The bank is the most important place in the game: realistic interiors and a realistic vault, built from the House Pack (Quaternius, CC0) plus procedural pieces the pack lacks. Bank 1 is finished first as a showcase and reviewed, then the kit rolls out to Banks 2–5. Art is derived from the layout, so it never changes play; furniture with a collider goes through the shared layout so the server and the route tests see it.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 11.1 | Interior kit pipeline (`tools/city/build-interior.mjs` → `client/public/interior/`) | ~40 pieces built and previewed in `kit.html?set=interior`; size budget checked | ⬜ |
+| 11.2 | Furniture in the bank layout (piece, storey, x, z, yaw, solid) | solid pieces compile to colliders; every bank route/anchor test still passes | ⬜ |
+| 11.3 | Interior shell & materials (Bank 1) | marble lobby, wood/carpet offices, steel vault, door frames, skirting, ceiling lights; no grey boxes | ⬜ |
+| 11.4 | The vault (Bank 1) | round steel door (bolts, hinge, wheel) swings open on the last lock; deposit-box walls, cash carts, keypad console, alarm light | ⬜ |
+| 11.5 | Lobby & teller hall (Bank 1) | glass-screened teller counter, queue stanchions, waiting area, columns, chandeliers, security room | ⬜ |
+| 11.6 | Offices & upper storeys (Bank 1) | desks, shelves, bookshelves, lamps, meeting room, plants | ⬜ |
+| 11.7 | Bank exterior (Bank 1) | grand entrance: columns, steps, double doors, name sign, ATM | ⬜ |
+| 11.8 | Bank 1 review gate | screenshots + walk-through approved by the user | ⬜ |
+| 11.9 | Roll out to Banks 2–5 | each bank dressed, with a look by tier (modest → marble and gold) | ⬜ |
+| 11.10 | Interior performance | detail only near/inside a bank; draw-call and triangle budget test in CI; 60 fps kept | ⬜ |
+
+---
+## Todo (later) — Harden & ship  ⬜
+Moved behind Phases 10–11. Not numbered until it is scheduled.
+
+| Item | Done when | Status |
+|---|---|---|
+| Rate limits on every message/route | limits tested | ⬜ |
+| Anti-cheat validation (speed, fire rate, LOS) | cheat tests fail | ⬜ |
+| 100 and 200 player load test | report in docs | ⬜ |
+| Logging, metrics dashboards, backups | documented + working | ⬜ |
+| Containers + deploy scripts | staging deploy works | ⬜ |
+| Production deploy + release checklist | live | ⬜ |
+| Known gaps: office loose cash, full-screen map, cars hurting people, admin edits for city/day/vehicle/heist/tutorial settings | each built or dropped | ⬜ |
