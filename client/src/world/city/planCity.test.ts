@@ -119,7 +119,8 @@ describe('planCity', () => {
     const tris = plans
       .flatMap((p) => p.placements)
       .reduce((a, pl) => a + (kit.pieces[pl.piece]?.tris ?? 0), 0);
-    // ≈ 30k per block on average; streaming and impostors (8.4) keep what is drawn under 400k.
-    expect(tris).toBeLessThan(900_000);
+    // ≈ 35k per block on average (the taller banks of Phase 9 included); streaming and
+    // impostors (8.4) keep what is drawn under 400k. A jump past this means a facade bloated.
+    expect(tris).toBeLessThan(1_000_000);
   });
 });

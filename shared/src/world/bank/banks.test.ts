@@ -7,6 +7,7 @@ import { mapWithClosedDoors } from '../variant';
 import type { BankLayout } from './BankLayout';
 import { BANK_2 } from './bank2';
 import { BANK_3 } from './bank3';
+import { BANK_4 } from './bank4';
 import { BANK_LAYOUTS, bankFootprint } from './banks';
 import { compileBankWorld, validateBank } from './compileBank';
 
@@ -209,5 +210,54 @@ describe('Bank 3 "Metro Capital"', () => {
     expect(body.z).toBeLessThan(0);
     // Straight at the facade away from the door: the front wall stops you.
     expect(route(map, [[6, 4]], createBody(6, 0, 16)).z).toBeGreaterThan(10);
+  });
+});
+
+describe('Bank 4 "Grand Reserve"', () => {
+  const map = lone(BANK_4);
+  const outside = () => createBody(0, 0, 20);
+  /** Up one corner's stairs (side -1 west, +1 east) to the top storey. */
+  const climb = (side: number): [number, number][] => {
+    const a = side * 12;
+    const b = side * 9.5;
+    const upA: [number, number][] = [
+      [a, -4], // foot of a lane-A flight
+      [a, -11], // the landing at the back wall
+    ];
+    const upB: [number, number][] = [
+      [b, -11], // foot of a lane-B flight, a metre off the back wall
+      [b, -5],
+      [b, -4],
+    ];
+    return [[0, 10], [side * 7, 1], [side * 7, -4], ...upA, ...upB, ...upA, ...upB];
+  };
+
+  it.each([
+    ['west', -1],
+    ['east', 1],
+  ])('climbs to the top storey up the %s stairs', (_name, side) => {
+    expect(route(map, climb(side), outside()).y).toBeCloseTo(12, 1);
+  });
+
+  it('puts the vault console between the two cores at the top', () => {
+    for (const side of [-1, 1]) {
+      const body = route(map, [...climb(side), [side * 3, -1.4], [0, -1.4]], outside());
+      expect(body.y).toBeCloseTo(12, 1);
+      expect(Math.hypot(body.x, body.z + 1.4)).toBeLessThan(0.5);
+    }
+  });
+
+  it('opens a wide door between the pillars to the counter', () => {
+    const atCounter = route(
+      map,
+      [
+        [0, 6],
+        [3.5, -6],
+      ],
+      outside(),
+    );
+    expect(atCounter.y).toBeLessThan(0.1);
+    expect(atCounter.z).toBeGreaterThan(-1.5);
+    expect(atCounter.z).toBeLessThan(0);
   });
 });
