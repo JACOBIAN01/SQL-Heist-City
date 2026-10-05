@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ScoreboardView } from './ScoreboardView';
+import { ScoreboardView, formatAward } from './ScoreboardView';
 
 const host = () => {
   const el = document.createElement('div');
@@ -55,6 +55,37 @@ describe('ScoreboardView', () => {
     expect(results.hidden).toBe(true);
     view.showResults(null, []);
     expect(results.textContent).toContain('Nobody banked any cash');
+  });
+
+  it('shows each award with its winner and number, and marks yours', () => {
+    const el = host();
+    const view = new ScoreboardView(el, () => 2);
+    const ana = row(1, 'Ana', 9_000);
+    view.showResults(
+      ana,
+      [ana],
+      [
+        { id: 'quick_draw', playerId: 2, name: 'Ben', value: 18.04 },
+        { id: 'big_haul', playerId: 1, name: 'Ana', value: 9_000 },
+      ],
+    );
+    const cards = [...el.querySelectorAll('.hud-award')];
+    expect(cards.map((c) => c.querySelector('.hud-award-title')?.textContent)).toEqual([
+      'Quick Draw',
+      'Big Haul',
+    ]);
+    expect(cards[0]?.textContent).toContain('Ben (you)');
+    expect(cards[0]?.textContent).toContain('18.0 s');
+    expect(cards[0]?.classList.contains('me')).toBe(true);
+    expect(cards[1]?.textContent).toContain('$9,000');
+    view.showResults(null, [], []);
+    expect(el.querySelector('.hud-awards')).toBeNull();
+  });
+
+  it('formats award numbers by unit', () => {
+    expect(formatAward(12_000, 'money')).toBe('$12,000');
+    expect(formatAward(3, 'count')).toBe('3');
+    expect(formatAward(7.25, 'seconds')).toBe('7.3 s');
   });
 
   it('writes names as text, never as HTML', () => {

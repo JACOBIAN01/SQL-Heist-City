@@ -316,6 +316,45 @@
   font-size: 18px;
   color: #7be08f;
 }
+.hud-awards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+.hud-award {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border-top: 3px solid #ffd34d;
+  background: rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+.hud-award.me {
+  background: rgba(123, 224, 143, 0.18);
+}
+.hud-award-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd34d;
+}
+.hud-award-name {
+  margin-top: 2px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hud-award-value {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.hud-award-for {
+  font-size: 11px;
+  opacity: 0.6;
+}
 .hud-table {
   width: 100%;
   border-collapse: collapse;

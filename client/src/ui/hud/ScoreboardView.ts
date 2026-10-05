@@ -1,4 +1,4 @@
-import type { StandingView } from '@heist/shared';
+import { AWARDS, type AwardUnit, type AwardView, type StandingView } from '@heist/shared';
 import { h } from '../dom';
 import { formatMoney } from './Hud';
 
@@ -8,9 +8,42 @@ export interface RoundView {
   setScores(top: readonly StandingView[], players: number): void;
   setStanding(rank: number, players: number): void;
   setBoardVisible(visible: boolean): void;
-  showResults(winner: StandingView | null, standings: readonly StandingView[]): void;
+  showResults(
+    winner: StandingView | null,
+    standings: readonly StandingView[],
+    awards: readonly AwardView[],
+  ): void;
   setNextIn(seconds: number): void;
   hideResults(): void;
+}
+
+/** An award's number as it reads: $12,000 · 3 · 18.5 s. */
+export function formatAward(value: number, unit: AwardUnit): string {
+  if (unit === 'money') return formatMoney(value);
+  if (unit === 'seconds') return `${value.toFixed(1)} s`;
+  return String(value);
+}
+
+/** The round's awards as a row of cards: title, who, and the number that won it. */
+function awardCards(awards: readonly AwardView[], myId: number | undefined): HTMLElement {
+  return h(
+    'div',
+    { class: 'hud-awards' },
+    ...awards.map((a) => {
+      const info = AWARDS[a.id];
+      return h(
+        'div',
+        { class: a.playerId === myId ? 'hud-award me' : 'hud-award' },
+        h('div', { class: 'hud-award-title', text: info.title }),
+        h('div', {
+          class: 'hud-award-name',
+          text: a.playerId === myId ? `${a.name} (you)` : a.name,
+        }),
+        h('div', { class: 'hud-award-value', text: formatAward(a.value, info.unit) }),
+        h('div', { class: 'hud-award-for', text: info.for }),
+      );
+    }),
+  );
 }
 
 function table(rows: readonly StandingView[], myId: number | undefined): HTMLElement {
@@ -109,7 +142,11 @@ export class ScoreboardView implements RoundView {
     if (visible) this.boardBody.replaceChildren(table(this.top, this.myId()));
   }
 
-  showResults(winner: StandingView | null, standings: readonly StandingView[]): void {
+  showResults(
+    winner: StandingView | null,
+    standings: readonly StandingView[],
+    awards: readonly AwardView[] = [],
+  ): void {
     this.resultsBody.replaceChildren(
       h('div', {
         class: 'hud-winner',
@@ -117,6 +154,7 @@ export class ScoreboardView implements RoundView {
           ? `${winner.name} wins with ${formatMoney(winner.banked)}`
           : 'Nobody banked any cash',
       }),
+      ...(awards.length > 0 ? [awardCards(awards, this.myId())] : []),
       table(standings, this.myId()),
     );
     this.results.hidden = false;
