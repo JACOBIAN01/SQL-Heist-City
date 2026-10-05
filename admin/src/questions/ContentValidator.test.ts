@@ -9,7 +9,7 @@ import { QuestionTester } from './QuestionTester';
 
 const validator = new ContentValidator(
   new QuestionTester(new VariantBuilder(builtInDatasets), new Grader(new InProcessSandboxRunner())),
-  { seeds: 10, minDifferentAnswerRate: 0.95, slowMs: 1000 },
+  { seeds: 10, minDifferentAnswerRate: 0.95, slowMs: 1000, exampleSeeds: 3 },
 );
 
 describe('ContentValidator', () => {
@@ -18,6 +18,34 @@ describe('ContentValidator', () => {
       { name: 't1.json', data: { questions: [sampleQuestion] } },
     ]);
     expect(report).toEqual({ questions: 1, byTier: { 1: 1 }, problems: [] });
+  });
+
+  it('checks that players get a worked example with rows', async () => {
+    const real = new QuestionTester(
+      new VariantBuilder(builtInDatasets),
+      new Grader(new InProcessSandboxRunner()),
+    );
+    // A tester whose examples always come out empty, as a question too picky for small data would.
+    const empty = {
+      test: async (...args: Parameters<QuestionTester['test']>) => {
+        const report = await real.test(...args);
+        return {
+          ...report,
+          seeds: report.seeds.map((s) =>
+            s.example ? { ...s, example: { ...s.example, found: false } } : s,
+          ),
+        };
+      },
+    } as unknown as QuestionTester;
+    const report = await new ContentValidator(empty, {
+      seeds: 10,
+      minDifferentAnswerRate: 0.95,
+      slowMs: 1000,
+      exampleSeeds: 3,
+    }).validate([{ name: 't1.json', data: [sampleQuestion] }]);
+    expect(report.problems.map((p) => p.message)).toEqual([
+      '3/3 seeds have no worked example with rows (first: qa-1)',
+    ]);
   });
 
   it('reports schema errors, duplicate slugs, failing seeds and shareable answers', async () => {

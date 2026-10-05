@@ -31,6 +31,12 @@ describe('question preview', () => {
     expect(first?.referenceSql).toMatch(/^SELECT name FROM employees WHERE dept = '/);
     expect(first?.tables?.[0]?.name).toBe('employees');
     expect(first?.expected?.columns).toEqual(['name']);
+    // The worked example players see: same columns, its own small data, some rows.
+    expect(first?.example?.found).toBe(true);
+    expect(first?.example?.output.columns).toEqual(['name']);
+    expect(first?.example?.tables[0]?.rows.length).toBeLessThan(
+      first?.tables?.[0]?.rows.length ?? 0,
+    );
     expect(report.differentAnswerRate).toBeGreaterThan(0.5);
   });
 

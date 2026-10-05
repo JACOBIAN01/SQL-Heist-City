@@ -21,6 +21,11 @@ const report: PreviewReport = {
       referenceSql: "SELECT name FROM employees WHERE dept = 'Audit'",
       expected: { columns: ['name'], rows: [['Ana'], ['Ben']] },
       tables: [{ name: 'employees', columns: ['name'], rows: [['Ana'], ['Ben'], ['Cy']] }],
+      example: {
+        tables: [{ name: 'employees', columns: ['name'], rows: [['Zed']] }],
+        output: { columns: ['name'], rows: [['Zed']] },
+        found: true,
+      },
       runtimeMs: 3,
       issues: [],
       student: {
@@ -42,6 +47,8 @@ describe('PreviewPanel', () => {
     expect(screen.getByText(/50% of player pairs share an answer/)).toBeTruthy();
     expect(screen.getByText('List employees in Audit')).toBeTruthy();
     expect(screen.getByText('Expected answer (2 rows)')).toBeTruthy();
+    expect(screen.getByText(/Players' worked example/)).toBeTruthy();
+    expect(screen.getByText('(1 output rows)')).toBeTruthy();
     expect(screen.getByText('student: wrong')).toBeTruthy();
     expect(screen.getByText('no such column: nope')).toBeTruthy();
 

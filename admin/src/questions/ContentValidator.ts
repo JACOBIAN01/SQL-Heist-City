@@ -6,6 +6,8 @@ export interface ContentRules {
   readonly seeds: number;
   /** Minimum share of player pairs that must get different answers (anti-copy). */
   readonly minDifferentAnswerRate: number;
+  /** Seeds (of `seeds`) whose worked example must have rows. */
+  readonly exampleSeeds: number;
   readonly slowMs: number;
 }
 
@@ -13,6 +15,7 @@ export const CONTENT_RULES: ContentRules = {
   seeds: 100,
   /** At most 5% of player pairs may share an answer (docs/questions.md). */
   minDifferentAnswerRate: 0.95,
+  exampleSeeds: 10,
   /** A reference query slower than this on any seed is reported. */
   slowMs: 200,
 };
@@ -84,7 +87,13 @@ export class ContentValidator {
         if (seenIn) report('error', `duplicate slug (also in ${seenIn})`);
         slugs.set(q.slug, file.name);
 
-        const result = await this.tester.test(q, seeds);
+        const result = await this.tester.test(q, seeds, undefined, this.rules.exampleSeeds);
+        const noExample = result.seeds.filter((s) => s.example && !s.example.found);
+        if (noExample.length > 0)
+          report(
+            'error',
+            `${noExample.length}/${this.rules.exampleSeeds} seeds have no worked example with rows (first: ${noExample[0]?.seed})`,
+          );
         const failing = result.seeds.filter((s) => s.issues.some((x) => x !== 'slow'));
         if (failing.length > 0) {
           const first = failing[0];

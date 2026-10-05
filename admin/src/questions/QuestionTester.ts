@@ -1,4 +1,11 @@
-import type { PreviewIssue, PreviewReport, QuestionTemplate, SeedPreview } from '@heist/shared';
+import {
+  DEFAULT_CHALLENGE_SETTINGS,
+  type PreviewIssue,
+  type PreviewReport,
+  type QuestionTemplate,
+  type SeedPreview,
+} from '@heist/shared';
+import { ExampleBuilder } from '@heist/server/challenges/ExampleBuilder';
 import type { Grader } from '@heist/server/sql/Grader';
 import { ReferenceQueryError } from '@heist/server/sql/Grader';
 import type { VariantBuilder } from '@heist/server/variants/VariantBuilder';
@@ -13,21 +20,27 @@ export const SLOW_MS = 200;
  * flag problems (errors, empty or capped results, slow queries).
  */
 export class QuestionTester {
+  private readonly examples: ExampleBuilder;
+
   constructor(
     private readonly variants: VariantBuilder,
     private readonly grader: Grader,
     private readonly now: () => number = () => performance.now(),
-  ) {}
+  ) {
+    this.examples = new ExampleBuilder(variants, grader);
+  }
 
+  /** `exampleSeeds`: how many of the seeds (the first ones) also get the players' worked example. */
   async test(
     template: QuestionTemplate,
     seeds = DEFAULT_PREVIEW_SEEDS,
     studentSql?: string,
+    exampleSeeds = seeds.length,
   ): Promise<PreviewReport> {
     const results: SeedPreview[] = [];
     const fingerprints: string[] = [];
-    for (const seed of seeds) {
-      const preview = await this.testSeed(template, seed, studentSql);
+    for (const [i, seed] of seeds.entries()) {
+      const preview = await this.testSeed(template, seed, studentSql, i < exampleSeeds);
       results.push(preview);
       if (preview.expected) fingerprints.push(JSON.stringify(preview.expected.rows));
     }
@@ -41,7 +54,8 @@ export class QuestionTester {
   private async testSeed(
     template: QuestionTemplate,
     seed: string,
-    studentSql?: string,
+    studentSql: string | undefined,
+    withExample: boolean,
   ): Promise<SeedPreview> {
     const started = this.now();
     let variant;
@@ -76,9 +90,11 @@ export class QuestionTester {
     }
     const runtimeMs = this.now() - started;
     const issues: PreviewIssue[] = runtimeMs > SLOW_MS ? ['slow'] : [];
+    const example = withExample ? await this.example(template, seed) : undefined;
     const preview: SeedPreview = {
       ...base,
       expected: { columns: expected.columns, rows: expected.rows },
+      ...(example ? { example } : {}),
       runtimeMs,
       issues,
     };
@@ -90,6 +106,19 @@ export class QuestionTester {
         status: grade.status,
         ...('feedback' in grade ? { feedback: grade.feedback } : {}),
       },
+    };
+  }
+
+  private async example(template: QuestionTemplate, seed: string): Promise<SeedPreview['example']> {
+    const built = await this.examples.build(template, seed, {
+      rows: DEFAULT_CHALLENGE_SETTINGS.exampleRows,
+      tries: DEFAULT_CHALLENGE_SETTINGS.exampleTries,
+    });
+    if (!built) return { tables: [], output: { columns: [], rows: [] }, found: false };
+    return {
+      tables: [...built.tables].map(([name, t]) => ({ name, columns: t.columns, rows: t.rows })),
+      output: { columns: built.output.columns, rows: built.output.rows },
+      found: built.found,
     };
   }
 }

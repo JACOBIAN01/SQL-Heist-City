@@ -109,6 +109,33 @@ function SeedCard({ seed }: { seed: SeedPreview }) {
           <ResultTable columns={seed.expected.columns} rows={seed.expected.rows} max={20} />
         </>
       )}
+      {seed.example && (
+        <details>
+          <summary>
+            Players' worked example{' '}
+            {seed.example.found ? (
+              <>({seed.example.output.rows.length} output rows)</>
+            ) : (
+              <span className="badge off">no rows</span>
+            )}
+          </summary>
+          <p className="muted">
+            Shown with the task: the same question on separate example data, never the real tables.
+          </p>
+          {seed.example.tables.map((t) => (
+            <div key={t.name}>
+              <code>{t.name}</code>
+              <ResultTable columns={t.columns} rows={t.rows} max={10} />
+            </div>
+          ))}
+          <strong>Output</strong>
+          <ResultTable
+            columns={seed.example.output.columns}
+            rows={seed.example.output.rows}
+            max={10}
+          />
+        </details>
+      )}
       {seed.tables?.map((t) => (
         <details key={t.name}>
           <summary>
