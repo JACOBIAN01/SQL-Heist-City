@@ -170,3 +170,108 @@ function separate(
   }
   return { x: ax * best, z: az * best };
 }
+
+/** Distance (m) from (x, z) to the nearest point of a car's footprint; 0 on or inside it. */
+export function distanceToCar(car: VehicleState, spec: VehicleSpec, x: number, z: number): number {
+  const fx = -Math.sin(car.yaw);
+  const fz = -Math.cos(car.yaw);
+  const dx = x - car.x;
+  const dz = z - car.z;
+  // Into the car's frame: along its forward and its right.
+  const along = dx * fx + dz * fz;
+  const across = dx * -fz + dz * fx;
+  const ox = Math.max(0, Math.abs(along) - spec.length / 2);
+  const oz = Math.max(0, Math.abs(across) - spec.width / 2);
+  return Math.hypot(ox, oz);
+}
+
+/** How far from the car's side a driver steps out, m. */
+const EXIT_GAP = 0.8;
+
+/**
+ * Where a driver may step out, best first: the driver's door (left), the
+ * other door, behind, in front. The server takes the first that is free.
+ */
+export function exitSpots(car: VehicleState, spec: VehicleSpec): { x: number; z: number }[] {
+  const fx = -Math.sin(car.yaw);
+  const fz = -Math.cos(car.yaw);
+  // The car's right is its forward turned clockwise: (−fz, fx).
+  const rx = -fz;
+  const rz = fx;
+  const side = spec.width / 2 + EXIT_GAP;
+  const end = spec.length / 2 + EXIT_GAP;
+  return [
+    { x: car.x - rx * side, z: car.z - rz * side },
+    { x: car.x + rx * side, z: car.z + rz * side },
+    { x: car.x - fx * end, z: car.z - fz * end },
+    { x: car.x + fx * end, z: car.z + fz * end },
+  ];
+}
+
+/**
+ * Pushes car `a` out of car `b` (both footprints are oriented rectangles) and
+ * bounces it, like a wall would; true if they touched. The caller decides
+ * which car moves (the one that drove into the other).
+ */
+export function collideCars(
+  a: VehicleState,
+  specA: VehicleSpec,
+  b: VehicleState,
+  specB: VehicleSpec,
+): boolean {
+  const mtv = separateRects(a, specA, b, specB);
+  if (!mtv) return false;
+  a.x += mtv.x;
+  a.z += mtv.z;
+  const fx = -Math.sin(a.yaw);
+  const fz = -Math.cos(a.yaw);
+  const len = Math.hypot(mtv.x, mtv.z) || 1;
+  const impact = -(Math.sign(a.speed) * (fx * mtv.x + fz * mtv.z)) / len;
+  if (impact > HEAD_ON) {
+    // Some of the shove goes into the other car, the rest bounces back.
+    b.speed += a.speed * 0.3;
+    a.speed = -a.speed * specA.bounce;
+  } else if (impact > 0) a.speed *= 1 - impact * 0.1;
+  return true;
+}
+
+/** Separating-axis test between two oriented rectangles; the push that moves `a` out of `b`. */
+function separateRects(
+  a: VehicleState,
+  specA: VehicleSpec,
+  b: VehicleState,
+  specB: VehicleSpec,
+): { x: number; z: number } | undefined {
+  const axesOf = (yaw: number) => {
+    const fx = -Math.sin(yaw);
+    const fz = -Math.cos(yaw);
+    return [
+      [fx, fz],
+      [-fz, fx],
+    ] as const;
+  };
+  const extent = (yaw: number, spec: VehicleSpec, ux: number, uz: number) => {
+    const [[fx, fz], [rx, rz]] = axesOf(yaw);
+    return (
+      Math.abs(fx * ux + fz * uz) * (spec.length / 2) +
+      Math.abs(rx * ux + rz * uz) * (spec.width / 2)
+    );
+  };
+  const dx = a.x - b.x;
+  const dz = a.z - b.z;
+  let best = Infinity;
+  let px = 0;
+  let pz = 0;
+  for (const [ux, uz] of [...axesOf(a.yaw), ...axesOf(b.yaw)]) {
+    const d = dx * ux + dz * uz;
+    const overlap = extent(a.yaw, specA, ux, uz) + extent(b.yaw, specB, ux, uz) - Math.abs(d);
+    if (overlap <= EPS) return undefined;
+    if (overlap < best) {
+      best = overlap;
+      const sign = Math.sign(d) || 1;
+      px = ux * sign;
+      pz = uz * sign;
+    }
+  }
+  return { x: px * best, z: pz * best };
+}

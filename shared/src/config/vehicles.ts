@@ -33,6 +33,10 @@ export const VEHICLE_KINDS = ['sedan', 'sports', 'suv'] as const;
 export type VehicleKind = (typeof VEHICLE_KINDS)[number];
 
 export const vehicleSettingsSchema = z.object({
+  /** How close to a car's side (m, from its footprint) a player must stand to get in. */
+  enterRange: z.number().positive().default(1.6),
+  /** Fastest a car may be going (m/s) for its driver to get out. */
+  exitMaxSpeed: z.number().positive().default(4),
   kinds: z
     .object({ sedan: vehicleSpecSchema, sports: vehicleSpecSchema, suv: vehicleSpecSchema })
     .default({

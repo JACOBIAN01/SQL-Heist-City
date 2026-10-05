@@ -152,6 +152,37 @@ describe('compileCity', () => {
     expect(anchorInReach(pad, body.x, body.y, body.z)).toBe(true);
   });
 
+  it('parks cars along the kerbs, clear of buildings, spawns and each other', () => {
+    const cars = map.parkedCars ?? [];
+    expect(cars.length).toBeGreaterThan(20);
+    expect(cars.length).toBeLessThan(120);
+    const spec = { length: 4.2, width: 2.1 }; // the largest footprint any kind has
+    const reach = Math.hypot(spec.length, spec.width) / 2;
+    for (const car of cars) {
+      // Every corner of the footprint is clear of the walls and blocks.
+      const fx = -Math.sin(car.yaw);
+      const fz = -Math.cos(car.yaw);
+      for (const [a, b] of [
+        [1, 1],
+        [1, -1],
+        [-1, 1],
+        [-1, -1],
+      ] as const) {
+        const x = car.x + fx * a * (spec.length / 2) - fz * b * (spec.width / 2);
+        const z = car.z + fz * a * (spec.length / 2) + fx * b * (spec.width / 2);
+        // A corner inside anything taller than a kerb would be a car stuck in a wall.
+        const inside = map.boxes.some(
+          (b) => b.maxY > 0.3 && x > b.minX && x < b.maxX && z > b.minZ && z < b.maxZ,
+        );
+        expect(inside, `car at ${car.x},${car.z}`).toBe(false);
+      }
+      for (const p of map.spawns) expect(Math.hypot(p.x - car.x, p.z - car.z)).toBeGreaterThan(1.5);
+      for (const other of cars)
+        if (other !== car)
+          expect(Math.hypot(other.x - car.x, other.z - car.z)).toBeGreaterThan(reach);
+    }
+  });
+
   it('stays a few hundred colliders, cheap for the collision grid', () => {
     expect(map.boxes.length).toBeLessThan(800);
   });

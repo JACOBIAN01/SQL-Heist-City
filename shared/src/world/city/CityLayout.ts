@@ -1,5 +1,5 @@
 import type { CitySettings } from '../../config/city';
-import type { SpawnPoint } from '../map';
+import type { ParkedCar, SpawnPoint } from '../map';
 
 /**
  * The city as data (docs/city-kit.md rule 1): streets, blocks, lots and the
@@ -77,4 +77,6 @@ export interface CityLayout {
   readonly hospital: HospitalSite;
   /** Where new players start: on the streets, facing along them. */
   readonly spawns: readonly SpawnPoint[];
+  /** Cars along the kerbs, facing the way traffic would go on that side. */
+  readonly parkedCars: readonly ParkedCar[];
 }

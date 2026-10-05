@@ -1,3 +1,4 @@
+import type { VehicleKind } from '../config/vehicles';
 import type { CityLayout } from './city/CityLayout';
 
 /**
@@ -82,6 +83,16 @@ export interface MapVault {
   readonly loot: readonly LootSpot[];
 }
 
+/** A car standing somewhere when the round starts (the server owns it from then on). */
+export interface ParkedCar {
+  readonly x: number;
+  readonly z: number;
+  readonly yaw: number;
+  readonly kind: VehicleKind;
+  /** Picks the look within the kind (the client maps kind + variant to a model). */
+  readonly variant: number;
+}
+
 export interface GameMap {
   readonly id: string;
   /** The ground plane (y = 0) spans [-halfSize, halfSize] on x and z. */
@@ -98,6 +109,8 @@ export interface GameMap {
   readonly unarmedStart?: boolean;
   readonly doors?: readonly MapDoor[];
   readonly vaults?: readonly MapVault[];
+  /** Cars parked at the start of each round. */
+  readonly parkedCars?: readonly ParkedCar[];
   /** The layout a generated city was compiled from; the client builds its art from it. */
   readonly city?: CityLayout;
 }

@@ -1,6 +1,7 @@
 import type { CitySettings } from '../../config/city';
 import { SeededRng, type Rng } from '../../random/Rng';
-import type { SpawnPoint } from '../map';
+import type { ParkedCar, SpawnPoint } from '../map';
+import type { VehicleKind } from '../../config/vehicles';
 import type {
   BankSite,
   CityBlock,
@@ -112,6 +113,7 @@ export function generateCity(settings: CitySettings, bankFootprint: BankFootprin
     safehouses: safehouses.sort((a, b) => a.id.localeCompare(b.id)),
     hospital,
     spawns: streetSpawns(lines),
+    parkedCars: parkedCars(lines, s, rng.fork('parking')),
   };
 }
 
@@ -303,6 +305,50 @@ function streetSpawns(lines: readonly number[]): SpawnPoint[] {
           { x: along, z: line - LANE_OFFSET, yaw: facing(1, 0) },
           { x: along, z: line + LANE_OFFSET, yaw: facing(-1, 0) },
         );
+      }
+    }
+  return out;
+}
+
+/** Car centres sit this far from the street's centre line: against the kerb, clear of the lane spawns. */
+const PARKING_OFFSET = 4.8;
+/** Where along a 64 m segment (from its start line) the parking slots are: clear of crosswalks and spawns. */
+const PARKING_SLOTS = [13, 22.5, 41.5, 51];
+const PARKED_KINDS: readonly VehicleKind[] = [
+  'sedan',
+  'sedan',
+  'sedan',
+  'sedan',
+  'suv',
+  'suv',
+  'sports',
+];
+/** Looks per kind the client can choose from (it wraps, so any count of models works). */
+const VARIANTS = 8;
+
+/**
+ * Parked cars along both kerbs of every street, a few per block side, facing
+ * the way traffic would go on that side (the same way as the lane spawns).
+ */
+function parkedCars(lines: readonly number[], s: CitySettings, rng: Rng): ParkedCar[] {
+  const out: ParkedCar[] = [];
+  const car = (x: number, z: number, yaw: number): ParkedCar => ({
+    x,
+    z,
+    yaw,
+    kind: rng.pick(PARKED_KINDS),
+    variant: rng.int(0, VARIANTS - 1),
+  });
+  for (let k = 0; k < lines.length; k++)
+    for (let j = 0; j + 1 < lines.length; j++) {
+      const line = lines[k] ?? 0;
+      const from = lines[j] ?? 0;
+      for (const slot of PARKING_SLOTS) {
+        const along = from + slot;
+        if (rng.bool(s.parkedCarChance)) out.push(car(line + PARKING_OFFSET, along, facing(0, 1)));
+        if (rng.bool(s.parkedCarChance)) out.push(car(line - PARKING_OFFSET, along, facing(0, -1)));
+        if (rng.bool(s.parkedCarChance)) out.push(car(along, line - PARKING_OFFSET, facing(1, 0)));
+        if (rng.bool(s.parkedCarChance)) out.push(car(along, line + PARKING_OFFSET, facing(-1, 0)));
       }
     }
   return out;

@@ -3,7 +3,15 @@ import { DEFAULT_VEHICLE_SETTINGS, vehicleSettingsSchema } from '../config/vehic
 import { box, type GameMap } from '../world/map';
 import { mapById } from '../world/maps';
 import { Button, SIM_DT } from './input';
-import { controlsOf, createVehicle, stepVehicle, type DriveControls } from './vehicle';
+import {
+  collideCars,
+  controlsOf,
+  createVehicle,
+  distanceToCar,
+  exitSpots,
+  stepVehicle,
+  type DriveControls,
+} from './vehicle';
 
 const sedan = DEFAULT_VEHICLE_SETTINGS.kinds.sedan;
 const open: GameMap = { id: 'open', halfSize: 500, boxes: [], spawns: [] };
@@ -157,5 +165,47 @@ describe('vehicleSettingsSchema', () => {
     const s = vehicleSettingsSchema.parse({});
     expect(s.kinds.sports.maxSpeed).toBeGreaterThan(s.kinds.sedan.maxSpeed);
     expect(s.kinds.suv.width).toBeGreaterThan(s.kinds.sedan.width);
+  });
+});
+
+describe('getting in and out', () => {
+  it('measures distance to the car body, not its centre', () => {
+    const car = createVehicle(0, 0, 0); // facing −z: 4.2 m long on z, 1.8 m wide on x
+    expect(distanceToCar(car, sedan, 0, 0)).toBe(0);
+    expect(distanceToCar(car, sedan, 1.9, 0)).toBeCloseTo(1.0);
+    expect(distanceToCar(car, sedan, 0, -3.1)).toBeCloseTo(1.0);
+    // Turned a quarter, the long side is along x.
+    expect(distanceToCar(createVehicle(0, 0, Math.PI / 2), sedan, 3.1, 0)).toBeCloseTo(1.0);
+  });
+
+  it('offers the driver’s door first, then the other door, behind and in front', () => {
+    const [left, right, back, front] = exitSpots(createVehicle(0, 0, 0), sedan);
+    expect(left?.x).toBeCloseTo(-(sedan.width / 2 + 0.8)); // facing −z, the left is −x
+    expect(right?.x).toBeCloseTo(sedan.width / 2 + 0.8);
+    expect(back?.z).toBeGreaterThan(sedan.length / 2);
+    expect(front?.z).toBeLessThan(-sedan.length / 2);
+  });
+});
+
+describe('collideCars', () => {
+  it('pushes a car out of another it drove into, and bounces it back', () => {
+    const parked = createVehicle(0, -6, 0);
+    const car = createVehicle(0, 0, 0);
+    let touched = false;
+    for (let i = 0; i < 120; i++) {
+      stepVehicle(car, drive({ throttle: 1 }), SIM_DT, open, sedan);
+      touched = collideCars(car, sedan, parked, sedan) || touched;
+    }
+    expect(touched).toBe(true);
+    // Nose never inside the other car's tail.
+    expect(car.z - sedan.length / 2).toBeGreaterThanOrEqual(parked.z + sedan.length / 2 - 1e-6);
+    expect(parked.speed).not.toBe(0); // shoved
+  });
+
+  it('leaves cars that do not touch alone', () => {
+    const a = createVehicle(0, 0, 0);
+    const b = createVehicle(3, 0, 0); // side by side with a gap
+    expect(collideCars(a, sedan, b, sedan)).toBe(false);
+    expect(a.x).toBe(0);
   });
 });

@@ -103,6 +103,7 @@ export function compileCity(
     unarmedStart: true,
     boxes,
     spawns: city.spawns,
+    parkedCars: city.parkedCars,
     respawns: city.hospital.beds,
     anchors,
     doors,
