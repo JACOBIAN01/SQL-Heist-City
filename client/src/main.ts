@@ -14,6 +14,7 @@ import {
   WEAPON_IDS,
   Flag,
   type SelfState,
+  type WantedView,
   weaponFromWire,
 } from '@heist/shared';
 import { GameAudio, type HeardCar } from './audio/GameAudio';
@@ -52,6 +53,7 @@ import { FrameStats } from './render/FrameStats';
 import { AimView } from './render/AimView';
 import { WeaponTable } from './game/WeaponTable';
 import { markersFor, VaultAlerts } from './ui/minimap/minimapModel';
+import { feedText } from './heist/feedText';
 import { MinimapView } from './ui/minimap/MinimapView';
 import { loadCarAssets, type CarAssets } from './vehicles/carAssets';
 import { followAngle, PredictedVehicle } from './vehicles/PredictedVehicle';
@@ -224,6 +226,8 @@ const vaultAlerts = new VaultAlerts(DEFAULT_AUDIO_SETTINGS.alarmSeconds);
 /** Redraw the minimap at most this often (ms): it is a glance, not a view. */
 const MINIMAP_EVERY_MS = 33;
 let lastMinimap = 0;
+/** Who has a bounty on them, as last posted by the server. */
+let wanted: readonly WantedView[] = [];
 const scoreboard = new ScoreboardView(document.body, () => client.playerId);
 const roundUi = new RoundUi(scoreboard);
 const tracers = new Tracers(scene);
@@ -321,6 +325,10 @@ client.subscribe({
       ownedWeapons = message.owned;
       hud.setArms(message.owned, message.current);
     } else if (message.t === 'weapons') weaponTable.set(message.weapons);
+    else if (message.t === 'feed') {
+      const line = feedText(message.item, client.playerId);
+      hud.addEvent(line.text, line.tone);
+    } else if (message.t === 'bounties') wanted = message.wanted;
     else if (message.t === 'banking') bankingProgress.handle(message, performance.now());
     else if (message.t === 'loot') loot.apply(message.add, message.remove);
     else if (message.t === 'purse') {
@@ -624,7 +632,15 @@ renderer.setAnimationLoop((now) => {
     minimap.draw(
       // Turned the way the camera looks (behind the car when driving).
       { x: drawPos.x, z: drawPos.z, yaw: Math.atan2(-earForward.x, -earForward.z) },
-      markersFor(MAP, world.vaults, loot.positions(), vaultAlerts, now / 1000),
+      markersFor(
+        MAP,
+        world.vaults,
+        loot.positions(),
+        vaultAlerts,
+        now / 1000,
+        wanted,
+        client.playerId,
+      ),
       now / 1000,
     );
   }

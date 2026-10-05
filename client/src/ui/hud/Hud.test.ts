@@ -29,6 +29,18 @@ describe('Hud', () => {
     expect(q('.hud-health-fill').style.width).toBe('0%');
   });
 
+  it('shows heist news in the feed, coloured by tone, for longer than a kill', () => {
+    hud.addKill('A', 'B', false);
+    hud.addEvent('ALARM · Corner Savings (bank 1): lock 1/3 cracked', 'alarm');
+    const items = host.querySelectorAll('.hud-feed-item');
+    expect(items).toHaveLength(2);
+    expect((items[1] as HTMLElement).dataset.tone).toBe('alarm');
+    vi.advanceTimersByTime(6000);
+    expect(host.querySelectorAll('.hud-feed-item')).toHaveLength(1); // the kill is gone
+    vi.advanceTimersByTime(3000);
+    expect(host.querySelectorAll('.hud-feed-item')).toHaveLength(0);
+  });
+
   it('puts a scope over the view only while scoped', () => {
     expect(q('.hud-scope').hidden).toBe(true);
     hud.setScoped(true);

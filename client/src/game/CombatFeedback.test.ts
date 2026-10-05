@@ -21,6 +21,7 @@ function setup(over: Partial<CombatFeedbackDeps> = {}) {
     flashDamage: vi.fn(),
     showHitMarker: vi.fn(),
     addKill: vi.fn(),
+    addEvent: vi.fn(),
     setDead: vi.fn(),
     setPrompt: vi.fn(),
     setPurse: vi.fn(),

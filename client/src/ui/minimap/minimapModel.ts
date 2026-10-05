@@ -1,4 +1,4 @@
-import { findAnchor, type GameMap, type VaultView } from '@heist/shared';
+import { findAnchor, type GameMap, type VaultView, type WantedView } from '@heist/shared';
 
 /** A point on the minimap, in pixels from its centre (+x right, +y down). */
 export interface MapPoint {
@@ -26,7 +26,7 @@ export function pinToRim(p: MapPoint, radius: number): MapPoint & { readonly pin
   return { x: (p.x / d) * radius, y: (p.y / d) * radius, pinned: true };
 }
 
-export type MarkerKind = 'bank' | 'safehouse' | 'bag';
+export type MarkerKind = 'bank' | 'safehouse' | 'bag' | 'wanted';
 
 export interface Marker {
   readonly kind: MarkerKind;
@@ -39,7 +39,9 @@ export interface Marker {
   readonly opened?: number;
   /** Banks: a lock was cracked moments ago (the alarm is ringing). */
   readonly alert?: boolean;
-  /** Kept on the rim when out of range (banks and safehouses: where to go). */
+  /** Wanted players: their name. */
+  readonly name?: string;
+  /** Kept on the rim when out of range (banks, safehouses, the wanted: where to go). */
   readonly pinned: boolean;
 }
 
@@ -70,7 +72,8 @@ export class VaultAlerts {
 /**
  * Everything worth marking on the minimap: every bank with its vault's
  * progress (the bait that draws players to a heist in progress), every
- * safehouse, and loose cash bags.
+ * safehouse, loose cash bags, and everyone with a bounty on them (as last
+ * posted; not yourself).
  */
 export function markersFor(
   map: GameMap,
@@ -78,6 +81,8 @@ export function markersFor(
   bags: Iterable<{ readonly id: number; readonly x: number; readonly z: number }>,
   alerts: VaultAlerts,
   nowSeconds: number,
+  wanted: readonly WantedView[] = [],
+  myId = 0,
 ): Marker[] {
   const out: Marker[] = [];
   const views = new Map(vaults.map((v) => [v.id, v]));
@@ -101,5 +106,15 @@ export function markersFor(
     if (a.kind === 'safehouse')
       out.push({ kind: 'safehouse', id: a.id, x: a.x, z: a.z, pinned: true });
   for (const b of bags) out.push({ kind: 'bag', id: `bag-${b.id}`, x: b.x, z: b.z, pinned: false });
+  for (const w of wanted)
+    if (w.id !== myId)
+      out.push({
+        kind: 'wanted',
+        id: `wanted-${w.id}`,
+        x: w.x,
+        z: w.z,
+        name: w.name,
+        pinned: true,
+      });
   return out;
 }

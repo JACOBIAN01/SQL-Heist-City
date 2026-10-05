@@ -18,6 +18,7 @@ const COLOURS = {
   alert: '#ff4d4d',
   safehouse: '#3ddc84',
   bag: '#ffd34d',
+  wanted: '#ff6a00',
   player: '#ffffff',
 };
 
@@ -146,6 +147,23 @@ export class MinimapView {
       ctx.beginPath();
       ctx.arc(at.x, at.y, 2.5, 0, Math.PI * 2);
       ctx.fill();
+      return;
+    }
+    if (m.kind === 'wanted') {
+      // A price on their head: an orange diamond with a dollar sign.
+      ctx.fillStyle = COLOURS.wanted;
+      ctx.beginPath();
+      ctx.moveTo(at.x, at.y - 8);
+      ctx.lineTo(at.x + 7, at.y);
+      ctx.lineTo(at.x, at.y + 8);
+      ctx.lineTo(at.x - 7, at.y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#1a0a00';
+      ctx.font = 'bold 9px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('$', at.x, at.y + 0.5);
       return;
     }
     if (m.kind === 'safehouse') {

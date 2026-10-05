@@ -37,6 +37,20 @@ describe('VaultAlerts', () => {
   });
 });
 
+describe('markersFor: bounties', () => {
+  it('marks everyone wanted but yourself, pinned to the rim when far', () => {
+    const wanted = [
+      { id: 1, name: 'Me', x: 0, z: 0, cash: 200_000 },
+      { id: 2, name: 'Ana', x: 300, z: 0, cash: 150_000 },
+    ];
+    const markers = markersFor(HEIST_MAP, [], [], new VaultAlerts(18), 0, wanted, 1);
+    const marked = markers.filter((m) => m.kind === 'wanted');
+    expect(marked).toEqual([
+      { kind: 'wanted', id: 'wanted-2', x: 300, z: 0, name: 'Ana', pinned: true },
+    ]);
+  });
+});
+
 describe('markersFor', () => {
   it('marks every bank with its vault progress, every safehouse, and loose bags', () => {
     const city = mapById('city') as GameMap;

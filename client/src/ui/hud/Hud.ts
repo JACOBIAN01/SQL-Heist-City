@@ -9,6 +9,8 @@ export interface HudView {
   flashDamage(): void;
   showHitMarker(head: boolean): void;
   addKill(killer: string, victim: string, involvesYou: boolean): void;
+  /** A heist event in the same feed (alarm, vault open, banked, bounty), coloured by tone. */
+  addEvent(text: string, tone: FeedTone): void;
   setDead(dead: boolean, secondsLeft?: number): void;
   /** A progress bar with a label (banking…); undefined hides it. */
   setProgress(progress: { label: string; fraction: number } | undefined): void;
@@ -24,12 +26,15 @@ export interface HudView {
   toast(text: string): void;
 }
 
+export type FeedTone = 'alarm' | 'vault' | 'bounty' | 'good';
+
 /** $1,234 */
 export const formatMoney = (amount: number): string =>
   `$${Math.round(amount).toLocaleString('en-US')}`;
 
 const MAX_FEED = 5;
 const FEED_MS = 5000;
+const EVENT_MS = 8000;
 
 /** Plain-DOM HUD (no framework: bundle budget). Text always goes in as text nodes, never HTML. */
 export class Hud implements HudView {
@@ -151,9 +156,19 @@ export class Hud implements HudView {
       ' ✖ ',
       involvesYou ? h('b', { text: victim }) : victim,
     );
+    this.pushFeed(item, FEED_MS);
+  }
+
+  addEvent(text: string, tone: FeedTone): void {
+    const item = h('div', { class: 'hud-feed-item', text, attrs: { 'data-tone': tone } });
+    // Heist news stays up longer than a kill: it is where to go next.
+    this.pushFeed(item, EVENT_MS);
+  }
+
+  private pushFeed(item: HTMLElement, ms: number): void {
     this.feed.append(item);
     while (this.feed.children.length > MAX_FEED) this.feed.firstElementChild?.remove();
-    setTimeout(() => item.remove(), FEED_MS);
+    setTimeout(() => item.remove(), ms);
   }
 
   setDead(dead: boolean, secondsLeft?: number): void {

@@ -97,7 +97,8 @@
 .hud-feed {
   position: absolute;
   right: 16px;
-  top: 16px;
+  /* Below the purse. */
+  top: 72px;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -111,6 +112,18 @@
 }
 .hud-feed-item b {
   color: #d4a017;
+}
+.hud-feed-item[data-tone='alarm'] {
+  background: rgba(150, 20, 20, 0.75);
+}
+.hud-feed-item[data-tone='vault'] {
+  background: rgba(140, 105, 10, 0.8);
+}
+.hud-feed-item[data-tone='bounty'] {
+  background: rgba(160, 60, 0, 0.8);
+}
+.hud-feed-item[data-tone='good'] {
+  background: rgba(20, 100, 50, 0.75);
 }
 .hud-flash {
   position: absolute;
