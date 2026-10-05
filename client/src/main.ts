@@ -3,6 +3,9 @@ import {
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
+  DEFAULT_VEHICLE_SETTINGS,
+  controlsOf,
+  idleCommand,
   hourAt,
   SIM_DT,
   TEST_MAP,
@@ -43,6 +46,8 @@ import { Tracers } from './render/Tracers';
 import { Hud } from './ui/hud/Hud';
 import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
+import { CAR_KIND, loadCarAssets, type CarAssets } from './vehicles/carAssets';
+import { followAngle, TestDrive } from './vehicles/TestDrive';
 import { FrameBudget, lowerLevel, PostFx } from './render/PostFx';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
@@ -74,6 +79,9 @@ const scene = new Scene();
 const lighting = addLighting(scene);
 /** Re-light the scene when the hour has moved this much (~10 s of a 30-minute day). */
 const SKY_STEP_HOURS = 0.005;
+/** How quickly the chase camera turns after the car (1/s), and how far it looks down (rad). */
+const CHASE_RATE = 5;
+const CHASE_PITCH = -0.18;
 const hourParam = params.get('hour');
 const fixedHour = hourParam !== null && hourParam !== '' ? Number(hourParam) : undefined;
 const mapObject = buildMapObject(MAP);
@@ -132,6 +140,10 @@ const pointer = new PointerLock(renderer.domElement, input, (locked) => {
   hint.hidden = locked;
 });
 const rig = new CameraRig(camera, MAP);
+// Behind and above a car, centred (no shoulder), pulled in by walls like the on-foot camera.
+const carRig = new CameraRig(camera, MAP, { distance: 7.5, shoulder: 0, pivotHeight: 1.7 });
+/** Chase-camera heading: follows the car's with a short lag (rad). */
+let chaseYaw: number | undefined;
 
 // Network: ?server=<port> (default 8080), ?name=, ?lag=<one-way ms> to simulate latency.
 const port = params.get('server') ?? '8080';
@@ -273,6 +285,7 @@ const sqlTasks = new SqlPanelController({
 world.onChange((map, closedDoors) => {
   player.setMap(map);
   rig.setMap(map);
+  carRig.setMap(map);
   feedback.setMap(map);
   setClosedDoors(mapObject, closedDoors);
 });
@@ -308,9 +321,33 @@ new Hotkeys()
   });
 const batcher = new InputBatcher((commands) => client.sendInput(commands));
 
+// ?drive[=Taxi|SportsCar|SUV|…] tries driving: a car on your spawn street, simulated locally
+// with the shared physics. Entering, leaving and other players seeing it come in 8.8.
+const driveParam = params.get('drive');
+let testDrive: TestDrive | undefined;
+let carAssets: CarAssets | undefined;
+if (driveParam !== null)
+  loadCarAssets()
+    .then((cars) => {
+      carAssets = cars;
+      cars.nightGlow.value = lighting.state.night;
+      const id = cars.templates.has(driveParam) ? driveParam : 'NormalCar1';
+      const spec = DEFAULT_VEHICLE_SETTINGS.kinds[CAR_KIND[id] ?? 'sedan'];
+      const car = cars.create(id);
+      scene.add(car.object);
+      testDrive = new TestDrive(car, MAP, spec, spawn.x, spawn.z, spawn.yaw);
+    })
+    .catch((error: unknown) => console.warn('cars unavailable', error));
+
 // Move now (prediction); the server confirms or corrects later. Offline play still works.
 const loop = new FixedStepLoop(SIM_DT, () => {
   const command = input.sample();
+  if (testDrive) {
+    // The stick drives the car; the player on foot stands still (the server still hears from us).
+    testDrive.step(controlsOf(command), SIM_DT);
+    batcher.push(idleCommand(command.seq, command.yaw));
+    return;
+  }
   // Dead players do not move (the server ignores their input too); keep sending so it can acknowledge it.
   if (feedback.isAlive) {
     predicted.predict(command);
@@ -375,7 +412,8 @@ renderer.setAnimationLoop((now) => {
   predicted.drawPosition(loop.alpha, drawPos);
   cityArt?.update(camera.position.x, camera.position.z);
   interactions.update(player.body.x, player.body.y, player.body.z, feedback.isAlive);
-  model.object.visible = feedback.isAlive;
+  model.object.visible = feedback.isAlive && !testDrive;
+  const driven = testDrive?.draw(loop.alpha);
   model.object.position.set(drawPos.x, drawPos.y, drawPos.z);
   model.object.rotation.y = input.currentYaw + debugTurn;
   model.setAimPitch(input.currentPitch);
@@ -388,15 +426,27 @@ renderer.setAnimationLoop((now) => {
     frameMs / 1000,
   );
 
-  rig.update(
-    drawPos.x,
-    drawPos.y,
-    drawPos.z,
-    input.currentYaw,
-    input.currentPitch,
-    frameMs / 1000,
-    player.body.crouching,
-  );
+  // Driving: a chase camera behind the car, swinging round after it as it turns.
+  if (driven) {
+    chaseYaw = followAngle(chaseYaw ?? driven.yaw, driven.yaw, frameMs / 1000, CHASE_RATE);
+    carRig.update(
+      driven.x,
+      0,
+      driven.z,
+      chaseYaw,
+      CHASE_PITCH + Math.min(0, input.currentPitch),
+      frameMs / 1000,
+    );
+  } else
+    rig.update(
+      drawPos.x,
+      drawPos.y,
+      drawPos.z,
+      input.currentYaw,
+      input.currentPitch,
+      frameMs / 1000,
+      player.body.crouching,
+    );
   // Time of day from the match clock, so every player shares one sky (?hour=22 pins it).
   const hour =
     fixedHour ??
@@ -405,9 +455,10 @@ renderer.setAnimationLoop((now) => {
     lighting.apply(skyAt(hour));
     postFx.setNight(lighting.state.night);
     if (cityKit) setNightGlow(cityKit.materials, lighting.state.night);
+    if (carAssets) carAssets.nightGlow.value = lighting.state.night;
   }
   lighting.frame(camera);
-  lighting.follow(model.object);
+  lighting.follow(testDrive ? testDrive.model.object : model.object);
   postFx.render(scene, camera);
 
   if (now - lastOverlay > 500) {
