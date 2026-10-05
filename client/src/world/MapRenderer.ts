@@ -31,6 +31,7 @@ const KIND_COLOR: Readonly<Record<MapBoxKind, number>> = {
   cover: 0x4b5058,
   shell: 0x5d6571,
   kerb: 0x9a9da3,
+  furniture: 0x7a5c3e,
 };
 
 /** Tiled asphalt-with-grid texture: gives the eye something to judge speed by. */
@@ -126,6 +127,11 @@ const KIT_COVERED = new Set(['map-ground', 'map-shell', 'map-kerb', 'map-wall'])
 /** Hides the stand-in boxes once the city's kit art is in the scene. Bank walls, cover and doors stay. */
 export function hideKitCovered(root: Object3D): void {
   for (const child of root.children) if (KIT_COVERED.has(child.name)) child.visible = false;
+}
+
+/** Hides the stand-in boxes of solid furniture once the interior kit draws the real pieces. */
+export function hideFurnitureBoxes(root: Object3D): void {
+  for (const child of root.children) if (child.name === 'map-furniture') child.visible = false;
 }
 
 /** Shows the door of every vault still closed and hides the rest. */

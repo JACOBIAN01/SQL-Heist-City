@@ -78,7 +78,14 @@ import { StorageDraftStore } from './ui/sql/DraftStore';
 import { SqlPanelController } from './ui/sql/SqlPanelController';
 import { rewardLabel } from './ui/sql/labels';
 import './ui/sql/sqlPanel.css';
-import { buildMapObject, hideKitCovered, setClosedDoors } from './world/MapRenderer';
+import {
+  buildMapObject,
+  hideFurnitureBoxes,
+  hideKitCovered,
+  setClosedDoors,
+} from './world/MapRenderer';
+import { buildBankFurniture } from './world/bank/BankFurnitureArt';
+import { loadInteriorKit, type InteriorKit } from './world/bank/InteriorKit';
 import { loadCityKit, type CityKit } from './world/city/CityKit';
 import { setNightGlow } from './world/city/kitMaterials';
 import { skyAt } from './render/dayNight';
@@ -160,6 +167,18 @@ if (city)
       setNightGlow(kit.materials, lighting.state.night);
     })
     .catch((error: unknown) => console.warn('city kit unavailable, drawing boxes', error));
+// Bank furniture, drawn with the interior kit once it arrives (solid pieces collide either way;
+// until then they show as plain boxes).
+let interiorKit: InteriorKit | undefined;
+if (MAP.banks?.length)
+  loadInteriorKit()
+    .then((kit) => {
+      interiorKit = kit;
+      kit.nightGlow.value = lighting.state.night;
+      scene.add(buildBankFurniture(kit, MAP));
+      hideFurnitureBoxes(mapObject);
+    })
+    .catch((error: unknown) => console.warn('bank furniture unavailable', error));
 const predicted = new PredictedPlayer(player);
 const input = new InputSampler();
 input.setLook(spawn.yaw);
@@ -655,6 +674,7 @@ renderer.setAnimationLoop((now) => {
     postFx.setNight(lighting.state.night);
     if (cityKit) setNightGlow(cityKit.materials, lighting.state.night);
     if (carAssets) carAssets.nightGlow.value = lighting.state.night;
+    if (interiorKit) interiorKit.nightGlow.value = lighting.state.night;
   }
   camera.getWorldDirection(earForward);
   earUp.set(0, 1, 0).applyQuaternion(camera.quaternion);

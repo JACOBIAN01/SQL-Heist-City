@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
+import { FURNITURE_PIECES } from '@heist/shared';
 import { interiorKitFrom, type InteriorManifest } from './InteriorKit';
 
 const manifest = JSON.parse(
@@ -47,6 +48,15 @@ describe('interior.json (the built furniture)', () => {
       if (hangs) expect(p.id).toMatch(/^Light_/);
       else expect(p.min[1]).toBeCloseTo(0, 2);
       expect(p.size.every((s) => s > 0)).toBe(true);
+    }
+  });
+
+  it('matches the bounds the shared layout code uses (FURNITURE_PIECES)', () => {
+    expect(Object.keys(FURNITURE_PIECES).sort()).toEqual(manifest.pieces.map((p) => p.id).sort());
+    for (const p of manifest.pieces) {
+      const shared = FURNITURE_PIECES[p.id as keyof typeof FURNITURE_PIECES];
+      expect(shared.min, p.id).toEqual(p.min);
+      expect(shared.max, p.id).toEqual(p.max);
     }
   });
 
