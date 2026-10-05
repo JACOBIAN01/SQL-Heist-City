@@ -47,8 +47,7 @@ describe('PreviewPanel', () => {
     expect(screen.getByText(/50% of player pairs share an answer/)).toBeTruthy();
     expect(screen.getByText('List employees in Audit')).toBeTruthy();
     expect(screen.getByText('Expected answer (2 rows)')).toBeTruthy();
-    expect(screen.getByText(/Players' worked example/)).toBeTruthy();
-    expect(screen.getByText('(1 output rows)')).toBeTruthy();
+    expect(screen.getByText(/worked example \(1 output rows\)/)).toBeTruthy();
     expect(screen.getByText('student: wrong')).toBeTruthy();
     expect(screen.getByText('no such column: nope')).toBeTruthy();
 

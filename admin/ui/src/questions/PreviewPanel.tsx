@@ -114,7 +114,7 @@ function SeedCard({ seed }: { seed: SeedPreview }) {
           <summary>
             Players' worked example{' '}
             {seed.example.found ? (
-              <>({seed.example.output.rows.length} output rows)</>
+              <>{`(${seed.example.output.rows.length} output rows)`}</>
             ) : (
               <span className="badge off">no rows</span>
             )}
