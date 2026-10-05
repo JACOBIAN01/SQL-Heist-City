@@ -3,6 +3,7 @@ import {
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_HEIST_SETTINGS,
   DEFAULT_MATCH_SETTINGS,
+  BANK_LAYOUTS,
   HEIST_MAP,
   mapById,
   PROTOCOL_VERSION,
@@ -117,24 +118,25 @@ describe('vault state', () => {
 });
 
 describe('vault consoles in the city', () => {
-  it('offers each laid-out bank’s own locks, tiered by that bank', () => {
-    const map = mapById('city');
-    if (!map) throw new Error('no city');
-    const match = new Match({ map, settings: DEFAULT_MATCH_SETTINGS });
-    const connection = new FakeConnection();
-    const joined = match.join(PROTOCOL_VERSION, 'A', connection);
-    if (!joined.ok) throw new Error('join failed');
-    const console2 = map.anchors?.find((a) => a.id === 'bank-2:vault:console');
-    if (!console2) throw new Error('no bank 2 console');
-    Object.assign(joined.player.body, { x: console2.x, y: console2.y, z: console2.z });
-    match.receiveJson(
-      joined.player.id,
-      JSON.stringify({ t: 'interact', ref: 1, anchor: 'bank-2:vault:console' }),
-    );
-    expect(connection.jsonOf('interact_result')[0]?.result).toEqual({
-      action: 'open_task',
-      rewardKey: 'vault:bank-2:lock-1',
-      target: 'bank-2:vault',
-    });
-  });
+  it.each([...BANK_LAYOUTS.values()].map((b) => b.tier))(
+    'offers bank %i its own locks, tiered by that bank',
+    (tier) => {
+      const map = mapById('city');
+      if (!map) throw new Error('no city');
+      const match = new Match({ map, settings: DEFAULT_MATCH_SETTINGS });
+      const connection = new FakeConnection();
+      const joined = match.join(PROTOCOL_VERSION, 'A', connection);
+      if (!joined.ok) throw new Error('join failed');
+      const id = `bank-${tier}:vault:console`;
+      const console_ = map.anchors?.find((a) => a.id === id);
+      if (!console_) throw new Error(`no console for bank ${tier}`);
+      Object.assign(joined.player.body, { x: console_.x, y: console_.y, z: console_.z });
+      match.receiveJson(joined.player.id, JSON.stringify({ t: 'interact', ref: 1, anchor: id }));
+      expect(connection.jsonOf('interact_result')[0]?.result).toEqual({
+        action: 'open_task',
+        rewardKey: `vault:bank-${tier}:lock-1`,
+        target: `bank-${tier}:vault`,
+      });
+    },
+  );
 });
