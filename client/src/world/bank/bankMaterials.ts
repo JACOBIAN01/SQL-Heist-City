@@ -132,21 +132,26 @@ const PAINTERS: Readonly<Record<BankSurface, (g: CanvasRenderingContext2D, r: Se
       grout(g, 128, 'rgba(120,112,100,0.6)');
     },
     wood: (g, r) => {
-      // Planks 20 cm wide, staggered ends, grain lines.
+      // Planks 20 cm wide; each is cut once at a random height, so the joints are staggered.
       const plank = PX / 5;
+      g.fillStyle = shade(SURFACES.wood.base, 0.55);
+      g.fillRect(0, 0, PX, PX);
       for (let i = 0; i < 5; i++) {
-        const offset = r.next() * PX;
-        for (const start of [offset - PX, offset]) {
-          g.fillStyle = shade(SURFACES.wood.base, 0.8 + r.next() * 0.35);
-          g.fillRect(i * plank, start, plank - 2, PX * 0.75);
-        }
-        g.strokeStyle = 'rgba(40,22,10,0.25)';
-        for (let k = 0; k < 4; k++) {
-          const x = i * plank + 4 + r.next() * (plank - 8);
-          g.beginPath();
-          g.moveTo(x, 0);
-          g.lineTo(x + (r.next() - 0.5) * 6, PX);
-          g.stroke();
+        const cut = Math.floor(PX * (0.2 + r.next() * 0.6));
+        for (const [y0, y1] of [
+          [0, cut],
+          [cut, PX],
+        ] as const) {
+          g.fillStyle = shade(SURFACES.wood.base, 0.85 + r.next() * 0.3);
+          g.fillRect(i * plank + 1, y0 + 1, plank - 2, y1 - y0 - 2);
+          g.strokeStyle = 'rgba(40,22,10,0.22)';
+          for (let k = 0; k < 3; k++) {
+            const x = i * plank + 5 + r.next() * (plank - 10);
+            g.beginPath();
+            g.moveTo(x, y0 + 2);
+            g.lineTo(x + (r.next() - 0.5) * 5, y1 - 2);
+            g.stroke();
+          }
         }
       }
     },

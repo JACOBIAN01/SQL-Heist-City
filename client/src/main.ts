@@ -85,6 +85,7 @@ import {
   setClosedDoors,
 } from './world/MapRenderer';
 import { buildBankFurniture } from './world/bank/BankFurnitureArt';
+import { buildBankFixtures } from './world/bank/BankFixturesArt';
 import { buildBankShells, insideDressedBank } from './world/bank/BankShellArt';
 import { createBankMaterials } from './world/bank/bankMaterials';
 import { VaultArt } from './world/bank/VaultArt';
@@ -121,7 +122,10 @@ const fixedHour = hourParam !== null && hourParam !== '' ? Number(hourParam) : u
 const bankMaterials = MAP.banks?.length ? createBankMaterials() : undefined;
 const mapObject = buildMapObject(MAP, bankMaterials ? insideDressedBank(MAP) : undefined);
 scene.add(mapObject);
-if (bankMaterials) scene.add(buildBankShells(MAP, bankMaterials));
+if (bankMaterials) {
+  scene.add(buildBankShells(MAP, bankMaterials));
+  scene.add(buildBankFixtures(MAP, bankMaterials));
+}
 // Round vault doors that turn, unbolt and swing open as locks are cracked; keypads and alarms.
 const vaultArt = bankMaterials ? new VaultArt(MAP, bankMaterials) : undefined;
 if (vaultArt) scene.add(vaultArt.root);
