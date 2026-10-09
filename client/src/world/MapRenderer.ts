@@ -97,6 +97,7 @@ export function buildMapObject(map: GameMap, skip: (b: MapBox) => boolean = () =
 
   // Vault doors are separate meshes so they can disappear when the vault opens.
   for (const d of map.doors ?? []) {
+    if (skip(d.box)) continue; // a dressed bank draws its own vault door
     const b = d.box;
     const door = new Mesh(
       new BoxGeometry(b.maxX - b.minX, b.maxY - b.minY, b.maxZ - b.minZ),

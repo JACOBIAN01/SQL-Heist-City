@@ -87,6 +87,7 @@ import {
 import { buildBankFurniture } from './world/bank/BankFurnitureArt';
 import { buildBankShells, insideDressedBank } from './world/bank/BankShellArt';
 import { createBankMaterials } from './world/bank/bankMaterials';
+import { VaultArt } from './world/bank/VaultArt';
 import { loadInteriorKit, type InteriorKit } from './world/bank/InteriorKit';
 import { loadCityKit, type CityKit } from './world/city/CityKit';
 import { setNightGlow } from './world/city/kitMaterials';
@@ -121,6 +122,23 @@ const bankMaterials = MAP.banks?.length ? createBankMaterials() : undefined;
 const mapObject = buildMapObject(MAP, bankMaterials ? insideDressedBank(MAP) : undefined);
 scene.add(mapObject);
 if (bankMaterials) scene.add(buildBankShells(MAP, bankMaterials));
+// Round vault doors that turn, unbolt and swing open as locks are cracked; keypads and alarms.
+const vaultArt = bankMaterials ? new VaultArt(MAP, bankMaterials) : undefined;
+if (vaultArt) scene.add(vaultArt.root);
+// ?vaultdemo cracks every vault's three locks offline, 3 s apart, to watch the door (no server needed).
+if (vaultArt && params.has('vaultdemo')) {
+  const views = (opened: number) =>
+    (MAP.vaults ?? []).map((v) => ({ id: v.id, tier: v.tier, locks: 3, opened }));
+  for (const opened of [0, 1, 2, 3])
+    setTimeout(
+      () => {
+        const now = performance.now() / 1000;
+        vaultAlerts.observe(views(opened), now);
+        vaultArt.onVaults(views(opened), now);
+      },
+      4000 + opened * 3000,
+    );
+}
 const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
 
@@ -376,6 +394,7 @@ client.subscribe({
       world.applyVaults(message.vaults);
       audio.onVaults(message.vaults);
       vaultAlerts.observe(message.vaults, performance.now() / 1000);
+      vaultArt?.onVaults(message.vaults, performance.now() / 1000);
     } else if (message.t === 'round') {
       // The tutorial has no round to race: its room closes long before the clock would matter.
       if (!tutorial) roundUi.onRound(message, performance.now());
@@ -599,6 +618,7 @@ renderer.setAnimationLoop((now) => {
   tracers.update(frameMs / 1000);
   loot.update(now / 1000);
   beacon?.update(now / 1000);
+  vaultArt?.update(now / 1000, frameMs / 1000, (id) => vaultAlerts.isAlert(id, now / 1000));
   bankingProgress.update(now);
   roundUi.update(now);
   hitboxes?.update(remotes.poses());

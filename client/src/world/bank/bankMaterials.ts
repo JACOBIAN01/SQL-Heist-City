@@ -22,7 +22,10 @@ export type BankSurface =
   | 'counter'
   | 'trim'
   | 'stone'
-  | 'roof';
+  | 'roof'
+  | 'deposit'
+  | 'brass'
+  | 'cash';
 
 /**
  * How a surface's texture meets the geometry. `metres`: the texture covers
@@ -78,6 +81,16 @@ export const SURFACES: Readonly<Record<BankSurface, SurfaceStyle>> = {
   trim: { base: 0x3a2618, uv: 'metres', size: 1, roughness: 0.5, metalness: 0, selfLight: 0.35 },
   stone: { base: 0x9c958a, uv: 'metres', size: 2, roughness: 0.9, metalness: 0, selfLight: 0 },
   roof: { base: 0x3b3d40, uv: 'metres', size: 4, roughness: 0.95, metalness: 0, selfLight: 0 },
+  deposit: {
+    base: 0x8a9097,
+    uv: 'metres',
+    size: 1,
+    roughness: 0.3,
+    metalness: 0.75,
+    selfLight: 0.3,
+  },
+  brass: { base: 0xc8a14a, uv: 'metres', size: 1, roughness: 0.3, metalness: 0.9, selfLight: 0.25 },
+  cash: { base: 0x7e9a6a, uv: 'metres', size: 0.2, roughness: 0.8, metalness: 0, selfLight: 0.4 },
 };
 
 const PX = 256;
@@ -206,6 +219,35 @@ const PAINTERS: Readonly<Record<BankSurface, (g: CanvasRenderingContext2D, r: Se
           g.fillStyle = shade(SURFACES.stone.base, 0.88 + r.next() * 0.2);
           g.fillRect(x + 1, y + 1, w - 2, h - 2);
         }
+    },
+    deposit: (g) => {
+      // A wall of small doors, 4 × 4 to the metre, each with a brass keyhole and number plate.
+      g.fillStyle = css(SURFACES.deposit.base);
+      g.fillRect(0, 0, PX, PX);
+      const c = PX / 4;
+      for (let i = 0; i < 4; i++)
+        for (let j = 0; j < 4; j++) {
+          const x = i * c;
+          const y = j * c;
+          g.fillStyle = 'rgba(30,34,38,0.9)';
+          g.fillRect(x, y, c, 3);
+          g.fillRect(x, y, 3, c);
+          g.fillStyle = 'rgba(255,255,255,0.12)';
+          g.fillRect(x + 5, y + 5, c - 10, 3);
+          g.fillStyle = css(SURFACES.brass.base);
+          g.fillRect(x + c / 2 - 3, y + c / 2 - 3, 6, 6);
+          g.fillRect(x + c / 2 - 8, y + 10, 16, 5);
+        }
+    },
+    brass: (g, r) => brushed(g, r, SURFACES.brass.base),
+    cash: (g) => {
+      // A bundle of notes seen side on: green paper with a paper band round the middle.
+      g.fillStyle = css(SURFACES.cash.base);
+      g.fillRect(0, 0, PX, PX);
+      g.fillStyle = 'rgba(30,50,25,0.35)';
+      for (let y = 0; y < PX; y += 6) g.fillRect(0, y, PX, 1);
+      g.fillStyle = '#e8e2c8';
+      g.fillRect(PX * 0.42, 0, PX * 0.16, PX);
     },
     roof: (g, r) => {
       g.fillStyle = css(SURFACES.roof.base);

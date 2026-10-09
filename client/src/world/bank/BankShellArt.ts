@@ -297,11 +297,49 @@ export class BankShellBuilder {
         if (lintel || sill) this.add('trim', f, floorY);
         continue;
       }
-      const px = f.centre[0] + f.n[0] * 0.3;
-      const pz = f.centre[2] + f.n[2] * 0.3;
-      if (exterior && this.outside(px, pz)) this.add('stone', f, floorY);
-      else this.add(this.wallSurface(storey, px, pz), f, floorY);
+      // A long wall can face several rooms: cut it where rooms begin and end.
+      for (const piece of this.splitByRooms(f, storey)) {
+        const px = piece.centre[0] + piece.n[0] * 0.3;
+        const pz = piece.centre[2] + piece.n[2] * 0.3;
+        if (exterior && this.outside(px, pz)) this.add('stone', piece, floorY);
+        else this.add(this.wallSurface(storey, px, pz), piece, floorY);
+      }
     }
+  }
+
+  /** A vertical face cut at every room edge that crosses it, so each piece faces one room. */
+  private splitByRooms(f: Face, storey: number): Face[] {
+    const alongX = f.n[0] === 0; // a face looking along z runs along x
+    const coords = f.corners.map((c) => (alongX ? c[0] : c[2]));
+    const lo = Math.min(...coords);
+    const hi = Math.max(...coords);
+    const offset = alongX ? this.site.x : this.site.z;
+    const cuts = (this.layout.rooms ?? [])
+      .filter((r) => r.storey === storey)
+      .flatMap((r) =>
+        alongX ? [r.x - r.width / 2, r.x + r.width / 2] : [r.z - r.depth / 2, r.z + r.depth / 2],
+      )
+      .map((c) => c + offset)
+      .filter((c) => c > lo + 1e-6 && c < hi - 1e-6)
+      .sort((a, b) => a - b);
+    if (cuts.length === 0) return [f];
+    const ys = f.corners.map((c) => c[1]);
+    const y0 = Math.min(...ys);
+    const y1 = Math.max(...ys);
+    const fixed = alongX ? (f.corners[0]?.[2] ?? 0) : (f.corners[0]?.[0] ?? 0);
+    const edges = [lo, ...cuts, hi];
+    const out: Face[] = [];
+    for (let i = 0; i + 1 < edges.length; i++) {
+      const a = edges[i] as number;
+      const b = edges[i + 1] as number;
+      const p = (u: number, y: number): Vec3 => (alongX ? [u, y, fixed] : [fixed, y, u]);
+      out.push({
+        n: f.n,
+        corners: [p(a, y0), p(b, y0), p(b, y1), p(a, y1)],
+        centre: p((a + b) / 2, (y0 + y1) / 2),
+      });
+    }
+    return out;
   }
 
   private roof(b: Aabb): void {
@@ -389,6 +427,7 @@ export class BankShellBuilder {
       for (const w of plan.walls)
         for (const o of w.openings ?? []) {
           if ((o.sill ?? 0) > 0) continue; // a window or pass-through, not a door
+          if (this.isVaultDoorway(w, o, storey)) continue; // the vault door has its own frame
           this.surround(w.from, w.to, w.thickness ?? 0.2, o.at, o.width, o.height, storey);
         }
     });
@@ -401,6 +440,23 @@ export class BankShellBuilder {
       e.width,
       e.height,
       0,
+    );
+  }
+
+  /** Whether a wall opening is where a vault door stands. */
+  private isVaultDoorway(
+    w: { from: { x: number; z: number }; to: { x: number; z: number } },
+    o: { at: number; width: number },
+    storey: number,
+  ): boolean {
+    const alongX = w.from.z === w.to.z;
+    const dir = (alongX ? Math.sign(w.to.x - w.from.x) : Math.sign(w.to.z - w.from.z)) || 1;
+    const mid = (alongX ? w.from.x : w.from.z) + dir * (o.at + o.width / 2);
+    return (this.layout.vaults ?? []).some(
+      (v) =>
+        v.storey === storey &&
+        Math.abs((alongX ? v.door.x : v.door.z) - mid) < 0.5 &&
+        Math.abs((alongX ? v.door.z : v.door.x) - (alongX ? w.from.z : w.from.x)) < 0.5,
     );
   }
 
