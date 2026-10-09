@@ -18,6 +18,9 @@ import {
   type Point2,
   type StairSpec,
   type WallSpec,
+  FITTING_HEIGHT,
+  FITTING_DEPTH,
+  type WallRun,
 } from './BankLayout';
 
 import { ceilingHeight, placeFurniture } from './furniture';
@@ -384,6 +387,16 @@ export function compileBankParts(layout: BankLayout, at: Point2): BankParts {
   }
   for (const st of stairs) parts.steps.push(...stairBoxes(layout, st, at));
 
+  // Vault fittings stand against the walls, solid.
+  for (const v of layout.vaults ?? [])
+    for (const run of [...(v.fittings?.depositBoxes ?? []), ...(v.fittings?.cashShelves ?? [])])
+      parts.furniture.push({
+        kind: 'furniture',
+        ...wallRunRect(run, at),
+        minY: v.storey * layout.storeyHeight,
+        maxY: v.storey * layout.storeyHeight + FITTING_HEIGHT,
+      });
+
   // Solid furniture blocks like any other box (never above its ceiling).
   for (const p of placeFurniture(layout, at)) {
     if (!p.solid) continue;
@@ -423,4 +436,25 @@ export function compileBankParts(layout: BankLayout, at: Point2): BankParts {
       );
   });
   return parts;
+}
+
+/** The floor rectangle (world) a run of vault fittings covers. */
+export function wallRunRect(run: WallRun, at: Point2): Rect {
+  const along = run.facing === '+z' || run.facing === '-z' ? 'x' : 'z';
+  const out = run.facing === '+x' || run.facing === '+z' ? FITTING_DEPTH : -FITTING_DEPTH;
+  const x = at.x + run.x;
+  const z = at.z + run.z;
+  return along === 'x'
+    ? {
+        minX: x - run.width / 2,
+        maxX: x + run.width / 2,
+        minZ: Math.min(z, z + out),
+        maxZ: Math.max(z, z + out),
+      }
+    : {
+        minX: Math.min(x, x + out),
+        maxX: Math.max(x, x + out),
+        minZ: z - run.width / 2,
+        maxZ: z + run.width / 2,
+      };
 }

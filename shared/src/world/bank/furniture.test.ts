@@ -60,10 +60,22 @@ describe('furniture in the compiled bank', () => {
       ),
       { x: 0, z: 0 },
     );
-    const solid = boxes.filter((b) => b.kind === 'furniture');
+    // Storey 0 only: the vault's fittings upstairs are solid too.
+    const solid = boxes.filter((b) => b.kind === 'furniture' && b.minY === 0);
     expect(solid).toHaveLength(1);
     expect(solid[0]?.minY).toBe(0);
     expect(((solid[0]?.minX ?? 0) + (solid[0]?.maxX ?? 0)) / 2).toBeCloseTo(-6, 1);
+  });
+
+  it("makes the vault's deposit boxes and cash shelves solid, against their walls", () => {
+    const vaultFloor = 2 * BANK_1.storeyHeight;
+    const fittings = compileBank(BANK_1, { x: 0, z: 0 }).filter(
+      (b) => b.kind === 'furniture' && b.minY === vaultFloor,
+    );
+    expect(fittings).toHaveLength(3);
+    const back = fittings.find((b) => b.minZ < -8.7);
+    expect(back).toMatchObject({ minX: 4.5, maxX: 11.5, maxY: vaultFloor + 2.2 });
+    expect(back ? back.maxZ - back.minZ : 0).toBeCloseTo(0.35);
   });
 
   it('refuses unknown pieces, missing storeys and pieces outside the walls', () => {

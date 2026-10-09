@@ -41,6 +41,14 @@ export const BANK_1: BankLayout = {
         { x: 7, z: -3 },
         { x: 10, z: -3 },
       ],
+      // Deposit boxes on the back and east walls, cash shelves on the north wall.
+      fittings: {
+        depositBoxes: [
+          { x: 8, z: -8.8, width: 7, facing: '+z' },
+          { x: 11.8, z: -5, width: 3.6, facing: '-x' },
+        ],
+        cashShelves: [{ x: 8, z: -1.1, width: 5, facing: '-z' }],
+      },
     },
   ],
   floors: [

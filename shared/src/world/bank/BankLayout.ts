@@ -81,6 +81,30 @@ export interface AnchorSpec {
   readonly radius?: number;
 }
 
+/**
+ * A run of fittings along a vault wall: `x`, `z` is the middle of the run on
+ * the wall's inner face; it stands `depth` m out from the wall toward
+ * `facing` and runs along the wall for `width` m.
+ */
+export interface WallRun {
+  readonly x: number;
+  readonly z: number;
+  readonly width: number;
+  readonly facing: Heading;
+}
+
+/** What fills a vault room (11.4). Both kinds are solid: you cannot walk into them. */
+export interface VaultFittings {
+  /** Walls of safe-deposit boxes. */
+  readonly depositBoxes?: readonly WallRun[];
+  /** Shelves stacked with bundles of cash. */
+  readonly cashShelves?: readonly WallRun[];
+}
+
+/** How far fittings stand out from their wall, and how tall they are. */
+export const FITTING_DEPTH = 0.35;
+export const FITTING_HEIGHT = 2.2;
+
 /** A vault room's door and console. The door is a blocker until the vault opens. */
 export interface VaultSpec {
   readonly id: string;
@@ -97,6 +121,8 @@ export interface VaultSpec {
   readonly console: Point2;
   /** Where cash bags appear once the vault is open. */
   readonly loot: readonly Point2[];
+  /** Deposit boxes and cash shelves along its walls. */
+  readonly fittings?: VaultFittings;
 }
 
 /**
