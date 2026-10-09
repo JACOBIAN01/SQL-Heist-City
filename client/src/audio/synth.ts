@@ -30,6 +30,8 @@ export const SOUND_NAMES = [
   'wind',
   'siren',
   'alarm',
+  'vault-crack',
+  'vault-open',
 ] as const;
 export type SoundName = (typeof SOUND_NAMES)[number];
 
@@ -293,6 +295,43 @@ function crash(rng: Rng): Float32Array {
   return normalise(saturate(normalise(out, 1), 1.8), 0.9);
 }
 
+/** A lock giving way: a ratchet of ticks as the wheel turns, then a heavy metal clunk. */
+function vaultCrack(rng: Rng): Float32Array {
+  const out = samples(1.1);
+  const tick = envelope(bandpass(noise(samples(0.03).length, rng), 3200, 8), 0.001, 0.008);
+  for (let i = 0; i < 9; i++) mixInto(out, tick, 0.5, Math.floor(i * 0.075 * SYNTH_RATE));
+  const at = Math.floor(0.72 * SYNTH_RATE);
+  const thump = envelope(sweep(samples(0.35).length, 110, 45, 0.06), 0.002, 0.09);
+  mixInto(out, thump, 1.4, at);
+  for (const hz of [410, 690, 1130])
+    mixInto(
+      out,
+      envelope(bandpass(noise(samples(0.35).length, rng), hz, 30), 0.002, 0.08),
+      1.6,
+      at,
+    );
+  return normalise(saturate(normalise(out, 1), 1.4), 0.8);
+}
+
+/** The vault door: every bolt drawing back at once, then a long low groan as it swings. */
+function vaultOpen(rng: Rng): Float32Array {
+  const out = samples(4.2);
+  const bolt = envelope(bandpass(noise(samples(0.2).length, rng), 700, 20), 0.002, 0.05);
+  for (let i = 0; i < 6; i++) mixInto(out, bolt, 0.9, Math.floor((0.15 + i * 0.09) * SYNTH_RATE));
+  const swingAt = Math.floor(1.0 * SYNTH_RATE);
+  const groan = envelope(sweep(samples(2.4).length, 70, 52, 1.6), 0.3, 0.9);
+  mixInto(out, groan, 1, swingAt);
+  mixInto(out, envelope(bandpass(noise(samples(2.4).length, rng), 240, 6), 0.4, 0.8), 0.6, swingAt);
+  // It comes to rest against its stop.
+  mixInto(
+    out,
+    envelope(sweep(samples(0.4).length, 90, 40, 0.1), 0.002, 0.12),
+    1.2,
+    Math.floor(3.2 * SYNTH_RATE),
+  );
+  return normalise(saturate(normalise(out, 1), 1.3), 0.85);
+}
+
 /** Notes (Hz) played one after another, each `gap` seconds apart, ringing for `tau`. */
 function chime(notes: readonly number[], gap: number, tau: number, seconds: number): Float32Array {
   const out = samples(seconds);
@@ -397,6 +436,8 @@ export const VARIANTS: Readonly<Record<SoundName, number>> = {
   wind: 1,
   siren: 1,
   alarm: 1,
+  'vault-crack': 1,
+  'vault-open': 1,
 };
 
 const gun = (id: string): GunVoice => GUNS[id] as GunVoice;
@@ -420,6 +461,8 @@ const RECIPES: Readonly<Record<SoundName, (rng: Rng) => Float32Array>> = {
   wind,
   siren,
   alarm,
+  'vault-crack': vaultCrack,
+  'vault-open': vaultOpen,
 };
 
 const made = new Map<SoundName, Float32Array[]>();

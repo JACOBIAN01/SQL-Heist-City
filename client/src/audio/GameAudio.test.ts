@@ -247,6 +247,15 @@ describe('GameAudio: heist and ambience', () => {
     expect(out.live('alarm')).toHaveLength(0);
   });
 
+  it('clunks at the vault for each lock, and groans open on the last one', () => {
+    const { out, audio } = setup();
+    audio.onVaults([{ id: 'v1', tier: 1, locks: 3, opened: 0 }]);
+    audio.onVaults([{ id: 'v1', tier: 1, locks: 3, opened: 1 }]);
+    audio.onVaults([{ id: 'v1', tier: 1, locks: 3, opened: 3 }]);
+    expect(out.names()).toEqual(['vault-crack', 'vault-open']);
+    expect(out.played[0]?.options.at).toMatchObject({ x: 50, z: 0 });
+  });
+
   it('chimes for cash picked up and for cash banked', () => {
     const { out, audio } = setup();
     audio.onPurse(0, 0);

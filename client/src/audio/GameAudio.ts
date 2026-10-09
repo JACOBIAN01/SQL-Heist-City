@@ -169,6 +169,14 @@ export class GameAudio {
     for (const vault of vaults) {
       if (vault.opened <= (seen.get(vault.id) ?? 0)) continue;
       this.ring(vault.id);
+      // The door itself: a lock giving way, or the whole door swinging open.
+      const at = this.consoleOf(vault.id);
+      if (at)
+        this.deps.out.play(vault.opened >= vault.locks ? 'vault-open' : 'vault-crack', {
+          at,
+          range: this.deps.settings.crashRange,
+          reach: this.deps.settings.crashReach,
+        });
     }
   }
 
@@ -269,6 +277,13 @@ export class GameAudio {
       loop.setRate(ENGINE_IDLE_RATE + ENGINE_RATE_SPAN * pace);
       loop.setVolume(0.5 + 0.5 * pace);
     }
+  }
+
+  /** Where a vault's door is heard from: its console, at head height. */
+  private consoleOf(vaultId: string): { x: number; y: number; z: number } | undefined {
+    const spec = this.deps.map.vaults?.find((v) => v.id === vaultId);
+    const anchor = spec ? findAnchor(this.deps.map, spec.consoleId) : undefined;
+    return anchor ? { x: anchor.x, y: anchor.y + 1.5, z: anchor.z } : undefined;
   }
 
   private ring(vaultId: string): void {
