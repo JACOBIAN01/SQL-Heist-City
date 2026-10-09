@@ -12,7 +12,7 @@ import {
   SRGBColorSpace,
   type Object3D,
 } from 'three';
-import type { AnchorKind, GameMap, MapBoxKind } from '@heist/shared';
+import type { AnchorKind, GameMap, MapBox, MapBoxKind } from '@heist/shared';
 
 const ANCHOR_COLOR: Readonly<Record<AnchorKind, number>> = {
   elevator: 0x33d6c4,
@@ -59,7 +59,8 @@ function groundTexture(tiles: number): CanvasTexture {
  * Builds renderable geometry from the shared map: one InstancedMesh per box
  * kind (a handful of draw calls however many boxes) plus a ground plane.
  */
-export function buildMapObject(map: GameMap): Object3D {
+/** `skip`: boxes something else draws (dressed banks); they still collide, they are just not boxes on screen. */
+export function buildMapObject(map: GameMap, skip: (b: MapBox) => boolean = () => false): Object3D {
   const root = new Mesh();
   const side = map.halfSize * 2;
 
@@ -73,7 +74,7 @@ export function buildMapObject(map: GameMap): Object3D {
   root.add(ground);
 
   const byKind = new Map<MapBoxKind, GameMap['boxes'][number][]>();
-  for (const b of map.boxes) byKind.set(b.kind, [...(byKind.get(b.kind) ?? []), b]);
+  for (const b of map.boxes) if (!skip(b)) byKind.set(b.kind, [...(byKind.get(b.kind) ?? []), b]);
 
   const unit = new BoxGeometry(1, 1, 1);
   const matrix = new Matrix4();

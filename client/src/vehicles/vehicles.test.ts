@@ -65,7 +65,7 @@ describe('CarModel', () => {
     };
     cars.material.onBeforeCompile(shader as never, undefined as never);
     expect(shader.uniforms.uNightGlow).toBe(cars.nightGlow);
-    expect(shader.fragmentShader).toContain('vColor.rgb * vGlow');
+    expect(shader.fragmentShader).toContain('vGlow * (0.2 + 2.5 * uNightGlow)');
   });
 
   it('places the car, steers the front wheels and rolls all of them', () => {

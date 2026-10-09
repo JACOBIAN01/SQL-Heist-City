@@ -85,6 +85,8 @@ import {
   setClosedDoors,
 } from './world/MapRenderer';
 import { buildBankFurniture } from './world/bank/BankFurnitureArt';
+import { buildBankShells, insideDressedBank } from './world/bank/BankShellArt';
+import { createBankMaterials } from './world/bank/bankMaterials';
 import { loadInteriorKit, type InteriorKit } from './world/bank/InteriorKit';
 import { loadCityKit, type CityKit } from './world/city/CityKit';
 import { setNightGlow } from './world/city/kitMaterials';
@@ -114,8 +116,11 @@ const CHASE_RATE = 5;
 const CHASE_PITCH = -0.18;
 const hourParam = params.get('hour');
 const fixedHour = hourParam !== null && hourParam !== '' ? Number(hourParam) : undefined;
-const mapObject = buildMapObject(MAP);
+// Banks are dressed (floors, walls, ceilings, stone) instead of drawn as plain boxes.
+const bankMaterials = MAP.banks?.length ? createBankMaterials() : undefined;
+const mapObject = buildMapObject(MAP, bankMaterials ? insideDressedBank(MAP) : undefined);
 scene.add(mapObject);
+if (bankMaterials) scene.add(buildBankShells(MAP, bankMaterials));
 const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
 

@@ -6,6 +6,8 @@ export interface BakedColourOptions {
   readonly nightGlow: { value: number };
   readonly roughness: number;
   readonly metalness: number;
+  /** Lights the colours a little by themselves (indoor pieces the sun never reaches). */
+  readonly selfLight?: number;
 }
 
 /**
@@ -26,6 +28,7 @@ export function createBakedColourMaterial(o: BakedColourOptions): MeshStandardMa
   material.customProgramCacheKey = () => `heist-baked-${o.name}`;
   material.onBeforeCompile = (shader: WebGLProgramParametersWithUniforms) => {
     shader.uniforms.uNightGlow = o.nightGlow;
+    shader.uniforms.uSelfLight = { value: o.selfLight ?? 0 };
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
@@ -35,12 +38,12 @@ export function createBakedColourMaterial(o: BakedColourOptions): MeshStandardMa
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nuniform float uNightGlow;\nvarying float vGlow;',
+        '#include <common>\nuniform float uNightGlow;\nuniform float uSelfLight;\nvarying float vGlow;',
       )
       .replace(
         '#include <emissivemap_fragment>',
         // Bloom catches the lamps at night.
-        '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vColor.rgb * vGlow * (0.2 + 2.5 * uNightGlow);',
+        '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vColor.rgb * (vGlow * (0.2 + 2.5 * uNightGlow) + uSelfLight);',
       );
   };
   return material;
