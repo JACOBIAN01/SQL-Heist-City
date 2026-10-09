@@ -120,6 +120,26 @@ export interface FurnitureSpec {
   readonly solid?: boolean;
 }
 
+/** What a floor is laid with (art only: every finish walks the same). */
+export type FloorFinish = 'marble' | 'wood' | 'carpet' | 'tile' | 'steel';
+/** What the walls of a room are clad in. */
+export type WallFinish = 'plaster' | 'panel' | 'steel';
+
+/**
+ * A room's finishes (art only). Rooms are rectangles on one storey; where
+ * none is given a storey uses its default (marble on the ground floor,
+ * carpet above, plaster walls).
+ */
+export interface RoomSpec {
+  readonly storey: number;
+  readonly x: number;
+  readonly z: number;
+  readonly width: number;
+  readonly depth: number;
+  readonly floor?: FloorFinish;
+  readonly walls?: WallFinish;
+}
+
 export interface BankLayout {
   readonly id: string;
   readonly name: string;
@@ -142,6 +162,8 @@ export interface BankLayout {
   readonly vaults?: readonly VaultSpec[];
   /** Furniture and fittings (Phase 11): the realistic interior. */
   readonly furniture?: readonly FurnitureSpec[];
+  /** Floor and wall finishes by room (Phase 11.3). */
+  readonly rooms?: readonly RoomSpec[];
 }
 
 export const DEFAULT_ANCHOR_RADIUS = 1.5;

@@ -84,6 +84,12 @@ export function validateBank(layout: BankLayout): void {
     if (!isFurniturePiece(f.piece)) fail(`${where} is not a furniture piece`);
     if (f.storey < 0 || f.storey >= layout.storeys) fail(`${where} is on a missing storey`);
   }
+  for (const r of layout.rooms ?? []) {
+    const where = `room at (${r.x},${r.z}) on storey ${r.storey}`;
+    if (r.storey < 0 || r.storey >= layout.storeys) fail(`${where} is on a missing storey`);
+    if (Math.abs(r.x) + r.width / 2 > hw + EPS || Math.abs(r.z) + r.depth / 2 > hd + EPS)
+      fail(`${where} leaves the footprint`);
+  }
   for (const p of placeFurniture(layout, { x: 0, z: 0 })) {
     const b = p.bounds;
     if (b.minX < -hw - EPS || b.maxX > hw + EPS || b.minZ < -hd - EPS || b.maxZ > hd + EPS)
@@ -291,17 +297,50 @@ function explicitAnchors(layout: BankLayout, at: Point2): MapAnchor[] {
 }
 
 /**
+ * A bank's colliders sorted by what they are, so the client can dress each
+ * part differently (11.3) while the simulation just uses them all.
+ */
+export interface BankParts {
+  /** Exterior walls, storey by storey. */
+  readonly shell: MapBox[];
+  readonly roof: MapBox[];
+  /** Floor slabs of the upper storeys (with holes where stairs arrive). */
+  readonly slabs: MapBox[];
+  readonly steps: MapBox[];
+  /** Interior walls, storey by storey. */
+  readonly walls: MapBox[];
+  /** Counters, pillars, desks: the floor plans' blocks. */
+  readonly blocks: MapBox[];
+  /** Solid furniture. */
+  readonly furniture: MapBox[];
+}
+
+/**
  * Compiles a bank into collider boxes placed at `at` on the ground.
  * Pattern: Builder — a declarative layout in, the geometry the simulation
  * needs out. Why: server and client run this same function, so they cannot
  * disagree about where a wall is, and new banks are data, not code.
  */
 export function compileBank(layout: BankLayout, at: Point2): MapBox[] {
+  const p = compileBankParts(layout, at);
+  return [...p.shell, ...p.roof, ...p.slabs, ...p.steps, ...p.furniture, ...p.walls, ...p.blocks];
+}
+
+/** The same colliders as compileBank, by part. */
+export function compileBankParts(layout: BankLayout, at: Point2): BankParts {
   validateBank(layout);
   const hw = layout.width / 2;
   const hd = layout.depth / 2;
   const total = layout.storeys * layout.storeyHeight;
-  const boxes: MapBox[] = [];
+  const parts: BankParts = {
+    shell: [],
+    roof: [],
+    slabs: [],
+    steps: [],
+    walls: [],
+    blocks: [],
+    furniture: [],
+  };
 
   // Shell, once per storey so the street door only cuts the ground floor.
   for (let s = 0; s < layout.storeys; s++) {
@@ -319,14 +358,14 @@ export function compileBank(layout: BankLayout, at: Point2): MapBox[] {
           ]
         : [];
     // Front runs west→east so openings measure from the west corner.
-    boxes.push(
+    parts.shell.push(
       ...wallBoxes('building', { x: -hw, z: hd }, { x: hw, z: hd }, e, door, bottom, h, at),
       ...wallBoxes('building', { x: -hw, z: -hd }, { x: hw, z: -hd }, e, [], bottom, h, at),
       ...wallBoxes('building', { x: -hw, z: -hd }, { x: -hw, z: hd }, e, [], bottom, h, at),
       ...wallBoxes('building', { x: hw, z: -hd }, { x: hw, z: hd }, e, [], bottom, h, at),
     );
   }
-  boxes.push(
+  parts.roof.push(
     box(
       'building',
       at.x,
@@ -341,9 +380,9 @@ export function compileBank(layout: BankLayout, at: Point2): MapBox[] {
   const stairs = layout.stairs ?? [];
   for (let s = 1; s < layout.storeys; s++) {
     const holes = stairs.filter((st) => st.storey === s - 1).map(stairFootprint);
-    boxes.push(...slabBoxes(layout, s * layout.storeyHeight, holes, at));
+    parts.slabs.push(...slabBoxes(layout, s * layout.storeyHeight, holes, at));
   }
-  for (const st of stairs) boxes.push(...stairBoxes(layout, st, at));
+  for (const st of stairs) parts.steps.push(...stairBoxes(layout, st, at));
 
   // Solid furniture blocks like any other box (never above its ceiling).
   for (const p of placeFurniture(layout, at)) {
@@ -352,13 +391,13 @@ export function compileBank(layout: BankLayout, at: Point2): MapBox[] {
       p.bounds.maxY,
       p.storey * layout.storeyHeight + ceilingHeight(layout, p.storey),
     );
-    boxes.push({ kind: 'furniture', ...p.bounds, maxY: top });
+    parts.furniture.push({ kind: 'furniture', ...p.bounds, maxY: top });
   }
 
   layout.floors.forEach((plan, s) => {
     const bottom = s * layout.storeyHeight;
     for (const w of plan.walls)
-      boxes.push(
+      parts.walls.push(
         ...wallBoxes(
           'interior',
           w.from,
@@ -371,7 +410,7 @@ export function compileBank(layout: BankLayout, at: Point2): MapBox[] {
         ),
       );
     for (const b of plan.blocks)
-      boxes.push(
+      parts.blocks.push(
         box(
           b.kind ?? 'cover',
           at.x + b.x,
@@ -383,5 +422,5 @@ export function compileBank(layout: BankLayout, at: Point2): MapBox[] {
         ),
       );
   });
-  return boxes;
+  return parts;
 }

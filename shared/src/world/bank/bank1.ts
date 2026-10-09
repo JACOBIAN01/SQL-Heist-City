@@ -78,12 +78,20 @@ export const BANK_1: BankLayout = {
       blocks: [],
     },
   ],
+  // Finishes: a marble lobby, wood behind the counter, tiles in the back office, carpeted
+  // offices upstairs, a steel vault.
+  rooms: [
+    { storey: 0, x: -4, z: -5.75, width: 16, depth: 6.5, floor: 'wood' },
+    { storey: 0, x: 8, z: -5, width: 8, depth: 8, floor: 'tile', walls: 'panel' },
+    { storey: 1, x: 0, z: 0, width: 24, depth: 18, floor: 'carpet', walls: 'panel' },
+    { storey: 2, x: 8, z: -5, width: 8, depth: 8, floor: 'steel', walls: 'steel' },
+  ],
   // A first waiting area in the lobby (11.2); 11.3–11.6 furnish the rest.
   furniture: [
     { piece: 'Couch_Medium1', storey: 0, x: -7, z: 7.9, facing: '-z', solid: true },
-    { piece: 'Houseplant_8', storey: 0, x: -11.2, z: 8.3 },
-    { piece: 'Houseplant_8', storey: 0, x: -2.9, z: 8.3 },
-    { piece: 'Carpet_2', storey: 0, x: -7, z: 5.9 },
+    { piece: 'Houseplant_8', storey: 0, x: -11.2, z: 8.3, scale: 1.6 },
+    { piece: 'Houseplant_8', storey: 0, x: -2.9, z: 8.3, scale: 1.6 },
+    { piece: 'Carpet_2', storey: 0, x: -7, z: 5.9, scale: 1.4 },
     { piece: 'Light_Chandelier', storey: 0, x: -7, z: 4 },
     { piece: 'Light_Chandelier', storey: 0, x: 2, z: 4 },
   ],

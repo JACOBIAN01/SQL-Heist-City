@@ -76,5 +76,8 @@ describe('furniture in the compiled bank', () => {
     expect(() =>
       validateBank(withFurniture({ piece: 'Couch_Large1', storey: 0, x: 11.5, z: 0 })),
     ).toThrow(/leaves the footprint/);
+    expect(() =>
+      validateBank({ ...BANK_1, rooms: [{ storey: 0, x: 10, z: 0, width: 8, depth: 4 }] }),
+    ).toThrow(/room at \(10,0\) on storey 0 leaves the footprint/);
   });
 });
