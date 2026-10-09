@@ -230,7 +230,7 @@ The bank is the most important place in the game: realistic interiors and a real
 | 11.4 | The vault (Bank 1) | round steel door (bolts, hinge, wheel) swings open on the last lock; deposit-box walls, cash carts, keypad console, alarm light | ✅ plus break-in animation per lock (wheel, bolts, sparks, sounds) and the opening swing (frontend.md "Bank interiors") |
 | 11.5 | Lobby & teller hall (Bank 1) | glass-screened teller counter, queue stanchions, waiting area, columns, chandeliers, security room | ✅ teller screens, queue posts, waiting corner, columns, lift doors, back-wall ledgers, security room (frontend.md "Bank interiors") |
 | 11.6 | Offices & upper storeys (Bank 1) | desks, shelves, bookshelves, lamps, meeting room, plants | ✅ open-plan office on storey 1, executive boardroom and lounge on storey 2 (frontend.md "Bank interiors") |
-| 11.7 | Bank exterior (Bank 1) | grand entrance: columns, steps, double doors, name sign, ATM | ⬜ |
+| 11.7 | Bank exterior (Bank 1) | grand entrance: columns, steps, double doors, name sign, ATM | ✅ pilasters, cornice, lintel, name plaque, doorstep, open doors, lanterns, ATM; glows at night (frontend.md "Bank interiors") |
 | 11.8 | Bank 1 review gate | screenshots + walk-through approved by the user | ⬜ |
 | 11.9 | Roll out to Banks 2–5 | each bank dressed, with a look by tier (modest → marble and gold) | ⬜ |
 | 11.10 | Interior performance | detail only near/inside a bank; draw-call and triangle budget test in CI; 60 fps kept | ⬜ |
