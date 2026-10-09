@@ -70,7 +70,7 @@ describe('furniture in the compiled bank', () => {
   it("makes the vault's deposit boxes and cash shelves solid, against their walls", () => {
     const vaultFloor = 2 * BANK_1.storeyHeight;
     const fittings = compileBank(BANK_1, { x: 0, z: 0 }).filter(
-      (b) => b.kind === 'furniture' && b.minY === vaultFloor,
+      (b) => b.kind === 'furniture' && b.minY === vaultFloor && b.minX >= 4 && b.maxZ <= -1, // inside the vault room
     );
     expect(fittings).toHaveLength(3);
     const back = fittings.find((b) => b.minZ < -8.7);
