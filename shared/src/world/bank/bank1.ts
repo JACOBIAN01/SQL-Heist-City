@@ -99,6 +99,8 @@ export const BANK_1: BankLayout = {
   // The ground floor (11.5): a waiting corner and queue in the lobby, tellers behind a glass
   // screen, shelves of ledgers on the back wall, a security room with two desks. Solid pieces
   // keep clear of the stairs, the lift and the lines walked in compileBank.test.
+  // The street front: engaged columns, a plaque over the door, lanterns, a cash machine.
+  facade: { pilasters: [-10, -7, -4, 4, 7, 10], lamps: [-2.7, 2.7], atm: 5.5, sign: true },
   fixtures: [
     { kind: 'tellerScreen', storey: 0, x: -5.5, z: -2, width: 6, facing: '+z' },
     { kind: 'tellerScreen', storey: 0, x: 0.5, z: -2, width: 2, facing: '+z' },

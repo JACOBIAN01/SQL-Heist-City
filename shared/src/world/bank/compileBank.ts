@@ -87,6 +87,13 @@ export function validateBank(layout: BankLayout): void {
     if (!isFurniturePiece(f.piece)) fail(`${where} is not a furniture piece`);
     if (f.storey < 0 || f.storey >= layout.storeys) fail(`${where} is on a missing storey`);
   }
+  const front = layout.facade;
+  for (const x of [
+    ...(front?.pilasters ?? []),
+    ...(front?.lamps ?? []),
+    ...(front?.atm === undefined ? [] : [front.atm]),
+  ])
+    if (Math.abs(x) > hw + EPS) fail(`facade fitting at x = ${x} is off the front`);
   for (const f of layout.fixtures ?? []) {
     const where = `${f.kind} at (${f.x},${f.z}) on storey ${f.storey}`;
     if (f.storey < 0 || f.storey >= layout.storeys) fail(`${where} is on a missing storey`);

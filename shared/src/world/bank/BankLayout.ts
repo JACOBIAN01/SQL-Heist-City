@@ -185,6 +185,22 @@ export interface FixtureSpec {
   readonly base?: number;
 }
 
+/**
+ * What stands on a bank's street facade (11.5–11.7), art only: it may reach
+ * past the footprint (a cornice, a plaque, an ATM) because nothing collides.
+ * `x` values run along the front, 0 at the middle, east positive.
+ */
+export interface FacadeSpec {
+  /** Engaged columns against the wall. */
+  readonly pilasters?: readonly number[];
+  /** A cash machine on the wall, at this x. */
+  readonly atm?: number;
+  /** Lanterns at the door; they glow at night. */
+  readonly lamps?: readonly number[];
+  /** A plaque with the bank's name over the door. */
+  readonly sign?: boolean;
+}
+
 export interface BankLayout {
   readonly id: string;
   readonly name: string;
@@ -207,6 +223,8 @@ export interface BankLayout {
   readonly vaults?: readonly VaultSpec[];
   /** Furniture and fittings (Phase 11): the realistic interior. */
   readonly furniture?: readonly FurnitureSpec[];
+  /** The street front: pilasters, plaque, lamps, ATM (Phase 11.7). */
+  readonly facade?: FacadeSpec;
   /** Teller screens and queue posts (Phase 11.5). */
   readonly fixtures?: readonly FixtureSpec[];
   /** Floor and wall finishes by room (Phase 11.3). */
