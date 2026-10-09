@@ -144,6 +144,8 @@ export interface FurnitureSpec {
   readonly y?: number;
   /** Blocks movement and bullets. Decoration (plants, carpets, lights) is not solid. */
   readonly solid?: boolean;
+  /** A cabinet used as a desk: the client lays a top, a monitor and a keyboard over it (art only). */
+  readonly desk?: boolean;
 }
 
 /** What a floor is laid with (art only: every finish walks the same). */

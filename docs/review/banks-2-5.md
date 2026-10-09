@@ -25,4 +25,11 @@ Same kit, same builders as Bank 1, a richer look each tier. Screenshots are from
 | Bank 5 hall | ![](banks-2-5/bank5-lobby.png) |
 | Bank 5 top floor, vault door | ![](banks-2-5/bank5-vault-door.png) |
 
-Known, as in Bank 1: desks are drawer cabinets, walls have no windows or pictures, the lighting is flat. These are shared by all five banks, so they are best fixed once, after this gate.
+**Shared weak spots, fixed for all five banks:** desks now have tops, monitors and keyboards; the outside walls have framed windows and pictures; the light is no longer flat (pools under lamps, soft shadows under furniture).
+
+| After | |
+|---|---|
+| Offices | ![](banks-2-5/after-office.png) |
+| Hall | ![](banks-2-5/after-lobby.png) |
+
+Still open from the Bank 1 list: the vault door has no frame depth, the cash bundles' band repeats, chairs and the street cash machine are not solid, interior doorways have no door leaves.

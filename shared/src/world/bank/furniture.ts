@@ -21,6 +21,7 @@ export interface PlacedFurniture {
   readonly yaw: number;
   readonly scale: number;
   readonly solid: boolean;
+  readonly desk: boolean;
   /** World bounds after turning and scaling. */
   readonly bounds: Aabb;
 }
@@ -82,6 +83,7 @@ export function placeFurniture(layout: BankLayout, at: Point2): PlacedFurniture[
       yaw: FACING_YAW[facing],
       scale,
       solid: f.solid ?? false,
+      desk: f.desk ?? false,
       bounds: {
         minX: x + r.minX,
         maxX: x + r.maxX,

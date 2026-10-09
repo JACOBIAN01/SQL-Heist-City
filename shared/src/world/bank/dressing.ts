@@ -18,7 +18,7 @@ export function workstation(
 ): FurnitureSpec[] {
   const toward: Heading = side === 1 ? '-z' : '+z';
   return [
-    { piece: 'Drawer_3', storey, x, z, facing: toward, solid: true },
+    { piece: 'Drawer_3', storey, x, z, facing: toward, solid: true, desk: true },
     { piece: 'Chair_3', storey, x, z: z + side, facing: toward },
     { piece: 'Light_Desk', storey, x: x + 0.7, z, y: 0.79, facing: toward },
   ];

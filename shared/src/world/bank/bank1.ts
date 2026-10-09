@@ -138,8 +138,8 @@ export const BANK_1: BankLayout = {
     { piece: 'Bookshelf', storey: 0, x: 2.2, z: -8.6, solid: true },
     { piece: 'Trashcan_Cylindric', storey: 0, x: -1.3, z: -3.4 },
     // The security room: two desks on its front wall, files on the back wall.
-    { piece: 'Drawer_2', storey: 0, x: 6.5, z: -1.7, facing: '-z', solid: true },
-    { piece: 'Drawer_2', storey: 0, x: 9.5, z: -1.7, facing: '-z', solid: true },
+    { piece: 'Drawer_2', storey: 0, x: 6.5, z: -1.7, facing: '-z', solid: true, desk: true },
+    { piece: 'Drawer_2', storey: 0, x: 9.5, z: -1.7, facing: '-z', solid: true, desk: true },
     { piece: 'Chair_3', storey: 0, x: 6.5, z: -2.6 },
     { piece: 'Chair_3', storey: 0, x: 9.5, z: -2.6 },
     { piece: 'Light_Desk', storey: 0, x: 7, z: -1.7, y: 0.65, facing: '-z' },
@@ -150,12 +150,12 @@ export const BANK_1: BankLayout = {
     // Storey 1, open-plan offices: two rows of desks with chairs and lamps, files on the east
     // wall, a meeting table in the front corner. Clear of both flights and the lift.
     ...[-3, 0, 3, 6].flatMap((x) => [
-      { piece: 'Drawer_3', storey: 1, x, z: 1.5, facing: '-z', solid: true } as const,
+      { piece: 'Drawer_3', storey: 1, x, z: 1.5, facing: '-z', solid: true, desk: true } as const,
       { piece: 'Chair_3', storey: 1, x, z: 2.5, facing: '-z' } as const,
       { piece: 'Light_Desk', storey: 1, x: x + 0.7, z: 1.5, y: 0.79, facing: '-z' } as const,
     ]),
     ...[-2.5, 0.5, 3.5, 6.5].flatMap((x) => [
-      { piece: 'Drawer_3', storey: 1, x, z: -3.5, facing: '-z', solid: true } as const,
+      { piece: 'Drawer_3', storey: 1, x, z: -3.5, facing: '-z', solid: true, desk: true } as const,
       { piece: 'Chair_3', storey: 1, x, z: -2.5, facing: '-z' } as const,
       { piece: 'Light_Desk', storey: 1, x: x + 0.7, z: -3.5, y: 0.79, facing: '-z' } as const,
     ]),
