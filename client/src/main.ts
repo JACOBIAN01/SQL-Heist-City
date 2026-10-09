@@ -85,6 +85,7 @@ import {
   setClosedDoors,
 } from './world/MapRenderer';
 import { buildBankFurniture } from './world/bank/BankFurnitureArt';
+import { buildBankFacades } from './world/bank/BankFacadeArt';
 import { buildBankFixtures } from './world/bank/BankFixturesArt';
 import { buildBankShells, insideDressedBank } from './world/bank/BankShellArt';
 import { createBankMaterials } from './world/bank/bankMaterials';
@@ -126,6 +127,8 @@ if (bankMaterials) {
   scene.add(buildBankShells(MAP, bankMaterials));
   scene.add(buildBankFixtures(MAP, bankMaterials));
 }
+const facades = bankMaterials ? buildBankFacades(MAP, bankMaterials) : undefined;
+if (facades) scene.add(facades.root);
 // Round vault doors that turn, unbolt and swing open as locks are cracked; keypads and alarms.
 const vaultArt = bankMaterials ? new VaultArt(MAP, bankMaterials) : undefined;
 if (vaultArt) scene.add(vaultArt.root);
@@ -704,6 +707,7 @@ renderer.setAnimationLoop((now) => {
     if (cityKit) setNightGlow(cityKit.materials, lighting.state.night);
     if (carAssets) carAssets.nightGlow.value = lighting.state.night;
     if (interiorKit) interiorKit.nightGlow.value = lighting.state.night;
+    facades?.setNight(lighting.state.night);
   }
   camera.getWorldDirection(earForward);
   earUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
