@@ -206,3 +206,13 @@ Not measured here: real frame rates on an integrated GPU. Check on the target la
 - **Invitation:** on normal pages a "New here? Play the tutorial" link shows while the mouse is free, until the tutorial has been finished in this browser.
 - The round clock is hidden in the tutorial.
 
+## Bank interiors (Phase 11)
+Banks are dressed instead of drawn as plain boxes. Everything is art from the layout; the colliders do not change.
+- **Furniture** (`world/bank/InteriorKit.ts`, `BankFurnitureArt.ts`): the House Pack pieces (tools/city/README.md "Interior furniture") placed from the same list the colliders come from (`placeFurniture`). The file stores quantised positions with the scale on each node, so the loader bakes the node transform into one float geometry per piece. Lamps glow at night; a ceiling panel (`Light_Ceiling5`) is put every 4 m on every storey, kept off stairwells and walls.
+- **Shell and rooms** (`BankShellArt.ts`): built from the bank's compiled boxes by part (`compileBankParts`), one merged mesh per surface per bank.
+  - Floors per storey, split by room so each room has its finish and nothing overlaps: marble lobby, wood behind the counter, tiled back office, carpeted offices, a steel vault (`rooms` in the layout; defaults marble downstairs, carpet above).
+  - Walls take the finish of the room they face: plaster or panelling with a wood wainscot, rail and skirting (the texture spans one storey, so they line up everywhere), steel plate in the vault. Outside faces are ashlar stone; the roof is dark. Slab undersides are ceiling tiles; counters are panelled wood with marble tops; steps are marble.
+  - A wood surround on both faces of every door, and the street door.
+  - Textures are painted in code at load (`bankMaterials.ts`, 256 px, fixed seeds): no image files. Without a canvas (tests) the surfaces fall back to flat colours.
+- **Light:** interiors light themselves a little (`selfLight` on the bank surfaces and the furniture material) and take no sun shadows; only the outside casts and receives them. The map renderer leaves a dressed bank's boxes out (`insideDressedBank`), except solid furniture, whose boxes stand in until the kit arrives.
+
