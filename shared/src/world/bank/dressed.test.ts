@@ -4,11 +4,12 @@ import { BANK_1 } from './bank1';
 import { BANK_2 } from './bank2';
 import { BANK_3 } from './bank3';
 import { BANK_4 } from './bank4';
+import { BANK_5 } from './bank5';
 import { compileBankWorld, validateBank } from './compileBank';
 import { placeFurniture } from './furniture';
 
 /** Every bank that has been dressed with the interior kit (Phase 11): Bank 1 and the roll-out. */
-const DRESSED: readonly BankLayout[] = [BANK_1, BANK_2, BANK_3, BANK_4];
+const DRESSED: readonly BankLayout[] = [BANK_1, BANK_2, BANK_3, BANK_4, BANK_5];
 
 describe.each(DRESSED.map((b) => [b.name, b] as const))('dressed bank: %s', (_name, layout) => {
   it('has rooms, a facade, teller screens and furniture on every storey that people use', () => {
@@ -48,5 +49,6 @@ describe('the look climbs with the tier', () => {
     expect(BANK_2.cladding).toBe('sandstone');
     expect(BANK_3.cladding).toBe('granite');
     expect(BANK_4.cladding).toBe('limestone');
+    expect(BANK_5.cladding).toBe('whitestone');
   });
 });
