@@ -69,6 +69,8 @@ describe('interiorKitFrom', () => {
   const scene = new Group();
   const chair = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
   chair.name = 'Chair_1';
+  // The file keeps quantised positions with the scale on the node.
+  chair.scale.setScalar(0.5);
   scene.add(chair);
   const kit = interiorKitFrom(scene, {
     version: 1,
@@ -86,9 +88,15 @@ describe('interiorKitFrom', () => {
   it('makes meshes that share the geometry and the one kit material', () => {
     const a = kit.create('Chair_1');
     const b = kit.create('Chair_1');
-    expect(a.geometry).toBe(chair.geometry);
+    expect(a.geometry).toBe(b.geometry);
     expect(a.material).toBe(kit.material);
     expect(b.material).toBe(a.material);
     expect(() => kit.create('Sofa_9')).toThrow();
+  });
+
+  it("bakes the node's transform into the geometry (life size in metres)", () => {
+    const g = kit.create('Chair_1').geometry;
+    g.computeBoundingBox();
+    expect(g.boundingBox?.max.x).toBeCloseTo(0.25);
   });
 });
