@@ -149,7 +149,9 @@ export interface FurnitureSpec {
 /** What a floor is laid with (art only: every finish walks the same). */
 export type FloorFinish = 'marble' | 'wood' | 'carpet' | 'tile' | 'steel';
 /** What the walls of a room are clad in. */
-export type WallFinish = 'plaster' | 'panel' | 'steel';
+export type WallFinish = 'plaster' | 'panel' | 'steel' | 'marble';
+/** What a bank's outside walls are clad in (art only): plain stone up to white marble. */
+export type Cladding = 'stone' | 'sandstone' | 'granite' | 'limestone' | 'whitestone';
 
 /**
  * A room's finishes (art only). Rooms are rectangles on one storey; where
@@ -227,6 +229,8 @@ export interface BankLayout {
   readonly facade?: FacadeSpec;
   /** Teller screens and queue posts (Phase 11.5). */
   readonly fixtures?: readonly FixtureSpec[];
+  /** The outside walls' stone. Defaults to plain stone; richer tiers are clad in finer stone. */
+  readonly cladding?: Cladding;
   /** Floor and wall finishes by room (Phase 11.3). */
   readonly rooms?: readonly RoomSpec[];
 }

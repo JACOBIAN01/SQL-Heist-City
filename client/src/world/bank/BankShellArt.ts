@@ -31,7 +31,17 @@ const WALL_SURFACE: Readonly<Record<WallFinish, BankSurface>> = {
   plaster: 'plaster',
   panel: 'panel',
   steel: 'steelWall',
+  marble: 'marbleWall',
 };
+/** The surfaces that meet the sun: the cladding and the roof. */
+const OUTDOOR: ReadonlySet<BankSurface> = new Set([
+  'stone',
+  'sandstone',
+  'granite',
+  'limestone',
+  'whitestone',
+  'roof',
+]);
 /** Ground-floor finish lifted off the street plane, so the two never fight. */
 const GROUND_LIFT = 0.01;
 /** Door surrounds: how far they reach past the opening, and how far they stand off the wall. */
@@ -218,7 +228,7 @@ export class BankShellBuilder {
       mesh.name = `bank-${surface}`;
       // Only the outside meets the sun. Indoors is under the roof's shadow anyway and lights
       // itself (selfLight); taking shadows there only adds acne on ceilings.
-      const outdoor = surface === 'stone' || surface === 'roof';
+      const outdoor = OUTDOOR.has(surface);
       mesh.castShadow = outdoor;
       mesh.receiveShadow = outdoor;
       group.add(mesh);
@@ -301,7 +311,8 @@ export class BankShellBuilder {
       for (const piece of this.splitByRooms(f, storey)) {
         const px = piece.centre[0] + piece.n[0] * 0.3;
         const pz = piece.centre[2] + piece.n[2] * 0.3;
-        if (exterior && this.outside(px, pz)) this.add('stone', piece, floorY);
+        if (exterior && this.outside(px, pz))
+          this.add(this.layout.cladding ?? 'stone', piece, floorY);
         else this.add(this.wallSurface(storey, px, pz), piece, floorY);
       }
     }
@@ -344,7 +355,11 @@ export class BankShellBuilder {
 
   private roof(b: Aabb): void {
     for (const f of facesOf(b))
-      this.add(f.n[1] > 0 ? 'roof' : f.n[1] < 0 ? 'ceiling' : 'stone', f, 0);
+      this.add(
+        f.n[1] > 0 ? 'roof' : f.n[1] < 0 ? 'ceiling' : (this.layout.cladding ?? 'stone'),
+        f,
+        0,
+      );
   }
 
   /** A floor slab: its underside is the ceiling below; its edges show only round the stair holes. */

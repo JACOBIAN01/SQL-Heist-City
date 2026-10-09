@@ -97,6 +97,28 @@ describe('BankShellBuilder (Bank 1)', () => {
   });
 });
 
+describe('BankShellBuilder cladding and marble walls', () => {
+  const dressed = new BankShellBuilder(
+    {
+      ...BANK_1,
+      cladding: 'granite',
+      rooms: [{ storey: 0, x: 0, z: 0, width: 24, depth: 18, walls: 'marble' }],
+    },
+    site,
+  ).build(materials);
+  const part = (surface: string) => dressed.getObjectByName(`bank-${surface}`) as Mesh | undefined;
+
+  it("clads the outside in the layout's stone and lets that take the sun", () => {
+    expect(part('granite')?.castShadow).toBe(true);
+    expect(part('stone')).toBeUndefined();
+  });
+
+  it('lines a room with marble when asked', () => {
+    expect(part('marbleWall')).toBeDefined();
+    expect(part('marbleWall')?.receiveShadow).toBe(false);
+  });
+});
+
 describe('insideDressedBank', () => {
   const map = { banks: [{ tier: 1, x: 0, z: 0 }] } as unknown as GameMap;
   const skip = insideDressedBank(map);

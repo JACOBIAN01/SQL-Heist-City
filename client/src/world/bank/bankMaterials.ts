@@ -22,6 +22,11 @@ export type BankSurface =
   | 'counter'
   | 'trim'
   | 'stone'
+  | 'sandstone'
+  | 'granite'
+  | 'limestone'
+  | 'whitestone'
+  | 'marbleWall'
   | 'roof'
   | 'deposit'
   | 'brass'
@@ -80,6 +85,26 @@ export const SURFACES: Readonly<Record<BankSurface, SurfaceStyle>> = {
   counter: { base: 0x4a2f20, uv: 'metres', size: 1, roughness: 0.5, metalness: 0, selfLight: 0.35 },
   trim: { base: 0x3a2618, uv: 'metres', size: 1, roughness: 0.5, metalness: 0, selfLight: 0.35 },
   stone: { base: 0x9c958a, uv: 'metres', size: 2, roughness: 0.9, metalness: 0, selfLight: 0 },
+  // Cladding by tier (BankLayout.cladding): warm sandstone, dark granite, pale limestone, white marble.
+  sandstone: { base: 0xc2a074, uv: 'metres', size: 2, roughness: 0.9, metalness: 0, selfLight: 0 },
+  granite: { base: 0x5d6068, uv: 'metres', size: 2, roughness: 0.6, metalness: 0, selfLight: 0 },
+  limestone: { base: 0xd6cdb6, uv: 'metres', size: 2, roughness: 0.85, metalness: 0, selfLight: 0 },
+  whitestone: {
+    base: 0xf0ede6,
+    uv: 'metres',
+    size: 2,
+    roughness: 0.35,
+    metalness: 0,
+    selfLight: 0,
+  },
+  marbleWall: {
+    base: 0xe9e3d6,
+    uv: 'storey',
+    size: 3,
+    roughness: 0.3,
+    metalness: 0,
+    selfLight: 0.35,
+  },
   roof: { base: 0x3b3d40, uv: 'metres', size: 4, roughness: 0.95, metalness: 0, selfLight: 0 },
   deposit: {
     base: 0x8a9097,
@@ -215,16 +240,23 @@ const PAINTERS: Readonly<Record<BankSurface, (g: CanvasRenderingContext2D, r: Se
       g.fillStyle = css(SURFACES.trim.base);
       g.fillRect(0, 0, PX, PX);
     },
-    stone: (g, r) => {
-      // Ashlar: 50 × 30 cm blocks in courses.
-      const w = PX / 4;
-      const h = PX / (2 / 0.3);
-      for (let row = 0, y = 0; y < PX; row++, y += h)
-        for (let x = row % 2 ? -w / 2 : 0; x < PX; x += w) {
-          g.fillStyle = shade(SURFACES.stone.base, 0.88 + r.next() * 0.2);
-          g.fillRect(x + 1, y + 1, w - 2, h - 2);
-        }
+    stone: (g, r) => ashlar(g, r, SURFACES.stone.base),
+    sandstone: (g, r) => ashlar(g, r, SURFACES.sandstone.base),
+    granite: (g, r) => ashlar(g, r, SURFACES.granite.base),
+    limestone: (g, r) => ashlar(g, r, SURFACES.limestone.base),
+    whitestone: (g, r) => {
+      ashlar(g, r, SURFACES.whitestone.base);
+      // Grey veins through the marble.
+      g.strokeStyle = 'rgba(120,125,135,0.35)';
+      g.lineWidth = 1.5;
+      for (let i = 0; i < 14; i++) {
+        g.beginPath();
+        g.moveTo(r.next() * PX, r.next() * PX);
+        g.lineTo(r.next() * PX, r.next() * PX);
+        g.stroke();
+      }
     },
+    marbleWall: (g, r) => wainscot(g, r, SURFACES.marbleWall.base, 0x8c6d2a),
     deposit: (g) => {
       // A wall of small doors, 4 × 4 to the metre, each with a brass keyhole and number plate.
       g.fillStyle = css(SURFACES.deposit.base);
@@ -286,6 +318,17 @@ function brushed(g: CanvasRenderingContext2D, r: SeededRng, base: number): void 
  * wainscot to 0.9 m with a rail, and a dark skirting board at the floor.
  * Canvas y runs down, so the floor is at the bottom of the image.
  */
+/** Ashlar: 50 × 30 cm blocks in courses. */
+function ashlar(g: CanvasRenderingContext2D, r: SeededRng, base: number): void {
+  const w = PX / 4;
+  const h = PX / (2 / 0.3);
+  for (let row = 0, y = 0; y < PX; row++, y += h)
+    for (let x = row % 2 ? -w / 2 : 0; x < PX; x += w) {
+      g.fillStyle = shade(base, 0.88 + r.next() * 0.2);
+      g.fillRect(x + 1, y + 1, w - 2, h - 2);
+    }
+}
+
 function wainscot(g: CanvasRenderingContext2D, r: SeededRng, wall: number, wood: number): void {
   const m = PX / 3; // pixels per metre
   g.fillStyle = css(wall);

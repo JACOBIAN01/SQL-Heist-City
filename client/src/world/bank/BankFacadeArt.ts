@@ -116,7 +116,12 @@ export function buildFacade(
   const doorHalf = entrance.width / 2;
 
   // The doorstep, flush with the pavement, and the sill of the doorway.
-  put(solid(entrance.width + 1.2, 0.03, 1.1, 'stone', materials), entrance.x, 0.02, 0.55);
+  put(
+    solid(entrance.width + 1.2, 0.03, 1.1, layout.cladding ?? 'stone', materials),
+    entrance.x,
+    0.02,
+    0.55,
+  );
   put(solid(entrance.width, 0.04, 0.5, 'brass', materials), entrance.x, 0.02, -0.05);
   // Lintel and jambs: a heavy frame in cream stone.
   const frameH = entrance.height;
