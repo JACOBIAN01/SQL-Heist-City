@@ -94,12 +94,55 @@ export const BANK_1: BankLayout = {
     { storey: 1, x: 0, z: 0, width: 24, depth: 18, floor: 'carpet', walls: 'panel' },
     { storey: 2, x: 8, z: -5, width: 8, depth: 8, floor: 'steel', walls: 'steel' },
   ],
-  // A first waiting area in the lobby (11.2); 11.3–11.6 furnish the rest.
+  // The ground floor (11.5): a waiting corner and queue in the lobby, tellers behind a glass
+  // screen, shelves of ledgers on the back wall, a security room with two desks. Solid pieces
+  // keep clear of the stairs, the lift and the lines walked in compileBank.test.
+  fixtures: [
+    { kind: 'tellerScreen', storey: 0, x: -5.5, z: -2, width: 6, facing: '+z' },
+    { kind: 'tellerScreen', storey: 0, x: 0.5, z: -2, width: 2, facing: '+z' },
+    { kind: 'queuePosts', storey: 0, x: -3, z: 1, width: 7.2, facing: '+z' },
+    { kind: 'queuePosts', storey: 0, x: -6.6, z: 2.5, width: 3, facing: '+x' },
+  ],
   furniture: [
-    { piece: 'Couch_Medium1', storey: 0, x: -7, z: 7.9, facing: '-z', solid: true },
-    { piece: 'Houseplant_8', storey: 0, x: -11.2, z: 8.3, scale: 1.6 },
-    { piece: 'Houseplant_8', storey: 0, x: -2.9, z: 8.3, scale: 1.6 },
-    { piece: 'Carpet_2', storey: 0, x: -7, z: 5.9, scale: 1.4 },
+    // Waiting corner under the front wall.
+    { piece: 'Couch_Medium1', storey: 0, x: -9, z: 8.2, facing: '-z', solid: true },
+    { piece: 'Couch_Medium1', storey: 0, x: -5.5, z: 8.2, facing: '-z', solid: true },
+    { piece: 'Table_RoundSmall', storey: 0, x: -7.2, z: 7, scale: 0.6, solid: true },
+    { piece: 'Carpet_1', storey: 0, x: -7.2, z: 6.9, facing: '+x' },
+    { piece: 'Houseplant_8', storey: 0, x: -11.3, z: 8.2, scale: 1.6 },
+    { piece: 'Houseplant_8', storey: 0, x: -3.9, z: 8.2, scale: 1.6 },
+    // Columns flank the door and the lobby's middle.
+    { piece: 'Column_Round3', storey: 0, x: -3, z: 8.3, solid: true },
+    { piece: 'Column_Round3', storey: 0, x: 3, z: 8.3, solid: true },
+    { piece: 'Column_Round3', storey: 0, x: -3.2, z: 3.4, solid: true },
+    { piece: 'Column_Round3', storey: 0, x: 3.2, z: 3.4, solid: true },
+    // The lift: doors on the east wall, a lamp over them.
+    { piece: 'Door_Double', storey: 0, x: 11.65, z: 5, facing: '-x' },
+    { piece: 'Light_Small', storey: 0, x: 11.55, z: 5, y: 2.3 },
+    { piece: 'Houseplant_6', storey: 0, x: 11.2, z: 7.6, scale: 1.5 },
+    // Tellers: a chair and a desk lamp at each window.
+    { piece: 'Chair_2', storey: 0, x: -7.2, z: -3.3 },
+    { piece: 'Chair_2', storey: 0, x: -5.5, z: -3.3 },
+    { piece: 'Chair_2', storey: 0, x: -3.8, z: -3.3 },
+    { piece: 'Chair_2', storey: 0, x: 0.5, z: -3.3 },
+    { piece: 'Light_Desk', storey: 0, x: -7.2, z: -2, y: 1.1, facing: '-z' },
+    { piece: 'Light_Desk', storey: 0, x: -3.8, z: -2, y: 1.1, facing: '-z' },
+    // Ledgers and files on the back wall.
+    { piece: 'Shelf_Large', storey: 0, x: -5, z: -8.6, solid: true },
+    { piece: 'Shelf_Large', storey: 0, x: -3.2, z: -8.6, solid: true },
+    { piece: 'Drawer_3', storey: 0, x: -0.4, z: -8.6, solid: true },
+    { piece: 'Bookshelf', storey: 0, x: 2.2, z: -8.6, solid: true },
+    { piece: 'Trashcan_Cylindric', storey: 0, x: -1.3, z: -3.4 },
+    // The security room: two desks on its front wall, files on the back wall.
+    { piece: 'Drawer_2', storey: 0, x: 6.5, z: -1.7, facing: '-z', solid: true },
+    { piece: 'Drawer_2', storey: 0, x: 9.5, z: -1.7, facing: '-z', solid: true },
+    { piece: 'Chair_3', storey: 0, x: 6.5, z: -2.6 },
+    { piece: 'Chair_3', storey: 0, x: 9.5, z: -2.6 },
+    { piece: 'Light_Desk', storey: 0, x: 7, z: -1.7, y: 0.65, facing: '-z' },
+    { piece: 'Shelf_Large', storey: 0, x: 7, z: -8.6, solid: true },
+    { piece: 'Shelf_Large', storey: 0, x: 9, z: -8.6, solid: true },
+    { piece: 'Bookshelf', storey: 0, x: 11, z: -8.6, solid: true },
+    { piece: 'Houseplant_8', storey: 0, x: 11.3, z: -1.7, scale: 1.6 },
     { piece: 'Light_Chandelier', storey: 0, x: -7, z: 4 },
     { piece: 'Light_Chandelier', storey: 0, x: 2, z: 4 },
   ],

@@ -194,6 +194,7 @@ describe('compileCity', () => {
   });
 
   it('stays a few hundred colliders, cheap for the collision grid', () => {
-    expect(map.boxes.length).toBeLessThan(800);
+    // Bank furniture adds a few dozen solid boxes (Phase 11); the grid still answers from cells, not the total.
+    expect(map.boxes.length).toBeLessThan(1000);
   });
 });

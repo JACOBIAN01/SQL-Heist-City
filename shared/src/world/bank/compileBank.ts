@@ -87,6 +87,17 @@ export function validateBank(layout: BankLayout): void {
     if (!isFurniturePiece(f.piece)) fail(`${where} is not a furniture piece`);
     if (f.storey < 0 || f.storey >= layout.storeys) fail(`${where} is on a missing storey`);
   }
+  for (const f of layout.fixtures ?? []) {
+    const where = `${f.kind} at (${f.x},${f.z}) on storey ${f.storey}`;
+    if (f.storey < 0 || f.storey >= layout.storeys) fail(`${where} is on a missing storey`);
+    const alongX = f.facing === '+z' || f.facing === '-z';
+    const half = f.width / 2;
+    if (
+      (alongX ? Math.abs(f.x) + half : Math.abs(f.x)) > hw + EPS ||
+      (alongX ? Math.abs(f.z) : Math.abs(f.z) + half) > hd + EPS
+    )
+      fail(`${where} leaves the footprint`);
+  }
   for (const r of layout.rooms ?? []) {
     const where = `room at (${r.x},${r.z}) on storey ${r.storey}`;
     if (r.storey < 0 || r.storey >= layout.storeys) fail(`${where} is on a missing storey`);

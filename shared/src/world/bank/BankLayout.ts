@@ -166,6 +166,25 @@ export interface RoomSpec {
   readonly walls?: WallFinish;
 }
 
+/**
+ * Fittings the interior kit has no piece for, built in code by the client
+ * (11.5). Art only: they never collide, so they cannot change play.
+ * `tellerScreen`: glass and brass over a counter, with a gap at counter
+ * height to pass things through. `queuePosts`: brass posts joined by a rope.
+ * `x`, `z` is the middle of the run; `facing` gives its direction (a run
+ * facing ±z lies along x, one facing ±x along z).
+ */
+export interface FixtureSpec {
+  readonly kind: 'tellerScreen' | 'queuePosts';
+  readonly storey: number;
+  readonly x: number;
+  readonly z: number;
+  readonly width: number;
+  readonly facing: Heading;
+  /** Height of the counter the screen stands on, m (tellerScreen). Defaults to 1.1. */
+  readonly base?: number;
+}
+
 export interface BankLayout {
   readonly id: string;
   readonly name: string;
@@ -188,6 +207,8 @@ export interface BankLayout {
   readonly vaults?: readonly VaultSpec[];
   /** Furniture and fittings (Phase 11): the realistic interior. */
   readonly furniture?: readonly FurnitureSpec[];
+  /** Teller screens and queue posts (Phase 11.5). */
+  readonly fixtures?: readonly FixtureSpec[];
   /** Floor and wall finishes by room (Phase 11.3). */
   readonly rooms?: readonly RoomSpec[];
 }
