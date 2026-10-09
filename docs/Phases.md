@@ -232,7 +232,7 @@ The bank is the most important place in the game: realistic interiors and a real
 | 11.6 | Offices & upper storeys (Bank 1) | desks, shelves, bookshelves, lamps, meeting room, plants | ✅ open-plan office on storey 1, executive boardroom and lounge on storey 2 (frontend.md "Bank interiors") |
 | 11.7 | Bank exterior (Bank 1) | grand entrance: columns, steps, double doors, name sign, ATM | ✅ pilasters, cornice, lintel, name plaque, doorstep, open doors, lanterns, ATM; glows at night (frontend.md "Bank interiors") |
 | 11.8 | Bank 1 review gate | screenshots + walk-through approved by the user | ✅ approved as is (docs/review/bank-1.md) |
-| 11.9 | Roll out to Banks 2–5 | each bank dressed, with a look by tier (modest → marble and gold) | ⬜ |
+| 11.9 | Roll out to Banks 2–5 | each bank dressed, with a look by tier (modest → marble and gold) | ✅ rooms, furniture, fixtures, facade and vault fittings for every bank; stone by tier (sandstone → white marble); desks and pillars are furniture, not blocks (docs/review/banks-2-5.md) |
 | 11.10 | Interior performance | detail only near/inside a bank; draw-call and triangle budget test in CI; 60 fps kept | ⬜ |
 
 ---
