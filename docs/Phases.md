@@ -228,7 +228,7 @@ The bank is the most important place in the game: realistic interiors and a real
 | 11.2 | Furniture in the bank layout (piece, storey, x, z, yaw, solid) | solid pieces compile to colliders; every bank route/anchor test still passes | ✅ `furniture` in `BankLayout`, `placeFurniture`, `furniture` colliders, clearance tests, client art from the same placements; a first waiting area in Bank 1 (backend.md "Furniture") |
 | 11.3 | Interior shell & materials (Bank 1) | marble lobby, wood/carpet offices, steel vault, door frames, skirting, ceiling lights; no grey boxes | ✅ room finishes, wainscoted walls, stone outside, ceiling panels, self-lit interiors (frontend.md "Bank interiors") |
 | 11.4 | The vault (Bank 1) | round steel door (bolts, hinge, wheel) swings open on the last lock; deposit-box walls, cash carts, keypad console, alarm light | ✅ plus break-in animation per lock (wheel, bolts, sparks, sounds) and the opening swing (frontend.md "Bank interiors") |
-| 11.5 | Lobby & teller hall (Bank 1) | glass-screened teller counter, queue stanchions, waiting area, columns, chandeliers, security room | ⬜ |
+| 11.5 | Lobby & teller hall (Bank 1) | glass-screened teller counter, queue stanchions, waiting area, columns, chandeliers, security room | ✅ teller screens, queue posts, waiting corner, columns, lift doors, back-wall ledgers, security room (frontend.md "Bank interiors") |
 | 11.6 | Offices & upper storeys (Bank 1) | desks, shelves, bookshelves, lamps, meeting room, plants | ⬜ |
 | 11.7 | Bank exterior (Bank 1) | grand entrance: columns, steps, double doors, name sign, ATM | ⬜ |
 | 11.8 | Bank 1 review gate | screenshots + walk-through approved by the user | ⬜ |
