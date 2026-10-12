@@ -8,13 +8,16 @@ import {
   type GameMap,
   type PlacedBank,
 } from '@heist/shared';
-import { hangDoorLeaves } from './BankDoorLeaves';
+import { mergeByMaterial } from '../../render/mergeByMaterial';
+import { DOOR_LEAF, doorLeaves, leafMesh } from './BankDoorLeaves';
 import type { InteriorKit } from './InteriorKit';
 
 /**
  * Draws the furniture of every bank on the map with the interior kit, from
  * the same placement list the colliders come from (placeFurniture), so a
- * solid desk is exactly where it blocks you.
+ * solid desk is exactly where it blocks you. Each storey's pieces, ceiling
+ * lamps and door leaves are merged into one mesh (the kit shares one material),
+ * tagged with its bank and storey so `BankLod` can leave out floors nobody can see.
  */
 export function buildBankFurniture(kit: InteriorKit, map: GameMap): Group {
   const root = new Group();
@@ -24,25 +27,30 @@ export function buildBankFurniture(kit: InteriorKit, map: GameMap): Group {
     if (!layout) continue;
     const bank = new Group();
     bank.name = `bank-furniture-${layout.id}`;
-    for (const p of placeFurniture(layout, site)) {
-      if (!kit.has(p.piece)) continue; // a kit older than the layout: skip, the collider still holds
-      const mesh = kit.create(p.piece);
-      mesh.position.set(p.x, p.y, p.z);
-      mesh.rotation.y = p.yaw;
-      mesh.scale.setScalar(p.scale);
-      mesh.matrixAutoUpdate = false;
-      mesh.updateMatrix();
-      bank.add(mesh);
-    }
-    if (kit.has(CEILING_LIGHT))
-      for (const spot of ceilingLightSpots(layout, site)) {
+    const placed = placeFurniture(layout, site);
+    const lamps = kit.has(CEILING_LIGHT) ? ceilingLightSpots(layout, site) : [];
+    const leaves = kit.has(DOOR_LEAF) ? doorLeaves(layout, site) : [];
+    for (let storey = 0; storey < layout.storeys; storey++) {
+      const parts = new Group();
+      for (const p of placed) {
+        if (p.storey !== storey || !kit.has(p.piece)) continue; // a kit older than the layout: skip, the collider still holds
+        const mesh = kit.create(p.piece);
+        mesh.position.set(p.x, p.y, p.z);
+        mesh.rotation.y = p.yaw;
+        mesh.scale.setScalar(p.scale);
+        parts.add(mesh);
+      }
+      for (const spot of lamps) {
+        if (Math.floor(spot.y / layout.storeyHeight) !== storey) continue;
         const lamp = kit.create(CEILING_LIGHT);
         lamp.position.set(spot.x, spot.y, spot.z);
-        lamp.matrixAutoUpdate = false;
-        lamp.updateMatrix();
-        bank.add(lamp);
+        parts.add(lamp);
       }
-    bank.add(hangDoorLeaves(kit, layout, site));
+      for (const l of leaves) if (l.storey === storey) parts.add(leafMesh(kit, l));
+      const merged = mergeByMaterial(parts, `storey-${storey}`);
+      merged.userData = { bankTier: site.tier, storey };
+      if (merged.children.length) bank.add(merged);
+    }
     root.add(bank);
   }
   return root;

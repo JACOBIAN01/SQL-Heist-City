@@ -1,4 +1,4 @@
-import { Group } from 'three';
+import type { Mesh } from 'three';
 import { type BankLayout, type PlacedBank, type WallSpec } from '@heist/shared';
 import type { InteriorKit } from './InteriorKit';
 
@@ -11,6 +11,7 @@ const OPEN = Math.PI / 3;
 
 /** One door leaf where it hangs. */
 export interface LeafPlacement {
+  readonly storey: number;
   readonly x: number;
   readonly y: number;
   readonly z: number;
@@ -69,6 +70,7 @@ export function doorLeaves(layout: BankLayout, site: PlacedBank): LeafPlacement[
             z: Math.cos(OPEN) * d.z * closed + Math.sin(OPEN) * normal.z,
           };
           out.push({
+            storey,
             x: site.x + w.from.x + d.x * from,
             y: storey * layout.storeyHeight,
             z: site.z + w.from.z + d.z * from,
@@ -83,19 +85,11 @@ export function doorLeaves(layout: BankLayout, site: PlacedBank): LeafPlacement[
   return out;
 }
 
-/** Hangs the leaves of one bank with the interior kit. */
-export function hangDoorLeaves(kit: InteriorKit, layout: BankLayout, site: PlacedBank): Group {
-  const group = new Group();
-  group.name = `bank-doors-${layout.id}`;
-  if (!kit.has(DOOR_LEAF)) return group;
-  for (const l of doorLeaves(layout, site)) {
-    const leaf = kit.create(DOOR_LEAF);
-    leaf.position.set(l.x, l.y, l.z);
-    leaf.rotation.y = l.yaw;
-    leaf.scale.set(l.sx, l.sy, l.sx);
-    leaf.matrixAutoUpdate = false;
-    leaf.updateMatrix();
-    group.add(leaf);
-  }
-  return group;
+/** One door leaf as a mesh of the kit's door, ready to merge. */
+export function leafMesh(kit: InteriorKit, l: LeafPlacement): Mesh {
+  const leaf = kit.create(DOOR_LEAF);
+  leaf.position.set(l.x, l.y, l.z);
+  leaf.rotation.y = l.yaw;
+  leaf.scale.set(l.sx, l.sy, l.sx);
+  return leaf;
 }
