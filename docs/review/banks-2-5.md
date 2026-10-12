@@ -32,4 +32,14 @@ Same kit, same builders as Bank 1, a richer look each tier. Screenshots are from
 | Offices | ![](banks-2-5/after-office.png) |
 | Hall | ![](banks-2-5/after-lobby.png) |
 
-Still open from the Bank 1 list: the vault door has no frame depth, the cash bundles' band repeats, chairs and the street cash machine are not solid, interior doorways have no door leaves.
+**The last four from the Bank 1 list, fixed:**
+- The vault door sits in a deep steel jamb (a sleeve through the wall, a threshold, a brass seat ring, rivets on a thicker plate).
+- Cash bundles come in three kinds (one band, two bands, loose), each tinted, sized and turned a little differently.
+- Chairs are solid, and the street cash machine is a collider on the pavement.
+- Every interior doorway has two door leaves standing open.
+
+| Fix | |
+|---|---|
+| Vault door frame | ![](banks-2-5/fix-vault-frame.png) |
+| Cash shelves | ![](banks-2-5/fix-cash.png) |
+| Door leaves | ![](banks-2-5/fix-door-leaves.png) |

@@ -58,6 +58,35 @@ describe('VaultArt', () => {
     expect(cash).toBe(true);
   });
 
+  it('stocks the shelves with three kinds of bundle, each tinted per bundle', () => {
+    const art = new VaultArt(HEIST_MAP, materials);
+    const kinds = new Set<unknown>();
+    art.root.traverse((o) => {
+      const mesh = o as { material?: unknown; instanceColor?: unknown; isInstancedMesh?: boolean };
+      if (
+        mesh.isInstancedMesh &&
+        [materials.cash, materials.cashTwin, materials.cashLoose].includes(mesh.material as never)
+      ) {
+        kinds.add(mesh.material);
+        expect(mesh.instanceColor).toBeTruthy();
+      }
+    });
+    expect(kinds.size).toBe(3);
+  });
+
+  it('seats the door in a deep steel jamb: a sleeve through the wall, a threshold and rivets', () => {
+    const door = new VaultArt(HEIST_MAP, materials).root.getObjectByName('vault-door');
+    const deep = door?.children.filter(
+      (c) =>
+        (c as { geometry?: { parameters?: { depth?: number } } }).geometry?.parameters?.depth ===
+        0.5,
+    );
+    expect(deep).toHaveLength(4);
+    expect(door?.children.some((c) => (c as { isInstancedMesh?: boolean }).isInstancedMesh)).toBe(
+      true,
+    );
+  });
+
   it('opens the door over time once the last lock falls, and flashes the alarm', () => {
     const art = new VaultArt(HEIST_MAP, materials);
     const id = HEIST_MAP.vaults?.[0]?.id ?? '';

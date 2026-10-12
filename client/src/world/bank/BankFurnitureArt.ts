@@ -8,6 +8,7 @@ import {
   type GameMap,
   type PlacedBank,
 } from '@heist/shared';
+import { hangDoorLeaves } from './BankDoorLeaves';
 import type { InteriorKit } from './InteriorKit';
 
 /**
@@ -41,6 +42,7 @@ export function buildBankFurniture(kit: InteriorKit, map: GameMap): Group {
         lamp.updateMatrix();
         bank.add(lamp);
       }
+    bank.add(hangDoorLeaves(kit, layout, site));
     root.add(bank);
   }
   return root;

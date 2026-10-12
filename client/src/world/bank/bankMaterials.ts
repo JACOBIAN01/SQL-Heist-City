@@ -30,7 +30,9 @@ export type BankSurface =
   | 'roof'
   | 'deposit'
   | 'brass'
-  | 'cash';
+  | 'cash'
+  | 'cashTwin'
+  | 'cashLoose';
 
 /**
  * How a surface's texture meets the geometry. `metres`: the texture covers
@@ -104,6 +106,22 @@ export const SURFACES: Readonly<Record<BankSurface, SurfaceStyle>> = {
     roughness: 0.3,
     metalness: 0,
     selfLight: 0.35,
+  },
+  cashTwin: {
+    base: 0x93ab7c,
+    uv: 'metres',
+    size: 0.2,
+    roughness: 0.8,
+    metalness: 0,
+    selfLight: 0.4,
+  },
+  cashLoose: {
+    base: 0x6b8a5e,
+    uv: 'metres',
+    size: 0.2,
+    roughness: 0.85,
+    metalness: 0,
+    selfLight: 0.4,
   },
   roof: { base: 0x3b3d40, uv: 'metres', size: 4, roughness: 0.95, metalness: 0, selfLight: 0 },
   deposit: {
@@ -285,6 +303,25 @@ const PAINTERS: Readonly<Record<BankSurface, (g: CanvasRenderingContext2D, r: Se
       for (let y = 0; y < PX; y += 6) g.fillRect(0, y, PX, 1);
       g.fillStyle = '#e8e2c8';
       g.fillRect(PX * 0.42, 0, PX * 0.16, PX);
+    },
+    cashTwin: (g) => {
+      // Fresher notes held by two thin bands near the ends.
+      g.fillStyle = css(SURFACES.cashTwin.base);
+      g.fillRect(0, 0, PX, PX);
+      g.fillStyle = 'rgba(30,50,25,0.3)';
+      for (let y = 0; y < PX; y += 5) g.fillRect(0, y, PX, 1);
+      g.fillStyle = '#d6b45a';
+      g.fillRect(PX * 0.2, 0, PX * 0.07, PX);
+      g.fillRect(PX * 0.73, 0, PX * 0.07, PX);
+    },
+    cashLoose: (g, r) => {
+      // Loose, worn notes with no band: ragged edges of darker and lighter paper.
+      g.fillStyle = css(SURFACES.cashLoose.base);
+      g.fillRect(0, 0, PX, PX);
+      for (let y = 0; y < PX; y += 4) {
+        g.fillStyle = `rgba(${r.next() > 0.5 ? '20,35,18' : '200,215,170'},${0.12 + r.next() * 0.18})`;
+        g.fillRect(0, y, PX, 2);
+      }
     },
     roof: (g, r) => {
       g.fillStyle = css(SURFACES.roof.base);

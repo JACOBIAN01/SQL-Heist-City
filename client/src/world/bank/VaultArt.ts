@@ -4,6 +4,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   ConeGeometry,
+  Color,
   CylinderGeometry,
   DoubleSide,
   Group,
@@ -14,6 +15,7 @@ import {
   MeshStandardMaterial,
   Points,
   PointsMaterial,
+  Quaternion,
   SphereGeometry,
   TorusGeometry,
   Vector3,
@@ -37,6 +39,8 @@ const BOLTS = 12;
 /** Bolts reach this far into the frame when shut, and draw back this far when withdrawn. */
 const BOLT_REACH = 0.1;
 const BOLT_TRAVEL = 0.26;
+/** How far the steel sleeve lining the doorway runs, m: the whole wall and a little past it. */
+const JAMB_DEPTH = 0.5;
 
 /** The round door's moving parts, in a frame where the door faces +z (toward the console). */
 export interface VaultDoorRig {
@@ -83,14 +87,38 @@ export function buildVaultDoor(
   const brass = materials.brass;
   // The frame: a heavy square plate round the opening and a collar the door seats in.
   const plate = (w: number, h: number, x: number, y: number) => {
-    const m = new Mesh(new BoxGeometry(w, h, 0.12), steel);
-    m.position.set(x, y, 0.16);
+    const m = new Mesh(new BoxGeometry(w, h, 0.2), steel);
+    m.position.set(x, y, 0.2);
     root.add(m);
   };
   const border = 0.22;
   plate(span + 2 * border, border, 0, height + border / 2);
   plate(border, height + border, -span / 2 - border / 2, (height + border) / 2);
   plate(border, height + border, span / 2 + border / 2, (height + border) / 2);
+  // The jamb: a steel sleeve lining the opening right through the wall, with a threshold, so the
+  // door sits in a deep frame instead of a flat hole.
+  const sleeve = (w: number, h: number, x: number, y: number) => {
+    const m = new Mesh(new BoxGeometry(w, h, JAMB_DEPTH), steel);
+    m.position.set(x, y, 0);
+    root.add(m);
+  };
+  sleeve(span, 0.08, 0, height - 0.04);
+  sleeve(0.06, height, -span / 2 + 0.03, cy);
+  sleeve(0.06, height, span / 2 - 0.03, cy);
+  sleeve(span, 0.05, 0, 0.025);
+  // Rivets along the plate, and a brass ring where the door seats.
+  const studs: Matrix4[] = [];
+  for (let u = -span / 2 - border / 2; u <= span / 2 + border / 2 + 1e-6; u += 0.3)
+    studs.push(new Matrix4().makeTranslation(u, height + border / 2, 0.31));
+  for (const side of [-1, 1])
+    for (let y = 0.2; y < height; y += 0.3)
+      studs.push(new Matrix4().makeTranslation(side * (span / 2 + border / 2), y, 0.31));
+  const rivets = new InstancedMesh(new SphereGeometry(0.035, 8, 6), brass, studs.length);
+  studs.forEach((m, i) => rivets.setMatrixAt(i, m));
+  root.add(rivets);
+  const seat = new Mesh(new TorusGeometry(radius + 0.09, 0.025, 8, 48), brass);
+  seat.position.set(0, cy, 0.27);
+  root.add(seat);
   const collar = new Mesh(new TorusGeometry(radius + 0.05, 0.07, 10, 48), steel);
   collar.position.set(0, cy, 0.2);
   root.add(collar);
@@ -208,29 +236,50 @@ function buildFittings(
     const length = alongX ? w : d;
     const depth = alongX ? d : w;
     const perShelf = Math.floor(length / 0.2);
-    // Up to four bundles in each stack (0.1 m each), so the shelves look full but uneven.
-    const bundles = new InstancedMesh(
-      new BoxGeometry(0.16, 0.1, 0.07),
-      materials.cash,
-      perShelf * 3 * 4 * 4,
-    );
+    // Bundles come in three kinds (one band, two bands, loose notes), each a little different in
+    // size, tint and angle, so a full shelf never shows the same band over and over.
+    const kinds = [materials.cash, materials.cashTwin, materials.cashLoose];
+    const matrices: Matrix4[][] = kinds.map(() => []);
+    const tints: Color[][] = kinds.map(() => []);
     const m = new Matrix4();
-    let n = 0;
+    const q = new Quaternion();
+    const hash = (a: number) => {
+      const t = Math.sin(a * 12.9898 + 78.233) * 43758.5453;
+      return t - Math.floor(t);
+    };
     for (const y of [0.04, 0.57, 1.12, 1.67])
       for (let i = 0; i < perShelf; i++)
         for (let k = 0; k < 3; k++) {
+          const seed = i * 31 + k * 17 + Math.round(y * 100);
           const u = -length / 2 + 0.1 + i * 0.2;
           const v = -depth / 2 + 0.06 + k * 0.1;
           const high = 1 + ((i * 7 + k * 3 + Math.round(y * 10)) % 4);
           for (let j = 0; j < high; j++) {
+            const r = hash(seed + j * 7.7);
+            const kind = Math.floor(hash(seed * 3 + j) * kinds.length);
             const lift = y + 0.05 + j * 0.1;
-            if (alongX) m.makeTranslation(u, lift, v);
-            else m.makeRotationY(Math.PI / 2).setPosition(v, lift, u);
-            bundles.setMatrixAt(n++, m);
+            const jitter = (r - 0.5) * 0.02;
+            const yaw = (hash(seed + j * 3.1) - 0.5) * 0.16 + (alongX ? 0 : Math.PI / 2);
+            m.compose(
+              alongX ? new Vector3(u + jitter, lift, v) : new Vector3(v, lift, u + jitter),
+              q.setFromAxisAngle(new Vector3(0, 1, 0), yaw),
+              new Vector3(0.9 + hash(seed + j) * 0.2, 1, 1),
+            );
+            (matrices[kind] as Matrix4[]).push(m.clone());
+            const f = 0.82 + r * 0.3;
+            (tints[kind] as Color[]).push(new Color(f, f * (0.96 + r * 0.08), f * 0.95));
           }
         }
-    bundles.count = n;
-    frame.add(bundles);
+    kinds.forEach((material, kind) => {
+      const list = matrices[kind] as Matrix4[];
+      if (!list.length) return;
+      const mesh = new InstancedMesh(new BoxGeometry(0.16, 0.1, 0.07), material, list.length);
+      list.forEach((mx, idx) => {
+        mesh.setMatrixAt(idx, mx);
+        mesh.setColorAt(idx, (tints[kind] as Color[])[idx] as Color);
+      });
+      frame.add(mesh);
+    });
     group.add(frame);
   }
   return group;
