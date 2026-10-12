@@ -61,10 +61,27 @@ describe('furniture in the compiled bank', () => {
       { x: 0, z: 0 },
     );
     // Storey 0 only: the vault's fittings upstairs are solid too.
-    const solid = boxes.filter((b) => b.kind === 'furniture' && b.minY === 0);
+    const solid = boxes.filter(
+      (b) => b.kind === 'furniture' && b.minY === 0 && b.minZ < BANK_1.depth / 2, // not the street cash machine
+    );
     expect(solid).toHaveLength(1);
     expect(solid[0]?.minY).toBe(0);
     expect(((solid[0]?.minX ?? 0) + (solid[0]?.maxX ?? 0)) / 2).toBeCloseTo(-6, 1);
+  });
+
+  it('makes chairs solid and puts the street cash machine on the pavement', () => {
+    const boxes = compileBank(BANK_1, { x: 0, z: 0 });
+    const chairs = placeFurniture(BANK_1, { x: 0, z: 0 }).filter((p) =>
+      p.piece.startsWith('Chair_'),
+    );
+    expect(chairs.length).toBeGreaterThan(10);
+    expect(chairs.every((c) => c.solid)).toBe(true);
+    const atm = boxes.find(
+      (b) => b.kind === 'furniture' && b.minZ >= BANK_1.depth / 2 && b.minY === 0,
+    );
+    const x = BANK_1.facade?.atm ?? 0;
+    expect(atm).toMatchObject({ minX: x - 0.48, maxX: x + 0.48, maxY: 2.1 });
+    expect(atm ? atm.maxZ - atm.minZ : 0).toBeCloseTo(0.5);
   });
 
   it("makes the vault's deposit boxes and cash shelves solid, against their walls", () => {

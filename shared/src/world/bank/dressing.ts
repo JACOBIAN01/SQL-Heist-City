@@ -19,7 +19,7 @@ export function workstation(
   const toward: Heading = side === 1 ? '-z' : '+z';
   return [
     { piece: 'Drawer_3', storey, x, z, facing: toward, solid: true, desk: true },
-    { piece: 'Chair_3', storey, x, z: z + side, facing: toward },
+    { piece: 'Chair_3', storey, x, z: z + side, facing: toward, solid: true },
     { piece: 'Light_Desk', storey, x: x + 0.7, z, y: 0.79, facing: toward },
   ];
 }
@@ -102,8 +102,8 @@ export function boardTable(
   for (let i = 0; i < per; i++) {
     const dx = ((i + 0.5) / per - 0.5) * (rx * 1.3);
     out.push(
-      { piece: 'Chair_3', storey, x: x + dx, z: z - rz },
-      { piece: 'Chair_3', storey, x: x + dx, z: z + rz, facing: '-z' },
+      { piece: 'Chair_3', storey, x: x + dx, z: z - rz, solid: true },
+      { piece: 'Chair_3', storey, x: x + dx, z: z + rz, facing: '-z', solid: true },
     );
   }
   return out;

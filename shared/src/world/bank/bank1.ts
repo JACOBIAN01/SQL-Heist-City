@@ -125,10 +125,10 @@ export const BANK_1: BankLayout = {
     { piece: 'Light_Small', storey: 0, x: 11.55, z: 5, y: 2.3 },
     { piece: 'Houseplant_6', storey: 0, x: 11.2, z: 7.6, scale: 1.5 },
     // Tellers: a chair and a desk lamp at each window.
-    { piece: 'Chair_2', storey: 0, x: -7.2, z: -3.3 },
-    { piece: 'Chair_2', storey: 0, x: -5.5, z: -3.3 },
-    { piece: 'Chair_2', storey: 0, x: -3.8, z: -3.3 },
-    { piece: 'Chair_2', storey: 0, x: 0.5, z: -3.3 },
+    { piece: 'Chair_2', storey: 0, x: -7.2, z: -3.3, solid: true },
+    { piece: 'Chair_2', storey: 0, x: -5.5, z: -3.3, solid: true },
+    { piece: 'Chair_2', storey: 0, x: -3.8, z: -3.3, solid: true },
+    { piece: 'Chair_2', storey: 0, x: 0.5, z: -3.3, solid: true },
     { piece: 'Light_Desk', storey: 0, x: -7.2, z: -2, y: 1.1, facing: '-z' },
     { piece: 'Light_Desk', storey: 0, x: -3.8, z: -2, y: 1.1, facing: '-z' },
     // Ledgers and files on the back wall.
@@ -140,8 +140,8 @@ export const BANK_1: BankLayout = {
     // The security room: two desks on its front wall, files on the back wall.
     { piece: 'Drawer_2', storey: 0, x: 6.5, z: -1.7, facing: '-z', solid: true, desk: true },
     { piece: 'Drawer_2', storey: 0, x: 9.5, z: -1.7, facing: '-z', solid: true, desk: true },
-    { piece: 'Chair_3', storey: 0, x: 6.5, z: -2.6 },
-    { piece: 'Chair_3', storey: 0, x: 9.5, z: -2.6 },
+    { piece: 'Chair_3', storey: 0, x: 6.5, z: -2.6, solid: true },
+    { piece: 'Chair_3', storey: 0, x: 9.5, z: -2.6, solid: true },
     { piece: 'Light_Desk', storey: 0, x: 7, z: -1.7, y: 0.65, facing: '-z' },
     { piece: 'Shelf_Large', storey: 0, x: 7, z: -8.6, solid: true },
     { piece: 'Shelf_Large', storey: 0, x: 9, z: -8.6, solid: true },
@@ -151,12 +151,12 @@ export const BANK_1: BankLayout = {
     // wall, a meeting table in the front corner. Clear of both flights and the lift.
     ...[-3, 0, 3, 6].flatMap((x) => [
       { piece: 'Drawer_3', storey: 1, x, z: 1.5, facing: '-z', solid: true, desk: true } as const,
-      { piece: 'Chair_3', storey: 1, x, z: 2.5, facing: '-z' } as const,
+      { piece: 'Chair_3', storey: 1, x, z: 2.5, facing: '-z', solid: true } as const,
       { piece: 'Light_Desk', storey: 1, x: x + 0.7, z: 1.5, y: 0.79, facing: '-z' } as const,
     ]),
     ...[-2.5, 0.5, 3.5, 6.5].flatMap((x) => [
       { piece: 'Drawer_3', storey: 1, x, z: -3.5, facing: '-z', solid: true, desk: true } as const,
-      { piece: 'Chair_3', storey: 1, x, z: -2.5, facing: '-z' } as const,
+      { piece: 'Chair_3', storey: 1, x, z: -2.5, facing: '-z', solid: true } as const,
       { piece: 'Light_Desk', storey: 1, x: x + 0.7, z: -3.5, y: 0.79, facing: '-z' } as const,
     ]),
     { piece: 'Bookshelf', storey: 1, x: 11.6, z: -7.2, facing: '-x', solid: true },
@@ -167,8 +167,8 @@ export const BANK_1: BankLayout = {
     { piece: 'Door_Double', storey: 1, x: 11.65, z: 5, facing: '-x' },
     { piece: 'Table_RoundLarge', storey: 1, x: -7, z: 5.5, scale: 1.3, solid: true },
     ...[-8.2, -7, -5.8].flatMap((x) => [
-      { piece: 'Chair_2', storey: 1, x, z: 4.4 } as const,
-      { piece: 'Chair_2', storey: 1, x, z: 6.6, facing: '-z' } as const,
+      { piece: 'Chair_2', storey: 1, x, z: 4.4, solid: true } as const,
+      { piece: 'Chair_2', storey: 1, x, z: 6.6, facing: '-z', solid: true } as const,
     ]),
     { piece: 'Carpet_1', storey: 1, x: -7, z: 5.5, facing: '+x' },
     { piece: 'Houseplant_8', storey: 1, x: -11.3, z: 8.2, scale: 1.6 },
@@ -178,11 +178,11 @@ export const BANK_1: BankLayout = {
     // files, and a lounge by the lift.
     { piece: 'Table_RoundLarge', storey: 2, x: -3, z: 5, scale: 1.8, solid: true },
     ...[-4.2, -3, -1.8].flatMap((x) => [
-      { piece: 'Chair_3', storey: 2, x, z: 3.4 } as const,
-      { piece: 'Chair_3', storey: 2, x, z: 6.6, facing: '-z' } as const,
+      { piece: 'Chair_3', storey: 2, x, z: 3.4, solid: true } as const,
+      { piece: 'Chair_3', storey: 2, x, z: 6.6, facing: '-z', solid: true } as const,
     ]),
-    { piece: 'Chair_3', storey: 2, x: -5.9, z: 5, facing: '+x' },
-    { piece: 'Chair_3', storey: 2, x: -0.1, z: 5, facing: '-x' },
+    { piece: 'Chair_3', storey: 2, x: -5.9, z: 5, facing: '+x', solid: true },
+    { piece: 'Chair_3', storey: 2, x: -0.1, z: 5, facing: '-x', solid: true },
     { piece: 'Light_Chandelier', storey: 2, x: -3, z: 5 },
     { piece: 'Couch_Large1', storey: 2, x: -11, z: 1.5, facing: '+x', solid: true },
     { piece: 'Table_RoundSmall', storey: 2, x: -9.6, z: 1.5, scale: 0.55, solid: true },

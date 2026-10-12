@@ -133,6 +133,7 @@ function dressing(): Pick<BankLayout, 'cladding' | 'rooms' | 'facade' | 'fixture
       storey: 0,
       x,
       z: -3.4,
+      solid: true,
     })),
     { piece: 'Light_Desk', storey: 0, x: -8.5, z: -2, y: 1.1, facing: '-z' },
     { piece: 'Light_Desk', storey: 0, x: -4.5, z: -2, y: 1.1, facing: '-z' },

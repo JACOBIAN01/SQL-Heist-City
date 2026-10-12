@@ -415,6 +415,19 @@ export function compileBankParts(layout: BankLayout, at: Point2): BankParts {
         maxY: v.storey * layout.storeyHeight + FITTING_HEIGHT,
       });
 
+  // The street cash machine on the facade stands on the pavement, 0.5 m out from the wall.
+  if (layout.facade?.atm !== undefined) {
+    const front = at.z + layout.depth / 2 + EXTERIOR_THICKNESS / 2;
+    parts.furniture.push({
+      kind: 'furniture',
+      minX: at.x + layout.facade.atm - 0.48,
+      maxX: at.x + layout.facade.atm + 0.48,
+      minY: 0,
+      maxY: 2.1,
+      minZ: front,
+      maxZ: front + 0.5,
+    });
+  }
   // Solid furniture blocks like any other box (never above its ceiling).
   for (const p of placeFurniture(layout, at)) {
     if (!p.solid) continue;
