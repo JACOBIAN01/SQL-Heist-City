@@ -15,6 +15,7 @@ import {
   type GameMap,
   type PlacedBank,
 } from '@heist/shared';
+import { mergeByMaterial } from '../../render/mergeByMaterial';
 import type { BankMaterials } from './bankMaterials';
 
 /** Glass and velvet rope: the two fixture materials that are not part of the surface set. */
@@ -169,12 +170,20 @@ function bankFixtures(
 ): Group {
   const bank = new Group();
   bank.name = `bank-fixtures-${layout.id}`;
-  for (const f of layout.fixtures ?? []) {
-    const piece = BUILDERS[f.kind](f, m);
-    piece.name = f.kind;
-    piece.position.set(site.x + f.x, f.storey * layout.storeyHeight, site.z + f.z);
-    piece.rotation.y = yawOf(f);
-    bank.add(piece);
+  // One merged mesh per material per storey, tagged so BankLod can leave out floors nobody sees.
+  for (let storey = 0; storey < layout.storeys; storey++) {
+    const parts = new Group();
+    for (const f of (layout.fixtures ?? []).filter((x) => x.storey === storey)) {
+      const piece = BUILDERS[f.kind](f, m);
+      piece.name = f.kind;
+      piece.position.set(site.x + f.x, storey * layout.storeyHeight, site.z + f.z);
+      piece.rotation.y = yawOf(f);
+      parts.add(piece);
+    }
+    if (parts.children.length === 0) continue;
+    const merged = mergeByMaterial(parts, `storey-${storey}`);
+    merged.userData = { bankTier: site.tier, storey };
+    bank.add(merged);
   }
   return bank;
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
 import { BANK_1, BANK_LAYOUTS, placeFurniture, type GameMap } from '@heist/shared';
-import { buildBankFurniture, CEILING_LIGHT } from './BankFurnitureArt';
+import { buildBankFurniture, ceilingLightSpots, CEILING_LIGHT } from './BankFurnitureArt';
 import { interiorKitFrom } from './InteriorKit';
 
 const shared = new MeshBasicMaterial();
@@ -65,6 +65,13 @@ describe('buildBankFurniture', () => {
     const count = (root: Group, storey: number) => tris(storeyMeshes(root, storey)[0] as Mesh);
     // Storey 0: two leaves in the staff doorway, plus a grid of ceiling panels.
     expect(count(withExtras, 0)).toBeGreaterThan(count(plain, 0) + 2 * 12);
+  });
+
+  it("puts the top storey's ceiling lamps on the top storey, not above the roof", () => {
+    const spots = ceilingLightSpots(BANK_1, { tier: 1, x: 10, z: -8 });
+    const storeys = new Set(spots.map((s) => s.storey));
+    expect([...storeys].sort()).toEqual([0, 1, 2]);
+    for (const s of spots) expect(s.y).toBeLessThanOrEqual((s.storey + 1) * BANK_1.storeyHeight);
   });
 
   it('skips pieces the kit lacks and maps without banks', () => {

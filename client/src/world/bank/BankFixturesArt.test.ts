@@ -1,47 +1,58 @@
 import { describe, expect, it } from 'vitest';
-import { Box3, type Object3D } from 'three';
+import type { Box3, Mesh } from 'three';
 import { BANK_1, BANK_LAYOUTS, HEIST_MAP, validateBank, type BankLayout } from '@heist/shared';
 import { buildBankFixtures } from './BankFixturesArt';
 import { createBankMaterials } from './bankMaterials';
 
 const materials = createBankMaterials();
 const root = buildBankFixtures(HEIST_MAP, materials);
-const kinds = (name: string) =>
-  root.getObjectByName(`bank-fixtures-bank-1`)?.children.filter((c) => c.name === name) ?? [];
-const box = (o: Object3D) => new Box3().setFromObject(o);
+const storey0 = () =>
+  root.getObjectByName('bank-fixtures-bank-1')?.children.find((c) => c.userData.storey === 0);
+const meshOf = (material: string) =>
+  storey0()?.children.find((c) => (c as Mesh).material === materialByName(material)) as
+    Mesh | undefined;
+const materialByName = (name: string) => {
+  let found: unknown;
+  storey0()?.traverse((o) => {
+    const m = (o as { material?: { name?: string } }).material;
+    if (m?.name === name) found = m;
+  });
+  return found;
+};
+const tris = (m?: Mesh) => (m?.geometry.index?.count ?? 0) / 3;
+const bounds = (m?: Mesh) => {
+  m?.geometry.computeBoundingBox();
+  return m?.geometry.boundingBox as Box3;
+};
 
 describe('bank fixtures', () => {
-  it('stands a glass teller screen over each counter, from just above it up to 2 m', () => {
-    const screens = kinds('tellerScreen');
-    expect(screens).toHaveLength(2);
-    const long = box(screens[0] as Object3D);
-    expect(long.min.x).toBeCloseTo(-8.5 - 0.03, 1);
-    expect(long.max.x).toBeCloseTo(-2.5 + 0.03, 1);
-    expect(long.max.y).toBeCloseTo(2.05, 1);
-    expect(long.min.y).toBeCloseTo(1.1, 1);
-    let glass = 0;
-    screens[0]?.traverse((o) => {
-      const m = (o as unknown as { material?: { name?: string } }).material;
-      if (m?.name === 'bank-glass') glass++;
-    });
-    expect(glass).toBe(4); // 6 m: posts every 1.5 m → four panes
+  it('merges a storey into a mesh per material, tagged with its bank and storey', () => {
+    const group = storey0();
+    expect(group?.userData).toMatchObject({ bankTier: 1, storey: 0 });
+    // Brass, glass and rope: three draw calls for every post, pane and rope on the floor.
+    expect(group?.children).toHaveLength(3);
+    expect(root.getObjectByName('bank-fixtures-bank-1')?.children).toHaveLength(1);
   });
 
-  it('runs queue posts along x or z as the layout says, with a rope between each pair', () => {
-    const [alongX, alongZ] = kinds('queuePosts') as [Object3D, Object3D];
-    const x = box(alongX);
-    expect(x.max.x - x.min.x).toBeGreaterThan(7);
-    expect(x.max.z - x.min.z).toBeLessThan(0.5);
-    const z = box(alongZ);
-    expect(z.max.z - z.min.z).toBeGreaterThan(2.8);
-    expect(z.max.x - z.min.x).toBeLessThan(0.5);
-    // 7.2 m at 1.2 m → 7 posts, 6 gaps, two rope pieces each; per post a base, pole and cap.
-    expect(alongX.children).toHaveLength(7 * 3 + 6 * 2);
+  it('stands glass teller panes from just above the counter up to 2 m', () => {
+    const glass = meshOf('bank-glass');
+    // 6 m at one pane per 1.5 m: four panes, plus one on the 2 m screen; 12 triangles each.
+    expect(tris(glass)).toBe(5 * 12);
+    const b = bounds(glass);
+    expect(b.min.x).toBeCloseTo(-8.5, 0);
+    expect(b.max.y).toBeCloseTo(2.0, 1);
+    expect(b.min.y).toBeCloseTo(1.45, 1);
+    expect(glass?.renderOrder).toBe(5);
   });
 
-  it('puts each fixture where the layout says, on its storey', () => {
-    const [first] = kinds('tellerScreen');
-    expect(first?.position.toArray()).toEqual([-5.5, 0, -2]);
+  it('runs queue posts along x and along z as the layout says, with a rope between each pair', () => {
+    const rope = meshOf('bank-rope');
+    const b = bounds(rope);
+    // The 7.2 m run along x, from x = −6.6 to 0.6, and the 3 m run along z at x = −6.6.
+    expect(b.max.x - b.min.x).toBeGreaterThan(7);
+    expect(b.max.z - b.min.z).toBeGreaterThan(2.8);
+    // Six gaps on the long run and three on the short one, two rope pieces (24 triangles) each.
+    expect(tris(rope)).toBe((6 + 3) * 2 * 24);
   });
 
   it('is empty for a map without banks', () => {

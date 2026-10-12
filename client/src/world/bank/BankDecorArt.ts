@@ -70,6 +70,7 @@ class Batch {
     this.parts.push(g);
   }
   mesh(material: Material, name: string): Mesh | undefined {
+    if (this.parts.length === 0) return undefined;
     const geometry = mergeGeometries(this.parts);
     if (!geometry) return undefined;
     const mesh = new Mesh(geometry, material);
@@ -298,20 +299,47 @@ export function buildBankDecor(
   const quad = (w: number, h: number) => new PlaneGeometry(w, h);
   const flatQuad = (w: number, d: number) => new PlaneGeometry(w, d).rotateX(-Math.PI / 2);
 
-  const deskTops = new Batch();
-  const monitors = new Batch();
-  const screens = new Batch();
-  const frames = new Batch();
-  const golds = new Batch();
-  const panes = new Batch();
-  const pools = new Batch();
-  const blobs = new Batch();
-  const art: Batch[] = pictures.map(() => new Batch());
-  const keyboards = new Batch();
+  /** One set of batches per bank and storey: each becomes a handful of meshes BankLod can switch. */
+  interface Sets {
+    deskTops: Batch;
+    monitors: Batch;
+    screens: Batch;
+    frames: Batch;
+    golds: Batch;
+    panes: Batch;
+    pools: Batch;
+    blobs: Batch;
+    keyboards: Batch;
+    art: Batch[];
+  }
+  const newSets = (): Sets => ({
+    deskTops: new Batch(),
+    monitors: new Batch(),
+    screens: new Batch(),
+    frames: new Batch(),
+    golds: new Batch(),
+    panes: new Batch(),
+    pools: new Batch(),
+    blobs: new Batch(),
+    keyboards: new Batch(),
+    art: pictures.map(() => new Batch()),
+  });
+  const addMesh = (group: Group, batch: Batch, material: Material, name: string, order = 0) => {
+    const mesh = batch.mesh(material, name);
+    if (!mesh) return;
+    mesh.renderOrder = order;
+    group.add(mesh);
+  };
 
   for (const site of map.banks ?? []) {
     const layout = layouts.get(site.tier);
     if (!layout) continue;
+    const sets = new Map<number, Sets>();
+    const S = (storey: number): Sets => {
+      let set = sets.get(storey);
+      if (!set) sets.set(storey, (set = newSets()));
+      return set;
+    };
     const h = layout.storeyHeight;
     const furniture = placeFurniture(layout, site);
 
@@ -324,13 +352,16 @@ export function buildBankDecor(
       const top = b.max[1] * p.scale;
       const parent = place(p.x, p.y, p.z, p.yaw);
       // The worker sits on the piece's back (−z) side.
-      deskTops.add(box(w + 0.12, DESK_TOP, d + 0.3), local(parent, 0, top + DESK_TOP / 2, -0.15));
+      S(p.storey).deskTops.add(
+        box(w + 0.12, DESK_TOP, d + 0.3),
+        local(parent, 0, top + DESK_TOP / 2, -0.15),
+      );
       const surface = top + DESK_TOP;
       const mx = -w * 0.22;
-      monitors.add(box(0.08, 0.2, 0.08), local(parent, mx, surface + 0.1, -0.15));
-      monitors.add(box(0.52, 0.34, 0.04), local(parent, mx, surface + 0.37, -0.15));
-      screens.add(quad(0.46, 0.28), local(parent, mx, surface + 0.37, -0.172, Math.PI));
-      keyboards.add(box(0.42, 0.02, 0.14), local(parent, mx, surface + 0.01, -0.45));
+      S(p.storey).monitors.add(box(0.08, 0.2, 0.08), local(parent, mx, surface + 0.1, -0.15));
+      S(p.storey).monitors.add(box(0.52, 0.34, 0.04), local(parent, mx, surface + 0.37, -0.15));
+      S(p.storey).screens.add(quad(0.46, 0.28), local(parent, mx, surface + 0.37, -0.172, Math.PI));
+      S(p.storey).keyboards.add(box(0.42, 0.02, 0.14), local(parent, mx, surface + 0.01, -0.45));
     }
 
     // Framed windows and pictures along the outside walls.
@@ -386,17 +417,17 @@ export function buildBankDecor(
           const at = (off: number, y: number) =>
             place(cx + wall.n[0] * off, floor + y, cz + wall.n[1] * off, yaw);
           if (isWindow) {
-            frames.add(
+            S(storey).frames.add(
               box(WINDOW_W + 0.16, WINDOW_H + 0.16, 0.05),
               at(0.025, WINDOW_SILL + WINDOW_H / 2),
             );
-            frames.add(box(WINDOW_W + 0.34, 0.05, 0.14), at(0.07, WINDOW_SILL - 0.02));
-            panes.add(quad(WINDOW_W, WINDOW_H), at(0.055, WINDOW_SILL + WINDOW_H / 2));
-            frames.add(box(0.04, WINDOW_H, 0.02), at(0.06, WINDOW_SILL + WINDOW_H / 2));
-            frames.add(box(WINDOW_W, 0.04, 0.02), at(0.06, WINDOW_SILL + WINDOW_H / 2));
+            S(storey).frames.add(box(WINDOW_W + 0.34, 0.05, 0.14), at(0.07, WINDOW_SILL - 0.02));
+            S(storey).panes.add(quad(WINDOW_W, WINDOW_H), at(0.055, WINDOW_SILL + WINDOW_H / 2));
+            S(storey).frames.add(box(0.04, WINDOW_H, 0.02), at(0.06, WINDOW_SILL + WINDOW_H / 2));
+            S(storey).frames.add(box(WINDOW_W, 0.04, 0.02), at(0.06, WINDOW_SILL + WINDOW_H / 2));
           } else {
-            golds.add(box(PICTURE_W, PICTURE_H, 0.04), at(0.02, PICTURE_Y));
-            (art[count++ % art.length] as Batch).add(
+            S(storey).golds.add(box(PICTURE_W, PICTURE_H, 0.04), at(0.02, PICTURE_Y));
+            (S(storey).art[count++ % pictures.length] as Batch).add(
               quad(PICTURE_W - 0.12, PICTURE_H - 0.12),
               at(0.045, PICTURE_Y),
             );
@@ -432,41 +463,48 @@ export function buildBankDecor(
     };
     const floorY = (storey: number) => storey * h + 0.02;
     for (const spot of ceilingLightSpots(layout, site)) {
-      const storey = Math.floor(spot.y / h);
+      const storey = spot.storey;
       if (clear(spot.x, spot.z, storey, POOL))
-        pools.add(flatQuad(POOL, POOL), place(spot.x, floorY(storey), spot.z));
+        S(storey).pools.add(flatQuad(POOL, POOL), place(spot.x, floorY(storey), spot.z));
     }
     for (const p of furniture)
       if (p.piece === 'Light_Chandelier' && clear(p.x, p.z, p.storey, POOL_CHANDELIER))
-        pools.add(flatQuad(POOL_CHANDELIER, POOL_CHANDELIER), place(p.x, floorY(p.storey), p.z));
+        S(p.storey).pools.add(
+          flatQuad(POOL_CHANDELIER, POOL_CHANDELIER),
+          place(p.x, floorY(p.storey), p.z),
+        );
 
     // Soft shadows under things that stand on the floor.
     for (const p of furniture) {
       const b = p.bounds;
       if (NO_BLOB.test(p.piece) || b.maxY - b.minY < 0.3 || b.minY - p.storey * h > 0.1) continue;
-      blobs.add(
+      S(p.storey).blobs.add(
         flatQuad(b.maxX - b.minX + 0.5, b.maxZ - b.minZ + 0.5),
         place((b.minX + b.maxX) / 2, p.storey * h + 0.015, (b.minZ + b.maxZ) / 2),
       );
     }
+    const bank = new Group();
+    bank.name = `bank-decor-${layout.id}`;
+    for (const [storey, set] of sets) {
+      const group = new Group();
+      group.name = `storey-${storey}`;
+      group.userData = { bankTier: site.tier, storey };
+      addMesh(group, set.deskTops, wood, 'desk-tops');
+      addMesh(group, set.monitors, dark, 'monitors');
+      addMesh(group, set.keyboards, dark, 'keyboards');
+      addMesh(group, set.screens, screen, 'screens');
+      addMesh(group, set.frames, trim, 'window-frames');
+      addMesh(group, set.golds, gold, 'picture-frames');
+      addMesh(group, set.panes, pane, 'window-panes');
+      set.art.forEach((batch, i) =>
+        addMesh(group, batch, pictures[i] as Material, `pictures-${i}`),
+      );
+      addMesh(group, set.blobs, blob, 'soft-shadows', 1);
+      addMesh(group, set.pools, glow, 'light-pools', 2);
+      if (group.children.length) bank.add(group);
+    }
+    root.add(bank);
   }
-
-  const add = (batch: Batch, material: Material, name: string, order = 0) => {
-    const mesh = batch.mesh(material, name);
-    if (!mesh) return;
-    mesh.renderOrder = order;
-    root.add(mesh);
-  };
-  add(deskTops, wood, 'desk-tops');
-  add(monitors, dark, 'monitors');
-  add(keyboards, dark, 'keyboards');
-  add(screens, screen, 'screens');
-  add(frames, trim, 'window-frames');
-  add(golds, gold, 'picture-frames');
-  add(panes, pane, 'window-panes');
-  art.forEach((batch, i) => add(batch, pictures[i] as Material, `pictures-${i}`));
-  add(blobs, blob, 'soft-shadows', 1);
-  add(pools, glow, 'light-pools', 2);
 
   return {
     root,

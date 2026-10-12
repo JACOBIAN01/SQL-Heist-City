@@ -41,7 +41,7 @@ export function buildBankFurniture(kit: InteriorKit, map: GameMap): Group {
         parts.add(mesh);
       }
       for (const spot of lamps) {
-        if (Math.floor(spot.y / layout.storeyHeight) !== storey) continue;
+        if (spot.storey !== storey) continue;
         const lamp = kit.create(CEILING_LIGHT);
         lamp.position.set(spot.x, spot.y, spot.z);
         parts.add(lamp);
@@ -69,10 +69,10 @@ const LIGHT_SPACING = 4;
 export function ceilingLightSpots(
   layout: BankLayout,
   site: PlacedBank,
-): { x: number; y: number; z: number }[] {
+): { x: number; y: number; z: number; storey: number }[] {
   const hw = layout.width / 2;
   const hd = layout.depth / 2;
-  const spots: { x: number; y: number; z: number }[] = [];
+  const spots: { x: number; y: number; z: number; storey: number }[] = [];
   for (let storey = 0; storey < layout.storeys; storey++) {
     // Stairs arriving on this storey and leaving it both leave holes or headroom to keep clear.
     const stairs = (layout.stairs ?? [])
@@ -92,7 +92,7 @@ export function ceilingLightSpots(
           const maxZ = Math.max(w.from.z, w.to.z) + 0.6;
           return x > minX && x < maxX && z > minZ && z < maxZ;
         });
-        if (!nearStairs && !nearWall) spots.push({ x: site.x + x, y, z: site.z + z });
+        if (!nearStairs && !nearWall) spots.push({ x: site.x + x, y, z: site.z + z, storey });
       }
   }
   return spots;
