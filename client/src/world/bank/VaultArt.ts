@@ -32,6 +32,7 @@ import {
   type VaultView,
   type WallRun,
 } from '@heist/shared';
+import { mergeByMaterial } from '../../render/mergeByMaterial';
 import type { BankMaterials } from './bankMaterials';
 import { VAULT_TIMING, VaultDoorAnimation, type VaultEffect } from './vaultAnimation';
 
@@ -412,6 +413,8 @@ class Particles {
 
 interface VaultPieces {
   readonly id: string;
+  /** Holds all of this vault's art. */
+  readonly holder: Group;
   readonly rig: VaultDoorRig;
   /** Made when the server first says how many locks the vault has. */
   animation: VaultDoorAnimation | undefined;
@@ -450,17 +453,30 @@ export class VaultArt {
       const console_ = findAnchor(map, v.consoleId);
       if (!door || !console_) continue;
       const rig = buildVaultDoor(door, console_, materials);
-      this.root.add(rig.root);
       const layout = layouts.get(v.tier);
+      // Everything of one vault in one group, tagged with its bank and storey so BankLod can
+      // leave it out while nobody is near enough to see it.
+      const holder = new Group();
+      holder.name = `vault-art-${v.id}`;
+      holder.userData = {
+        bankTier: v.tier,
+        storey: Math.round(door.minY / (layout?.storeyHeight ?? 3)),
+      };
+      this.root.add(holder);
+      holder.add(rig.root);
       const spec = layout?.vaults?.find((s) => v.id.endsWith(`:${s.id}`));
       const site = map.banks?.find((b) => b.tier === v.tier);
       if (spec && site) {
         const floorY = spec.storey * (layout?.storeyHeight ?? 3);
-        this.root.add(
-          buildFittings(spec.fittings?.depositBoxes ?? [], 'deposit', site, floorY, materials),
-        );
-        this.root.add(
-          buildFittings(spec.fittings?.cashShelves ?? [], 'cash', site, floorY, materials),
+        holder.add(
+          mergeByMaterial(
+            buildFittings(spec.fittings?.depositBoxes ?? [], 'deposit', site, floorY, materials),
+            'deposit-boxes',
+          ),
+          mergeByMaterial(
+            buildFittings(spec.fittings?.cashShelves ?? [], 'cash', site, floorY, materials),
+            'cash-shelves',
+          ),
         );
       }
       // The keypad hangs on the wall beside the door, on the console side.
@@ -488,7 +504,7 @@ export class VaultArt {
         beacon,
       );
       dome.position.set(doorX + facing.x * 0.3, door.maxY + 0.3, doorZ + facing.z * 0.3);
-      this.root.add(dome);
+      holder.add(dome);
       const beam = new Mesh(
         new ConeGeometry(0.35, 1.2, 16, 1, true),
         new MeshBasicMaterial({
@@ -507,11 +523,12 @@ export class VaultArt {
       spinner.position.copy(dome.position);
       beam.position.set(0.6, 0, 0);
       spinner.add(beam);
-      this.root.add(spinner);
+      holder.add(spinner);
       const particles = new Particles();
-      this.root.add(particles.points);
+      holder.add(particles.points);
       this.vaults.push({
         id: v.id,
+        holder,
         rig,
         animation: undefined,
         keypad: undefined,
@@ -535,9 +552,9 @@ export class VaultArt {
       if (!v.animation || v.animation.locks !== view.locks) {
         // The lock count is a setting: the door's story and the keypad's lights follow it.
         v.animation = new VaultDoorAnimation(view.locks, BOLTS);
-        if (v.keypad) this.root.remove(v.keypad.group);
+        if (v.keypad) v.holder.remove(v.keypad.group);
         v.keypad = buildKeypad(v.keypadAt, v.facing, view.locks, this.materials);
-        this.root.add(v.keypad.group);
+        v.holder.add(v.keypad.group);
       }
       const effects = v.animation.observe(view.opened, now);
       if (effects.length > 0) v.crackFlashUntil = now + 0.6;

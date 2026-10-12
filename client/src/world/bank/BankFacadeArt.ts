@@ -9,6 +9,7 @@ import {
   SRGBColorSpace,
 } from 'three';
 import { BANK_LAYOUTS, type BankLayout, type GameMap, type PlacedBank } from '@heist/shared';
+import { mergeByMaterial } from '../../render/mergeByMaterial';
 import { SURFACES, type BankMaterials, type BankSurface } from './bankMaterials';
 
 /** Building skin: the outer face of the stone wall is at this distance from the footprint's edge. */
@@ -203,8 +204,10 @@ export function buildFacade(
     put(solid(0.3, 0.07, 0.06, 'brass', materials), x, 0.76, 0.41); // cash tray
   }
 
+  // One mesh per material: the facade's forty-odd pieces cost a few draw calls.
+  const flat = mergeByMaterial(root, root.name);
   const facade: FacadeArt = {
-    root,
+    root: flat,
     setNight(night) {
       for (const g of glows) g.material.emissiveIntensity = g.day + (g.night - g.day) * night;
     },

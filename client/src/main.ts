@@ -87,6 +87,7 @@ import {
 import { buildBankFurniture } from './world/bank/BankFurnitureArt';
 import { buildBankFacades } from './world/bank/BankFacadeArt';
 import { buildBankDecor } from './world/bank/BankDecorArt';
+import { BankLod } from './world/bank/BankLod';
 import { buildBankFixtures } from './world/bank/BankFixturesArt';
 import { buildBankShells, insideDressedBank } from './world/bank/BankShellArt';
 import { createBankMaterials } from './world/bank/bankMaterials';
@@ -124,17 +125,27 @@ const fixedHour = hourParam !== null && hourParam !== '' ? Number(hourParam) : u
 const bankMaterials = MAP.banks?.length ? createBankMaterials() : undefined;
 const mapObject = buildMapObject(MAP, bankMaterials ? insideDressedBank(MAP) : undefined);
 scene.add(mapObject);
+// Interiors are drawn only near a bank, and only the storeys that can be seen (BankLod).
+const bankLod = new BankLod(MAP.banks ?? [], BANK_LAYOUTS);
 if (bankMaterials) {
   scene.add(buildBankShells(MAP, bankMaterials));
-  scene.add(buildBankFixtures(MAP, bankMaterials));
+  const fixtures = buildBankFixtures(MAP, bankMaterials);
+  scene.add(fixtures);
+  bankLod.add(fixtures);
 }
 const decor = bankMaterials ? buildBankDecor(MAP) : undefined;
-if (decor) scene.add(decor.root);
+if (decor) {
+  scene.add(decor.root);
+  bankLod.add(decor.root);
+}
 const facades = bankMaterials ? buildBankFacades(MAP, bankMaterials) : undefined;
 if (facades) scene.add(facades.root);
 // Round vault doors that turn, unbolt and swing open as locks are cracked; keypads and alarms.
 const vaultArt = bankMaterials ? new VaultArt(MAP, bankMaterials) : undefined;
-if (vaultArt) scene.add(vaultArt.root);
+if (vaultArt) {
+  scene.add(vaultArt.root);
+  bankLod.add(vaultArt.root);
+}
 // ?vaultdemo cracks every vault's three locks offline, 3 s apart, to watch the door (no server needed).
 if (vaultArt && params.has('vaultdemo')) {
   const views = (opened: number) =>
@@ -208,7 +219,9 @@ if (MAP.banks?.length)
     .then((kit) => {
       interiorKit = kit;
       kit.nightGlow.value = lighting.state.night;
-      scene.add(buildBankFurniture(kit, MAP));
+      const furniture = buildBankFurniture(kit, MAP);
+      scene.add(furniture);
+      bankLod.add(furniture);
       hideFurnitureBoxes(mapObject);
     })
     .catch((error: unknown) => console.warn('bank furniture unavailable', error));
@@ -713,6 +726,7 @@ renderer.setAnimationLoop((now) => {
     facades?.setNight(lighting.state.night);
     decor?.setNight(lighting.state.night);
   }
+  bankLod.update(player.body.x, player.body.y, player.body.z);
   camera.getWorldDirection(earForward);
   earUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
   audio.update({

@@ -26,24 +26,35 @@ describe('bank facade', () => {
       if (m?.name === 'bank-plaque') plaque = o as Mesh;
     });
     expect(plaque).toBeDefined();
-    expect(plaque?.position.x).toBeCloseTo(site.x);
-    expect(plaque?.position.y).toBeGreaterThan(3);
+    const box = new Box3().setFromObject(plaque as Mesh);
+    expect((box.min.x + box.max.x) / 2).toBeCloseTo(site.x);
+    expect(box.min.y).toBeGreaterThan(3);
   });
 
   it('keeps the doorway clear: nothing but the sill stands between the jambs', () => {
     const half = BANK_1.entrance.width / 2;
-    const leaves = art.root.children.filter((c) => {
-      const b = new Box3().setFromObject(c);
-      return (
-        b.min.y < 1 &&
-        b.max.y > 1 &&
-        b.max.x > site.x - half + 0.2 &&
-        b.min.x < site.x + half - 0.2 &&
-        b.max.z > front + 0.001
-      );
+    let blocking = 0;
+    art.root.traverse((o) => {
+      const position = (o as Mesh).geometry?.getAttribute('position');
+      if (!position) return;
+      for (let i = 0; i < position.count; i++) {
+        const [x, y, z] = [position.getX(i), position.getY(i), position.getZ(i)];
+        if (
+          y > 0.1 &&
+          y < BANK_1.entrance.height - 0.05 &&
+          x > site.x - half + 0.2 &&
+          x < site.x + half - 0.2 &&
+          z > front + 0.001
+        )
+          blocking++;
+      }
     });
     // The open leaves swing inside the wall line (z < front), so none block the way.
-    expect(leaves).toHaveLength(0);
+    expect(blocking).toBe(0);
+  });
+
+  it('merges its pieces into a few meshes, one per material', () => {
+    expect(art.root.children.length).toBeLessThan(12);
   });
 
   it('brightens its lanterns, plaque and cash machine at night', () => {
