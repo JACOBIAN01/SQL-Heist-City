@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_HEIST_SETTINGS } from '../../config/heist';
 import { DEFAULT_MOVEMENT_SETTINGS } from '../../config/movement';
 import { SIM_DT } from '../../sim/input';
 import { createBody, stepBody, type BodyState } from '../../sim/movement';
@@ -148,6 +149,26 @@ describe.each([...BANK_LAYOUTS.values()].map((b) => [b.name, b] as const))(
             'furniture blocks the street door',
           ).toBe(false);
         }
+      }
+    });
+
+    it('lays loose cash on desk tops in the offices, each pile in reach of free floor', () => {
+      const spots = compileBankWorld(layout, { x: 0, z: 0 }).cashSpots;
+      expect(spots.length).toBeGreaterThanOrEqual(3);
+      const reach = DEFAULT_HEIST_SETTINGS.bagPickupRadius;
+      for (const c of spots) {
+        expect(c.tier).toBe(layout.tier);
+        const floor = Math.floor(c.y / layout.storeyHeight) * layout.storeyHeight;
+        // On a desk: above the floor, not inside anything solid.
+        expect(c.y - floor).toBeGreaterThan(0.5);
+        expect(solidAt(map.boxes, c.x, c.y + 0.05, c.z), `cash at ${c.x},${c.z}`).toBe(false);
+        // Somewhere a player can stand, close enough to pick it up.
+        const standable = Array.from({ length: 16 }, (_, i) => (i / 16) * Math.PI * 2).some((a) => {
+          const x = c.x + Math.cos(a) * (reach - 0.3);
+          const z = c.z + Math.sin(a) * (reach - 0.3);
+          return !solidAt(map.boxes, x, floor + 0.3, z) && !solidAt(map.boxes, x, floor + 1.2, z);
+        });
+        expect(standable, `cash at ${c.x},${c.z} cannot be reached`).toBe(true);
       }
     });
 

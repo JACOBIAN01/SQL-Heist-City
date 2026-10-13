@@ -1,5 +1,12 @@
 import type { BankLayout, FurnitureSpec } from './BankLayout';
-import { boardTable, deskRow, shelfWall, waitingCorner, workstation } from './dressing';
+import {
+  boardTable,
+  cashOnDesks,
+  deskRow,
+  shelfWall,
+  waitingCorner,
+  workstation,
+} from './dressing';
 
 /**
  * Bank 5 "Federal Vault": the 28 × 28 m, six-storey tier-5 bank in the
@@ -121,7 +128,10 @@ export const BANK_5: BankLayout = {
  * Tier 5: white marble outside and marble walls inside, brass everywhere,
  * chandeliers over every public room. The richest bank looks it.
  */
-function dressing(): Pick<BankLayout, 'cladding' | 'rooms' | 'facade' | 'fixtures' | 'furniture'> {
+function dressing(): Pick<
+  BankLayout,
+  'cladding' | 'rooms' | 'facade' | 'fixtures' | 'furniture' | 'cashSpots'
+> {
   const front = 13.2; // couches against the front wall
   const back = -13.8; // inner face of the back wall
   const lift = (storey: number): FurnitureSpec => ({
@@ -218,5 +228,7 @@ function dressing(): Pick<BankLayout, 'cladding' | 'rooms' | 'facade' | 'fixture
       { kind: 'queuePosts', storey: 0, x: 0, z: 0, width: 6, facing: '+z' },
     ],
     furniture,
+    // Loose cash on every other desk (12.1).
+    cashSpots: cashOnDesks(furniture),
   };
 }

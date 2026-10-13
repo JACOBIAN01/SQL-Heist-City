@@ -20,6 +20,11 @@ describe.each(DRESSED.map((b) => [b.name, b] as const))('dressed bank: %s', (_na
     for (let s = 0; s < layout.storeys; s++) expect(storeys.has(s), `storey ${s}`).toBe(true);
   });
 
+  it('lays loose cash on its desks', () => {
+    const desks = (layout.furniture ?? []).filter((f) => f.desk).length;
+    expect(layout.cashSpots?.length).toBe(Math.ceil(desks / 2));
+  });
+
   it('fills the vault with deposit boxes and cash', () => {
     const fittings = layout.vaults?.[0]?.fittings;
     expect(fittings?.depositBoxes?.length).toBeGreaterThan(0);

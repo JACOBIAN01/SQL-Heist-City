@@ -1,5 +1,5 @@
 import type { BankLayout, FurnitureSpec } from './BankLayout';
-import { boardTable, deskRow, shelfWall, waitingCorner } from './dressing';
+import { boardTable, cashOnDesks, deskRow, shelfWall, waitingCorner } from './dressing';
 
 /**
  * Bank 3 "Metro Capital": a 28 × 20 m, four-storey tier-3 bank, wide and
@@ -109,7 +109,10 @@ export const BANK_3: BankLayout = {
  * the offices. The vault sits above the door, so the lobby below is the grand
  * room: a marble hall with columns and chandeliers.
  */
-function dressing(): Pick<BankLayout, 'cladding' | 'rooms' | 'facade' | 'fixtures' | 'furniture'> {
+function dressing(): Pick<
+  BankLayout,
+  'cladding' | 'rooms' | 'facade' | 'fixtures' | 'furniture' | 'cashSpots'
+> {
   const front = 9.2; // couches against the front wall
   const back = -9.8; // inner face of the back wall
   const lift = (storey: number): FurnitureSpec => ({
@@ -185,5 +188,7 @@ function dressing(): Pick<BankLayout, 'cladding' | 'rooms' | 'facade' | 'fixture
       { kind: 'queuePosts', storey: 0, x: -6, z: 0.5, width: 6, facing: '+z' },
     ],
     furniture,
+    // Loose cash on every other desk (12.1).
+    cashSpots: cashOnDesks(furniture),
   };
 }

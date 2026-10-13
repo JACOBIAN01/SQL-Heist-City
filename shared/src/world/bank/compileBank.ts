@@ -3,6 +3,7 @@ import {
   type MapAnchor,
   type MapBox,
   type MapBoxKind,
+  type MapCashSpot,
   type MapDoor,
   type MapVault,
 } from '../map';
@@ -56,6 +57,12 @@ export function validateBank(layout: BankLayout): void {
     seen.add(a.id);
     if (a.storey < 0 || a.storey >= layout.storeys) fail(`anchor ${a.id} is on a missing storey`);
     if (Math.abs(a.x) > hw || Math.abs(a.z) > hd) fail(`anchor ${a.id} leaves the footprint`);
+  }
+  for (const c of layout.cashSpots ?? []) {
+    const where = `cash at (${c.x},${c.z}) on storey ${c.storey}`;
+    if (c.storey < 0 || c.storey >= layout.storeys) fail(`${where} is on a missing storey`);
+    if (Math.abs(c.x) > hw || Math.abs(c.z) > hd) fail(`${where} leaves the footprint`);
+    if ((c.y ?? 0) < 0 || (c.y ?? 0) > layout.storeyHeight - 0.5) fail(`${where} floats`);
   }
   for (const v of layout.vaults ?? []) {
     if (v.storey < 0 || v.storey >= layout.storeys) fail(`vault ${v.id} is on a missing storey`);
@@ -301,7 +308,18 @@ export function compileBankWorld(layout: BankLayout, at: Point2) {
     boxes: compileBank(layout, at),
     anchors: compileAnchors(layout, at),
     ...compileVaults(layout, at),
+    cashSpots: compileCashSpots(layout, at),
   };
+}
+
+/** The bank's loose-cash piles in world coordinates. */
+export function compileCashSpots(layout: BankLayout, at: Point2): MapCashSpot[] {
+  return (layout.cashSpots ?? []).map((c) => ({
+    x: at.x + c.x,
+    y: c.storey * layout.storeyHeight + (c.y ?? 0),
+    z: at.z + c.z,
+    tier: layout.tier,
+  }));
 }
 
 function explicitAnchors(layout: BankLayout, at: Point2): MapAnchor[] {

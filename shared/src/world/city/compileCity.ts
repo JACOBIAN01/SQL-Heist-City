@@ -6,6 +6,7 @@ import {
   type MapAnchor,
   type MapBox,
   type MapDoor,
+  type MapCashSpot,
   type MapVault,
   type PlacedBank,
 } from '../map';
@@ -53,6 +54,7 @@ export function compileCity(
   const anchors: MapAnchor[] = [];
   const doors: MapDoor[] = [];
   const vaults: MapVault[] = [];
+  const cashSpots: MapCashSpot[] = [];
 
   for (const block of city.blocks) {
     const { outer: o, inner: i } = block;
@@ -84,6 +86,7 @@ export function compileCity(
     anchors.push(...world.anchors);
     doors.push(...world.doors);
     vaults.push(...world.vaults);
+    cashSpots.push(...world.cashSpots);
   }
 
   for (const s of city.safehouses) {
@@ -111,6 +114,7 @@ export function compileCity(
     anchors,
     doors,
     vaults,
+    cashSpots,
     banks,
     city,
   };

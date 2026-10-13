@@ -1,5 +1,5 @@
 import type { BankLayout, FloorPlan, FurnitureSpec } from './BankLayout';
-import { boardTable, deskRow, shelfWall, waitingCorner } from './dressing';
+import { boardTable, cashOnDesks, deskRow, shelfWall, waitingCorner } from './dressing';
 
 /**
  * Bank 2 "City Trust": a 26 × 22 m, four-storey tier-2 bank. One storey
@@ -108,7 +108,10 @@ function offices() {
  * panelling behind the counter, plain carpeted floors above, the executive
  * floor in wood. (Pillars and desks are furniture, not blocks.)
  */
-function dressing(): Pick<BankLayout, 'cladding' | 'rooms' | 'facade' | 'fixtures' | 'furniture'> {
+function dressing(): Pick<
+  BankLayout,
+  'cladding' | 'rooms' | 'facade' | 'fixtures' | 'furniture' | 'cashSpots'
+> {
   const front = 10.2; // couches against the front wall
   const back = -10.8; // inner face of the back wall
   const furniture: FurnitureSpec[] = [
@@ -181,5 +184,7 @@ function dressing(): Pick<BankLayout, 'cladding' | 'rooms' | 'facade' | 'fixture
       { kind: 'queuePosts', storey: 0, x: 0, z: 2.5, width: 6, facing: '+z' },
     ],
     furniture,
+    // Loose cash on every other desk (12.1).
+    cashSpots: cashOnDesks(furniture),
   };
 }

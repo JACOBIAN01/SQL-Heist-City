@@ -72,6 +72,12 @@ export interface LootSpot {
   readonly z: number;
 }
 
+/** A pile of loose cash in a bank's offices, laid out again at the start of every round. */
+export interface MapCashSpot extends LootSpot {
+  /** The bank's tier: decides how much cash lies here. */
+  readonly tier: number;
+}
+
 /** A vault: locks guard the door, and loot appears at `loot` spots once it opens. */
 export interface MapVault {
   readonly id: string;
@@ -117,6 +123,8 @@ export interface GameMap {
   readonly unarmedStart?: boolean;
   readonly doors?: readonly MapDoor[];
   readonly vaults?: readonly MapVault[];
+  /** Loose cash in bank offices (12.1). */
+  readonly cashSpots?: readonly MapCashSpot[];
   /** Banks with a real interior: the client dresses them (furniture) from their layouts. */
   readonly banks?: readonly PlacedBank[];
   /** Cars parked at the start of each round. */

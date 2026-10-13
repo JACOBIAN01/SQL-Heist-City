@@ -1,4 +1,6 @@
-import type { FurnitureSpec, Heading } from './BankLayout';
+import type { CashSpotSpec, FurnitureSpec, Heading } from './BankLayout';
+import { FACING_YAW } from './furniture';
+import { FURNITURE_PIECES, isFurniturePiece } from './furniturePieces';
 
 /**
  * Small builders for the furniture lists in the bank layouts, so a bank's
@@ -107,4 +109,33 @@ export function boardTable(
     );
   }
   return out;
+}
+
+/** Height of the desk top the client lays over a desk cabinet (BankDecorArt). */
+const DESK_TOP = 0.05;
+
+/**
+ * Loose cash on every `every`-th desk (12.1): a pile on the desk top, on the
+ * side away from the monitor. Derived from the furniture, so moving a desk
+ * moves its cash.
+ */
+export function cashOnDesks(furniture: readonly FurnitureSpec[], every = 2): CashSpotSpec[] {
+  return furniture
+    .filter((f) => f.desk && isFurniturePiece(f.piece))
+    .filter((_, i) => i % every === 0)
+    .map((f) => {
+      const piece = FURNITURE_PIECES[f.piece as keyof typeof FURNITURE_PIECES];
+      const scale = f.scale ?? 1;
+      const width = (piece.max[0] - piece.min[0]) * scale;
+      // A quarter of the desk to the piece's +x, a little to its front, turned like the desk.
+      const lx = width * 0.25;
+      const lz = 0.12;
+      const yaw = FACING_YAW[f.facing ?? '+z'];
+      return {
+        storey: f.storey,
+        x: f.x + lx * Math.cos(yaw) + lz * Math.sin(yaw),
+        z: f.z - lx * Math.sin(yaw) + lz * Math.cos(yaw),
+        y: piece.max[1] * scale + DESK_TOP,
+      };
+    });
 }

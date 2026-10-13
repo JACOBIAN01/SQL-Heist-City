@@ -93,6 +93,8 @@ export interface BagView {
   readonly y: number;
   readonly z: number;
   readonly amount: number;
+  /** Loose office cash (12.1), drawn as a stack of notes and left off the minimap. */
+  readonly loose?: true;
 }
 
 /** Bags that appeared or vanished. The full list (all in `add`) goes to a player who joins. */

@@ -1,5 +1,5 @@
 import type { BankLayout, FurnitureSpec, StairSpec } from './BankLayout';
-import { boardTable, deskRow, shelfWall, waitingCorner } from './dressing';
+import { boardTable, cashOnDesks, deskRow, shelfWall, waitingCorner } from './dressing';
 
 /**
  * Bank 4 "Grand Reserve": a 28 × 24 m, five-storey tier-4 bank. The first
@@ -119,7 +119,10 @@ export const BANK_4: BankLayout = {
  * wood in the offices, chandeliers over the hall. Two stair cores in the back
  * corners and a lift at the front-right stay clear.
  */
-function dressing(): Pick<BankLayout, 'cladding' | 'rooms' | 'facade' | 'fixtures' | 'furniture'> {
+function dressing(): Pick<
+  BankLayout,
+  'cladding' | 'rooms' | 'facade' | 'fixtures' | 'furniture' | 'cashSpots'
+> {
   const front = 11.2; // couches against the front wall
   const back = -11.8; // inner face of the back wall
   const lift = (storey: number): FurnitureSpec => ({
@@ -198,6 +201,8 @@ function dressing(): Pick<BankLayout, 'cladding' | 'rooms' | 'facade' | 'fixture
       { kind: 'queuePosts', storey: 0, x: 0, z: 1, width: 6, facing: '+z' },
     ],
     furniture,
+    // Loose cash on every other desk (12.1).
+    cashSpots: cashOnDesks(furniture),
   };
 }
 

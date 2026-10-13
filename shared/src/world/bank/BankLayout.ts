@@ -148,6 +148,18 @@ export interface FurnitureSpec {
   readonly desk?: boolean;
 }
 
+/**
+ * A pile of loose cash lying in the offices (12.1): small money on desks and
+ * shelves, there from the start of every round, for anyone who walks over it.
+ * `y` is its height above the storey floor (a desk top).
+ */
+export interface CashSpotSpec {
+  readonly storey: number;
+  readonly x: number;
+  readonly z: number;
+  readonly y?: number;
+}
+
 /** What a floor is laid with (art only: every finish walks the same). */
 export type FloorFinish = 'marble' | 'wood' | 'carpet' | 'tile' | 'steel';
 /** What the walls of a room are clad in. */
@@ -231,6 +243,8 @@ export interface BankLayout {
   readonly facade?: FacadeSpec;
   /** Teller screens and queue posts (Phase 11.5). */
   readonly fixtures?: readonly FixtureSpec[];
+  /** Loose cash in the offices, respawned each round (12.1). */
+  readonly cashSpots?: readonly CashSpotSpec[];
   /** The outside walls' stone. Defaults to plain stone; richer tiers are clad in finer stone. */
   readonly cladding?: Cladding;
   /** Floor and wall finishes by room (Phase 11.3). */

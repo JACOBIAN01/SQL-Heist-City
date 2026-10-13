@@ -7,7 +7,7 @@ import { mapWithClosedDoors } from '../variant';
 import { HEIST_MAP } from '../heistMap';
 import type { BankLayout } from './BankLayout';
 import { BANK_1 } from './bank1';
-import { compileAnchors, compileBank, validateBank } from './compileBank';
+import { compileAnchors, compileBank, compileBankWorld, validateBank } from './compileBank';
 
 const forward = (seq: number, yaw: number, strafe = 0) => ({
   seq,
@@ -344,5 +344,25 @@ describe('mapWithClosedDoors', () => {
   });
   it('ignores unknown door ids', () => {
     expect(mapWithClosedDoors(HEIST_MAP, ['nope'])).toBe(HEIST_MAP);
+  });
+});
+
+describe('loose cash spots (12.1)', () => {
+  const layout = (cashSpots: NonNullable<BankLayout['cashSpots']>): BankLayout => ({
+    ...BANK_1,
+    cashSpots,
+  });
+
+  it('places them in world coordinates, at their height above the storey floor, with the tier', () => {
+    const world = compileBankWorld(layout([{ storey: 1, x: 2, z: -3, y: 0.8 }]), { x: 10, z: 20 });
+    expect(world.cashSpots).toEqual([{ x: 12, y: 3.8, z: 17, tier: 1 }]);
+  });
+
+  it('refuses a pile on a missing storey, outside the walls, or in the air', () => {
+    expect(() => validateBank(layout([{ storey: 7, x: 0, z: 0 }]))).toThrow(/missing storey/);
+    expect(() => validateBank(layout([{ storey: 0, x: 40, z: 0 }]))).toThrow(
+      /leaves the footprint/,
+    );
+    expect(() => validateBank(layout([{ storey: 0, x: 0, z: 0, y: 2.8 }]))).toThrow(/floats/);
   });
 });

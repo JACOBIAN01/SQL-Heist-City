@@ -1,4 +1,98 @@
-import type { BankLayout } from './BankLayout';
+import type { BankLayout, FurnitureSpec } from './BankLayout';
+import { cashOnDesks } from './dressing';
+
+/** Bank 1's furniture: declared first so the loose cash can be laid on its desks. */
+const FURNITURE: readonly FurnitureSpec[] = [
+  // Waiting corner under the front wall.
+  { piece: 'Couch_Medium1', storey: 0, x: -9, z: 8.2, facing: '-z', solid: true },
+  { piece: 'Couch_Medium1', storey: 0, x: -5.5, z: 8.2, facing: '-z', solid: true },
+  { piece: 'Table_RoundSmall', storey: 0, x: -7.2, z: 7, scale: 0.6, solid: true },
+  { piece: 'Carpet_1', storey: 0, x: -7.2, z: 6.9, facing: '+x' },
+  { piece: 'Houseplant_8', storey: 0, x: -11.3, z: 8.2, scale: 1.6 },
+  { piece: 'Houseplant_8', storey: 0, x: -3.9, z: 8.2, scale: 1.6 },
+  // Columns flank the door and the lobby's middle.
+  { piece: 'Column_Round3', storey: 0, x: -3, z: 8.3, solid: true },
+  { piece: 'Column_Round3', storey: 0, x: 3, z: 8.3, solid: true },
+  { piece: 'Column_Round3', storey: 0, x: -3.2, z: 3.4, solid: true },
+  { piece: 'Column_Round3', storey: 0, x: 3.2, z: 3.4, solid: true },
+  // The lift: doors on the east wall, a lamp over them.
+  { piece: 'Door_Double', storey: 0, x: 11.65, z: 5, facing: '-x' },
+  { piece: 'Light_Small', storey: 0, x: 11.55, z: 5, y: 2.3 },
+  { piece: 'Houseplant_6', storey: 0, x: 11.2, z: 7.6, scale: 1.5 },
+  // Tellers: a chair and a desk lamp at each window.
+  { piece: 'Chair_2', storey: 0, x: -7.2, z: -3.3, solid: true },
+  { piece: 'Chair_2', storey: 0, x: -5.5, z: -3.3, solid: true },
+  { piece: 'Chair_2', storey: 0, x: -3.8, z: -3.3, solid: true },
+  { piece: 'Chair_2', storey: 0, x: 0.5, z: -3.3, solid: true },
+  { piece: 'Light_Desk', storey: 0, x: -7.2, z: -2, y: 1.1, facing: '-z' },
+  { piece: 'Light_Desk', storey: 0, x: -3.8, z: -2, y: 1.1, facing: '-z' },
+  // Ledgers and files on the back wall.
+  { piece: 'Shelf_Large', storey: 0, x: -5, z: -8.6, solid: true },
+  { piece: 'Shelf_Large', storey: 0, x: -3.2, z: -8.6, solid: true },
+  { piece: 'Drawer_3', storey: 0, x: -0.4, z: -8.6, solid: true },
+  { piece: 'Bookshelf', storey: 0, x: 2.2, z: -8.6, solid: true },
+  { piece: 'Trashcan_Cylindric', storey: 0, x: -1.3, z: -3.4 },
+  // The security room: two desks on its front wall, files on the back wall.
+  { piece: 'Drawer_2', storey: 0, x: 6.5, z: -1.7, facing: '-z', solid: true, desk: true },
+  { piece: 'Drawer_2', storey: 0, x: 9.5, z: -1.7, facing: '-z', solid: true, desk: true },
+  { piece: 'Chair_3', storey: 0, x: 6.5, z: -2.6, solid: true },
+  { piece: 'Chair_3', storey: 0, x: 9.5, z: -2.6, solid: true },
+  { piece: 'Light_Desk', storey: 0, x: 7, z: -1.7, y: 0.65, facing: '-z' },
+  { piece: 'Shelf_Large', storey: 0, x: 7, z: -8.6, solid: true },
+  { piece: 'Shelf_Large', storey: 0, x: 9, z: -8.6, solid: true },
+  { piece: 'Bookshelf', storey: 0, x: 11, z: -8.6, solid: true },
+  { piece: 'Houseplant_8', storey: 0, x: 11.3, z: -1.7, scale: 1.6 },
+  // Storey 1, open-plan offices: two rows of desks with chairs and lamps, files on the east
+  // wall, a meeting table in the front corner. Clear of both flights and the lift.
+  ...[-3, 0, 3, 6].flatMap((x) => [
+    { piece: 'Drawer_3', storey: 1, x, z: 1.5, facing: '-z', solid: true, desk: true } as const,
+    { piece: 'Chair_3', storey: 1, x, z: 2.5, facing: '-z', solid: true } as const,
+    { piece: 'Light_Desk', storey: 1, x: x + 0.7, z: 1.5, y: 0.79, facing: '-z' } as const,
+  ]),
+  ...[-2.5, 0.5, 3.5, 6.5].flatMap((x) => [
+    { piece: 'Drawer_3', storey: 1, x, z: -3.5, facing: '-z', solid: true, desk: true } as const,
+    { piece: 'Chair_3', storey: 1, x, z: -2.5, facing: '-z', solid: true } as const,
+    { piece: 'Light_Desk', storey: 1, x: x + 0.7, z: -3.5, y: 0.79, facing: '-z' } as const,
+  ]),
+  { piece: 'Bookshelf', storey: 1, x: 11.6, z: -7.2, facing: '-x', solid: true },
+  { piece: 'Bookshelf', storey: 1, x: 11.6, z: -5.8, facing: '-x', solid: true },
+  { piece: 'Shelf_Large', storey: 1, x: 11.6, z: -3.9, facing: '-x', solid: true },
+  { piece: 'Shelf_Large', storey: 1, x: 11.6, z: -2, facing: '-x', solid: true },
+  { piece: 'Houseplant_6', storey: 1, x: 11.2, z: 7.6, scale: 1.5 },
+  { piece: 'Door_Double', storey: 1, x: 11.65, z: 5, facing: '-x' },
+  { piece: 'Table_RoundLarge', storey: 1, x: -7, z: 5.5, scale: 1.3, solid: true },
+  ...[-8.2, -7, -5.8].flatMap((x) => [
+    { piece: 'Chair_2', storey: 1, x, z: 4.4, solid: true } as const,
+    { piece: 'Chair_2', storey: 1, x, z: 6.6, facing: '-z', solid: true } as const,
+  ]),
+  { piece: 'Carpet_1', storey: 1, x: -7, z: 5.5, facing: '+x' },
+  { piece: 'Houseplant_8', storey: 1, x: -11.3, z: 8.2, scale: 1.6 },
+  { piece: 'Trashcan_Cylindric', storey: 1, x: -2, z: -1.4 },
+  { piece: 'Light_Chandelier', storey: 1, x: -7, z: 5.5 },
+  // Storey 2, the executive floor: a boardroom table with eight chairs, couches, a wall of
+  // files, and a lounge by the lift.
+  { piece: 'Table_RoundLarge', storey: 2, x: -3, z: 5, scale: 1.8, solid: true },
+  ...[-4.2, -3, -1.8].flatMap((x) => [
+    { piece: 'Chair_3', storey: 2, x, z: 3.4, solid: true } as const,
+    { piece: 'Chair_3', storey: 2, x, z: 6.6, facing: '-z', solid: true } as const,
+  ]),
+  { piece: 'Chair_3', storey: 2, x: -5.9, z: 5, facing: '+x', solid: true },
+  { piece: 'Chair_3', storey: 2, x: -0.1, z: 5, facing: '-x', solid: true },
+  { piece: 'Light_Chandelier', storey: 2, x: -3, z: 5 },
+  { piece: 'Couch_Large1', storey: 2, x: -11, z: 1.5, facing: '+x', solid: true },
+  { piece: 'Table_RoundSmall', storey: 2, x: -9.6, z: 1.5, scale: 0.55, solid: true },
+  { piece: 'Houseplant_8', storey: 2, x: -11.3, z: 8.2, scale: 1.6 },
+  { piece: 'Shelf_Large', storey: 2, x: -4.2, z: -8.6, solid: true },
+  { piece: 'Shelf_Large', storey: 2, x: -2.4, z: -8.6, solid: true },
+  { piece: 'Bookshelf', storey: 2, x: -0.6, z: -8.6, solid: true },
+  { piece: 'Carpet_Round', storey: 2, x: -3, z: 5, scale: 1.8 },
+  { piece: 'Couch_Medium1', storey: 2, x: 7, z: 8.2, facing: '-z', solid: true },
+  { piece: 'Table_RoundSmall', storey: 2, x: 7, z: 6.6, scale: 0.55, solid: true },
+  { piece: 'Houseplant_6', storey: 2, x: 11.2, z: 7.6, scale: 1.5 },
+  { piece: 'Door_Double', storey: 2, x: 11.65, z: 5, facing: '-x' },
+  { piece: 'Light_Chandelier', storey: 0, x: -7, z: 4 },
+  { piece: 'Light_Chandelier', storey: 0, x: 2, z: 4 },
+];
 
 /**
  * Bank 1 "Corner Savings": a 24 × 18 m, three-storey starter bank. 7.1 lays
@@ -107,95 +201,7 @@ export const BANK_1: BankLayout = {
     { kind: 'queuePosts', storey: 0, x: -3, z: 1, width: 7.2, facing: '+z' },
     { kind: 'queuePosts', storey: 0, x: -6.6, z: 2.5, width: 3, facing: '+x' },
   ],
-  furniture: [
-    // Waiting corner under the front wall.
-    { piece: 'Couch_Medium1', storey: 0, x: -9, z: 8.2, facing: '-z', solid: true },
-    { piece: 'Couch_Medium1', storey: 0, x: -5.5, z: 8.2, facing: '-z', solid: true },
-    { piece: 'Table_RoundSmall', storey: 0, x: -7.2, z: 7, scale: 0.6, solid: true },
-    { piece: 'Carpet_1', storey: 0, x: -7.2, z: 6.9, facing: '+x' },
-    { piece: 'Houseplant_8', storey: 0, x: -11.3, z: 8.2, scale: 1.6 },
-    { piece: 'Houseplant_8', storey: 0, x: -3.9, z: 8.2, scale: 1.6 },
-    // Columns flank the door and the lobby's middle.
-    { piece: 'Column_Round3', storey: 0, x: -3, z: 8.3, solid: true },
-    { piece: 'Column_Round3', storey: 0, x: 3, z: 8.3, solid: true },
-    { piece: 'Column_Round3', storey: 0, x: -3.2, z: 3.4, solid: true },
-    { piece: 'Column_Round3', storey: 0, x: 3.2, z: 3.4, solid: true },
-    // The lift: doors on the east wall, a lamp over them.
-    { piece: 'Door_Double', storey: 0, x: 11.65, z: 5, facing: '-x' },
-    { piece: 'Light_Small', storey: 0, x: 11.55, z: 5, y: 2.3 },
-    { piece: 'Houseplant_6', storey: 0, x: 11.2, z: 7.6, scale: 1.5 },
-    // Tellers: a chair and a desk lamp at each window.
-    { piece: 'Chair_2', storey: 0, x: -7.2, z: -3.3, solid: true },
-    { piece: 'Chair_2', storey: 0, x: -5.5, z: -3.3, solid: true },
-    { piece: 'Chair_2', storey: 0, x: -3.8, z: -3.3, solid: true },
-    { piece: 'Chair_2', storey: 0, x: 0.5, z: -3.3, solid: true },
-    { piece: 'Light_Desk', storey: 0, x: -7.2, z: -2, y: 1.1, facing: '-z' },
-    { piece: 'Light_Desk', storey: 0, x: -3.8, z: -2, y: 1.1, facing: '-z' },
-    // Ledgers and files on the back wall.
-    { piece: 'Shelf_Large', storey: 0, x: -5, z: -8.6, solid: true },
-    { piece: 'Shelf_Large', storey: 0, x: -3.2, z: -8.6, solid: true },
-    { piece: 'Drawer_3', storey: 0, x: -0.4, z: -8.6, solid: true },
-    { piece: 'Bookshelf', storey: 0, x: 2.2, z: -8.6, solid: true },
-    { piece: 'Trashcan_Cylindric', storey: 0, x: -1.3, z: -3.4 },
-    // The security room: two desks on its front wall, files on the back wall.
-    { piece: 'Drawer_2', storey: 0, x: 6.5, z: -1.7, facing: '-z', solid: true, desk: true },
-    { piece: 'Drawer_2', storey: 0, x: 9.5, z: -1.7, facing: '-z', solid: true, desk: true },
-    { piece: 'Chair_3', storey: 0, x: 6.5, z: -2.6, solid: true },
-    { piece: 'Chair_3', storey: 0, x: 9.5, z: -2.6, solid: true },
-    { piece: 'Light_Desk', storey: 0, x: 7, z: -1.7, y: 0.65, facing: '-z' },
-    { piece: 'Shelf_Large', storey: 0, x: 7, z: -8.6, solid: true },
-    { piece: 'Shelf_Large', storey: 0, x: 9, z: -8.6, solid: true },
-    { piece: 'Bookshelf', storey: 0, x: 11, z: -8.6, solid: true },
-    { piece: 'Houseplant_8', storey: 0, x: 11.3, z: -1.7, scale: 1.6 },
-    // Storey 1, open-plan offices: two rows of desks with chairs and lamps, files on the east
-    // wall, a meeting table in the front corner. Clear of both flights and the lift.
-    ...[-3, 0, 3, 6].flatMap((x) => [
-      { piece: 'Drawer_3', storey: 1, x, z: 1.5, facing: '-z', solid: true, desk: true } as const,
-      { piece: 'Chair_3', storey: 1, x, z: 2.5, facing: '-z', solid: true } as const,
-      { piece: 'Light_Desk', storey: 1, x: x + 0.7, z: 1.5, y: 0.79, facing: '-z' } as const,
-    ]),
-    ...[-2.5, 0.5, 3.5, 6.5].flatMap((x) => [
-      { piece: 'Drawer_3', storey: 1, x, z: -3.5, facing: '-z', solid: true, desk: true } as const,
-      { piece: 'Chair_3', storey: 1, x, z: -2.5, facing: '-z', solid: true } as const,
-      { piece: 'Light_Desk', storey: 1, x: x + 0.7, z: -3.5, y: 0.79, facing: '-z' } as const,
-    ]),
-    { piece: 'Bookshelf', storey: 1, x: 11.6, z: -7.2, facing: '-x', solid: true },
-    { piece: 'Bookshelf', storey: 1, x: 11.6, z: -5.8, facing: '-x', solid: true },
-    { piece: 'Shelf_Large', storey: 1, x: 11.6, z: -3.9, facing: '-x', solid: true },
-    { piece: 'Shelf_Large', storey: 1, x: 11.6, z: -2, facing: '-x', solid: true },
-    { piece: 'Houseplant_6', storey: 1, x: 11.2, z: 7.6, scale: 1.5 },
-    { piece: 'Door_Double', storey: 1, x: 11.65, z: 5, facing: '-x' },
-    { piece: 'Table_RoundLarge', storey: 1, x: -7, z: 5.5, scale: 1.3, solid: true },
-    ...[-8.2, -7, -5.8].flatMap((x) => [
-      { piece: 'Chair_2', storey: 1, x, z: 4.4, solid: true } as const,
-      { piece: 'Chair_2', storey: 1, x, z: 6.6, facing: '-z', solid: true } as const,
-    ]),
-    { piece: 'Carpet_1', storey: 1, x: -7, z: 5.5, facing: '+x' },
-    { piece: 'Houseplant_8', storey: 1, x: -11.3, z: 8.2, scale: 1.6 },
-    { piece: 'Trashcan_Cylindric', storey: 1, x: -2, z: -1.4 },
-    { piece: 'Light_Chandelier', storey: 1, x: -7, z: 5.5 },
-    // Storey 2, the executive floor: a boardroom table with eight chairs, couches, a wall of
-    // files, and a lounge by the lift.
-    { piece: 'Table_RoundLarge', storey: 2, x: -3, z: 5, scale: 1.8, solid: true },
-    ...[-4.2, -3, -1.8].flatMap((x) => [
-      { piece: 'Chair_3', storey: 2, x, z: 3.4, solid: true } as const,
-      { piece: 'Chair_3', storey: 2, x, z: 6.6, facing: '-z', solid: true } as const,
-    ]),
-    { piece: 'Chair_3', storey: 2, x: -5.9, z: 5, facing: '+x', solid: true },
-    { piece: 'Chair_3', storey: 2, x: -0.1, z: 5, facing: '-x', solid: true },
-    { piece: 'Light_Chandelier', storey: 2, x: -3, z: 5 },
-    { piece: 'Couch_Large1', storey: 2, x: -11, z: 1.5, facing: '+x', solid: true },
-    { piece: 'Table_RoundSmall', storey: 2, x: -9.6, z: 1.5, scale: 0.55, solid: true },
-    { piece: 'Houseplant_8', storey: 2, x: -11.3, z: 8.2, scale: 1.6 },
-    { piece: 'Shelf_Large', storey: 2, x: -4.2, z: -8.6, solid: true },
-    { piece: 'Shelf_Large', storey: 2, x: -2.4, z: -8.6, solid: true },
-    { piece: 'Bookshelf', storey: 2, x: -0.6, z: -8.6, solid: true },
-    { piece: 'Carpet_Round', storey: 2, x: -3, z: 5, scale: 1.8 },
-    { piece: 'Couch_Medium1', storey: 2, x: 7, z: 8.2, facing: '-z', solid: true },
-    { piece: 'Table_RoundSmall', storey: 2, x: 7, z: 6.6, scale: 0.55, solid: true },
-    { piece: 'Houseplant_6', storey: 2, x: 11.2, z: 7.6, scale: 1.5 },
-    { piece: 'Door_Double', storey: 2, x: 11.65, z: 5, facing: '-x' },
-    { piece: 'Light_Chandelier', storey: 0, x: -7, z: 4 },
-    { piece: 'Light_Chandelier', storey: 0, x: 2, z: 4 },
-  ],
+  furniture: FURNITURE,
+  // Loose cash on every other desk (12.1).
+  cashSpots: cashOnDesks(FURNITURE),
 };

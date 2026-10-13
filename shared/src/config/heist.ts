@@ -12,6 +12,13 @@ export const heistSettingsSchema = z.object({
   vaultLootByTier: z
     .record(z.string(), z.number().int().min(0))
     .default({ '1': 50_000, '2': 100_000, '3': 200_000, '4': 400_000, '5': 800_000 }),
+  /**
+   * Loose cash in bank offices, per pile, by bank tier (keys "1"–"5"). Laid out
+   * at the start of every round; small next to a vault, but no lock guards it.
+   */
+  looseCashByTier: z
+    .record(z.string(), z.number().int().min(0))
+    .default({ '1': 1_000, '2': 1_500, '3': 2_000, '4': 3_000, '5': 4_000 }),
   /** How close (m) a player must be to a bag to pick it up. */
   bagPickupRadius: z.number().positive().default(1.4),
   /** Hit points a heal task restores, by tier name (`heal:<tier>`); capped at max HP, so a big number means "full". */

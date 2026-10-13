@@ -60,5 +60,6 @@ export const HEIST_MAP: GameMap = {
   anchors: [...BANK_1_WORLD.anchors, ...SAFEHOUSE_ANCHORS],
   doors: BANK_1_WORLD.doors,
   vaults: BANK_1_WORLD.vaults,
+  cashSpots: BANK_1_WORLD.cashSpots,
   banks: [{ tier: BANK_1.tier, x: 0, z: 0 }],
 };
