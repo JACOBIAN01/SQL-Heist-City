@@ -32,9 +32,9 @@
 | 12 | Known gaps | ⬜ |
 | 13 | Identity and persistence (Google sign-in, PostgreSQL) | ⬜ |
 | 14 | Classroom mode | ⬜ |
-| 15 | Learning analytics (Bloom, RCBSE) | ⬜ |
+| 15 | Learning analytics (RCSBE and Bloom, live radars) | ⬜ |
 | 16 | Teaching loop | ⬜ |
-| 17 | Question types and content | ⬜ |
+| 17 | Question types and content (filling R, C, B, E) | ⬜ |
 | 18 | Security hardening | ⬜ |
 | 19 | Scale proof | ⬜ |
 | 20 | Operations and deployment | ⬜ |
@@ -267,7 +267,7 @@ Phases 12–36 come from the pre-launch audit and the user's feedback on it (Oct
 - **Chat and voice are out of scope for now**, including quick-chat and pings.
 - **Identity:** Google sign-in (OpenID Connect).
 - **Persistence:** PostgreSQL is the system of record for accounts, classes, attempts and content. The SQL sandboxes stay in-memory SQLite.
-- **Learning analytics:** each question maps to a Bloom level and an RCBSE profile. The user supplies the RCBSE definition.
+- **Learning analytics:** each question carries one RCSBE tag (Recall, Comprehend, Solve, Build, Evaluate), one Bloom level and a weight in marks. Every student has live RCSBE and Bloom profiles, drawn as radar charts for students and teachers (docs/RCBSE.md).
 
 Phases 12–25 are **pre-launch**: they make the game safe to put in front of real classes and prove that it teaches. Phases 26–36 are **post-launch**: they take each GTA-style pillar to at least 8/10 and build the breakthrough features. Each phase still ends with an approval gate.
 
@@ -317,21 +317,29 @@ Fixes audit con 2. A teacher sets up a class in the admin. Students enter the cl
 | 14.9 | Class results stored (rounds, scores, awards) | a finished round can be reviewed later from the admin | ⬜ |
 
 ---
-## Phase 15 — Learning analytics  ⬜
-Fixes audit con 4. Every question maps to a Bloom level and an RCBSE profile; every attempt is recorded; teachers see learning, not just scores.
+## Phase 15 — Learning analytics (RCSBE and Bloom, live radars)  ⬜
+Fixes audit con 4. Every question carries one RCSBE tag, one Bloom level and a weight in marks. Every attempt is recorded. Each student's RCSBE and Bloom profiles update live and are drawn as radar charts for the student and the teacher. Design: docs/RCBSE.md.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 15.1 | RCBSE definition from the user, written into `docs/learning-analytics.md` with the Bloom levels | the doc is approved | ⛔ waiting for the RCBSE definition |
-| 15.2 | Attempt events: issued, run, submit (right or wrong, error kind), hint, lockout, switch, expiry, with player, class, question, seed and timings | every attempt in a match lands in PostgreSQL; the write path costs < 0.5 ms per tick | ⬜ |
-| 15.3 | Question metadata: Bloom level and RCBSE profile fields in the schema, editor, import/export and validation | a question cannot be saved without them | ⬜ |
-| 15.4 | Tag all 150 questions with Bloom and RCBSE (`questions:validate` checks the tags) | 100% tagged; a coverage report per tier, Bloom level and RCBSE dimension | ⬜ |
-| 15.5 | Mastery model per student per topic (and per Bloom level), updated from attempts (Elo or knowledge tracing; the method chosen in 15.1) | the model is unit-tested and stable on replayed attempt logs | ⬜ |
-| 15.6 | Teacher dashboard: class overview, per student, per question, per topic, per Bloom level and per RCBSE dimension | each view renders real data from a played class | ⬜ |
-| 15.7 | Student report card (after a round and over time) | a student sees their mastery and progress | ⬜ |
-| 15.8 | Question-quality analytics in the admin: solve rate, median time, wrong-answer rate, how well it separates strong and weak students | each question page shows them; outliers flagged | ⬜ |
-| 15.9 | CSV export for teachers (class, student, question) | export opens in a spreadsheet with no data missing | ⬜ |
-| 15.10 | Retention and aggregation rules (raw events kept N days, aggregates kept) | a job prunes on schedule and is tested | ⬜ |
+| 15.1 | RCSBE design: docs/RCBSE.md (lens, Bloom mapping, earned/available rules, pooling, live updates, radars) | the doc and its open questions (§11) are answered and approved | 🟨 written, waiting for approval |
+| 15.2 | Attempt events: issued, run, submit (right or wrong, error kind), hint, lockout, switch, expiry, death, with player, class, question, seed, timings and a snapshot of the item's RCSBE tag, Bloom level and marks | every attempt in a match lands in PostgreSQL; the write path costs < 0.5 ms per tick | ⬜ |
+| 15.3 | Question metadata: `rcsbe` (exactly one of R/C/S/B/E), `bloom`, `marks` (default by tier) in the schema, versions, editor, import/export; the validator refuses missing or multiple tags | a question cannot be saved without them | ⬜ |
+| 15.4 | Tag all 150 questions (RCSBE, Bloom, marks); coverage report per tier, RCSBE dimension and Bloom level | 100% tagged; the report shows today's gap (all S) | ⬜ |
+| 15.5 | Earned/available rules (docs/RCBSE.md §6): hint penalty, abandon threshold, death, tutorial excluded; every threshold a setting | unit tests cover each row of the rule table | ⬜ |
+| 15.6 | `ProfileAggregator`: subscribes to the heist event bus; additive totals per student, scope (round, class, all-time), lens (RCSBE, Bloom) and dimension; pooled marks, never averaged percentages; a rebuild job from raw attempts | live totals equal a full rebuild on replayed logs | ⬜ |
+| 15.7 | Remediation signal: the lowest dimension with enough evidence (≥ 3 items, ≥ 5 marks; settings); thin dimensions report "not enough data" | tested on edge cases (no data, ties, one item) | ⬜ |
+| 15.8 | Live push: a `profile` message to the student after each graded item; a live channel per class for teachers | student radar moves < 1 s, teacher's < 2 s after a submit | ⬜ |
+| 15.9 | Radar chart module (SVG, no library): axes, values, evidence; thin axes dashed; colour-blind safe; DOM and React wrappers | geometry tests pass; renders in game and admin | ⬜ |
+| 15.10 | Student radars in game: RCSBE and Bloom; round-end card (round over all-time), profile page with drill-down to topics, a pulse on the axis that moved | a student watches their radar change during a match | ⬜ |
+| 15.11 | Teacher radars in admin: student page (with class average and target overlays), class page (class profile and a live grid of mini radars sorted by weakest dimension) | a teacher watches a live class profile during a match | ⬜ |
+| 15.12 | Class target profile and paper QA: the class editor shows the question set's shape (share of marks per dimension) over the target, and flags gaps | a class with no Comprehend items is flagged before play | ⬜ |
+| 15.13 | Teacher dashboard beyond radars: spread per dimension, trends per round, per-question item analysis | each view renders real data from a played class | ⬜ |
+| 15.14 | Question-quality analytics in the admin: solve rate, median time, wrong-answer rate, how well it separates strong and weak students within its dimension | each question page shows them; outliers flagged | ⬜ |
+| 15.15 | CSV export (class, student, question, profile), compatible with the dimension-analysis sheet format | export opens in a spreadsheet and matches the sheet's columns | ⬜ |
+| 15.16 | Topic mastery per student (feeds difficulty scaling in 16.7) | unit-tested and stable on replayed logs | ⬜ |
+| 15.17 | Retention and aggregation rules (raw events kept N days, totals kept) | a job prunes on schedule and is tested | ⬜ |
+| 15.18 | Privacy of profiles: students see only their own; teachers only their classes; never on leaderboards | access tests pass | ⬜ |
 
 ---
 ## Phase 16 — Teaching loop  ⬜
@@ -348,21 +356,28 @@ Fixes audit cons 5 and 6: the game teaches as well as tests, and weaker students
 | 16.7 | Skill-scaled difficulty: each student's question tier follows their mastery, with rewards and times scaled, so every student can earn a gun and crack some lock | a beginner can complete each reward type; a test covers the scaling | ⬜ |
 | 16.8 | Spaced repetition: weak topics come back in later rounds and daily contracts | resurfacing schedule tested against replayed data | ⬜ |
 | 16.9 | Practice mode: a separate solo SQL drill outside matches (no combat, no clock); matches themselves are unchanged | a student can practise any topic alone | ⬜ |
-| 16.10 | Pre/post assessment: a short test before and after a unit, results in the dashboard | the teacher can run both and see the gain | ⬜ |
+| 16.10 | Pre/post assessment: a short test before and after a unit; the gain shown per RCSBE dimension and Bloom level | the teacher can run both and see the gain on the radars | ⬜ |
 
 ---
-## Phase 17 — Question types and content  ⬜
-Covers every Bloom level (Remember to Create), the backlog's structural variants and dialect packs (audit con 20).
+## Phase 17 — Question types and content (filling R, C, B and E)  ⬜
+Today every question is Solve. This phase adds the question types that measure Recall, Comprehend, Build and Evaluate (docs/RCBSE.md §10). It also covers every Bloom level, the backlog's structural variants and dialect packs (audit con 20).
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 17.1 | Question type "fix the query": a broken query is given; the answer must produce the right result | type in the schema, grader, pop-up and admin; 10 questions | ⬜ |
-| 17.2 | Question type "which is right": choose between queries, or predict the output | type built; 10 questions | ⬜ |
-| 17.3 | Question type "make it faster": correct and under a cost (rows scanned or plan steps) | the cost is measured in the sandbox; 10 questions | ⬜ |
-| 17.4 | Question type "build it": `CREATE`/`INSERT`/`UPDATE` in a writable scratch sandbox, graded by the resulting state | the writable sandbox keeps the safety limits; 10 questions | ⬜ |
-| 17.5 | Structural variants: table and column renames, story-theme swaps (designed in questions.md) | one question renders under two themes with the same grading | ⬜ |
-| 17.6 | Bloom coverage: new content until every tier has every Bloom level | the coverage report shows no empty cell | ⬜ |
-| 17.7 | Dialect packs: PostgreSQL and MySQL notes and per-dialect cheat-sheets; quirks flagged per question | a class can pick a dialect pack; the pop-up shows its notes | ⬜ |
+| 17.1 | Question-type framework: a question declares its type; the grader, pop-up, admin editor and validator handle each | adding a type needs no change outside its own module | ⬜ |
+| 17.2 | **R** Quick recall: fill the missing keyword or clause; short multiple choice (fits ammo refills) | type built; 20 questions | ⬜ |
+| 17.3 | **C** Predict the output: given a query and tables, pick or build the result | type built; 15 questions | ⬜ |
+| 17.4 | **C** Explain the error: given a failing query and its error, pick the cause | type built; 10 questions | ⬜ |
+| 17.5 | **C** Read the plan: given `EXPLAIN QUERY PLAN`, say what is slow | type built; 10 questions | ⬜ |
+| 17.6 | **S** Fix the query: a broken query is given; the answer must produce the right result | type built; 10 questions | ⬜ |
+| 17.7 | **S** Make it faster: correct and under a cost (rows scanned or plan steps) | cost measured in the sandbox; 10 questions | ⬜ |
+| 17.8 | **S** Write to a scratch database (`CREATE`/`INSERT`/`UPDATE`), graded by the resulting state | the writable sandbox keeps the safety limits; 10 questions | ⬜ |
+| 17.9 | **E** Choose and defend: two or three working queries under a stated constraint; marks mostly in the structured reasons | type built; 15 questions | ⬜ |
+| 17.10 | **B** Open brief: the student sets the goal and the done-condition, writes the queries and states how they know it worked; between rounds (heist planning) | briefs submitted from the game | ⬜ |
+| 17.11 | Rubric review queue in the admin for Build (and free-text Evaluate): rubrics per brief, batch marking, marks flow into profiles | a teacher marks 30 briefs and profiles update | ⬜ |
+| 17.12 | Structural variants: table and column renames, story-theme swaps (designed in questions.md) | one question renders under two themes with the same grading | ⬜ |
+| 17.13 | Coverage: new content until every tier has every RCSBE dimension and every Bloom level | the coverage report shows no empty cell | ⬜ |
+| 17.14 | Dialect packs: PostgreSQL and MySQL notes and per-dialect cheat-sheets; quirks flagged per question | a class can pick a dialect pack; the pop-up shows its notes | ⬜ |
 
 ---
 ## Phase 18 — Security hardening  ⬜
