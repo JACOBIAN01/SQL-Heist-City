@@ -54,6 +54,14 @@ describe('buildTaskOptions', () => {
     expect(find(tasks, 'vault:bank-1:lock-2')?.disabled).toBeUndefined();
   });
 
+  it('explains that a bank the teacher closed cannot be worked', () => {
+    const tasks = buildTaskOptions(
+      ctx({ vault: { id: 'v', tier: 2, locks: 3, opened: 0, closed: true } }),
+    );
+    expect(find(tasks, 'vault:none')?.disabled).toBe('This bank is closed for the class');
+    expect(find(tasks, 'vault:bank-2:lock-1')).toBeUndefined();
+  });
+
   it('explains the vault entry when out of reach or already open', () => {
     expect(find(buildTaskOptions(ctx()), 'vault:none')?.disabled).toBe('Stand at a vault console');
     const open = buildTaskOptions(ctx({ vault: { id: 'v', tier: 1, locks: 3, opened: 3 } }));

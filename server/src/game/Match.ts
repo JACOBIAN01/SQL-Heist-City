@@ -52,6 +52,7 @@ import {
   type WorldMessage,
   type WorldSettings,
 } from '@heist/shared';
+import { classTaskOptions, closedTiers, type ClassMatchConfig } from '../classes/ClassMatchConfig';
 import { RunOverRule } from './RunOverRule';
 import { VehicleFleet, type Vehicle } from './VehicleFleet';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
@@ -87,6 +88,8 @@ export interface MatchDeps {
   readonly combatSource?: () => CombatSettings;
   readonly heist?: HeistSettings;
   readonly vehicles?: VehicleSettings;
+  /** The class this match is for: its question set, open banks and round length. */
+  readonly classConfig?: ClassMatchConfig;
   readonly atmosphere?: AtmosphereSettings;
   readonly rewardIcons?: RewardIcons;
   /** Where to read heist, car and time-of-day settings again at each new round (admin edits); none keeps the fixed ones. */
@@ -105,6 +108,7 @@ export interface MatchDeps {
 }
 
 const MAX_ID = 0xffff;
+const ALL_BANK_TIERS = [1, 2, 3, 4, 5];
 
 /**
  * One running match: who is in it and what happens each tick. It knows
@@ -197,6 +201,10 @@ export class Match implements MatchApi {
     );
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
+    if (deps.classConfig) {
+      this.classConfig = deps.classConfig;
+      this.classTasks = classTaskOptions(deps.classConfig);
+    }
     const vehicleSettings = deps.vehicles ?? DEFAULT_VEHICLE_SETTINGS;
     this.vehicleSettings = vehicleSettings;
     this.atmosphere = deps.atmosphere ?? DEFAULT_ATMOSPHERE_SETTINGS;
@@ -210,10 +218,11 @@ export class Match implements MatchApi {
     );
     this.heist = new HeistController(
       this,
-      deps.heist,
+      deps.heist && this.withClassOverrides(deps.heist),
       deps.challenges,
       undefined,
-      deps.taskOptions,
+      deps.taskOptions ?? (deps.classConfig ? (key) => this.classTasks?.(key) : undefined),
+      closedTiers(deps.classConfig?.banksOpen ?? ALL_BANK_TIERS),
     );
   }
 
@@ -250,7 +259,7 @@ export class Match implements MatchApi {
   refreshWorld(): void {
     const next = this.deps.worldSource?.();
     if (!next) return;
-    this.heist.refreshSettings(next.heist);
+    this.heist.refreshSettings(this.withClassOverrides(next.heist));
     this.vehicleSettings = next.vehicles;
     this.atmosphere = next.atmosphere;
     this.rewardIcons = next.rewardIcons;
@@ -262,6 +271,32 @@ export class Match implements MatchApi {
   /** The car and sky numbers, to one player (on join). */
   sendWorld(player: Player): void {
     this.sendJson(player, this.worldMessage());
+  }
+
+  /** The class this match serves; replaced when the teacher edits it (see applyClassConfig). */
+  private classConfig: ClassMatchConfig | undefined;
+  private classTasks: ((rewardKey: string) => IssueOptions) | undefined;
+
+  /**
+   * The teacher edited the class: new question set, banks and round length. Questions and
+   * closed vaults take effect at once (the lock rule asks each time); round length and
+   * closed banks' loose cash at the next round.
+   */
+  applyClassConfig(config: ClassMatchConfig): void {
+    this.classConfig = config;
+    this.classTasks = classTaskOptions(config);
+    this.heist.setClosedTiers(closedTiers(config.banksOpen));
+    this.broadcastJson({ t: 'vaults', vaults: this.heist.vaults.views() });
+  }
+
+  get classInfo(): ClassMatchConfig | undefined {
+    return this.classConfig;
+  }
+
+  /** A class's round length wins over the admin's heist setting. */
+  private withClassOverrides(heist: HeistSettings): HeistSettings {
+    const minutes = this.classConfig?.roundMinutes;
+    return minutes ? { ...heist, roundMinutes: minutes } : heist;
   }
 
   private worldMessage(): WorldMessage {
@@ -370,7 +405,8 @@ export class Match implements MatchApi {
     if (protocol !== PROTOCOL_VERSION) {
       return { ok: false, code: CLOSE_PROTOCOL, reason: 'Client is out of date, reload the page' };
     }
-    if (this.players.size >= this.deps.settings.maxPlayers) {
+    const cap = Math.min(this.deps.settings.maxPlayers, this.classConfig?.playerCap ?? Infinity);
+    if (this.players.size >= cap) {
       return { ok: false, code: CLOSE_FULL, reason: 'Match is full' };
     }
     if (!this.heist.canJoin()) {

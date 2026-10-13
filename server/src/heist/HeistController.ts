@@ -62,11 +62,14 @@ export class HeistController implements ArmsControl {
     private readonly challenges?: ChallengeGateway,
     private readonly now: () => number = Date.now,
     private readonly taskOptions?: (rewardKey: string) => IssueOptions | undefined,
+    closedTiers: ReadonlySet<number> = new Set(),
   ) {
     // Our own copy: `refreshSettings` rewrites it in place, and every rule holding it sees the change.
     this.settings = { ...initial };
+    this.closedTiers = closedTiers;
     const settings = this.settings;
     this.vaults = new VaultRegistry(match.map, settings.locksPerVault);
+    this.vaults.closeTiers(closedTiers);
     new FeedReporter(match, this.events);
     this.bounties = new BountyBoard(match, settings, this.events);
     this.awards = new RoundAwards(this.events);
@@ -99,7 +102,7 @@ export class HeistController implements ArmsControl {
     if ((match.map.vaults?.length ?? 0) > 0) {
       this.round = new RoundController(match, settings, {
         allVaultsEmptied: () =>
-          [...this.vaults.all()].every((v) => v.isOpen) && this.loot.stakes === 0,
+          [...this.vaults.all()].every((v) => v.isOpen || v.closed) && this.loot.stakes === 0,
         reset: () => this.resetWorld(),
         awards: () => this.awards.results((id) => this.match.getPlayer(id)),
         onEnd: () => this.banking.cancelAll('round_over'),
@@ -117,9 +120,18 @@ export class HeistController implements ArmsControl {
     this.vaults.setLockCount(next.locksPerVault);
   }
 
+  private closedTiers: ReadonlySet<number> = new Set();
+
+  /** The teacher's class closed these banks: no locks, no loose cash, and the round does not wait for them. */
+  setClosedTiers(tiers: ReadonlySet<number>): void {
+    this.closedTiers = tiers;
+    this.vaults.closeTiers(tiers);
+  }
+
   /** Loose cash on the offices' desks (12.1): laid out again every round, by the bank's tier. */
   private layLooseCash(): void {
     const piles = (this.match.map.cashSpots ?? []).flatMap((c) => {
+      if (this.closedTiers.has(c.tier)) return [];
       const amount = this.settings.looseCashByTier[String(c.tier)] ?? 0;
       return amount > 0 ? [this.loot.add(c.x, c.y, c.z, amount, true)] : [];
     });

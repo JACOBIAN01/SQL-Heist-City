@@ -25,6 +25,8 @@ export interface IssueOptions {
   readonly fixed?: { readonly slug: string; readonly seed: string };
   /** Send the reference query with the task, and make its hints free. */
   readonly revealSolution?: boolean;
+  /** Only questions with these ids may be asked (a class's released set for this kind of task). */
+  readonly allowedQuestions?: ReadonlySet<number>;
 }
 
 export interface ChallengeRequest extends IssueOptions {
@@ -139,6 +141,7 @@ export class ChallengeService {
           request.rewardKey,
           tiers,
           new SeededRng(`${seed}/select`),
+          request.allowedQuestions,
         );
       if (!question) return { ok: false, reason: 'no_questions' };
 

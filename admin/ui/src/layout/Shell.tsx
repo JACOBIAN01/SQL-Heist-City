@@ -20,6 +20,7 @@ export function Shell({ user }: { user: AdminUser }) {
       <header className="topbar">
         <span className="brand">SQL Heist City · Admin</span>
         <nav>
+          <NavLink to="/classes">Classes</NavLink>
           <NavLink to="/questions">Questions</NavLink>
           <NavLink to="/pools">Pools</NavLink>
           <NavLink to="/import-export">Import / Export</NavLink>

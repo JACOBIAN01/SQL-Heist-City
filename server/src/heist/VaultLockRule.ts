@@ -32,7 +32,7 @@ export class VaultLockRule implements TaskRule {
 
   check(player: Player, rewardKey: string, target: string | undefined): RejectReason | undefined {
     const vault = target ? this.vaults.get(target) : undefined;
-    if (!vault) return 'not_allowed';
+    if (!vault || vault.closed) return 'not_allowed';
     if (!player.alive) return 'not_allowed';
     const lock = vault.nextLock;
     if (lock === undefined) return 'not_allowed';

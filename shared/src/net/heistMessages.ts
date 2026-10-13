@@ -80,6 +80,8 @@ export interface VaultView {
   readonly locks: number;
   /** Locks opened so far; the vault is open when this reaches `locks`. */
   readonly opened: number;
+  /** The teacher closed this bank: its vault cannot be worked this match. */
+  readonly closed?: boolean;
 }
 
 /** Every vault's progress: sent on join and whenever a lock opens. */

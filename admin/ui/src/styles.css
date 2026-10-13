@@ -415,3 +415,17 @@ tr[aria-selected='true'] {
   height: 100%;
   fill: currentColor;
 }
+
+.join-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+.join-code.big {
+  font-size: 1.6rem;
+}
+label.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

@@ -94,6 +94,7 @@ function drawBank(ctx: CanvasRenderingContext2D, m: Marker, at: MapPoint, now: n
     ctx.stroke();
     ctx.globalAlpha = 1;
   }
+  ctx.globalAlpha = m.closed ? 0.45 : 1;
   ctx.fillStyle = open ? MAP_COLOURS.bankRing : '#15181d';
   ctx.beginPath();
   ctx.arc(at.x, at.y, 7, 0, Math.PI * 2);
@@ -110,4 +111,14 @@ function drawBank(ctx: CanvasRenderingContext2D, m: Marker, at: MapPoint, now: n
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(String(m.tier ?? ''), at.x, at.y + 0.5);
+  if (m.closed) {
+    // A slash through it: out of play.
+    ctx.strokeStyle = MAP_COLOURS.alert;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(at.x - 8, at.y + 8);
+    ctx.lineTo(at.x + 8, at.y - 8);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
 }

@@ -9,6 +9,8 @@ export type LockOutcome = 'opened' | 'already_open' | 'out_of_order';
  */
 export class Vault {
   private opened = 0;
+  /** Closed by the teacher: not part of this match. */
+  closed = false;
 
   constructor(
     readonly spec: MapVault,
@@ -51,6 +53,12 @@ export class Vault {
   }
 
   view(): VaultView {
-    return { id: this.spec.id, tier: this.spec.tier, locks: this.lockCount, opened: this.opened };
+    return {
+      id: this.spec.id,
+      tier: this.spec.tier,
+      locks: this.lockCount,
+      opened: this.opened,
+      ...(this.closed ? { closed: true } : {}),
+    };
   }
 }

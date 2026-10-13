@@ -37,6 +37,10 @@ describe('fitMap / toScreen', () => {
 });
 
 describe('captionFor', () => {
+  it('says a bank the teacher closed is CLOSED, whatever its locks', () => {
+    expect(captionFor({ ...bank(1), closed: true })).toBe('Metro Capital · CLOSED');
+  });
+
   it('names a bank with its lock progress, and says when it is open', () => {
     expect(captionFor(bank(1))).toBe('Metro Capital · 1/3 locks');
     expect(captionFor(bank(3))).toBe('Metro Capital · OPEN');

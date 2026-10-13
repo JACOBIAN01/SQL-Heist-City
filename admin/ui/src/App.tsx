@@ -5,6 +5,8 @@ import { Shell } from './layout/Shell';
 import { ImportExportPage } from './pages/ImportExportPage';
 import { AuditPage } from './pages/AuditPage';
 import { LoginPage } from './pages/LoginPage';
+import { ClassEditorPage } from './pages/ClassEditorPage';
+import { ClassesPage } from './pages/ClassesPage';
 import { PoolsPage } from './pages/PoolsPage';
 import { UsersPage } from './pages/UsersPage';
 import { QuestionListPage } from './pages/QuestionListPage';
@@ -24,6 +26,8 @@ export function App() {
         <Route index element={<Navigate to="/questions" replace />} />
         <Route path="questions" element={<QuestionListPage />} />
         <Route path="questions/:id" element={<QuestionEditorPage />} />
+        <Route path="classes" element={<ClassesPage />} />
+        <Route path="classes/:id" element={<ClassEditorPage />} />
         <Route path="pools" element={<PoolsPage />} />
         <Route path="import-export" element={<ImportExportPage />} />
         <Route path="settings" element={<SettingsPage />} />

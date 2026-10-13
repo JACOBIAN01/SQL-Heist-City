@@ -162,6 +162,7 @@ export class FullMapView {
 export function captionFor(m: Marker): string | undefined {
   if (m.kind === 'bank') {
     const name = BANK_LAYOUTS.get(m.tier ?? 0)?.name ?? `Bank ${m.tier ?? ''}`;
+    if (m.closed) return `${name} · CLOSED`;
     const locks = m.locks ?? 0;
     if (locks === 0) return name;
     return (m.opened ?? 0) >= locks

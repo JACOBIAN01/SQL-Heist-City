@@ -13,6 +13,11 @@ export class VaultRegistry {
     for (const v of this.byId.values()) v.setLockCount(count);
   }
 
+  /** Banks of these tiers are closed for the match. */
+  closeTiers(tiers: ReadonlySet<number>): void {
+    for (const v of this.byId.values()) v.closed = tiers.has(v.spec.tier);
+  }
+
   get(id: string): Vault | undefined {
     return this.byId.get(id);
   }

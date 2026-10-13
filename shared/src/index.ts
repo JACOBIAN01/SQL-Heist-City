@@ -53,3 +53,4 @@ export * from './sim/combat';
 export * from './world/ColliderGrid';
 export * from './world/SpatialGrid';
 export * from './net/snapshotCodec';
+export * from './classes/class';

@@ -118,4 +118,37 @@ export const pgMigrations: readonly string[] = [
   );
   CREATE INDEX player_sessions_player ON player_sessions (player_id);
   `,
+  // 3 — classes: a teacher's room, its question set and who joined (Phase 14)
+  `
+  CREATE TABLE classes (
+    id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    code           TEXT        NOT NULL UNIQUE,
+    name           TEXT        NOT NULL,
+    owner_user_id  BIGINT      REFERENCES users (id) ON DELETE SET NULL,
+    city_seed      TEXT,
+    banks_open     JSONB       NOT NULL DEFAULT '[1,2,3,4,5]',
+    round_minutes  NUMERIC,
+    player_cap     INTEGER     NOT NULL DEFAULT 100 CHECK (player_cap BETWEEN 60 AND 200),
+    locked         BOOLEAN     NOT NULL DEFAULT false,
+    archived       BOOLEAN     NOT NULL DEFAULT false,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX classes_owner ON classes (owner_user_id);
+
+  CREATE TABLE class_questions (
+    class_id    BIGINT NOT NULL REFERENCES classes (id) ON DELETE CASCADE,
+    question_id BIGINT NOT NULL REFERENCES questions (id) ON DELETE CASCADE,
+    usage       TEXT   NOT NULL CHECK (usage IN ('vault', 'heal', 'gun', 'ammo')),
+    PRIMARY KEY (class_id, question_id, usage)
+  );
+
+  CREATE TABLE class_members (
+    class_id  BIGINT      NOT NULL REFERENCES classes (id) ON DELETE CASCADE,
+    player_id BIGINT      NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (class_id, player_id)
+  );
+  CREATE INDEX class_members_player ON class_members (player_id);
+  `,
 ];

@@ -306,14 +306,14 @@ Fixes audit con 2. A teacher sets up a class in the admin. Students enter the cl
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 14.1 | Class model: name, code, owner teacher, city seed, banks in play, round length, player cap (60–200), status | create, read, update and archive tested; codes are unique and hard to guess | ⬜ |
-| 14.2 | Admin: class editor; pick which banks are open | a closed bank's vault cannot be worked, and its marker says "closed" | ⬜ |
-| 14.3 | Admin: class question release, by bank lock, heal, gun and ammo, choosing existing questions or creating new ones and mapping them to the class | a class only ever receives questions mapped to it | ⬜ |
-| 14.4 | Wire pools into `QuestionSelector` (the backlog's "game side of pools"): selection respects the class's mapping and tiers, with no repeats | tests prove nothing outside the class set is issued | ⬜ |
+| 14.1 | Class model: name, code, owner teacher, city seed, banks in play, round length, player cap (60–200), status | create, read, update and archive tested; codes are unique and hard to guess | ✅ `classes` tables (migration 3), `ClassRepository` (in-memory + PostgreSQL, one contract suite), 6-character codes from an unambiguous alphabet, regenerate-code |
+| 14.2 | Admin: class editor; pick which banks are open | a closed bank's vault cannot be worked, and its marker says "closed" | ✅ Classes page + editor (banks, seed, round length, cap 60–200); closed banks refuse locks, drop their loose cash, do not hold the round open, and show CLOSED on the minimap, full map and task menu |
+| 14.3 | Admin: class question release, by bank lock, heal, gun and ammo, choosing existing questions or creating new ones and mapping them to the class | a class only ever receives questions mapped to it | ✅ per-usage question release (vault, heal, gun, ammo) with a tick table; "write a new question" links to the editor |
+| 14.4 | Wire pools into `QuestionSelector` (the backlog's "game side of pools"): selection respects the class's mapping and tiers, with no repeats | tests prove nothing outside the class set is issued | ✅ `QuestionSelector` takes an allowed set (tiers widen only inside it; empty set = nothing); a class match passes the set with every task |
 | 14.5 | Join by code: the student signs in, types the code, waits in a lobby, and the match starts on the teacher's word | 100 headless clients join one class and land in the same match | ⬜ |
 | 14.6 | One match per class: `MatchPool` and the lobby route by class code; many classes run side by side | two classes at once never see each other's players or questions | ⬜ |
 | 14.7 | Teacher live controls: start, end round, next round, lock the room, kick, rename | each control works from the admin during a match | ⬜ |
-| 14.8 | Class roster: everyone who joined, linked to their account, with round history | the roster lists students and their rounds | ⬜ |
+| 14.8 | Class roster: everyone who joined, linked to their account, with round history | the roster lists students and their rounds | 🟨 roster of who joined is in the editor; rounds follow in 14.9 |
 | 14.9 | Class results stored (rounds, scores, awards) | a finished round can be reviewed later from the admin | ⬜ |
 
 ---

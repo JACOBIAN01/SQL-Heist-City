@@ -18,8 +18,19 @@ export class QuestionSelector {
 
   constructor(private readonly questions: QuestionReader) {}
 
-  select(player: string, reward: string, tiers: TierRange, rng: Rng): StoredQuestion | undefined {
-    const candidates = this.candidates(tiers);
+  /**
+   * `allowed`: only these question ids may be chosen (a class's released set). An
+   * empty set yields nothing; tiers widen only inside the set, so a class with
+   * a few questions still always gets one of them.
+   */
+  select(
+    player: string,
+    reward: string,
+    tiers: TierRange,
+    rng: Rng,
+    allowed?: ReadonlySet<number>,
+  ): StoredQuestion | undefined {
+    const candidates = this.candidates(tiers, allowed);
     if (candidates.length === 0) return undefined;
 
     const key = `${player}\0${reward}`;
@@ -53,13 +64,16 @@ export class QuestionSelector {
     }
   }
 
-  private candidates(tiers: TierRange): StoredQuestion[] {
+  private candidates(tiers: TierRange, allowed?: ReadonlySet<number>): StoredQuestion[] {
+    if (allowed && allowed.size === 0) return [];
     for (let widen = 0; widen <= MAX_TIER - MIN_TIER; widen++) {
-      const found = this.questions.list({
-        enabled: true,
-        tierMin: Math.max(MIN_TIER, tiers.min - widen),
-        tierMax: Math.min(MAX_TIER, tiers.max + widen),
-      });
+      const found = this.questions
+        .list({
+          enabled: true,
+          tierMin: Math.max(MIN_TIER, tiers.min - widen),
+          tierMax: Math.min(MAX_TIER, tiers.max + widen),
+        })
+        .filter((q) => !allowed || allowed.has(q.id));
       if (found.length > 0) return found;
     }
     return [];

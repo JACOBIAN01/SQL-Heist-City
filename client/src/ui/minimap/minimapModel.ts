@@ -37,6 +37,8 @@ export interface Marker {
   readonly tier?: number;
   readonly locks?: number;
   readonly opened?: number;
+  /** Banks: the teacher closed this one. */
+  readonly closed?: boolean;
   /** Banks: a lock was cracked moments ago (the alarm is ringing). */
   readonly alert?: boolean;
   /** Wanted players: their name. */
@@ -98,6 +100,7 @@ export function markersFor(
       tier: vault.tier,
       locks: view?.locks ?? 0,
       opened: view?.opened ?? 0,
+      ...(view?.closed ? { closed: true } : {}),
       alert: alerts.isAlert(vault.id, nowSeconds),
       pinned: true,
     });

@@ -19,6 +19,8 @@ export interface TaskContext {
     readonly tier: number;
     readonly locks: number;
     readonly opened: number;
+    /** The teacher closed this bank. */
+    readonly closed?: boolean;
   };
 }
 
@@ -62,7 +64,14 @@ export function buildTaskOptions(ctx: TaskContext): TaskOption[] {
   }
 
   const vault = ctx.vault;
-  if (vault && vault.opened < vault.locks) {
+  if (vault?.closed) {
+    tasks.push({
+      key: 'vault:none',
+      label: 'Vault lock',
+      group: 'Vault',
+      disabled: 'This bank is closed for the class',
+    });
+  } else if (vault && vault.opened < vault.locks) {
     const lock = vault.opened + 1;
     const key = `vault:bank-${vault.tier}:lock-${lock}`;
     tasks.push({

@@ -73,3 +73,34 @@ describe('QuestionSelector', () => {
     expect(seen.size).toBe(2);
   });
 });
+
+describe('QuestionSelector with an allowed set (a class)', () => {
+  const choose = (allowed: ReadonlySet<number>, min = 1, max = 1, player = 'p1') =>
+    selector.select(player, 'heal:small', { min, max }, rng, allowed)?.slug;
+
+  it('only ever picks from the set, whatever else exists', () => {
+    const a = add('a', 1);
+    add('b', 1);
+    const c = add('c', 1);
+    for (let i = 0; i < 20; i++) expect(['a', 'c']).toContain(choose(new Set([a.id, c.id])));
+  });
+
+  it('gives nothing for an empty set, and widens tiers only inside the set', () => {
+    add('t1', 1);
+    const t4 = add('t4', 4);
+    expect(choose(new Set())).toBeUndefined();
+    for (let i = 0; i < 10; i++) expect(choose(new Set([t4.id]), 1, 1)).toBe('t4');
+  });
+
+  it('still skips disabled questions inside the set', () => {
+    const off = add('off', 1, false);
+    const on = add('on', 1);
+    for (let i = 0; i < 10; i++) expect(choose(new Set([off.id, on.id]))).toBe('on');
+  });
+
+  it('rotates through the set without repeats, like the open pool', () => {
+    const ids = ['a', 'b', 'c'].map((s) => add(s, 1).id);
+    const seen = [choose(new Set(ids)), choose(new Set(ids)), choose(new Set(ids))];
+    expect(new Set(seen).size).toBe(3);
+  });
+});

@@ -6,6 +6,11 @@ import { PgQuestionStore } from '@heist/server/questions/PgQuestionStore';
 import { SqliteQuestionRepository } from '@heist/server/questions/SqliteQuestionRepository';
 import { SyncQuestionStore, type QuestionStore } from '@heist/server/questions/QuestionStore';
 import {
+  InMemoryClassRepository,
+  PgClassRepository,
+  type ClassRepository,
+} from '@heist/server/classes/ClassRepository';
+import {
   InMemoryPlayerRepository,
   InMemoryPlayerSessions,
   PgPlayerRepository,
@@ -37,18 +42,25 @@ export interface AdminStores {
   readonly settings: SettingsStore;
   /** Players who sign in with Google. SQLite development keeps them in memory only. */
   readonly players: PlayerRepository;
+  /** Teachers' classes, their question sets and rosters. SQLite development keeps them in memory only. */
+  readonly classes: ClassRepository;
   playerSessions(ttlMs: number, now: () => number): PlayerSessions;
   sessions(ttlMs: number, now: () => number): SessionStore;
 }
 
 export function sqliteStores(db: DatabaseSync): AdminStores {
+  const questionRepo = new SqliteQuestionRepository(db);
   return {
-    questions: new SyncQuestionStore(new SqliteQuestionRepository(db)),
+    questions: new SyncQuestionStore(questionRepo),
     users: new SqliteUserRepository(db),
     audit: new SqliteAuditLog(db),
     pools: new SqlitePoolRepository(db),
     settings: new SqliteSettingsStore(db),
     players: new InMemoryPlayerRepository(),
+    classes: new InMemoryClassRepository(
+      undefined,
+      () => new Set(questionRepo.list().map((q) => q.id)),
+    ),
     playerSessions: (ttl, now) => new InMemoryPlayerSessions(ttl, now),
     sessions: (ttl, now) => new SqliteSessionStore(db, ttl, now),
   };
@@ -62,6 +74,7 @@ export function pgStores(db: PgDatabase): AdminStores {
     pools: new PgPoolRepository(db),
     settings: new PgSettingsStore(db),
     players: new PgPlayerRepository(db),
+    classes: new PgClassRepository(db),
     playerSessions: (ttl, now) => new PgPlayerSessions(db, ttl, now),
     sessions: (ttl, now) => new PgSessionStore(db, ttl, now),
   };

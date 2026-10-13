@@ -19,6 +19,7 @@ import { QuestionImportService } from './questions/io/QuestionImportService';
 import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
 import { PersonalDataRegistry, accountSource } from '@heist/server/players/PersonalData';
+import { classRoutes } from './classes/classRoutes';
 import { playerStaffRoutes } from './players/staffRoutes';
 import { NAME_RULES_KEY, settingsParsers } from '@heist/server/config/SettingsReader';
 import { playerRoutes, type PlayerAuthOptions } from './players/playerRoutes';
@@ -148,6 +149,12 @@ export function buildAdmin(
       configRoutes(settings),
       poolRoutes(stores.pools, events),
       playerStaffRoutes(stores.players, nameRules, events),
+      classRoutes({
+        classes: stores.classes,
+        questions: stores.questions,
+        players: stores.players,
+        events,
+      }),
     ],
   });
   return {
