@@ -262,7 +262,7 @@ The bank is the most important place in the game: realistic interiors and a real
 ---
 ## Roadmap after Phase 11 (from the pre-launch audit)
 Phases 12–36 come from the pre-launch audit and the user's feedback on it (October 2026). The decisions behind them:
-- **Guns stay.** No non-violent mode.
+- **The game is violent by design, and stays that way.** Guns, shooting and kills are the core of the match. There is no non-violent, stun or arrest mode, now or later, and no feature may soften combat (no no-damage zones, no pause while solving).
 - **Class size is 60+ (usually 100+).** The map stays sized for 100 players.
 - **Chat and voice are out of scope for now**, including quick-chat and pings.
 - **Identity:** Google sign-in (OpenID Connect).
@@ -335,7 +335,7 @@ Fixes audit con 4. Every question maps to a Bloom level and an RCBSE profile; ev
 
 ---
 ## Phase 16 — Teaching loop  ⬜
-Fixes audit cons 5 and 6: the game teaches as well as tests, and weaker students are never locked out.
+Fixes audit cons 5 and 6: the game teaches as well as tests, and weaker students are never locked out. Combat stays as it is: help comes through hints, review and difficulty, never through protection from being shot.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
@@ -347,9 +347,8 @@ Fixes audit cons 5 and 6: the game teaches as well as tests, and weaker students
 | 16.6 | Tables sidebar that stays open while fighting (minimised pop-up keeps the schema in view) | schema visible with the pop-up minimised | ⬜ |
 | 16.7 | Skill-scaled difficulty: each student's question tier follows their mastery, with rewards and times scaled, so every student can earn a gun and crack some lock | a beginner can complete each reward type; a test covers the scaling | ⬜ |
 | 16.8 | Spaced repetition: weak topics come back in later rounds and daily contracts | resurfacing schedule tested against replayed data | ⬜ |
-| 16.9 | Practice mode: no combat, no clock, any topic | a student can practise any topic alone | ⬜ |
-| 16.10 | Safe zone: the safehouse interior is a no-damage zone for solving, time-limited (settings) | damage is refused inside; the stay limit is enforced | ⬜ |
-| 16.11 | Pre/post assessment: a short test before and after a unit, results in the dashboard | the teacher can run both and see the gain | ⬜ |
+| 16.9 | Practice mode: a separate solo SQL drill outside matches (no combat, no clock); matches themselves are unchanged | a student can practise any topic alone | ⬜ |
+| 16.10 | Pre/post assessment: a short test before and after a unit, results in the dashboard | the teacher can run both and see the gain | ⬜ |
 
 ---
 ## Phase 17 — Question types and content  ⬜
@@ -406,7 +405,7 @@ Audit con 8 plus the old "logging, metrics, backups, containers, deploy" todo it
 
 ---
 ## Phase 21 — Privacy and compliance  ⬜
-Required before student data flows: Google accounts, attempts and classes.
+Required before student data flows: Google accounts, attempts and classes. The game stays violent, so it ships with a proper content rating and age gate rather than a softer mode.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
@@ -416,6 +415,7 @@ Required before student data flows: Google accounts, attempts and classes.
 | 21.4 | Retention and deletion jobs tied to 15.10 and 13.10 | tested | ⬜ |
 | 21.5 | Log audit: no personal data in logs or metrics | a scan of the logs finds none | ⬜ |
 | 21.6 | Data processing agreement template for schools | template ready | ⬜ |
+| 21.7 | Content rating for a violent game (IARC, giving PEGI/ESRB ratings) and an age gate at sign-in; the violence is stated plainly to schools at class creation | rating obtained; under-age accounts refused; the notice shows in the class editor | ⬜ |
 
 ---
 ## Phase 22 — Settings, accessibility and devices  ⬜
