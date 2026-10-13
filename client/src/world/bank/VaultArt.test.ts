@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Vector3 } from 'three';
+import { Box3, Vector3, type Mesh } from 'three';
 import { HEIST_MAP, box, type MapBox } from '@heist/shared';
 import { createBankMaterials } from './bankMaterials';
 import { VaultArt, buildVaultDoor, poseVaultDoor } from './VaultArt';
@@ -23,8 +23,11 @@ describe('buildVaultDoor', () => {
   it('swings into the vault, away from the console', () => {
     const centre = () => {
       rig.root.updateMatrixWorld(true);
-      const disc = rig.pivot.children.find((c) => c.position.x > 0 && c.position.z === 0);
-      return disc ? disc.getWorldPosition(new Vector3()) : new Vector3();
+      // The leaf's merged steel (disc, knuckles) hangs from the pivot; take the middle of its bounds.
+      const leaf = rig.pivot.children.find(
+        (c) => (c as Mesh).isMesh && !(c as Mesh & { isInstancedMesh?: boolean }).isInstancedMesh,
+      );
+      return leaf ? new Box3().setFromObject(leaf).getCenter(new Vector3()) : new Vector3();
     };
     poseVaultDoor(rig, { wheel: 0, bolts: Array(12).fill(0), swing: 0 });
     const shut = centre();
@@ -35,9 +38,9 @@ describe('buildVaultDoor', () => {
 
   it('draws the bolts back toward the middle', () => {
     poseVaultDoor(rig, { wheel: 0, bolts: Array(12).fill(0), swing: 0 });
-    const out = rig.bolts[0]?.mesh.position.x ?? 0;
+    const out = rig.bolts[0]?.at.x ?? 0;
     poseVaultDoor(rig, { wheel: 0, bolts: Array(12).fill(1), swing: 0 });
-    expect(rig.bolts[0]?.mesh.position.x ?? 0).toBeLessThan(out);
+    expect(rig.bolts[0]?.at.x ?? 0).toBeLessThan(out);
   });
 });
 
@@ -51,7 +54,7 @@ describe('VaultArt', () => {
     let cash = false;
     art.root.traverse((o) => {
       const m = (o as { material?: unknown }).material;
-      if (Array.isArray(m) && m.includes(materials.deposit)) deposit = true;
+      if (m === materials.deposit) deposit = true;
       if (m === materials.cash) cash = true;
     });
     expect(deposit).toBe(true);
@@ -76,13 +79,16 @@ describe('VaultArt', () => {
 
   it('seats the door in a deep steel jamb: a sleeve through the wall, a threshold and rivets', () => {
     const door = new VaultArt(HEIST_MAP, materials).root.getObjectByName('vault-door');
-    const deep = door?.children.filter(
-      (c) =>
-        (c as { geometry?: { parameters?: { depth?: number } } }).geometry?.parameters?.depth ===
-        0.5,
+    if (!door) throw new Error('no door');
+    door.updateMatrixWorld(true);
+    const frame = door.children.filter(
+      (c) => (c as Mesh).isMesh && !(c as Mesh & { isInstancedMesh?: boolean }).isInstancedMesh,
     );
-    expect(deep).toHaveLength(4);
-    expect(door?.children.some((c) => (c as { isInstancedMesh?: boolean }).isInstancedMesh)).toBe(
+    // The sleeve runs 0.5 m through the wall: the merged frame reaches a quarter metre either side.
+    const depth = new Box3();
+    for (const c of frame) depth.union(new Box3().setFromObject(c));
+    expect(depth.max.z - depth.min.z).toBeGreaterThan(0.45);
+    expect(door.children.some((c) => (c as { isInstancedMesh?: boolean }).isInstancedMesh)).toBe(
       true,
     );
   });
@@ -93,7 +99,9 @@ describe('VaultArt', () => {
     art.onVaults([{ id, tier: 1, locks: 3, opened: 2 }], 0);
     art.onVaults([{ id, tier: 1, locks: 3, opened: 3 }], 1);
     const door = art.root.getObjectByName('vault-door');
-    const pivot = door?.children.find((c) => c.children.length > 5);
+    const pivot = door?.children.find((c) =>
+      c.children.some((k) => (k as { isInstancedMesh?: boolean }).isInstancedMesh),
+    );
     art.update(1.1, 0.1, () => true);
     expect(pivot?.rotation.y ?? 0).toBeCloseTo(0);
     art.update(1 + VAULT_TIMING.swingDelay + VAULT_TIMING.swing + 0.5, 0.1, () => true);

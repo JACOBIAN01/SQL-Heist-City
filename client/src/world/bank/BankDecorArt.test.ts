@@ -24,21 +24,21 @@ describe('buildBankDecor', () => {
     expect(bank?.children.length).toBe(BANK_1.storeys);
     bank?.children.forEach((g, i) => {
       expect(g.userData).toMatchObject({ bankTier: 1, storey: i });
-      expect(g.children.length).toBeLessThan(14);
+      expect(g.children.length).toBeLessThanOrEqual(6);
     });
   });
 
   it('lays a top, a monitor and a keyboard over every desk, and nowhere else', () => {
     const desks = placeFurniture(BANK_1, { x: 0, z: 0 }).filter((p) => p.desk).length;
     expect(desks).toBeGreaterThan(8);
-    expect(tris('desk-tops')).toBe(desks * 12);
-    expect(tris('keyboards')).toBe(desks * 12);
     expect(tris('screens')).toBe(desks * 2);
+    // Top, stand, monitor and keyboard are four boxes of twelve triangles each, plus frames upstairs.
+    expect(tris('decor-solid')).toBeGreaterThanOrEqual(desks * 48);
   });
 
   it('hangs windows and pictures on the outside walls, in a handful of meshes', () => {
     expect(part('window-panes')).toBeDefined();
-    expect(part('picture-frames')).toBeDefined();
+    expect(part('pictures')).toBeDefined();
   });
 
   it('keeps windows off shelves, doors and the vault', () => {
@@ -73,6 +73,6 @@ describe('buildBankDecor', () => {
       { banks: [{ tier: 5, x: 0, z: 0 }] } as unknown as GameMap,
       new Map([[5, BANK_5]]),
     );
-    expect(big.root.getObjectByName('desk-tops')).toBeDefined();
+    expect(big.root.getObjectByName('decor-solid')).toBeDefined();
   });
 });

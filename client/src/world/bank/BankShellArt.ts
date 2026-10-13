@@ -193,7 +193,11 @@ function intersect(a: Rect, b: Rect): Rect | undefined {
  * collider; nothing here changes play.
  */
 export class BankShellBuilder {
-  private readonly batches = new Map<BankSurface, SurfaceBatch>();
+  /** One batch per surface and storey; the outdoor surfaces (cladding, roof) have no storey. */
+  private readonly batches = new Map<
+    string,
+    { surface: BankSurface; storey: number | undefined; batch: SurfaceBatch }
+  >();
   private readonly h: number;
   private readonly hw: number;
   private readonly hd: number;
@@ -222,7 +226,9 @@ export class BankShellBuilder {
     this.doorSurrounds();
     const group = new Group();
     group.name = `bank-shell-${this.layout.id}`;
-    for (const [surface, batch] of this.batches) {
+    // The outside is always drawn; each storey's inside is its own group, tagged for BankLod.
+    const storeys = new Map<number, Group>();
+    for (const { surface, storey, batch } of this.batches.values()) {
       if (batch.position.length === 0) continue;
       const mesh = new Mesh(batch.geometry(), materials[surface]);
       mesh.name = `bank-${surface}`;
@@ -231,20 +237,38 @@ export class BankShellBuilder {
       const outdoor = OUTDOOR.has(surface);
       mesh.castShadow = outdoor;
       mesh.receiveShadow = outdoor;
-      group.add(mesh);
+      if (storey === undefined) {
+        group.add(mesh);
+        continue;
+      }
+      let inside = storeys.get(storey);
+      if (!inside) {
+        inside = new Group();
+        inside.name = `storey-${storey}`;
+        inside.userData = { bankTier: this.site.tier, storey };
+        storeys.set(storey, inside);
+        group.add(inside);
+      }
+      inside.add(mesh);
     }
     return group;
   }
 
   /** Triangles per surface, for tests and the perf overlay. */
   surfaces(): ReadonlyMap<BankSurface, number> {
-    return new Map([...this.batches].map(([k, b]) => [k, b.position.length / 9]));
+    const out = new Map<BankSurface, number>();
+    for (const { surface, batch } of this.batches.values())
+      out.set(surface, (out.get(surface) ?? 0) + batch.position.length / 9);
+    return out;
   }
 
-  private batch(surface: BankSurface): SurfaceBatch {
-    let b = this.batches.get(surface);
-    if (!b) this.batches.set(surface, (b = new SurfaceBatch()));
-    return b;
+  /** The batch for a surface at a height: indoor surfaces are kept apart by storey. */
+  private batch(surface: BankSurface, y: number): SurfaceBatch {
+    const storey = OUTDOOR.has(surface) ? undefined : this.storeyAt(y);
+    const key = `${surface}|${storey ?? 'out'}`;
+    let entry = this.batches.get(key);
+    if (!entry) this.batches.set(key, (entry = { surface, storey, batch: new SurfaceBatch() }));
+    return entry.batch;
   }
 
   /** Texture coordinates for a point on a face, by the surface's mapping. */
@@ -265,7 +289,7 @@ export class BankShellBuilder {
   }
 
   private add(surface: BankSurface, f: Face, floorY: number): void {
-    this.batch(surface).quad(f.corners, f.n, this.uv(surface, f.n, floorY));
+    this.batch(surface, f.centre[1]).quad(f.corners, f.n, this.uv(surface, f.n, floorY));
   }
 
   private storeyAt(y: number): number {
@@ -424,7 +448,7 @@ export class BankShellBuilder {
     const x1 = r.maxX + this.site.x;
     const z0 = r.minZ + this.site.z;
     const z1 = r.maxZ + this.site.z;
-    this.batch(surface).quad(
+    this.batch(surface, y).quad(
       [
         [x0, y, z0],
         [x1, y, z0],

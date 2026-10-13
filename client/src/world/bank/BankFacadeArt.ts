@@ -206,6 +206,7 @@ export function buildFacade(
 
   // One mesh per material: the facade's forty-odd pieces cost a few draw calls.
   const flat = mergeByMaterial(root, root.name);
+  flat.userData = { bankTier: site.tier, exterior: true };
   const facade: FacadeArt = {
     root: flat,
     setNight(night) {

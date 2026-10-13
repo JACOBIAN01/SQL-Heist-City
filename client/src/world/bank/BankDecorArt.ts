@@ -2,7 +2,9 @@ import type { BufferGeometry } from 'three';
 import {
   AdditiveBlending,
   BoxGeometry,
+  BufferAttribute,
   CanvasTexture,
+  Color,
   Group,
   Matrix4,
   Mesh,
@@ -59,14 +61,32 @@ const POOL_CHANDELIER = 4.4;
 const WINDOW_BAND = { from: WINDOW_SILL, to: WINDOW_SILL + WINDOW_H };
 
 const DESK_TOP = 0.05;
+/** Pictures in the atlas: a landscape, a seascape and an abstract, side by side. */
+const PAINTINGS = 3;
 const NO_BLOB = /^(Door_|Window_|Curtains_|Carpet_|Light_)/;
 
 /** Geometry gathered per material, merged into one mesh at the end. */
 class Batch {
   private readonly parts: BufferGeometry[] = [];
-  add(geo: BufferGeometry, matrix: Matrix4): void {
+  /** `color` paints the part in vertex colours; `tile` picks one of the picture atlas's tiles. */
+  add(geo: BufferGeometry, matrix: Matrix4, options: { color?: number; tile?: number } = {}): void {
     const g = geo.clone();
     g.applyMatrix4(matrix);
+    if (options.color !== undefined) {
+      const c = new Color(options.color);
+      const n = g.getAttribute('position').count;
+      g.setAttribute(
+        'color',
+        new BufferAttribute(
+          Float32Array.from({ length: n * 3 }, (_, i) => [c.r, c.g, c.b][i % 3] ?? 0),
+          3,
+        ),
+      );
+    }
+    if (options.tile !== undefined) {
+      const uv = g.getAttribute('uv');
+      for (let i = 0; i < uv.count; i++) uv.setX(i, (uv.getX(i) + (options.tile ?? 0)) / PAINTINGS);
+    }
     this.parts.push(g);
   }
   mesh(material: Material, name: string): Mesh | undefined {
@@ -133,14 +153,9 @@ function skyTexture(): CanvasTexture | undefined {
   return textured(cv);
 }
 
-/** Three framed pictures painted in code: a landscape, a seascape and an abstract. */
-function paintings(): (CanvasTexture | undefined)[] {
-  const paint = (draw: (g: CanvasRenderingContext2D) => void) => {
-    const cv = canvasOf(112, 76);
-    if (!cv) return undefined;
-    draw(cv.g);
-    return textured(cv);
-  };
+/** Three pictures painted in code, as drawing routines for a 112 × 76 tile. */
+function paintings(): ((g: CanvasRenderingContext2D) => void)[] {
+  const paint = (draw: (g: CanvasRenderingContext2D) => void) => draw;
   return [
     paint((g) => {
       g.fillStyle = '#9cc7e8';
@@ -186,15 +201,18 @@ function paintings(): (CanvasTexture | undefined)[] {
   ];
 }
 
-/** A plain art material that lights itself a little, like the bank surfaces. */
-const flat = (color: number, glow = 0.35, extra: Partial<MeshStandardMaterial> = {}) =>
-  new MeshStandardMaterial({
-    color,
-    roughness: 0.6,
-    emissive: color,
-    emissiveIntensity: glow,
-    ...extra,
+/** The three pictures on one canvas, so a storey's pictures are one mesh and one draw call. */
+function pictureAtlas(): CanvasTexture | undefined {
+  const cv = canvasOf(112 * PAINTINGS, 76);
+  if (!cv) return undefined;
+  paintings().forEach((draw, i) => {
+    cv.g.save();
+    cv.g.translate(i * 112, 0);
+    draw(cv.g);
+    cv.g.restore();
   });
+  return textured(cv);
+}
 
 const overlaps = (a: Aabb, b: Aabb) =>
   a.minX < b.maxX &&
@@ -245,16 +263,22 @@ export function buildBankDecor(
   const root = new Group();
   root.name = 'bank-decor';
 
-  const wood = flat(0x6b4a30);
-  const dark = flat(0x1b1d21, 0.1);
+  // Everything plain-coloured shares one material and is painted in vertex colours.
+  const solid = new MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.55,
+    emissive: 0x2e2e2e,
+  });
+  const WOOD = 0x6b4a30;
+  const DARK = 0x1b1d21;
+  const TRIM = 0x4a3122;
+  const GOLD = 0xb48a32;
   const screen = new MeshStandardMaterial({
     color: 0x0e1a2b,
     emissive: 0x9ec8ff,
     emissiveIntensity: 0.55,
     roughness: 0.3,
   });
-  const trim = flat(0x4a3122);
-  const gold = flat(0xb48a32, 0.3, { metalness: 0.6, roughness: 0.4 });
   const skyMap = skyTexture();
   const pane = new MeshStandardMaterial({
     color: skyMap ? 0xffffff : 0xbcd9ef,
@@ -264,17 +288,15 @@ export function buildBankDecor(
     emissiveIntensity: 0.8,
     roughness: 0.2,
   });
-  const pictures = paintings().map(
-    (map) =>
-      new MeshStandardMaterial({
-        color: map ? 0xffffff : 0x8a9a7a,
-        map: map ?? null,
-        emissive: map ? 0xffffff : 0x8a9a7a,
-        emissiveMap: map ?? null,
-        emissiveIntensity: 0.35,
-        roughness: 0.7,
-      }),
-  );
+  const atlas = pictureAtlas();
+  const pictures = new MeshStandardMaterial({
+    color: atlas ? 0xffffff : 0x8a9a7a,
+    map: atlas ?? null,
+    emissive: atlas ? 0xffffff : 0x8a9a7a,
+    emissiveMap: atlas ?? null,
+    emissiveIntensity: 0.35,
+    roughness: 0.7,
+  });
   const glow = new MeshBasicMaterial({
     map: radialTexture('255,240,200') ?? null,
     color: 0xfff0c8,
@@ -301,28 +323,20 @@ export function buildBankDecor(
 
   /** One set of batches per bank and storey: each becomes a handful of meshes BankLod can switch. */
   interface Sets {
-    deskTops: Batch;
-    monitors: Batch;
+    solid: Batch;
     screens: Batch;
-    frames: Batch;
-    golds: Batch;
     panes: Batch;
+    pictures: Batch;
     pools: Batch;
     blobs: Batch;
-    keyboards: Batch;
-    art: Batch[];
   }
   const newSets = (): Sets => ({
-    deskTops: new Batch(),
-    monitors: new Batch(),
+    solid: new Batch(),
     screens: new Batch(),
-    frames: new Batch(),
-    golds: new Batch(),
     panes: new Batch(),
+    pictures: new Batch(),
     pools: new Batch(),
     blobs: new Batch(),
-    keyboards: new Batch(),
-    art: pictures.map(() => new Batch()),
   });
   const addMesh = (group: Group, batch: Batch, material: Material, name: string, order = 0) => {
     const mesh = batch.mesh(material, name);
@@ -352,16 +366,20 @@ export function buildBankDecor(
       const top = b.max[1] * p.scale;
       const parent = place(p.x, p.y, p.z, p.yaw);
       // The worker sits on the piece's back (−z) side.
-      S(p.storey).deskTops.add(
-        box(w + 0.12, DESK_TOP, d + 0.3),
-        local(parent, 0, top + DESK_TOP / 2, -0.15),
-      );
+      const set = S(p.storey);
+      set.solid.add(box(w + 0.12, DESK_TOP, d + 0.3), local(parent, 0, top + DESK_TOP / 2, -0.15), {
+        color: WOOD,
+      });
       const surface = top + DESK_TOP;
       const mx = -w * 0.22;
-      S(p.storey).monitors.add(box(0.08, 0.2, 0.08), local(parent, mx, surface + 0.1, -0.15));
-      S(p.storey).monitors.add(box(0.52, 0.34, 0.04), local(parent, mx, surface + 0.37, -0.15));
-      S(p.storey).screens.add(quad(0.46, 0.28), local(parent, mx, surface + 0.37, -0.172, Math.PI));
-      S(p.storey).keyboards.add(box(0.42, 0.02, 0.14), local(parent, mx, surface + 0.01, -0.45));
+      set.solid.add(box(0.08, 0.2, 0.08), local(parent, mx, surface + 0.1, -0.15), { color: DARK });
+      set.solid.add(box(0.52, 0.34, 0.04), local(parent, mx, surface + 0.37, -0.15), {
+        color: DARK,
+      });
+      set.screens.add(quad(0.46, 0.28), local(parent, mx, surface + 0.37, -0.172, Math.PI));
+      set.solid.add(box(0.42, 0.02, 0.14), local(parent, mx, surface + 0.01, -0.45), {
+        color: DARK,
+      });
     }
 
     // Framed windows and pictures along the outside walls.
@@ -417,20 +435,23 @@ export function buildBankDecor(
           const at = (off: number, y: number) =>
             place(cx + wall.n[0] * off, floor + y, cz + wall.n[1] * off, yaw);
           if (isWindow) {
-            S(storey).frames.add(
-              box(WINDOW_W + 0.16, WINDOW_H + 0.16, 0.05),
-              at(0.025, WINDOW_SILL + WINDOW_H / 2),
-            );
-            S(storey).frames.add(box(WINDOW_W + 0.34, 0.05, 0.14), at(0.07, WINDOW_SILL - 0.02));
-            S(storey).panes.add(quad(WINDOW_W, WINDOW_H), at(0.055, WINDOW_SILL + WINDOW_H / 2));
-            S(storey).frames.add(box(0.04, WINDOW_H, 0.02), at(0.06, WINDOW_SILL + WINDOW_H / 2));
-            S(storey).frames.add(box(WINDOW_W, 0.04, 0.02), at(0.06, WINDOW_SILL + WINDOW_H / 2));
+            const set = S(storey);
+            const mid = WINDOW_SILL + WINDOW_H / 2;
+            set.solid.add(box(WINDOW_W + 0.16, WINDOW_H + 0.16, 0.05), at(0.025, mid), {
+              color: TRIM,
+            });
+            set.solid.add(box(WINDOW_W + 0.34, 0.05, 0.14), at(0.07, WINDOW_SILL - 0.02), {
+              color: TRIM,
+            });
+            set.panes.add(quad(WINDOW_W, WINDOW_H), at(0.055, mid));
+            set.solid.add(box(0.04, WINDOW_H, 0.02), at(0.06, mid), { color: TRIM });
+            set.solid.add(box(WINDOW_W, 0.04, 0.02), at(0.06, mid), { color: TRIM });
           } else {
-            S(storey).golds.add(box(PICTURE_W, PICTURE_H, 0.04), at(0.02, PICTURE_Y));
-            (S(storey).art[count++ % pictures.length] as Batch).add(
-              quad(PICTURE_W - 0.12, PICTURE_H - 0.12),
-              at(0.045, PICTURE_Y),
-            );
+            const set = S(storey);
+            set.solid.add(box(PICTURE_W, PICTURE_H, 0.04), at(0.02, PICTURE_Y), { color: GOLD });
+            set.pictures.add(quad(PICTURE_W - 0.12, PICTURE_H - 0.12), at(0.045, PICTURE_Y), {
+              tile: count++ % PAINTINGS,
+            });
           }
         }
       }
@@ -488,17 +509,11 @@ export function buildBankDecor(
     for (const [storey, set] of sets) {
       const group = new Group();
       group.name = `storey-${storey}`;
-      group.userData = { bankTier: site.tier, storey };
-      addMesh(group, set.deskTops, wood, 'desk-tops');
-      addMesh(group, set.monitors, dark, 'monitors');
-      addMesh(group, set.keyboards, dark, 'keyboards');
+      group.userData = { bankTier: site.tier, storey, fine: true };
+      addMesh(group, set.solid, solid, 'decor-solid');
       addMesh(group, set.screens, screen, 'screens');
-      addMesh(group, set.frames, trim, 'window-frames');
-      addMesh(group, set.golds, gold, 'picture-frames');
       addMesh(group, set.panes, pane, 'window-panes');
-      set.art.forEach((batch, i) =>
-        addMesh(group, batch, pictures[i] as Material, `pictures-${i}`),
-      );
+      addMesh(group, set.pictures, pictures, 'pictures');
       addMesh(group, set.blobs, blob, 'soft-shadows', 1);
       addMesh(group, set.pools, glow, 'light-pools', 2);
       if (group.children.length) bank.add(group);

@@ -56,6 +56,28 @@ describe('BankLod', () => {
     expect(shown(groups)).toEqual([false, true, true]);
   });
 
+  it("keeps fine detail to the player's own storey, and the street front to the street and ground floor", () => {
+    const root = new Group();
+    const fine = [0, 1, 2].map((storey) => {
+      const g = new Group();
+      g.userData = { bankTier: 1, storey, fine: true };
+      root.add(g);
+      return g;
+    });
+    const front = new Group();
+    front.userData = { bankTier: 1, exterior: true };
+    root.add(front);
+    const lod = new BankLod([site], layouts);
+    lod.add(root);
+    lod.update(100, BANK_1.storeyHeight, 50); // inside, storey 1
+    expect(shown(fine)).toEqual([false, true, false]);
+    expect(front.visible).toBe(false); // nobody upstairs sees the street front
+    lod.update(100, 0, 50); // inside, ground floor
+    expect(front.visible).toBe(true);
+    lod.update(100, 0, 50 + BANK_1.depth / 2 + 200); // far away: the front still draws (it is the bank)
+    expect(front.visible).toBe(true);
+  });
+
   it('brings a group back when the player returns', () => {
     const { lod, groups } = scene();
     lod.update(0, 0, 0);

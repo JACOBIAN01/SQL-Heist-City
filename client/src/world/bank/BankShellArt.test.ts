@@ -97,6 +97,31 @@ describe('BankShellBuilder (Bank 1)', () => {
   });
 });
 
+describe('BankShellBuilder storeys', () => {
+  const groups = shell.children.filter((c) => c.userData.storey !== undefined);
+
+  it("keeps the outside always drawn and splits each storey's inside into a tagged group", () => {
+    expect(groups.map((g) => g.userData.storey).sort()).toEqual([0, 1, 2]);
+    for (const g of groups) expect(g.userData.bankTier).toBe(1);
+    const outside = shell.children
+      .filter((c) => c.userData.storey === undefined)
+      .map((c) => c.name);
+    expect(outside.sort()).toEqual(['bank-roof', 'bank-stone']);
+  });
+
+  it('puts floors, walls and ceilings on the storey they belong to', () => {
+    const names = (storey: number) =>
+      groups.find((g) => g.userData.storey === storey)?.children.map((c) => c.name) ?? [];
+    expect(names(0)).toEqual(
+      expect.arrayContaining(['bank-marble', 'bank-plaster', 'bank-ceiling']),
+    );
+    // Only the top storey has the vault's steel.
+    expect(names(2)).toContain('bank-steel');
+    expect(names(0)).not.toContain('bank-steel');
+    expect(names(1)).not.toContain('bank-steel');
+  });
+});
+
 describe('BankShellBuilder cladding and marble walls', () => {
   const dressed = new BankShellBuilder(
     {

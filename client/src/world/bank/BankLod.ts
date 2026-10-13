@@ -16,7 +16,10 @@ export const BANK_LOD = {
 
 interface Entry {
   readonly group: Object3D;
-  readonly storey: number;
+  /** The storey it belongs to; none for a bank's outside. */
+  readonly storey: number | undefined;
+  /** Small detail (windows, desks, vaults): drawn only on the player's own storey. */
+  readonly fine: boolean;
   readonly bank: { rect: Rect; height: number };
 }
 
@@ -62,11 +65,16 @@ export class BankLod {
   /** Registers every tagged group under `root`. */
   add(root: Object3D): void {
     root.traverse((o) => {
-      const { bankTier, storey } = o.userData as { bankTier?: number; storey?: number };
-      if (bankTier === undefined || storey === undefined) return;
+      const { bankTier, storey, fine, exterior } = o.userData as {
+        bankTier?: number;
+        storey?: number;
+        fine?: boolean;
+        exterior?: boolean;
+      };
+      if (bankTier === undefined || (storey === undefined && !exterior)) return;
       const bank = this.banks.get(bankTier);
       if (bank && !this.entries.some((e) => e.group === o))
-        this.entries.push({ group: o, storey, bank });
+        this.entries.push({ group: o, storey, fine: fine === true, bank });
     });
   }
 
@@ -77,12 +85,17 @@ export class BankLod {
       const dx = Math.max(r.minX - x, 0, x - r.maxX);
       const dz = Math.max(r.minZ - z, 0, z - r.maxZ);
       const distance = Math.hypot(dx, dz);
-      if (distance > this.settings.range) e.group.visible = false;
-      else if (distance > 0.5)
+      const inside = distance <= 0.5;
+      const here = Math.max(0, Math.floor((y + 0.6) / e.bank.height));
+      if (e.storey === undefined) {
+        // The street front: always there from outside, and from the ground floor looking out.
+        e.group.visible = !inside || here === 0;
+      } else if (distance > this.settings.range) e.group.visible = false;
+      else if (!inside)
         e.group.visible = e.storey === 0; // from the street: the ground floor, through the door
       else {
-        const here = Math.max(0, Math.floor((y + 0.6) / e.bank.height));
-        e.group.visible = Math.abs(e.storey - here) <= this.settings.storeysAround;
+        const around = e.fine ? 0 : this.settings.storeysAround;
+        e.group.visible = Math.abs(e.storey - here) <= around;
       }
     }
   }

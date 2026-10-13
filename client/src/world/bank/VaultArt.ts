@@ -13,13 +13,13 @@ import {
   Mesh,
   MeshBasicMaterial,
   MeshStandardMaterial,
+  PlaneGeometry,
   Points,
   PointsMaterial,
   Quaternion,
   SphereGeometry,
   TorusGeometry,
   Vector3,
-  type Material,
 } from 'three';
 import {
   BANK_LAYOUTS,
@@ -43,13 +43,23 @@ const BOLT_TRAVEL = 0.26;
 /** How far the steel sleeve lining the doorway runs, m: the whole wall and a little past it. */
 const JAMB_DEPTH = 0.5;
 
+/** One bolt: which way it points, and where it is now (in the leaf's frame). */
+export interface VaultBolt {
+  readonly dir: Vector3;
+  readonly angle: number;
+  readonly at: Vector3;
+}
+const boltMatrix = new Matrix4();
+
 /** The round door's moving parts, in a frame where the door faces +z (toward the console). */
 export interface VaultDoorRig {
   readonly root: Group;
   /** Turns about y at the hinge to swing the door (positive: into the vault). */
   readonly pivot: Group;
   readonly wheel: Group;
-  readonly bolts: readonly { readonly mesh: Mesh; readonly dir: Vector3 }[];
+  readonly bolts: readonly VaultBolt[];
+  /** All the bolts, drawn as one instanced mesh. */
+  readonly boltMesh: InstancedMesh;
   readonly radius: number;
   /** Where sparks fly from: points round the rim, world coordinates. */
   readonly rim: readonly Vector3[];
@@ -86,11 +96,13 @@ export function buildVaultDoor(
 
   const steel = materials.steel;
   const brass = materials.brass;
+  // Static parts are gathered here and merged into a mesh per material at the end.
+  const frame = new Group();
   // The frame: a heavy square plate round the opening and a collar the door seats in.
   const plate = (w: number, h: number, x: number, y: number) => {
     const m = new Mesh(new BoxGeometry(w, h, 0.2), steel);
     m.position.set(x, y, 0.2);
-    root.add(m);
+    frame.add(m);
   };
   const border = 0.22;
   plate(span + 2 * border, border, 0, height + border / 2);
@@ -101,7 +113,7 @@ export function buildVaultDoor(
   const sleeve = (w: number, h: number, x: number, y: number) => {
     const m = new Mesh(new BoxGeometry(w, h, JAMB_DEPTH), steel);
     m.position.set(x, y, 0);
-    root.add(m);
+    frame.add(m);
   };
   sleeve(span, 0.08, 0, height - 0.04);
   sleeve(0.06, height, -span / 2 + 0.03, cy);
@@ -116,60 +128,63 @@ export function buildVaultDoor(
       studs.push(new Matrix4().makeTranslation(side * (span / 2 + border / 2), y, 0.31));
   const rivets = new InstancedMesh(new SphereGeometry(0.035, 8, 6), brass, studs.length);
   studs.forEach((m, i) => rivets.setMatrixAt(i, m));
-  root.add(rivets);
+  frame.add(rivets);
   const seat = new Mesh(new TorusGeometry(radius + 0.09, 0.025, 8, 48), brass);
   seat.position.set(0, cy, 0.27);
-  root.add(seat);
+  frame.add(seat);
   const collar = new Mesh(new TorusGeometry(radius + 0.05, 0.07, 10, 48), steel);
   collar.position.set(0, cy, 0.2);
-  root.add(collar);
+  frame.add(collar);
 
   // The hinge side, and the door turning on it.
   const pivot = new Group();
   pivot.position.set(-radius, cy, 0);
   root.add(pivot);
+  const leaf = new Group(); // the door's fixed-to-the-leaf parts, merged below
   for (const dy of [-radius * 0.55, radius * 0.55]) {
     const knuckle = new Mesh(new CylinderGeometry(0.07, 0.07, 0.4, 12), steel);
     knuckle.position.set(-0.06, dy, 0.22);
-    pivot.add(knuckle);
+    leaf.add(knuckle);
   }
   const disc = new Mesh(new CylinderGeometry(radius, radius, 0.35, 48), steel);
   disc.rotation.x = Math.PI / 2;
   disc.position.set(radius, 0, 0);
-  pivot.add(disc);
+  leaf.add(disc);
   const ring = new Mesh(new TorusGeometry(radius * 0.72, 0.03, 8, 40), brass);
   ring.position.set(radius, 0, 0.18);
-  pivot.add(ring);
+  leaf.add(ring);
 
   const wheel = new Group();
   wheel.position.set(radius, 0, 0.3);
-  wheel.add(new Mesh(new TorusGeometry(0.36, 0.035, 8, 32), brass));
+  const wheelParts = new Group(); // unparented: merged into the wheel below
+  wheelParts.add(new Mesh(new TorusGeometry(0.36, 0.035, 8, 32), brass));
   for (let i = 0; i < 3; i++) {
     const spoke = new Mesh(new BoxGeometry(0.72, 0.045, 0.045), brass);
     spoke.rotation.z = (i * Math.PI) / 3;
-    wheel.add(spoke);
+    wheelParts.add(spoke);
   }
   const hub = new Mesh(new CylinderGeometry(0.09, 0.09, 0.12, 16), brass);
   hub.rotation.x = Math.PI / 2;
-  wheel.add(hub);
+  wheelParts.add(hub);
+  wheel.add(...mergeByMaterial(wheelParts, 'wheel').children);
   pivot.add(wheel);
 
-  const bolts: { mesh: Mesh; dir: Vector3 }[] = [];
-  const boltGeo = new CylinderGeometry(0.045, 0.045, 0.3, 10);
+  // The twelve bolts are one instanced mesh (one draw call); poseVaultDoor moves each instance.
+  const bolts: VaultBolt[] = [];
+  const boltMesh = new InstancedMesh(new CylinderGeometry(0.045, 0.045, 0.3, 10), brass, BOLTS);
   for (let i = 0; i < BOLTS; i++) {
     const a = (i / BOLTS) * Math.PI * 2;
-    const dir = new Vector3(Math.cos(a), Math.sin(a), 0);
-    const mesh = new Mesh(boltGeo, brass);
-    mesh.rotation.z = a - Math.PI / 2;
-    mesh.position.set(
-      radius + dir.x * (radius + BOLT_REACH - 0.15),
-      dir.y * (radius + BOLT_REACH - 0.15),
-      0,
-    );
-    pivot.add(mesh);
-    bolts.push({ mesh, dir });
+    bolts.push({
+      dir: new Vector3(Math.cos(a), Math.sin(a), 0),
+      angle: a - Math.PI / 2,
+      at: new Vector3(),
+    });
   }
+  boltMesh.frustumCulled = false; // the instances move; the base sphere would not follow
+  pivot.add(boltMesh);
 
+  root.add(...mergeByMaterial(frame, 'frame').children);
+  pivot.add(...mergeByMaterial(leaf, 'leaf').children);
   root.updateMatrixWorld(true);
   const rim = Array.from({ length: 16 }, (_, i) => {
     const a = (i / 16) * Math.PI * 2;
@@ -177,7 +192,9 @@ export function buildVaultDoor(
       root.matrixWorld,
     );
   });
-  return { root, pivot, wheel, bolts, radius, rim };
+  const rig: VaultDoorRig = { root, pivot, wheel, bolts, boltMesh, radius, rim };
+  poseVaultDoor(rig, { wheel: 0, bolts: Array<number>(BOLTS).fill(0), swing: 0 });
+  return rig;
 }
 
 /** Puts the door's parts where a pose says. */
@@ -188,8 +205,11 @@ export function poseVaultDoor(
   rig.wheel.rotation.z = pose.wheel;
   rig.bolts.forEach((b, i) => {
     const d = rig.radius + BOLT_REACH - 0.15 - BOLT_TRAVEL * (pose.bolts[i] ?? 0);
-    b.mesh.position.set(rig.radius + b.dir.x * d, b.dir.y * d, 0);
+    b.at.set(rig.radius + b.dir.x * d, b.dir.y * d, 0);
+    boltMatrix.makeRotationZ(b.angle).setPosition(b.at);
+    rig.boltMesh.setMatrixAt(i, boltMatrix);
   });
+  rig.boltMesh.instanceMatrix.needsUpdate = true;
   rig.pivot.rotation.y = pose.swing * VAULT_TIMING.swingAngle;
 }
 
@@ -209,20 +229,27 @@ function buildFittings(
     const cx = (r.minX + r.maxX) / 2;
     const cz = (r.minZ + r.maxZ) / 2;
     if (kind === 'deposit') {
-      // BoxGeometry faces: +x, −x, +y, −y, +z, −z. The face toward the room shows the doors.
-      const front = { '+x': 0, '-x': 1, '+z': 4, '-z': 5 }[run.facing];
-      const mats: Material[] = Array.from({ length: 6 }, (_, i) =>
-        i === front ? materials.deposit : materials.steel,
-      );
-      const geo = new BoxGeometry(w, FITTING_HEIGHT, d);
-      // Repeat the door texture once per metre on the front face.
-      const uv = geo.getAttribute('uv') as BufferAttribute;
-      const along = run.facing === '+z' || run.facing === '-z' ? w : d;
-      for (let v = front * 4; v < front * 4 + 4; v++)
-        uv.setXY(v, uv.getX(v) * along, uv.getY(v) * FITTING_HEIGHT);
-      const body = new Mesh(geo, mats);
+      // A steel block with a plane of small doors on the face toward the room: two materials, and
+      // (merged across runs) two draw calls however many walls of boxes there are.
+      const alongX = run.facing === '+z' || run.facing === '-z';
+      const along = alongX ? w : d;
+      const body = new Mesh(new BoxGeometry(w, FITTING_HEIGHT, d), materials.steel);
       body.position.set(cx, floorY + FITTING_HEIGHT / 2, cz);
       group.add(body);
+      const doors = new PlaneGeometry(along, FITTING_HEIGHT);
+      // Repeat the door texture once per metre.
+      const uv = doors.getAttribute('uv') as BufferAttribute;
+      for (let v = 0; v < uv.count; v++)
+        uv.setXY(v, uv.getX(v) * along, uv.getY(v) * FITTING_HEIGHT);
+      const face = new Mesh(doors, materials.deposit);
+      const n = { '+x': [1, 0], '-x': [-1, 0], '+z': [0, 1], '-z': [0, -1] }[run.facing];
+      face.position.set(
+        cx + (n[0] ?? 0) * (w / 2 + 0.003),
+        floorY + FITTING_HEIGHT / 2,
+        cz + (n[1] ?? 0) * (d / 2 + 0.003),
+      );
+      face.rotation.y = Math.atan2(n[0] ?? 0, n[1] ?? 0);
+      group.add(face);
       continue;
     }
     // Cash shelves: a steel frame, four shelves, and bundles of notes stacked on each.
@@ -460,6 +487,7 @@ export class VaultArt {
       holder.name = `vault-art-${v.id}`;
       holder.userData = {
         bankTier: v.tier,
+        fine: true,
         storey: Math.round(door.minY / (layout?.storeyHeight ?? 3)),
       };
       this.root.add(holder);

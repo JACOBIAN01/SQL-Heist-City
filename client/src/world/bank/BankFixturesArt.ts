@@ -182,7 +182,7 @@ function bankFixtures(
     }
     if (parts.children.length === 0) continue;
     const merged = mergeByMaterial(parts, `storey-${storey}`);
-    merged.userData = { bankTier: site.tier, storey };
+    merged.userData = { bankTier: site.tier, storey, fine: true };
     bank.add(merged);
   }
   return bank;
