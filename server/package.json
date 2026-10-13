@@ -8,13 +8,16 @@
     "dev": "tsx watch src/main.ts",
     "start": "tsx src/main.ts",
     "bot": "tsx src/tools/walkBot.ts",
-    "load:bots": "tsx src/tools/loadBots.ts"
+    "load:bots": "tsx src/tools/loadBots.ts",
+    "db:migrate": "tsx src/tools/migratePg.ts"
   },
   "dependencies": {
     "@heist/shared": "*",
+    "pg": "^8.23.1",
     "ws": "^8.22.0"
   },
   "devDependencies": {
+    "@types/pg": "^8.23.1",
     "@types/ws": "^8.18.2",
     "tsx": "^4.23.15"
   },

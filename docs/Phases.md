@@ -289,8 +289,8 @@ Fixes audit cons 1 and 3: who is playing, and records that last.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 13.1 | Decision record: Google OpenID Connect (authorization code with PKCE, server-side), PostgreSQL for persistence; options weighed and rejected | `docs/identity.md` written and approved | ⬜ |
-| 13.2 | PostgreSQL in dev (compose), a migration tool, a test database for CI | `npm run db:migrate` builds an empty database; CI runs against it | ⬜ |
+| 13.1 | Decision record: Google OpenID Connect (authorization code with PKCE, server-side), PostgreSQL for persistence; options weighed and rejected | `docs/identity.md` written and approved | ✅ written (flow, tickets, options weighed, storage split); approval given by the owner's "go through all phases" |
+| 13.2 | PostgreSQL in dev (compose), a migration tool, a test database for CI | `npm run db:migrate` builds an empty database; CI runs against it | ✅ `server/src/pg` (PgDatabase, advisory-locked append-only migrations), `scripts/pg-dev.mjs` private cluster, CI service container, PostgreSQL tests skip with a warning when none is reachable |
 | 13.3 | Move admin content (questions, versions, settings, pools, audit, users) from the SQLite file to PostgreSQL behind the existing repositories | every repository contract test passes on both; a one-shot import from `dev.db` works | ⬜ |
 | 13.4 | Players table and repository (Google subject id, email, display name, school domain, created and last seen) | contract tests pass; no other personal data stored | ⬜ |
 | 13.5 | Google sign-in on the server: login, callback, ID-token check, optional allow-list of school domains, sessions | sign-in works end to end against a test Google project; a bad or expired token is refused | ⬜ |
