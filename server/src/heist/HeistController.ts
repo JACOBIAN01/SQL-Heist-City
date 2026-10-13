@@ -7,6 +7,7 @@ import {
   type ChallengeServerMessage,
   type HeistSettings,
   type JsonClientMessage,
+  type SkillAdjust,
   type RejectReason,
 } from '@heist/shared';
 import type { Player } from '../game/Player';
@@ -122,6 +123,10 @@ export class HeistController implements ArmsControl {
   }
 
   private closedTiers: ReadonlySet<number> = new Set();
+  /** How to ease a student's questions; set by the learning record when there is one. */
+  skillOf: ((player: Player) => SkillAdjust | undefined) | undefined;
+  /** The student's weakest topics, for spaced repetition. */
+  focusOf: ((player: Player) => readonly string[] | undefined) | undefined;
 
   /** The teacher's class closed these banks: no locks, no loose cash, and the round does not wait for them. */
   setClosedTiers(tiers: ReadonlySet<number>): void {
@@ -371,10 +376,16 @@ export class HeistController implements ArmsControl {
     const base =
       message.t === 'challenge_request' ? this.taskOptions?.(message.rewardKey) : undefined;
     // Whose attempt this is, for the learning record.
+    // A struggling student gets easier questions and more time (and smaller heals) for this task.
+    const skill = message.t === 'challenge_request' ? this.skillOf?.(player) : undefined;
+    const focusTopics = message.t === 'challenge_request' ? this.focusOf?.(player) : undefined;
+    if (message.t === 'challenge_request') player.healScale = skill?.rewardScale ?? 1;
     const options =
       message.t === 'challenge_request'
         ? {
             ...base,
+            ...(skill ? { skill } : {}),
+            ...(focusTopics?.length ? { focusTopics } : {}),
             who: {
               ...(player.accountId === undefined ? {} : { accountId: player.accountId }),
               ...(this.match.classInfo ? { classId: this.match.classInfo.classId } : {}),

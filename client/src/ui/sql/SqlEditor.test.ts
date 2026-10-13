@@ -73,4 +73,28 @@ describe('SqlEditor', () => {
     editor['view'].dispatch({ changes: { from: 0, insert: 'SELECT' }, userEvent: 'input.type' });
     expect(onChange).toHaveBeenLastCalledWith('SELECT');
   });
+
+  it('autocompletes only this challenge’s tables and columns (16.5)', async () => {
+    editor = new SqlEditor(host);
+    editor.setSchema([
+      { name: 'employees', columns: ['id', 'first_name', 'salary'] },
+      { name: 'branches', columns: ['id', 'city'] },
+    ]);
+    const tables = await editor.completionsFor('SELECT * FROM emp');
+    expect(tables).toContain('employees');
+    expect(tables).not.toContain('departments');
+    editor.setValue('');
+    const columns = await editor.completionsFor('SELECT first_');
+    expect(columns).toContain('first_name');
+  });
+
+  it('forgets the previous question’s names when a new one is shown', async () => {
+    editor = new SqlEditor(host);
+    editor.setSchema([{ name: 'employees', columns: ['salary'] }]);
+    editor.setSchema([{ name: 'accounts', columns: ['balance'] }]);
+    editor.setValue('');
+    expect(await editor.completionsFor('SELECT * FROM emp')).not.toContain('employees');
+    editor.setValue('');
+    expect(await editor.completionsFor('SELECT * FROM acc')).toContain('accounts');
+  });
 });

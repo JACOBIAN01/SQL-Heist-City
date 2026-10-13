@@ -104,3 +104,30 @@ describe('QuestionSelector with an allowed set (a class)', () => {
     expect(new Set(seen).size).toBe(3);
   });
 });
+
+describe('QuestionSelector with a focus (spaced repetition, 16.8)', () => {
+  const pickFocused = (focus: ReadonlySet<string>, player = 'p1') =>
+    selector.select(player, 'heal:small', { min: 1, max: 1 }, rng, undefined, focus)?.slug;
+  const tagged = (slug: string, topic: string) =>
+    repo.create({ ...base, slug, tier: 1, topic: [topic] }, null);
+
+  it('draws only from the focus topics when there are questions on them', () => {
+    tagged('j', 'join');
+    tagged('w', 'where');
+    tagged('x', 'window');
+    for (let i = 0; i < 20; i++) expect(pickFocused(new Set(['window']), `p${i}`)).toBe('x');
+  });
+
+  it('falls back to everything when no question in range is on a focus topic', () => {
+    tagged('j', 'join');
+    expect(pickFocused(new Set(['window']))).toBe('j');
+  });
+
+  it('still avoids repeats inside the focus set', () => {
+    tagged('j1', 'join');
+    tagged('j2', 'join');
+    tagged('w', 'where');
+    const seen = new Set([pickFocused(new Set(['join'])), pickFocused(new Set(['join']))]);
+    expect(seen).toEqual(new Set(['j1', 'j2']));
+  });
+});

@@ -31,6 +31,7 @@ export class AnalyticsKit {
       settings,
       (accountId, message) => this.deliver(accountId, message),
       (err) => this.log('could not update a profile', err),
+      async (accountId) => (await attempts.itemsOf(accountId)).slice(-300),
     );
     this.sink = new FanOutSink([this.recorder, this.aggregator]);
   }
@@ -38,6 +39,10 @@ export class AnalyticsKit {
   /** Send profiles to this match's students, and give each one theirs on joining. */
   bind(match: Match): void {
     this.deliver = (accountId, message) => match.sendProfile(accountId, message);
+    match.heist.focusOf = (player) =>
+      player.accountId === undefined ? undefined : this.aggregator.focusOf(player.accountId);
+    match.heist.skillOf = (player) =>
+      player.accountId === undefined ? undefined : this.aggregator.skillOf(player.accountId);
     match.onPlayerJoined((player) => {
       if (player.accountId === undefined) return;
       const accountId = player.accountId;

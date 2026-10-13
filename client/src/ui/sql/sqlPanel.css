@@ -555,3 +555,25 @@
   text-align: center;
   color: var(--sqlp-muted);
 }
+
+/* The tables stay visible on the minimised bar while you fight. */
+.sqlp-bar {
+  flex-wrap: wrap;
+  max-width: min(46rem, 94vw);
+}
+.sqlp-bar-schema {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--sqlp-muted);
+  max-width: 28rem;
+}
+.sqlp-bar-table {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sqlp-bar-table strong {
+  color: var(--sqlp-text);
+}

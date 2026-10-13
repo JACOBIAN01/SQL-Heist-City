@@ -98,6 +98,8 @@ export class SqlPanelController {
         return;
       }
       this.challenge = result.challenge;
+      this.work.editor.setSchema(result.challenge.tables);
+      this.deps.panel.setBarSchema(result.challenge.tables);
       this.showHeader(result.challenge);
       this.problem.show(result.challenge);
       this.refreshHintButton();

@@ -270,3 +270,73 @@ describe('review material on an item (16.2)', () => {
     expect(done?.who.playerKey).toBe('p1');
   });
 });
+
+describe('skill-scaled difficulty (16.7)', () => {
+  const tierQ = (slug: string, tier: number) => ({
+    ...base,
+    slug,
+    tier,
+    rcsbe: 'S' as const,
+    topic: ['select'],
+  });
+  const build = () => {
+    const repo = new InMemoryQuestionRepository();
+    for (const t of [1, 2, 3, 4, 5]) repo.create(tierQ(`t${t}`, t), null);
+    return new ChallengeService({
+      matchSeed: 'm',
+      selector: new QuestionSelector(repo),
+      variants,
+      grader: new Grader(new InProcessSandboxRunner()),
+      settings: new StaticSettings(),
+      now: () => 1_000_000,
+    });
+  };
+
+  it('gives a struggling student an easier question and more time, for the hardest reward too', async () => {
+    const svc = build();
+    const normal = await svc.issue({ player: 'a', rewardKey: 'gun:sniper' });
+    const eased = await svc.issue({
+      player: 'b',
+      rewardKey: 'gun:sniper',
+      skill: { tierShift: -2, ttlScale: 1.6, rewardScale: 0.6 },
+    });
+    if (!normal.ok || !eased.ok) throw new Error('issue failed');
+    expect(normal.challenge.tier).toBe(5);
+    expect(eased.challenge.tier).toBe(3);
+    expect(eased.challenge.expiresAt - 1_000_000).toBe(
+      DEFAULT_CHALLENGE_SETTINGS.ttlSec * 1.6 * 1000,
+    );
+    expect(normal.challenge.expiresAt - 1_000_000).toBe(DEFAULT_CHALLENGE_SETTINGS.ttlSec * 1000);
+  });
+
+  it('every reward type stays possible at the largest shift (a beginner can earn each one)', async () => {
+    const svc = build();
+    for (const [i, reward] of [
+      'heal:small',
+      'heal:full',
+      'ammo:refill',
+      'gun:pistol',
+      'gun:rifle',
+      'gun:sniper',
+    ].entries()) {
+      const r = await svc.issue({
+        player: `p${i}`,
+        rewardKey: reward,
+        skill: { tierShift: -2, ttlScale: 1.6, rewardScale: 0.6 },
+      });
+      expect(r.ok, reward).toBe(true);
+    }
+  });
+
+  it('never eases a fixed question (the tutorial)', async () => {
+    const svc = build();
+    const r = await svc.issue({
+      player: 'a',
+      rewardKey: 'gun:sniper',
+      fixed: { slug: 't5', seed: 's' },
+      skill: { tierShift: -2, ttlScale: 1.6, rewardScale: 0.6 },
+    });
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.challenge.tier).toBe(5);
+  });
+});

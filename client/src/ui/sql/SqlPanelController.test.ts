@@ -42,6 +42,38 @@ async function started(sql = 'SELECT name FROM employees') {
   controller['work'].editor.setValue(sql);
 }
 
+describe("SqlPanelController: the question's tables stay in view (16.6) and autocomplete (16.5)", () => {
+  it('keeps the tables on the minimised bar, so you can still read them while fighting', async () => {
+    await controller.start(task('heal:small', 'self'));
+    panel.minimise();
+    const bar = host.querySelector('.sqlp-bar') as HTMLElement;
+    expect(bar.hidden).toBe(false);
+    const tables = [...bar.querySelectorAll('.sqlp-bar-table')].map((t) => t.textContent);
+    expect(tables).toEqual(['employees (id, name)']);
+  });
+
+  it("offers only this question's names, and replaces them with the next question's", async () => {
+    await controller.start(task('heal:small', 'self'));
+    const editor = controller['work'].editor;
+    editor.setValue('');
+    expect(await editor.completionsFor('SELECT * FROM emp')).toContain('employees');
+    api.onRequest = async () => ({
+      ok: true,
+      challenge: sampleChallenge({
+        tables: [{ name: 'accounts', columns: ['id', 'balance'], sampleRows: [], rowCount: 0 }],
+      }),
+    });
+    await controller.start(task('gun:pistol'));
+    editor.setValue('');
+    const names = await editor.completionsFor('SELECT * FROM ');
+    expect(names).toContain('accounts');
+    expect(names).not.toContain('employees');
+    expect((host.querySelector('.sqlp-bar-schema') as HTMLElement).textContent).toBe(
+      'accounts (id, balance)',
+    );
+  });
+});
+
 describe('SqlPanelController: starting a task', () => {
   it("opens the panel on the server's challenge: header, story and tables", async () => {
     await controller.start(task('heal:small', 'self'));

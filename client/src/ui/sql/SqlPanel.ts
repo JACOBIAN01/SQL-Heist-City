@@ -106,6 +106,8 @@ export class SqlPanel {
       h('span', { class: 'sqlp-tile small', attrs: { 'data-role': 'bar-icon', hidden: '' } }),
       h('span', { class: 'sqlp-bar-title', attrs: { 'data-role': 'bar-title' } }),
       h('span', { class: 'sqlp-bar-timer', attrs: { 'data-role': 'bar-timer' } }),
+      // The tables of the question stay in view while you fight (Phase 16.6).
+      h('span', { class: 'sqlp-bar-schema', attrs: { 'data-role': 'bar-schema' } }),
       h('button', {
         class: 'sqlp-btn',
         text: 'Resume',
@@ -139,6 +141,22 @@ export class SqlPanel {
     };
     set('bar-title', title);
     set('bar-timer', timer);
+  }
+
+  /** The question's tables and columns, kept in view on the minimised bar. */
+  setBarSchema(tables: readonly { name: string; columns: readonly string[] }[]): void {
+    const host = this.bar.querySelector('[data-role="bar-schema"]');
+    if (!host) return;
+    host.replaceChildren(
+      ...tables.map((t) =>
+        h(
+          'span',
+          { class: 'sqlp-bar-table', attrs: { title: `${t.name}: ${t.columns.join(', ')}` } },
+          h('strong', { text: t.name }),
+          ` (${t.columns.join(', ')})`,
+        ),
+      ),
+    );
   }
 
   /** Shows the task's icon (tier-coloured tile) in the header and on the minimised bar. */

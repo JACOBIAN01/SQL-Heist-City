@@ -29,7 +29,7 @@ export class HealRule implements TaskRule {
   grant(player: Player, rewardKey: string): void {
     const amount = this.amountFor(rewardKey);
     if (amount === undefined || !player.alive) return;
-    player.hp = Math.min(this.match.maxHp, player.hp + amount);
+    player.hp = Math.min(this.match.maxHp, player.hp + Math.round(amount * player.healScale));
   }
 
   private amountFor(rewardKey: string): number | undefined {

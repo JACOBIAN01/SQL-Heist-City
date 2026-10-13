@@ -295,6 +295,67 @@ describe('ProfileAggregator (15.6)', () => {
   });
 });
 
+describe('skill source (16.7)', () => {
+  it('answers from the live profile once it is loaded: none for a newcomer, easier for a struggling student', async () => {
+    const profiles = new InMemoryProfileStore();
+    const agg = new ProfileAggregator(
+      profiles,
+      () => S,
+      () => {},
+      quiet,
+    );
+    expect(agg.skillOf(1)).toBeUndefined(); // not loaded yet
+    await agg.profileOf(1);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(agg.skillOf(1)).toEqual({ tierShift: 0, ttlScale: 1, rewardScale: 1 }); // newcomer
+    for (let i = 0; i < 8; i++)
+      agg.item(item({ challengeId: `f${i}`, outcome: 'expired', submits: 1 }), { accountId: 1 });
+    agg.item(item({ challengeId: 's' }), { accountId: 1 });
+    await agg.settled();
+    expect(agg.skillOf(1)).toMatchObject({ tierShift: -2 }); // 4 of 36 marks
+    agg.forget(1);
+    expect(agg.skillOf(1)).toBeUndefined();
+  });
+});
+
+describe('weak topics come back (16.8)', () => {
+  it('names the weakest topics with enough evidence from the stored history, and learns as the student plays', async () => {
+    const history = [
+      ...Array.from({ length: 3 }, (_, i) =>
+        item({ challengeId: `a${i}`, topics: ['cte'], outcome: 'expired', submits: 1 }),
+      ),
+      ...Array.from({ length: 3 }, (_, i) => item({ challengeId: `b${i}`, topics: ['where'] })),
+      ...Array.from({ length: 4 }, (_, i) =>
+        item({
+          challengeId: `c${i}`,
+          topics: ['join'],
+          outcome: i === 0 ? 'solved' : 'expired',
+          submits: 1,
+        }),
+      ),
+      item({ challengeId: 'd', topics: ['rare'], outcome: 'expired', submits: 1 }),
+    ];
+    const agg = new ProfileAggregator(
+      new InMemoryProfileStore(),
+      () => S,
+      () => {},
+      quiet,
+      async () => history,
+    );
+    expect(agg.focusOf(1)).toBeUndefined(); // not loaded yet
+    await agg.profileOf(1);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(agg.focusOf(1)).toEqual(['cte', 'join', 'where'].filter((t) => t !== 'where')); // 'where' is perfect, 'rare' has one item
+    for (let i = 0; i < 3; i++)
+      agg.item(
+        item({ challengeId: `n${i}`, topics: ['subquery'], outcome: 'expired', submits: 1 }),
+        { accountId: 1 },
+      );
+    await agg.settled();
+    expect(agg.focusOf(1)).toContain('subquery');
+  });
+});
+
 describe('BatchingRecorder (15.2)', () => {
   it('saves in batches off the tick, in order, and flush waits for the save', async () => {
     const saved: number[] = [];

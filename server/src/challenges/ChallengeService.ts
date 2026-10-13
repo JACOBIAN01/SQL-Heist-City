@@ -11,7 +11,9 @@ import {
   type ItemOutcome,
   type QuestionTemplate,
   type ItemRecord,
+  type SkillAdjust,
   type TierRange,
+  shiftTiers,
   type WorkedExampleView,
   marksFor,
 } from '@heist/shared';
@@ -33,6 +35,10 @@ export interface IssueOptions {
   readonly revealSolution?: boolean;
   /** Whose attempt this is, for the learning record. */
   readonly who?: AttemptWho;
+  /** Topics this student is weakest at: some questions are drawn from them (spaced repetition). */
+  readonly focusTopics?: readonly string[];
+  /** Eases this question for a struggling student (easier tier, more time). */
+  readonly skill?: SkillAdjust;
   /** Only questions with these ids may be asked (a class's released set for this kind of task). */
   readonly allowedQuestions?: ReadonlySet<number>;
 }
@@ -144,8 +150,10 @@ export class ChallengeService {
         retryAt: lastRequest + settings.requestCooldownMs,
       };
     }
-    const tiers = request.tiers ?? this.deps.settings.rewardTiers(request.rewardKey);
-    if (!tiers) return { ok: false, reason: 'unknown_reward' };
+    const baseTiers = request.tiers ?? this.deps.settings.rewardTiers(request.rewardKey);
+    if (!baseTiers) return { ok: false, reason: 'unknown_reward' };
+    const skill = request.fixed ? undefined : request.skill;
+    const tiers = skill ? shiftTiers(baseTiers, skill.tierShift) : baseTiers;
     this.lastRequestAt.set(request.player, now);
 
     // Switching task: the previous challenge is dropped; its question is used up.
@@ -173,6 +181,7 @@ export class ChallengeService {
           tiers,
           new SeededRng(`${seed}/select`),
           request.allowedQuestions,
+          this.focusFor(request, seed),
         );
       if (!question) return { ok: false, reason: 'no_questions' };
 
@@ -204,7 +213,7 @@ export class ChallengeService {
         variant,
         expected,
         example,
-        expiresAt: now + settings.ttlSec * 1000,
+        expiresAt: now + settings.ttlSec * (skill?.ttlScale ?? 1) * 1000,
         // The ladder: free steps from the topic's concept card first, then the question's own paid hints
         // (the tutorial's are all free).
         hints: this.ladder(
@@ -441,6 +450,15 @@ export class ChallengeService {
       },
       challenge.who,
     );
+  }
+
+  /** The weak topics to draw from this time, decided by the spaced-repetition chance (seeded, so tests repeat). */
+  private focusFor(request: ChallengeRequest, seed: string): ReadonlySet<string> | undefined {
+    const spaced = this.deps.settings.analyticsSettings().spaced;
+    if (!spaced.enabled || !request.focusTopics?.length || request.fixed) return undefined;
+    return new SeededRng(`${seed}/focus`).bool(spaced.chance)
+      ? new Set(request.focusTopics)
+      : undefined;
   }
 
   /** The hint ladder for a question: a free nudge, the free concept card, then its paid hints. */

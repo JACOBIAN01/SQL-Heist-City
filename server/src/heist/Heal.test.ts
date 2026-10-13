@@ -35,7 +35,7 @@ function setup(hp = 40) {
     await new Promise((resolve) => setImmediate(resolve));
     return connection.jsonOf('challenge')[0]?.result;
   };
-  return { player: r.player, gateway, solve, request };
+  return { player: r.player, gateway, solve, request, match };
 }
 
 describe('heal tasks', () => {
@@ -45,6 +45,26 @@ describe('heal tasks', () => {
     expect(s.player.hp).toBe(60);
     await s.solve('medium');
     expect(s.player.hp).toBe(100); // 60 + 50, capped at max HP
+  });
+
+  it('a struggling student, eased by skill scaling, heals a little less (16.7)', async () => {
+    const s = setup(40);
+    s.player.healScale = 0.5;
+    await s.solve('small');
+    expect(s.player.hp).toBe(50); // half of 20
+  });
+
+  it('passes the skill adjustment to the challenge system with each request, and resets it', async () => {
+    const s = setup(40);
+    s.match.heist.skillOf = () => ({ tierShift: -1, ttlScale: 1.3, rewardScale: 0.8 });
+    await s.request('small');
+    expect(s.gateway.calls.at(-1)?.options).toMatchObject({
+      skill: { tierShift: -1, rewardScale: 0.8 },
+    });
+    expect(s.player.healScale).toBe(0.8);
+    s.match.heist.skillOf = () => undefined;
+    await s.request('small');
+    expect(s.player.healScale).toBe(1);
   });
 
   it('a full heal brings you to max HP', async () => {

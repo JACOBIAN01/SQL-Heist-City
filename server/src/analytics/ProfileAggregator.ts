@@ -9,6 +9,8 @@ import {
   type ItemRecord,
   type ProfileMessage,
   type ProfileScopeView,
+  type SkillAdjust,
+  skillAdjust,
   type ProfileTotals,
 } from '@heist/shared';
 import type { AttemptEvent, AttemptSink, AttemptWho } from './AttemptSink';
@@ -27,6 +29,8 @@ export function scopeView(totals: ProfileTotals, settings: AnalyticsSettings): P
 }
 
 interface Live {
+  /** Per topic: marks earned and available over counted items, for spaced repetition. */
+  topics: Map<string, { earned: number; available: number; items: number }>;
   all: ProfileTotals;
   class: ProfileTotals | undefined;
   round: ProfileTotals | undefined;
@@ -44,6 +48,8 @@ interface Live {
  */
 export class ProfileAggregator implements AttemptSink {
   private readonly live = new Map<number, Promise<Live>>();
+  /** The same students once their profile has loaded, for answers that cannot wait. */
+  private readonly loaded = new Map<number, Live>();
   private readonly writes: Promise<void>[] = [];
 
   constructor(
@@ -52,9 +58,31 @@ export class ProfileAggregator implements AttemptSink {
     /** Called with the student's new profile after each counted question. */
     private readonly onProfile: (accountId: number, message: ProfileMessage) => void,
     private readonly onError: (err: unknown) => void = () => {},
+    /** A student's earlier finished items (most recent), for spaced repetition. */
+    private readonly items?: (accountId: number) => Promise<readonly ItemRecord[]>,
   ) {}
 
   event(_event: AttemptEvent): void {}
+
+  /** The student's weakest topics (with enough evidence), lowest first: where questions are drawn from now and then. */
+  focusOf(accountId: number): readonly string[] | undefined {
+    const loaded = this.loaded.get(accountId);
+    if (!loaded) return undefined;
+    const settings = this.settings();
+    return [...loaded.topics]
+      .filter(([, t]) => t.items >= settings.minItems && t.available > 0)
+      .map(([topic, t]) => ({ topic, score: t.earned / t.available }))
+      .sort((a, b) => a.score - b.score || a.topic.localeCompare(b.topic))
+      .slice(0, settings.spaced.topics)
+      .filter((t) => t.score < 1)
+      .map((t) => t.topic);
+  }
+
+  /** How to ease this student's questions, from their live all-time profile (none until it is loaded). */
+  skillOf(accountId: number): SkillAdjust | undefined {
+    const loaded = this.loaded.get(accountId);
+    return loaded ? skillAdjust(loaded.all, this.settings()) : undefined;
+  }
 
   /** A student's profile as of now, for sending when they join. */
   async profileOf(accountId: number, classId?: number, round?: number): Promise<ProfileMessage> {
@@ -86,6 +114,14 @@ export class ProfileAggregator implements AttemptSink {
     const live = await this.ensure(accountId, who.classId, who.round);
     const delta = addItem(emptyTotals(), item, settings);
     live.all = mergeTotals(live.all, delta);
+    const score = scoreItem(item, settings);
+    for (const topic of item.topics) {
+      const t = live.topics.get(topic) ?? { earned: 0, available: 0, items: 0 };
+      t.earned += score.earned;
+      t.available += score.available;
+      t.items += 1;
+      live.topics.set(topic, t);
+    }
     if (who.classId !== undefined) live.class = mergeTotals(live.class ?? emptyTotals(), delta);
     if (who.round !== undefined) live.round = mergeTotals(live.round ?? emptyTotals(), delta);
     const scopes: ProfileScope[] = [{ kind: 'all' }];
@@ -105,10 +141,29 @@ export class ProfileAggregator implements AttemptSink {
     await this.store.add(accountId, scopes, delta);
   }
 
+  /** Topic marks from the student's stored items, so what they got wrong in earlier rounds is remembered. */
+  private async loadTopics(accountId: number): Promise<Live['topics']> {
+    const topics: Live['topics'] = new Map();
+    const settings = this.settings();
+    for (const stored of (await this.items?.(accountId)) ?? []) {
+      const score = scoreItem(stored, settings);
+      if (!score.counted) continue;
+      for (const topic of stored.topics) {
+        const t = topics.get(topic) ?? { earned: 0, available: 0, items: 0 };
+        t.earned += score.earned;
+        t.available += score.available;
+        t.items += 1;
+        topics.set(topic, t);
+      }
+    }
+    return topics;
+  }
+
   private ensure(accountId: number, classId?: number, round?: number): Promise<Live> {
     let pending = this.live.get(accountId);
     if (!pending) {
       pending = (async () => ({
+        topics: await this.loadTopics(accountId),
         all: await this.store.load(accountId, { kind: 'all' }),
         class:
           classId === undefined
@@ -122,7 +177,10 @@ export class ProfileAggregator implements AttemptSink {
         round_: round,
       }))();
       this.live.set(accountId, pending);
-      pending.catch(() => this.live.delete(accountId));
+      pending.then(
+        (live) => this.loaded.set(accountId, live),
+        () => this.live.delete(accountId),
+      );
     }
     return pending.then(async (live) => {
       // A new round starts fresh round totals.
@@ -137,6 +195,7 @@ export class ProfileAggregator implements AttemptSink {
   /** Forget a student who left (their totals are stored). */
   forget(accountId: number): void {
     this.live.delete(accountId);
+    this.loaded.delete(accountId);
   }
 
   private messageOf(live: Live, settings: AnalyticsSettings = this.settings()): ProfileMessage {

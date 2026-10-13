@@ -1,5 +1,13 @@
+import {
+  autocompletion,
+  completionStatus,
+  currentCompletions,
+  startCompletion,
+  type CompletionContext,
+  type CompletionResult,
+} from '@codemirror/autocomplete';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { sql, SQLite } from '@codemirror/lang-sql';
+import { keywordCompletionSource, schemaCompletionSource, sql, SQLite } from '@codemirror/lang-sql';
 import { HighlightStyle, bracketMatching, syntaxHighlighting } from '@codemirror/language';
 import { Compartment, EditorState, Prec } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, placeholder as placeholderExt } from '@codemirror/view';
@@ -63,6 +71,8 @@ const theme = EditorView.theme(
 export class SqlEditor {
   private readonly view: EditorView;
   private readonly readOnly = new Compartment();
+  /** What autocomplete offers: SQL keywords and this challenge's own tables and columns. */
+  private readonly completion = new Compartment();
   /** True while restoring a draft, so it isn't reported (and saved) as a new edit. */
   private silent = false;
 
@@ -79,6 +89,7 @@ export class SqlEditor {
           history(),
           bracketMatching(),
           sql({ dialect: SQLite }),
+          this.completion.of(completionFor([])),
           syntaxHighlighting(highlight),
           theme,
           EditorView.lineWrapping,
@@ -118,6 +129,19 @@ export class SqlEditor {
     }
   }
 
+  /**
+   * Autocomplete offers these tables and columns (and SQL keywords), nothing else:
+   * names from another question never show up.
+   */
+  setSchema(tables: readonly { name: string; columns: readonly string[] }[]): void {
+    this.view.dispatch({ effects: this.completion.reconfigure(completionFor(tables)) });
+  }
+
+  /** The names autocomplete would offer for a prefix, for tests. */
+  completionsFor(text: string): Promise<string[]> {
+    return completionLabels(this.view, text);
+  }
+
   focus(): void {
     this.view.focus();
   }
@@ -129,4 +153,46 @@ export class SqlEditor {
   destroy(): void {
     this.view.destroy();
   }
+}
+
+/** Types `text` at the end of the document, asks for completions, and returns their labels. */
+async function completionLabels(view: EditorView, text: string): Promise<string[]> {
+  view.dispatch({
+    changes: { from: view.state.doc.length, insert: text },
+    selection: { anchor: view.state.doc.length + text.length },
+  });
+  startCompletion(view);
+  for (let i = 0; i < 40 && completionStatus(view.state) !== 'active'; i++)
+    await new Promise((r) => setTimeout(r, 10));
+  return currentCompletions(view.state).map((c) => c.label);
+}
+
+/** Every column of this challenge's tables, offered by its bare name (with the table it belongs to). */
+function columnSource(tables: readonly { name: string; columns: readonly string[] }[]) {
+  const options = tables.flatMap((t) =>
+    t.columns.map((c) => ({ label: c, type: 'property', detail: t.name })),
+  );
+  return (context: CompletionContext): CompletionResult | null => {
+    const word = context.matchBefore(/\w+/);
+    if (!word || (word.from === word.to && !context.explicit)) return null;
+    return { from: word.from, options, validFor: /^\w*$/ };
+  };
+}
+
+/**
+ * The completion sources for a challenge: SQL keywords, its tables (and `table.column`), and every
+ * column by its bare name. Nothing from any other question is ever offered.
+ */
+function completionFor(tables: readonly { name: string; columns: readonly string[] }[]) {
+  const schema = Object.fromEntries(tables.map((t) => [t.name, [...t.columns]]));
+  const config = { dialect: SQLite, schema, upperCaseKeywords: true };
+  return autocompletion({
+    activateOnTyping: true,
+    icons: false,
+    override: [
+      keywordCompletionSource(SQLite, true),
+      schemaCompletionSource(config),
+      columnSource(tables),
+    ],
+  });
 }

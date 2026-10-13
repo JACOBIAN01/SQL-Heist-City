@@ -29,8 +29,14 @@ export class QuestionSelector {
     tiers: TierRange,
     rng: Rng,
     allowed?: ReadonlySet<number>,
+    /** Prefer questions on these topics (spaced repetition); ignored when none are available in range. */
+    focus?: ReadonlySet<string>,
   ): StoredQuestion | undefined {
-    const candidates = this.candidates(tiers, allowed);
+    let candidates = this.candidates(tiers, allowed);
+    if (focus && focus.size > 0) {
+      const onTopic = candidates.filter((q) => q.template.topic.some((t) => focus.has(t)));
+      if (onTopic.length > 0) candidates = onTopic;
+    }
     if (candidates.length === 0) return undefined;
 
     const key = `${player}\0${reward}`;

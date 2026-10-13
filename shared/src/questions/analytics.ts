@@ -61,6 +61,47 @@ export const analyticsSettingsSchema = z.object({
   rawEventDays: z.number().int().min(0).default(180),
   /** Finished items are kept this many days (0 = forever); the profile totals they built are kept regardless. */
   itemDays: z.number().int().min(0).default(730),
+  /**
+   * Spaced repetition (Phase 16.8): with this chance a question is chosen from the student's weakest
+   * topics (the `topics` weakest with enough evidence), so what they got wrong comes back in later rounds.
+   */
+  spaced: z
+    .object({
+      enabled: z.boolean().default(true),
+      chance: z.number().min(0).max(1).default(0.35),
+      topics: z.number().int().min(1).max(10).default(3),
+    })
+    .default({ enabled: true, chance: 0.35, topics: 3 }),
+  /**
+   * Skill-scaled difficulty (Phase 16.7): a student scoring low gets easier questions, more time and a smaller
+   * reward, so every student can earn something and the match stays winnable. Scores come from the live profile.
+   */
+  skill: z
+    .object({
+      enabled: z.boolean().default(true),
+      /** Overall score (%) below which each band applies, and what it changes. */
+      veryLow: z
+        .object({
+          below: z.number().min(0).max(100).default(25),
+          tierShift: z.number().int().min(-4).max(0).default(-2),
+          ttlScale: z.number().min(1).max(4).default(1.6),
+          rewardScale: z.number().min(0.1).max(1).default(0.6),
+        })
+        .default({ below: 25, tierShift: -2, ttlScale: 1.6, rewardScale: 0.6 }),
+      low: z
+        .object({
+          below: z.number().min(0).max(100).default(50),
+          tierShift: z.number().int().min(-4).max(0).default(-1),
+          ttlScale: z.number().min(1).max(4).default(1.3),
+          rewardScale: z.number().min(0.1).max(1).default(0.8),
+        })
+        .default({ below: 50, tierShift: -1, ttlScale: 1.3, rewardScale: 0.8 }),
+    })
+    .default({
+      enabled: true,
+      veryLow: { below: 25, tierShift: -2, ttlScale: 1.6, rewardScale: 0.6 },
+      low: { below: 50, tierShift: -1, ttlScale: 1.3, rewardScale: 0.8 },
+    }),
   /** Target share of marks per dimension for a class (sums to 100). */
   targetProfile: z
     .object({
