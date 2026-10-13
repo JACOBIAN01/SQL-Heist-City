@@ -46,6 +46,11 @@ export class RoundController {
     this.endTick = this.startTick + this.ticks(settings.roundMinutes * 60);
   }
 
+  /** 1 for the first round of the match. */
+  get number(): number {
+    return this.roundNumber;
+  }
+
   get over(): boolean {
     return this.phase === 'ended';
   }

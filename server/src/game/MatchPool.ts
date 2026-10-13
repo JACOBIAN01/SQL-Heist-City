@@ -22,6 +22,7 @@ export interface MatchExtras {
   readonly requireTicket?: boolean;
   /** The class this match is a room for. */
   readonly classConfig?: ClassMatchConfig;
+  readonly databaseUrl?: string;
 }
 
 /** What a teacher can tell a running class room to do. */
@@ -96,6 +97,7 @@ export class MatchPool {
       ...(extras.ticketSecret ? { ticketSecret: extras.ticketSecret } : {}),
       ...(extras.requireTicket ? { requireTicket: true } : {}),
       ...(extras.classConfig ? { classConfig: extras.classConfig } : {}),
+      ...(extras.databaseUrl ? { databaseUrl: extras.databaseUrl } : {}),
     };
     const worker = new Worker(workerUrl, { execArgv: workerExecArgv, workerData: data });
     return new Promise((resolve, reject) => {

@@ -11,4 +11,6 @@ export interface ChallengeGateway {
   /** `options` only matter for a task request (see IssueOptions). */
   handle(player: string, raw: unknown, options?: IssueOptions): Promise<ChallengeServerMessage>;
   playerLeft(player: string): void;
+  /** The player was shot dead; an open question ends. */
+  playerDied?(player: string): void;
 }

@@ -1,8 +1,10 @@
 import { createServer } from 'node:http';
 import { parentPort, workerData } from 'node:worker_threads';
-import type { HeistSettings, MatchSettings } from '@heist/shared';
+import { DEFAULT_ANALYTICS_SETTINGS, type HeistSettings, type MatchSettings } from '@heist/shared';
 import { existsSync } from 'node:fs';
-import { buildChallengeStack } from '../composition';
+import { AnalyticsKit } from '../analytics/AnalyticsKit';
+import { buildChallengeStack, type ChallengeStack } from '../composition';
+import { PgDatabase } from '../pg/PgDatabase';
 import { openDatabase } from '../db/database';
 import { mapByName, type MapName } from './maps';
 import type { ClassMatchConfig } from '../classes/ClassMatchConfig';
@@ -27,6 +29,8 @@ export interface MatchWorkerData {
   readonly ticketSecret?: string;
   readonly requireTicket?: boolean;
   readonly classConfig?: ClassMatchConfig;
+  /** PostgreSQL, for the learning record (attempts and live profiles). */
+  readonly databaseUrl?: string;
 }
 
 /** Messages worker → pool. */
@@ -49,10 +53,19 @@ const data = workerData as MatchWorkerData;
 const http = createServer();
 // Each thread has its own read-only handle and challenge stack: SQLite allows many readers, and
 // a match then never waits on another thread to ask or grade a question.
-const stack =
+let stack: ChallengeStack | undefined;
+// The learning record: every attempt is saved and each student's profile kept live (Phase 15).
+const analytics = data.databaseUrl
+  ? new AnalyticsKit(
+      PgDatabase.open({ url: data.databaseUrl, max: 2 }),
+      () => stack?.analyticsSettings() ?? DEFAULT_ANALYTICS_SETTINGS,
+    )
+  : undefined;
+stack =
   data.dbPath && existsSync(data.dbPath)
     ? buildChallengeStack(openDatabase({ path: data.dbPath, readOnly: true }), {
         logger: { warn: (message, meta) => console.warn(message, meta ?? '') },
+        ...(analytics ? { attempts: analytics.sink } : {}),
       })
     : undefined;
 const heist = data.heist ?? stack?.heistSettings();
@@ -71,6 +84,7 @@ const game = startGame(http, data.settings, mapByName(data.map), {
     : {}),
 });
 
+analytics?.bind(game.match);
 if (data.classConfig) {
   const classId = data.classConfig.classId;
   game.match.heist.events.subscribe((event) => {
@@ -106,6 +120,7 @@ parentPort?.on('message', (message: { type: string } | ClassCommand) => {
   clearInterval(report);
   void game
     .stop()
+    .then(() => analytics?.flush())
     .then(() => stack?.close())
     .then(() => {
       http.close();

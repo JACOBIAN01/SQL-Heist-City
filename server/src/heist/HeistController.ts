@@ -213,6 +213,7 @@ export class HeistController implements ArmsControl {
   /** A player died: what they carried drops where they fell. */
   onDeath(victim: Player, killer?: Player): void {
     this.banking.cancel(victim, 'died');
+    this.challenges?.playerDied?.(victim.key); // an open question ends with the life
     // The killer of a wanted player collects the bounty on top of the kill bonus.
     if (killer && killer !== victim && !victim.isDummy)
       this.events.publish({ type: 'kill', killer, victim });
@@ -367,8 +368,20 @@ export class HeistController implements ArmsControl {
       const reason = rule.check(player, message.rewardKey, message.target);
       if (reason) return this.reply(player, this.refuse(message.ref, reason));
     }
-    const options =
+    const base =
       message.t === 'challenge_request' ? this.taskOptions?.(message.rewardKey) : undefined;
+    // Whose attempt this is, for the learning record.
+    const options =
+      message.t === 'challenge_request'
+        ? {
+            ...base,
+            who: {
+              ...(player.accountId === undefined ? {} : { accountId: player.accountId }),
+              ...(this.match.classInfo ? { classId: this.match.classInfo.classId } : {}),
+              ...(this.round ? { round: this.round.number } : {}),
+            },
+          }
+        : undefined;
     void this.challenges
       .handle(player.key, raw, options)
       .then((reply) => {

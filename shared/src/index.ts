@@ -56,3 +56,5 @@ export * from './world/ColliderGrid';
 export * from './world/SpatialGrid';
 export * from './net/snapshotCodec';
 export * from './classes/class';
+export * from './analytics/items';
+export * from './analytics/profile';

@@ -1,3 +1,4 @@
+import type { ClassMatchConfig } from '../classes/ClassMatchConfig';
 import type {
   GameMap,
   JsonServerMessage,
@@ -28,6 +29,8 @@ export interface MatchApi {
   /** Sends one player the car and time-of-day numbers (on join). */
   sendWorld(player: Player): void;
   readonly map: GameMap;
+  /** The class this match serves, if it is a class room. */
+  readonly classInfo: ClassMatchConfig | undefined;
   getPlayer(id: number): Player | undefined;
   playerList(): Iterable<Player>;
   /** Players within `radius` metres of a point on the ground plane (alive or not). */

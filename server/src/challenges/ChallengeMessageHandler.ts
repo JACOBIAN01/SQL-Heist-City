@@ -46,6 +46,10 @@ export class ChallengeMessageHandler {
     this.service.forgetPlayer(player);
   }
 
+  playerDied(player: string): void {
+    this.service.playerDied(player);
+  }
+
   private async dispatch(
     player: string,
     msg: ChallengeClientMessage,

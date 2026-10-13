@@ -175,4 +175,64 @@ export const pgMigrations: readonly string[] = [
   );
   CREATE INDEX class_results_player ON class_results (player_id);
   `,
+  // 5 — the learning record: every attempt, and live profile totals (Phase 15)
+  `
+  CREATE TABLE attempt_events (
+    id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    at           TIMESTAMPTZ NOT NULL,
+    player_id    BIGINT REFERENCES players (id) ON DELETE SET NULL,
+    class_id     BIGINT REFERENCES classes (id) ON DELETE SET NULL,
+    challenge_id TEXT        NOT NULL,
+    question_id  BIGINT      NOT NULL,
+    reward_key   TEXT        NOT NULL,
+    kind         TEXT        NOT NULL,
+    detail       JSONB
+  );
+  CREATE INDEX attempt_events_player ON attempt_events (player_id, at);
+  CREATE INDEX attempt_events_class ON attempt_events (class_id, at);
+
+  CREATE TABLE attempt_items (
+    challenge_id     TEXT        PRIMARY KEY,
+    player_id        BIGINT REFERENCES players (id) ON DELETE SET NULL,
+    class_id         BIGINT REFERENCES classes (id) ON DELETE SET NULL,
+    round            INTEGER,
+    question_id      BIGINT      NOT NULL,
+    question_version INTEGER     NOT NULL,
+    reward_key       TEXT        NOT NULL,
+    tier             INTEGER     NOT NULL,
+    rcsbe            TEXT        NOT NULL,
+    bloom            TEXT        NOT NULL,
+    marks            INTEGER     NOT NULL,
+    topics           JSONB       NOT NULL DEFAULT '[]',
+    outcome          TEXT        NOT NULL,
+    runs             INTEGER     NOT NULL,
+    submits          INTEGER     NOT NULL,
+    wrong_submits    INTEGER     NOT NULL,
+    hints_paid       INTEGER     NOT NULL,
+    seconds_open     NUMERIC     NOT NULL,
+    tutorial         BOOLEAN     NOT NULL,
+    counted          BOOLEAN     NOT NULL,
+    available        NUMERIC     NOT NULL,
+    earned           NUMERIC     NOT NULL,
+    issued_at        TIMESTAMPTZ NOT NULL,
+    finished_at      TIMESTAMPTZ NOT NULL
+  );
+  CREATE INDEX attempt_items_player ON attempt_items (player_id, finished_at);
+  CREATE INDEX attempt_items_class ON attempt_items (class_id, finished_at);
+  CREATE INDEX attempt_items_question ON attempt_items (question_id);
+
+  CREATE TABLE profile_totals (
+    player_id BIGINT  NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    scope     TEXT    NOT NULL CHECK (scope IN ('all', 'class', 'round')),
+    class_id  BIGINT  NOT NULL DEFAULT 0,
+    round     INTEGER NOT NULL DEFAULT 0,
+    lens      TEXT    NOT NULL CHECK (lens IN ('rcsbe', 'bloom')),
+    dimension TEXT    NOT NULL,
+    earned    NUMERIC NOT NULL DEFAULT 0,
+    available NUMERIC NOT NULL DEFAULT 0,
+    items     INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (player_id, scope, class_id, round, lens, dimension)
+  );
+  CREATE INDEX profile_totals_class ON profile_totals (class_id, scope);
+  `,
 ];

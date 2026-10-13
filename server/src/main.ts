@@ -6,7 +6,8 @@ import { openDatabase } from './db/database';
 import { PgDatabase } from './pg/PgDatabase';
 import { syncContent } from './pg/ContentSnapshot';
 import { migratePg } from './pg/migrate';
-import { DEFAULT_MATCH_SETTINGS, cityMapIdFor } from '@heist/shared';
+import { DEFAULT_ANALYTICS_SETTINGS, DEFAULT_MATCH_SETTINGS, cityMapIdFor } from '@heist/shared';
+import { AnalyticsKit } from './analytics/AnalyticsKit';
 import { ClassRooms, type RoomAction } from './classes/ClassRooms';
 import { PgClassResults } from './classes/ClassResults';
 import { PgClassRepository } from './classes/ClassRepository';
@@ -42,9 +43,14 @@ if (process.env.DATABASE_URL) {
 // The admin service owns the schema; the game only reads. Until the admin has
 // created the database there are no questions to serve.
 let challenges: ChallengeStack | undefined;
+// The learning record for the open match and the tutorial (class rooms record in their own threads).
+const analytics = pg
+  ? new AnalyticsKit(pg, () => challenges?.analyticsSettings() ?? DEFAULT_ANALYTICS_SETTINGS)
+  : undefined;
 if (existsSync(dbPath)) {
   challenges = buildChallengeStack(openDatabase({ path: dbPath, readOnly: true }), {
     logger: { warn: (message, meta) => console.warn(message, meta ?? '') },
+    ...(analytics ? { attempts: analytics.sink } : {}),
   });
 } else {
   console.warn(`no database at ${dbPath} yet — start the admin and run db:seed first`);
@@ -132,7 +138,11 @@ if (pg && classPool && challenges) {
     classes: new PgClassRepository(pg),
     pool: classPool,
     matchSettings,
-    extras: () => ({ dbPath, ...(ticketSecret ? { ticketSecret, requireTicket } : {}) }),
+    extras: () => ({
+      dbPath,
+      ...(process.env.DATABASE_URL ? { databaseUrl: process.env.DATABASE_URL } : {}),
+      ...(ticketSecret ? { ticketSecret, requireTicket } : {}),
+    }),
     city: () => stack.citySettings(),
     heist: () => stack.heistSettings(),
   });
@@ -146,6 +156,7 @@ if (workers > 0) {
   for (let i = 0; i < workers; i++) {
     const info = await running.pool.start(matchSettings, 0, mapName, {
       ...(challenges ? { heist: challenges.heistSettings(), dbPath } : {}),
+      ...(process.env.DATABASE_URL ? { databaseUrl: process.env.DATABASE_URL } : {}),
       ...(ticketSecret ? { ticketSecret, requireTicket } : {}),
     });
     console.log(`match ${info.id} listening on ws://localhost:${info.port}/ws/game`);
@@ -162,6 +173,7 @@ if (workers > 0) {
       : {}),
     ...(auth ? { auth } : {}),
   });
+  analytics?.bind(running.game.match);
 }
 
 server.listen(port, () => {

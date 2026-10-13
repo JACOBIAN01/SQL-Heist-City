@@ -48,6 +48,7 @@ import {
   type VehicleSettings,
   type VehicleWire,
   type AtmosphereSettings,
+  type ProfileMessage,
   type RewardIcons,
   type WorldMessage,
   type WorldSettings,
@@ -457,6 +458,7 @@ export class Match implements MatchApi {
     }
     this.broadcast({ e: 'joined', id, name: player.name }, id);
     this.heist.onJoin(player);
+    for (const l of this.joinListeners) l(player);
     return { ok: true, player };
   }
 
@@ -489,9 +491,32 @@ export class Match implements MatchApi {
     if (!leaving || !this.players.delete(id)) return;
     this.releaseVehicle(leaving);
     this.heist.onLeave(leaving);
+    for (const l of this.leaveListeners) l(leaving);
     this.lagComp.forget(id);
     this.interest.remove(id);
     this.broadcast({ e: 'left', id });
+  }
+
+  private readonly joinListeners: ((player: Player) => void)[] = [];
+  private readonly leaveListeners: ((player: Player) => void)[] = [];
+
+  /** Hears about every player who joins (their profile is sent). */
+  onPlayerJoined(listener: (player: Player) => void): void {
+    this.joinListeners.push(listener);
+  }
+
+  onPlayerLeft(listener: (player: Player) => void): void {
+    this.leaveListeners.push(listener);
+  }
+
+  /** Sends a signed-in player's own profile (and nobody else's). */
+  sendProfile(accountId: number, message: ProfileMessage): void {
+    for (const p of this.players.values()) if (p.accountId === accountId) this.sendJson(p, message);
+  }
+
+  /** The round the match is in (1 for the first), or undefined without rounds. */
+  get roundNumber(): number | undefined {
+    return this.heist.round?.number;
   }
 
   /** The teacher removes a player: their connection closes and they leave the match. */

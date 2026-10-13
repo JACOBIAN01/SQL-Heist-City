@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { AwardId } from '../config/awards';
 import type { AtmosphereSettings } from '../config/atmosphere';
 import type { WeaponSpec } from '../config/combat';
+import type { AxisScore } from '../analytics/profile';
 import type { VehicleSettings } from '../config/vehicles';
 import { challengeClientMessageSchema, type ChallengeServerMessage } from './challengeMessages';
 
@@ -276,6 +277,30 @@ export interface VehicleReply {
   readonly reason?: VehicleDenial;
 }
 
+/** One scope of a student's profile: both lenses, scored (docs/RCBSE.md §7). */
+export interface ProfileScopeView {
+  readonly rcsbe: readonly AxisScore[];
+  readonly bloom: readonly AxisScore[];
+  /** The lowest axis with enough evidence (the remediation signal), if any. */
+  readonly focus?: { readonly lens: 'rcsbe' | 'bloom'; readonly dimension: string };
+}
+
+/**
+ * A student's live profile, sent after each graded question. Only ever the
+ * receiving student's own (docs/RCBSE.md §9, privacy).
+ */
+export interface ProfileMessage {
+  readonly t: 'profile';
+  /** Everything so far (all classes, all time). */
+  readonly all: ProfileScopeView;
+  /** This class's totals, in a class room. */
+  readonly class?: ProfileScopeView;
+  /** This round's totals. */
+  readonly round?: ProfileScopeView;
+  /** The axes the latest question moved, so the radar can pulse them. */
+  readonly moved?: readonly { readonly lens: 'rcsbe' | 'bloom'; readonly dimension: string }[];
+}
+
 /** The numbers clients simulate and draw with (cars, time of day), sent on join and at each new round. */
 export interface WorldMessage {
   readonly t: 'world';
@@ -286,6 +311,7 @@ export interface WorldMessage {
 }
 
 export type HeistServerMessage =
+  | ProfileMessage
   | WorldMessage
   | InteractReply
   | VehicleReply

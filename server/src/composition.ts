@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import type {
+  AnalyticsSettings,
   CitySettings,
   CombatSettings,
   HeistSettings,
   TutorialSettings,
   WorldSettings,
 } from '@heist/shared';
+import type { AttemptSink } from './analytics/AttemptSink';
 import { ChallengeMessageHandler } from './challenges/ChallengeMessageHandler';
 import { ChallengeService, type ChallengeLogger } from './challenges/ChallengeService';
 import { QuestionSelector } from './challenges/QuestionSelector';
@@ -26,6 +28,8 @@ export interface ChallengeStack {
   heistSettings(): HeistSettings;
   /** Guns as the admin has set them (read when a match starts and at each new round). */
   combatSettings(): CombatSettings;
+  /** How learning is measured (marks, thresholds). */
+  analyticsSettings(): AnalyticsSettings;
   /** Heist rules, cars and time of day, read again at each new round. */
   worldSettings(): WorldSettings;
   /** City generation settings, read when a match is created. */
@@ -42,6 +46,8 @@ export interface ChallengeStackOptions {
   /** Tests run SQL in-process; production isolates it in worker threads. */
   readonly sandbox?: SandboxRunner;
   readonly matchSeed?: string;
+  /** Hears what happens to every issued question (the learning record). */
+  readonly attempts?: AttemptSink;
   readonly now?: () => number;
 }
 
@@ -64,6 +70,7 @@ export function buildChallengeStack(
     grader: new Grader(sandbox),
     settings,
     ...(options.logger ? { logger: options.logger } : {}),
+    ...(options.attempts ? { attempts: options.attempts } : {}),
     ...(options.now ? { now: options.now } : {}),
   });
   return {
@@ -71,6 +78,7 @@ export function buildChallengeStack(
     heistSettings: () => settings.heistSettings(),
     combatSettings: () => settings.combatSettings(),
     tutorialSettings: () => settings.tutorialSettings(),
+    analyticsSettings: () => settings.analyticsSettings(),
     worldSettings: () => worldSettingsFrom(settings),
     citySettings: () => settings.citySettings(),
     invalidate: () => {

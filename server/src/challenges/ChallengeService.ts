@@ -8,9 +8,13 @@ import {
   type PublicChallenge,
   type RunResult,
   type SubmitResult,
+  type ItemOutcome,
+  type ItemRecord,
   type TierRange,
   type WorkedExampleView,
+  marksFor,
 } from '@heist/shared';
+import type { AttemptEventKind, AttemptSink, AttemptWho } from '../analytics/AttemptSink';
 import type { SettingsReader } from '../config/SettingsReader';
 import type { Grader } from '../sql/Grader';
 import { ReferenceQueryError } from '../sql/Grader';
@@ -25,6 +29,8 @@ export interface IssueOptions {
   readonly fixed?: { readonly slug: string; readonly seed: string };
   /** Send the reference query with the task, and make its hints free. */
   readonly revealSolution?: boolean;
+  /** Whose attempt this is, for the learning record. */
+  readonly who?: AttemptWho;
   /** Only questions with these ids may be asked (a class's released set for this kind of task). */
   readonly allowedQuestions?: ReadonlySet<number>;
 }
@@ -52,6 +58,8 @@ export interface ChallengeServiceDeps {
   readonly now?: () => number;
   readonly newId?: () => string;
   readonly logger?: ChallengeLogger;
+  /** Hears what happens to every issued question (the learning record). */
+  readonly attempts?: AttemptSink;
 }
 
 /** Server-side state of one issued challenge. Never sent to clients. */
@@ -78,6 +86,20 @@ interface ActiveChallenge {
   lastRunAt: number;
   lastSubmitAt: number;
   solved: boolean;
+  // --- the learning record (docs/RCBSE.md §5.3) ---
+  readonly who: AttemptWho;
+  readonly issuedAt: number;
+  readonly tags: {
+    readonly tier: number;
+    readonly rcsbe: ItemRecord['rcsbe'];
+    readonly bloom: ItemRecord['bloom'];
+    readonly marks: number;
+    readonly topics: readonly string[];
+  };
+  runs: number;
+  submits: number;
+  wrongSubmits: number;
+  finished: boolean;
 }
 
 /** Questions to try when a reference query turns out broken for a seed. */
@@ -120,6 +142,8 @@ export class ChallengeService {
     this.lastRequestAt.set(request.player, now);
 
     // Switching task: the previous challenge is dropped; its question is used up.
+    const previous = this.byPlayer.get(request.player);
+    if (previous) this.finish(previous, now >= previous.expiresAt ? 'expired' : 'switched');
     this.byPlayer.delete(request.player);
 
     for (let i = 0; i < MAX_ISSUE_ATTEMPTS; i++) {
@@ -185,8 +209,22 @@ export class ChallengeService {
         lastRunAt: Number.NEGATIVE_INFINITY,
         lastSubmitAt: Number.NEGATIVE_INFINITY,
         solved: false,
+        who: request.who ?? {},
+        issuedAt: now,
+        tags: {
+          tier: question.template.tier,
+          rcsbe: question.template.rcsbe,
+          bloom: question.template.bloom,
+          marks: marksFor(question.template, this.deps.settings.analyticsSettings()),
+          topics: question.template.topic,
+        },
+        runs: 0,
+        submits: 0,
+        wrongSubmits: 0,
+        finished: false,
       };
       this.byPlayer.set(request.player, challenge);
+      this.note(challenge, 'issued', { seed, attempt, tutorial: challenge.revealSolution });
       return {
         ok: true,
         challenge: toPublic(challenge, settings.sampleRows, settings.exampleShownRows),
@@ -208,6 +246,10 @@ export class ChallengeService {
     challenge.lastRunAt = now;
 
     const preview = await this.deps.grader.preview(challenge.variant, sql);
+    if (preview.status !== 'unavailable') {
+      challenge.runs++;
+      this.note(challenge, 'run', { ok: preview.status === 'ok' });
+    }
     if (preview.status === 'unavailable') return { ok: false, reason: 'unavailable' };
     if (preview.status === 'error') return { ok: false, reason: 'sql', feedback: preview.feedback };
     return { ok: true, preview: preview.result };
@@ -239,11 +281,18 @@ export class ChallengeService {
     switch (grade.status) {
       case 'correct':
         challenge.solved = true;
+        challenge.submits++;
+        this.note(challenge, 'submit_correct');
+        this.finish(challenge, 'solved');
         this.byPlayer.delete(player);
         return { status: 'correct', rewardKey: challenge.rewardKey, target: challenge.target };
       case 'wrong':
       case 'error':
+        challenge.submits++;
+        challenge.wrongSubmits++;
+        this.note(challenge, grade.status === 'wrong' ? 'submit_wrong' : 'submit_error');
         challenge.lockedUntil = this.now() + settings.lockoutSec * 1000;
+        this.note(challenge, 'lockout', { seconds: settings.lockoutSec });
         return { status: 'wrong', feedback: grade.feedback, lockedUntil: challenge.lockedUntil };
       case 'unavailable':
         this.deps.logger?.warn('grading unavailable', { reason: grade.reason });
@@ -263,7 +312,10 @@ export class ChallengeService {
     if (!hint) return { ok: false, reason: 'no_such_hint' };
     if (index > challenge.hintsRevealed) return { ok: false, reason: 'out_of_order' };
     const charged = index === challenge.hintsRevealed;
-    if (charged) challenge.hintsRevealed++;
+    if (charged) {
+      challenge.hintsRevealed++;
+      this.note(challenge, 'hint', { index, cost: hint.cost });
+    }
     return {
       ok: true,
       hint: { index, text: hint.text, cost: hint.cost, costMode: challenge.hintCostMode, charged },
@@ -272,11 +324,22 @@ export class ChallengeService {
 
   /** Player closed the task or left; drops their challenge and rate-limit state. */
   abandon(player: string): void {
+    this.end(player, 'abandoned');
+  }
+
+  /** The player was shot dead with a question open. */
+  playerDied(player: string): void {
+    this.end(player, 'died');
+  }
+
+  private end(player: string, outcome: ItemOutcome): void {
+    const challenge = this.byPlayer.get(player);
+    if (challenge) this.finish(challenge, outcome);
     this.byPlayer.delete(player);
   }
 
   forgetPlayer(player: string): void {
-    this.byPlayer.delete(player);
+    this.end(player, 'left');
     this.lastRequestAt.delete(player);
     for (const key of this.attempts.keys()) {
       if (key.startsWith(`${player}\0`)) this.attempts.delete(key);
@@ -292,10 +355,71 @@ export class ChallengeService {
     // Bound to (player, id): another player's id, or a replaced one, is "not found".
     if (!challenge || challenge.id !== challengeId) return { reason: 'not_found' };
     if (this.now() >= challenge.expiresAt) {
+      this.finish(challenge, 'expired');
       this.byPlayer.delete(player);
       return { reason: 'expired' };
     }
     return { challenge };
+  }
+
+  /** Tells the learning record something happened to this question. */
+  private note(
+    challenge: ActiveChallenge,
+    kind: AttemptEventKind,
+    detail?: Record<string, unknown>,
+  ): void {
+    this.deps.attempts?.event({
+      at: this.now(),
+      kind,
+      challengeId: challenge.id,
+      who: challenge.who,
+      questionId: challenge.questionId,
+      rewardKey: challenge.rewardKey,
+      ...(detail ? { detail } : {}),
+    });
+  }
+
+  /** A question ended, one way or another: the record is complete, report it once. */
+  private finish(challenge: ActiveChallenge, outcome: ItemOutcome): void {
+    if (challenge.finished) return;
+    challenge.finished = true;
+    const at = this.now();
+    if (outcome !== 'solved') {
+      const kind: Record<string, AttemptEventKind> = {
+        abandoned: 'abandon',
+        expired: 'expire',
+        switched: 'switch',
+        died: 'death',
+        left: 'leave',
+      };
+      this.note(challenge, kind[outcome] as AttemptEventKind);
+    }
+    this.deps.attempts?.item(
+      {
+        challengeId: challenge.id,
+        ...(challenge.who.accountId === undefined ? {} : { accountId: challenge.who.accountId }),
+        ...(challenge.who.classId === undefined ? {} : { classId: challenge.who.classId }),
+        ...(challenge.who.round === undefined ? {} : { round: challenge.who.round }),
+        questionId: challenge.questionId,
+        questionVersion: challenge.questionVersion,
+        rewardKey: challenge.rewardKey,
+        tier: challenge.tags.tier,
+        rcsbe: challenge.tags.rcsbe,
+        bloom: challenge.tags.bloom,
+        marks: challenge.tags.marks,
+        topics: challenge.tags.topics,
+        outcome,
+        runs: challenge.runs,
+        submits: challenge.submits,
+        wrongSubmits: challenge.wrongSubmits,
+        hintsPaid: challenge.hintsRevealed,
+        secondsOpen: Math.max(0, (at - challenge.issuedAt) / 1000),
+        tutorial: challenge.revealSolution,
+        issuedAt: challenge.issuedAt,
+        finishedAt: at,
+      },
+      challenge.who,
+    );
   }
 
   private nextAttempt(player: string, rewardKey: string): number {
