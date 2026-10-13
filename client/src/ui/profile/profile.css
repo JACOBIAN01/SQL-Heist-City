@@ -1,0 +1,98 @@
+.profile {
+  color: #f2f4f8;
+  font:
+    14px/1.4 system-ui,
+    -apple-system,
+    'Segoe UI',
+    sans-serif;
+}
+.profile h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+.profile-radars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.profile-card {
+  margin: 0;
+  flex: 1 1 15rem;
+  max-width: 20rem;
+}
+.profile-card figcaption {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.radar {
+  width: 100%;
+  height: auto;
+  color: #f2f4f8;
+}
+.profile-lines {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: #c4cbda;
+}
+.profile-lines li.pulse {
+  color: #fff;
+  font-weight: 600;
+}
+.profile-focus {
+  margin: 0.5rem 0 0;
+  font-weight: 600;
+}
+.profile-note,
+.profile-legend {
+  margin: 0.25rem 0 0;
+  color: #a7b0c2;
+  font-size: 0.85rem;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .radar .pulse {
+    animation: radar-pulse 1.4s ease-out 2;
+  }
+}
+@keyframes radar-pulse {
+  0% {
+    opacity: 1;
+    transform-origin: center;
+  }
+  50% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.profile-panel {
+  position: fixed;
+  inset: 4vh 4vw;
+  overflow: auto;
+  background: rgba(14, 17, 24, 0.96);
+  border: 1px solid #2c3445;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  z-index: 40;
+}
+.profile-panel[hidden] {
+  display: none;
+}
+.profile-card-round {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  width: min(34rem, 92vw);
+  max-height: 80vh;
+  overflow: auto;
+  background: rgba(14, 17, 24, 0.94);
+  border: 1px solid #2c3445;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  z-index: 30;
+  pointer-events: none;
+}
+.profile-card-round[hidden] {
+  display: none;
+}

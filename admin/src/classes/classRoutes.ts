@@ -29,7 +29,7 @@ const questionSetSchema = z.object({
 });
 
 /** Teachers manage their own classes; admins manage all of them. */
-const canManage = (user: AdminUser, record: ClassRecord): boolean =>
+export const canManage = (user: AdminUser, record: ClassRecord): boolean =>
   user.role === 'admin' || record.ownerUserId === user.id;
 
 export interface ClassRouteDeps {

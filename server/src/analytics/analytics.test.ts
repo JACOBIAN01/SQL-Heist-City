@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import {
   DEFAULT_ANALYTICS_SETTINGS as S,
+  analyticsSettingsSchema,
   addItem,
   axisScores,
   classInputSchema,
@@ -21,6 +22,7 @@ import {
   type AttemptStore,
   type ProfileStore,
 } from './AttemptStore';
+import { RetentionJob } from './RetentionJob';
 import { BatchingRecorder, ProfileAggregator, scopeView } from './ProfileAggregator';
 
 const drops: (() => Promise<void>)[] = [];
@@ -269,6 +271,7 @@ describe('ProfileAggregator (15.6)', () => {
         },
         add: async () => {},
         loadClass: async () => [],
+        loadRounds: async () => [],
       } as ProfileStore,
       () => S,
       () => {},
@@ -339,5 +342,74 @@ describe('BatchingRecorder (15.2)', () => {
     rec.item(item(), {});
     await rec.flush();
     expect(calls).toBe(2);
+  });
+});
+
+describe('RetentionJob (15.17)', () => {
+  const DAY = 86_400_000;
+  const make = async () => {
+    const attempts = new InMemoryAttemptStore();
+    const now = 1_000 * DAY;
+    const ev = (daysAgo: number): AttemptEvent => ({
+      at: now - daysAgo * DAY,
+      kind: 'run',
+      challengeId: 'c',
+      who: { accountId: 1 },
+      questionId: 1,
+      rewardKey: 'x',
+    });
+    const it = (daysAgo: number) =>
+      item({ challengeId: `i${daysAgo}`, finishedAt: now - daysAgo * DAY });
+    await attempts.writeBatch(
+      [ev(10), ev(200), ev(400)],
+      [it(10), it(500), it(800)].map((i) => ({ item: i, who: { accountId: 1 } })),
+      S,
+    );
+    return { attempts, now };
+  };
+
+  it('removes raw events and items past their time and keeps the rest', async () => {
+    const { attempts, now } = await make();
+    const job = new RetentionJob(
+      attempts,
+      () => S,
+      () => now,
+    );
+    expect(await job.run()).toEqual({ events: 2, items: 1 });
+    expect((await attempts.eventsOf(1)).length).toBe(1);
+    expect((await attempts.itemsOf(1)).map((i) => i.challengeId).sort()).toEqual(['i10', 'i500']);
+    expect(await job.run()).toEqual({ events: 0, items: 0 }); // nothing more to do
+  });
+
+  it('keeps everything when a setting is 0, and follows the settings', async () => {
+    const { attempts, now } = await make();
+    const keep = analyticsSettingsSchema.parse({ rawEventDays: 0, itemDays: 0 });
+    expect(
+      await new RetentionJob(
+        attempts,
+        () => keep,
+        () => now,
+      ).run(),
+    ).toEqual({ events: 0, items: 0 });
+    const short = analyticsSettingsSchema.parse({ rawEventDays: 5, itemDays: 5 });
+    expect(
+      await new RetentionJob(
+        attempts,
+        () => short,
+        () => now,
+      ).run(),
+    ).toEqual({ events: 3, items: 3 });
+  });
+
+  it('does not touch the profile totals', async () => {
+    const { attempts, now } = await make();
+    const profiles = new InMemoryProfileStore();
+    await profiles.add(1, [{ kind: 'all' }], addItem(emptyTotals(), item(), S));
+    await new RetentionJob(
+      attempts,
+      () => analyticsSettingsSchema.parse({ rawEventDays: 1, itemDays: 1 }),
+      () => now,
+    ).run();
+    expect((await profiles.load(1, { kind: 'all' })).rcsbe.S.items).toBe(1);
   });
 });

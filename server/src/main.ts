@@ -7,6 +7,8 @@ import { PgDatabase } from './pg/PgDatabase';
 import { syncContent } from './pg/ContentSnapshot';
 import { migratePg } from './pg/migrate';
 import { DEFAULT_ANALYTICS_SETTINGS, DEFAULT_MATCH_SETTINGS, cityMapIdFor } from '@heist/shared';
+import { PgAttemptStore } from './analytics/AttemptStore';
+import { RetentionJob } from './analytics/RetentionJob';
 import { AnalyticsKit } from './analytics/AnalyticsKit';
 import { ClassRooms, type RoomAction } from './classes/ClassRooms';
 import { PgClassResults } from './classes/ClassResults';
@@ -131,6 +133,16 @@ if (challenges) {
     },
     auth ? { auth } : {},
   );
+}
+if (pg && challenges) {
+  // Old raw events and items are pruned once a day (docs/privacy.md); profile totals stay.
+  const stack = challenges;
+  new RetentionJob(
+    new PgAttemptStore(pg),
+    () => stack.analyticsSettings(),
+    Date.now,
+    (m) => console.log(m),
+  ).start(undefined, (err) => console.error('retention failed', err));
 }
 if (pg && classPool && challenges) {
   const stack = challenges;

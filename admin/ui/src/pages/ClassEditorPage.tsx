@@ -64,6 +64,7 @@ function ClassEditor({ record }: { record: ClassRecord }) {
       <div className="row">
         <h1>{record.name}</h1>
         <span className="spacer" />
+        <Link to={`/classes/${record.id}/learning`}>Learning &amp; profiles</Link>
         <Link to="/classes">← All classes</Link>
       </div>
 
@@ -274,7 +275,9 @@ function Roster({ classId }: { classId: number }) {
         <tbody>
           {roster.data?.map((s) => (
             <tr key={s.playerId}>
-              <td>{s.displayName}</td>
+              <td>
+                <Link to={`/classes/${classId}/students/${s.playerId}`}>{s.displayName}</Link>
+              </td>
               <td className="muted">{isAdmin ? s.email : ''}</td>
               <td className="muted">{new Date(s.joinedAt).toLocaleString()}</td>
               <td>

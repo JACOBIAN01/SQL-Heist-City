@@ -11,6 +11,7 @@ import {
   nearestAnchor,
   WEAPON_IDS,
   Flag,
+  type ProfileMessage,
   type SelfState,
   type WantedView,
   weaponFromWire,
@@ -33,6 +34,8 @@ import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './
 import { InputBatcher } from './net/InputBatcher';
 import { HttpAccountApi, accountBase } from './net/account';
 import { classRoomUrl, roomStatus } from './net/classRoom';
+import { h } from './ui/dom';
+import { ProfileView } from './ui/profile/ProfileView';
 import { LiveWorld } from './net/liveWorld';
 import { setRewardIcons } from './ui/icons/icons';
 import { chooseGameUrl, tutorialUrl } from './net/lobby';
@@ -256,7 +259,7 @@ if (atParam && atParam.length >= 2 && atParam.every(Number.isFinite)) {
 }
 const hint = document.createElement('div');
 hint.textContent =
-  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · right mouse aim · 1–5 guns · M map · N mute · Esc release mouse';
+  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · right mouse aim · 1–5 guns · M map · P profile · N mute · Esc release mouse';
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
@@ -335,6 +338,17 @@ const bankingProgress = new BankingProgress(hud);
 const minimap = new MinimapView(hud.root, MAP);
 // The full-screen map (M): the whole city, north up; the game keeps running behind it.
 const fullMap = new FullMapView(document.body, MAP);
+// Your profile (P): two live radars. At the end of a round a card shows this round over all time.
+const profileAll = new ProfileView('all');
+const profilePanel = h('div', { class: 'profile-panel', attrs: { hidden: '' } }, profileAll.root);
+const profileRound = new ProfileView('round');
+const profileCard = h(
+  'div',
+  { class: 'profile-card-round', attrs: { hidden: '' } },
+  profileRound.root,
+);
+document.body.append(profilePanel, profileCard);
+let latestProfile: ProfileMessage | undefined;
 const hospital = hospitalMarker(MAP);
 const vaultAlerts = new VaultAlerts(DEFAULT_AUDIO_SETTINGS.alarmSeconds);
 /** Redraw the minimap at most this often (ms): it is a glance, not a view. */
@@ -458,13 +472,19 @@ client.subscribe({
     } else if (message.t === 'round') {
       // The tutorial has no round to race: its room closes long before the clock would matter.
       if (!tutorial) roundUi.onRound(message, performance.now());
+      // The round-end card: this round over everything so far, until the next round begins.
+      profileCard.hidden = message.phase !== 'ended' || !latestProfile?.round;
     } else if (message.t === 'scores') roundUi.onScores(message);
     else if (message.t === 'standing') roundUi.onStanding(message);
     else if (message.t === 'arms') {
       ownedWeapons = message.owned;
       hud.setArms(message.owned, message.current);
     } else if (message.t === 'weapons') weaponTable.set(message.weapons);
-    else if (message.t === 'world') {
+    else if (message.t === 'profile') {
+      latestProfile = message;
+      profileAll.update(message);
+      profileRound.update(message);
+    } else if (message.t === 'world') {
       liveWorld.apply(message);
       setRewardIcons(message.rewardIcons);
     } else if (message.t === 'feed') {
@@ -559,7 +579,14 @@ new Hotkeys()
   })
   .hold('KeyB', (down) => scoreboard.setBoardVisible(down))
   .bind(['KeyM'], () => fullMap.toggle())
-  .bind(['Escape'], () => fullMap.setOpen(false))
+  .bind(['KeyP'], () => {
+    profilePanel.hidden = !profilePanel.hidden;
+    if (latestProfile) profileAll.update(latestProfile);
+  })
+  .bind(['Escape'], () => {
+    fullMap.setOpen(false);
+    profilePanel.hidden = true;
+  })
   .bind(['KeyN'], () => hud.toast(sound.toggleMute() ? 'Sound off (N)' : 'Sound on (N)'))
   .bind(['KeyF'], () => {
     if (!feedback.isAlive) return;

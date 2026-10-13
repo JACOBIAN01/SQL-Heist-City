@@ -33,6 +33,8 @@ export interface AttemptStore {
   /** A class's finished items. */
   itemsOfClass(classId: number): Promise<StoredItem[]>;
   eventsOf(accountId: number): Promise<AttemptEvent[]>;
+  /** Deletes raw events and finished items older than the given times (ms since epoch); returns how many of each. */
+  prune(before: { events?: number; items?: number }): Promise<{ events: number; items: number }>;
 }
 
 export interface ProfileStore {
@@ -40,6 +42,11 @@ export interface ProfileStore {
   load(accountId: number, scope: ProfileScope): Promise<ProfileTotals>;
   /** Adds to the stored totals (additive: concurrent writers do not overwrite each other). */
   add(accountId: number, scopes: readonly ProfileScope[], delta: ProfileTotals): Promise<void>;
+  /** A student's totals for each round of a class, oldest first (the trend). */
+  loadRounds(
+    accountId: number,
+    classId: number,
+  ): Promise<{ round: number; totals: ProfileTotals }[]>;
   /** Everyone's totals in a class scope, for the teacher's grid. */
   loadClass(classId: number): Promise<{ accountId: number; totals: ProfileTotals }[]>;
 }
@@ -83,6 +90,28 @@ export class InMemoryAttemptStore implements AttemptStore {
   async eventsOf(accountId: number) {
     return this.events.filter((e) => e.who.accountId === accountId);
   }
+
+  async prune(before: { events?: number; items?: number }) {
+    const events =
+      before.events === undefined
+        ? 0
+        : this.removeWhere(this.events, (e) => e.at < (before.events as number));
+    const items =
+      before.items === undefined
+        ? 0
+        : this.removeWhere(this.items, (i) => i.finishedAt < (before.items as number));
+    return { events, items };
+  }
+
+  private removeWhere<T>(list: T[], gone: (x: T) => boolean): number {
+    let removed = 0;
+    for (let i = list.length - 1; i >= 0; i--)
+      if (gone(list[i] as T)) {
+        list.splice(i, 1);
+        removed++;
+      }
+    return removed;
+  }
 }
 
 export class InMemoryProfileStore implements ProfileStore {
@@ -102,6 +131,16 @@ export class InMemoryProfileStore implements ProfileStore {
       const key = this.key(accountId, scope);
       this.rows.set(key, addTotals(this.rows.get(key) ?? emptyTotals(), delta));
     }
+  }
+
+  async loadRounds(accountId: number, classId: number) {
+    const out: { round: number; totals: ProfileTotals }[] = [];
+    for (const [key, totals] of this.rows) {
+      const [account, scope, cid, round] = key.split('|');
+      if (scope === 'round' && Number(account) === accountId && Number(cid) === classId)
+        out.push({ round: Number(round), totals });
+    }
+    return out.sort((a, b) => a.round - b.round);
   }
 
   async loadClass(classId: number) {
@@ -202,6 +241,17 @@ export class PgProfileStore implements ProfileStore {
         }
       }
     });
+  }
+
+  async loadRounds(accountId: number, classId: number) {
+    const rows = await this.db.query<TotalRow & { round: number }>(
+      `SELECT round, lens, dimension, earned, available, items FROM profile_totals
+       WHERE player_id = $1 AND scope = 'round' AND class_id = $2 ORDER BY round`,
+      [accountId, classId],
+    );
+    const byRound = new Map<number, TotalRow[]>();
+    for (const r of rows) byRound.set(r.round, [...(byRound.get(r.round) ?? []), r]);
+    return [...byRound].map(([round, list]) => ({ round, totals: totalsFromRows(list) }));
   }
 
   async loadClass(classId: number) {
@@ -354,6 +404,23 @@ export class PgAttemptStore implements AttemptStore {
       [classId],
     );
     return rows.map(toItem);
+  }
+
+  async prune(before: { events?: number; items?: number }) {
+    const events =
+      before.events === undefined
+        ? []
+        : await this.db.query('DELETE FROM attempt_events WHERE at < $1 RETURNING id', [
+            new Date(before.events),
+          ]);
+    const items =
+      before.items === undefined
+        ? []
+        : await this.db.query(
+            'DELETE FROM attempt_items WHERE finished_at < $1 RETURNING challenge_id',
+            [new Date(before.items)],
+          );
+    return { events: events.length, items: items.length };
   }
 
   async eventsOf(accountId: number) {

@@ -11,6 +11,14 @@ import {
   type ClassRepository,
 } from '@heist/server/classes/ClassRepository';
 import {
+  InMemoryAttemptStore,
+  InMemoryProfileStore,
+  PgAttemptStore,
+  PgProfileStore,
+  type AttemptStore,
+  type ProfileStore,
+} from '@heist/server/analytics/AttemptStore';
+import {
   InMemoryClassResults,
   PgClassResults,
   type ClassResultRepository,
@@ -51,6 +59,9 @@ export interface AdminStores {
   readonly classes: ClassRepository;
   /** Finished rounds of classes (written by the game server). */
   readonly classResults: ClassResultRepository;
+  /** The learning record (written by the game server). */
+  readonly attempts: AttemptStore;
+  readonly profiles: ProfileStore;
   playerSessions(ttlMs: number, now: () => number): PlayerSessions;
   sessions(ttlMs: number, now: () => number): SessionStore;
 }
@@ -65,6 +76,8 @@ export function sqliteStores(db: DatabaseSync): AdminStores {
     settings: new SqliteSettingsStore(db),
     players: new InMemoryPlayerRepository(),
     classResults: new InMemoryClassResults(),
+    attempts: new InMemoryAttemptStore(),
+    profiles: new InMemoryProfileStore(),
     classes: new InMemoryClassRepository(
       undefined,
       () => new Set(questionRepo.list().map((q) => q.id)),
@@ -84,6 +97,8 @@ export function pgStores(db: PgDatabase): AdminStores {
     players: new PgPlayerRepository(db),
     classes: new PgClassRepository(db),
     classResults: new PgClassResults(db),
+    attempts: new PgAttemptStore(db),
+    profiles: new PgProfileStore(db),
     playerSessions: (ttl, now) => new PgPlayerSessions(db, ttl, now),
     sessions: (ttl, now) => new PgSessionStore(db, ttl, now),
   };

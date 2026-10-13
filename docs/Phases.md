@@ -32,7 +32,7 @@
 | 12 | Known gaps | ✅ |
 | 13 | Identity and persistence (Google sign-in, PostgreSQL) | ✅ |
 | 14 | Classroom mode | ✅ |
-| 15 | Learning analytics (RCSBE and Bloom, live radars) | ⬜ |
+| 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
 | 16 | Teaching loop | ⬜ |
 | 17 | Question types and content (filling R, C, B, E) | ⬜ |
 | 18 | Security hardening | ⬜ |
@@ -317,29 +317,29 @@ Fixes audit con 2. A teacher sets up a class in the admin. Students enter the cl
 | 14.9 | Class results stored (rounds, scores, awards) | a finished round can be reviewed later from the admin | ✅ `class_rounds` + `class_results` (migration 4); the room reports each round's standings and awards to the game server, which records them; the editor lists rounds and opens a table |
 
 ---
-## Phase 15 — Learning analytics (RCSBE and Bloom, live radars)  ⬜
+## Phase 15 — Learning analytics (RCSBE and Bloom, live radars)  ✅
 Fixes audit con 4. Every question carries one RCSBE tag, one Bloom level and a weight in marks. Every attempt is recorded. Each student's RCSBE and Bloom profiles update live and are drawn as radar charts for the student and the teacher. Design: docs/RCBSE.md.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 15.1 | RCSBE design: docs/RCBSE.md (lens, Bloom mapping, earned/available rules, pooling, live updates, radars) | the doc and its open questions (§11) are answered and approved | 🟨 written, waiting for approval |
-| 15.2 | Attempt events: issued, run, submit (right or wrong, error kind), hint, lockout, switch, expiry, death, with player, class, question, seed, timings and a snapshot of the item's RCSBE tag, Bloom level and marks | every attempt in a match lands in PostgreSQL; the write path costs < 0.5 ms per tick | ⬜ |
-| 15.3 | Question metadata: `rcsbe` (exactly one of R/C/S/B/E), `bloom`, `marks` (default by tier) in the schema, versions, editor, import/export; the validator refuses missing or multiple tags | a question cannot be saved without them | ⬜ |
-| 15.4 | Tag all 150 questions (RCSBE, Bloom, marks); coverage report per tier, RCSBE dimension and Bloom level | 100% tagged; the report shows today's gap (all S) | ⬜ |
-| 15.5 | Earned/available rules (docs/RCBSE.md §6): hint penalty, abandon threshold, death, tutorial excluded; every threshold a setting | unit tests cover each row of the rule table | ⬜ |
-| 15.6 | `ProfileAggregator`: subscribes to the heist event bus; additive totals per student, scope (round, class, all-time), lens (RCSBE, Bloom) and dimension; pooled marks, never averaged percentages; a rebuild job from raw attempts | live totals equal a full rebuild on replayed logs | ⬜ |
-| 15.7 | Remediation signal: the lowest dimension with enough evidence (≥ 3 items, ≥ 5 marks; settings); thin dimensions report "not enough data" | tested on edge cases (no data, ties, one item) | ⬜ |
-| 15.8 | Live push: a `profile` message to the student after each graded item; a live channel per class for teachers | student radar moves < 1 s, teacher's < 2 s after a submit | ⬜ |
-| 15.9 | Radar chart module (SVG, no library): axes, values, evidence; thin axes dashed; colour-blind safe; DOM and React wrappers | geometry tests pass; renders in game and admin | ⬜ |
-| 15.10 | Student radars in game: RCSBE and Bloom; round-end card (round over all-time), profile page with drill-down to topics, a pulse on the axis that moved | a student watches their radar change during a match | ⬜ |
-| 15.11 | Teacher radars in admin: student page (with class average and target overlays), class page (class profile and a live grid of mini radars sorted by weakest dimension) | a teacher watches a live class profile during a match | ⬜ |
-| 15.12 | Class target profile and paper QA: the class editor shows the question set's shape (share of marks per dimension) over the target, and flags gaps | a class with no Comprehend items is flagged before play | ⬜ |
-| 15.13 | Teacher dashboard beyond radars: spread per dimension, trends per round, per-question item analysis | each view renders real data from a played class | ⬜ |
-| 15.14 | Question-quality analytics in the admin: solve rate, median time, wrong-answer rate, how well it separates strong and weak students within its dimension | each question page shows them; outliers flagged | ⬜ |
-| 15.15 | CSV export (class, student, question, profile), compatible with the dimension-analysis sheet format | export opens in a spreadsheet and matches the sheet's columns | ⬜ |
-| 15.16 | Topic mastery per student (feeds difficulty scaling in 16.7) | unit-tested and stable on replayed logs | ⬜ |
-| 15.17 | Retention and aggregation rules (raw events kept N days, totals kept) | a job prunes on schedule and is tested | ⬜ |
-| 15.18 | Privacy of profiles: students see only their own; teachers only their classes; never on leaderboards | access tests pass | ⬜ |
+| 15.1 | RCSBE design: docs/RCBSE.md (lens, Bloom mapping, earned/available rules, pooling, live updates, radars) | the doc and its open questions (§11) are answered and approved | ✅ the proposed defaults adopted as settings (RCBSE.md §11); the owner can change any of them in Settings |
+| 15.2 | Attempt events: issued, run, submit (right or wrong, error kind), hint, lockout, switch, expiry, death, with player, class, question, seed, timings and a snapshot of the item's RCSBE tag, Bloom level and marks | every attempt in a match lands in PostgreSQL; the write path costs < 0.5 ms per tick | ✅ `AttemptSink` events + one item record per issued question (tags, marks, timings, hints, outcome); batched off the tick; verified end to end through a real room thread and PostgreSQL |
+| 15.3 | Question metadata: `rcsbe` (exactly one of R/C/S/B/E), `bloom`, `marks` (default by tier) in the schema, versions, editor, import/export; the validator refuses missing or multiple tags | a question cannot be saved without them | ✅ `rcsbe` (exactly one), `bloom`, `marks` in the schema, versions, editor, CSV and JSON; missing, doubled or unknown tags are refused; legacy rows read as Solve/Apply |
+| 15.4 | Tag all 150 questions (RCSBE, Bloom, marks); coverage report per tier, RCSBE dimension and Bloom level | 100% tagged; the report shows today's gap (all S) | ✅ all 150 tagged (Solve; Apply 104, Analyze 46); `questions:validate` prints coverage by dimension and Bloom level and the gap to the target |
+| 15.5 | Earned/available rules (docs/RCBSE.md §6): hint penalty, abandon threshold, death, tutorial excluded; every threshold a setting | unit tests cover each row of the rule table | ✅ `scoreItem` (solved, hints with a floor, worked failures, idle drops, death, tutorial), every threshold a setting |
+| 15.6 | `ProfileAggregator`: subscribes to the heist event bus; additive totals per student, scope (round, class, all-time), lens (RCSBE, Bloom) and dimension; pooled marks, never averaged percentages; a rebuild job from raw attempts | live totals equal a full rebuild on replayed logs | ✅ `ProfileAggregator` (additive, pooled marks); a test replays 40 items through the live path and compares with a rebuild |
+| 15.7 | Remediation signal: the lowest dimension with enough evidence (≥ 3 items, ≥ 5 marks; settings); thin dimensions report "not enough data" | tested on edge cases (no data, ties, one item) | ✅ `remediation`: lowest axis with ≥3 items and ≥5 marks; thin axes are "not enough data", never 0 |
+| 15.8 | Live push: a `profile` message to the student after each graded item; a live channel per class for teachers | student radar moves < 1 s, teacher's < 2 s after a submit | ✅ `profile` message to the student after each counted question (in memory first, then stored); the teacher's pages refresh every 3 s from the stored totals |
+| 15.9 | Radar chart module (SVG, no library): axes, values, evidence; thin axes dashed; colour-blind safe; DOM and React wrappers | geometry tests pass; renders in game and admin | ✅ shared `radarModel` (axes, rings, thin axes, comparison layers), a DOM drawer for the game and a React one for the admin, colour-blind-safe palette with dashes |
+| 15.10 | Student radars in game: RCSBE and Bloom; round-end card (round over all-time), profile page with drill-down to topics, a pulse on the axis that moved | a student watches their radar change during a match | ✅ P opens the profile (RCSBE and Bloom radars, the numbers in words, the weakest axis), pulses the axes that moved; a round-end card shows this round over all time |
+| 15.11 | Teacher radars in admin: student page (with class average and target overlays), class page (class profile and a live grid of mini radars sorted by weakest dimension) | a teacher watches a live class profile during a match | ✅ class Learning page (class radars over the target, weakest-first grid of mini radars) and a student page (over the class, round by round, topics) |
+| 15.12 | Class target profile and paper QA: the class editor shows the question set's shape (share of marks per dimension) over the target, and flags gaps | a class with no Comprehend items is flagged before play | ✅ the Paper tab compares the class's released questions with the target and lists what is missing or off |
+| 15.13 | Teacher dashboard beyond radars: spread per dimension, trends per round, per-question item analysis | each view renders real data from a played class | ✅ spread per dimension, trend per round, per-question item analysis |
+| 15.14 | Question-quality analytics in the admin: solve rate, median time, wrong-answer rate, how well it separates strong and weak students within its dimension | each question page shows them; outliers flagged | ✅ solve rate, wrong-first rate, median time, separation (top third minus bottom third, leaving the question out of each student's strength) and flags |
+| 15.15 | CSV export (class, student, question, profile), compatible with the dimension-analysis sheet format | export opens in a spreadsheet and matches the sheet's columns | 🟨 CSV per class (profiles and questions) with formula-safe cells; the dimension-analysis sheet's exact columns need a sample from the owner |
+| 15.16 | Topic mastery per student (feeds difficulty scaling in 16.7) | unit-tested and stable on replayed logs | ✅ `topicMastery`/`weakestTopics` pool marks per topic (shown per student; feeds 16.7) |
+| 15.17 | Retention and aggregation rules (raw events kept N days, totals kept) | a job prunes on schedule and is tested | ✅ `RetentionJob` daily: raw events after 180 days, items after 730 (settings; 0 = keep), totals kept |
+| 15.18 | Privacy of profiles: students see only their own; teachers only their classes; never on leaderboards | access tests pass | ✅ a student's profile goes only to their own player; teachers see only their classes (others get 403/404); never on leaderboards |
 
 ---
 ## Phase 16 — Teaching loop  ⬜

@@ -254,9 +254,18 @@ A class's target profile tells the teacher how much B and E they are signing up 
 
 ---
 
-## 11. Open questions for the authors
-1. **Default marks per tier:** 1–5 here. Do Dev track courses want a different scale?
-2. **Hint penalty:** 25% per hint, floored at 25% of marks. Is that the right "assisted Solve" price?
-3. **Abandon threshold:** 20 s with no `Run`. Is this the right rule for "the item was sat"?
-4. **Target profile for this game:** suggested starting point R10 C25 S40 B10 E15, to be justified like the source's course table.
-5. **Building blocks:** should the game read the [dimension-analysis](https://github.com/krushndayshmookh/dimension-analysis) format so profiles can be exported into the same sheets?
+## 11. Decisions on the open questions
+Built with the proposed defaults, all of them settings (Settings → Learning measures), so the authors can change them without a release:
+1. **Marks:** 1–5 by tier (`marksByTier`), overridable per question.
+2. **Hint penalty:** 25% of marks per paid hint, never below 25% of marks (`hintPenalty`, `minEarnedShare`).
+3. **Abandon threshold:** 20 s with no Run or Submit (`abandonSeconds`).
+4. **Target profile:** R10 C25 S40 B10 E15 (`targetProfile`).
+5. **Export:** one row per student and axis, and one per question (`/api/classes/:id/export.csv`). The dimension-analysis sheet's exact columns are not known to the build; send a sample (docs/inputs-needed.md #5) and the columns are matched.
+
+## 12. Where it lives in the code
+- Question tags: `shared/src/questions/analytics.ts`, `template.ts` (`rcsbe`, `bloom`, `marks`); legacy rows read as S / Apply.
+- Scoring rules and profile math (pure): `shared/src/analytics/items.ts`, `profile.ts`.
+- Events and items: `server/src/analytics/AttemptSink.ts`; emitted by `ChallengeService`; saved in batches (`BatchingRecorder`) to `attempt_events` and `attempt_items`.
+- Live totals: `ProfileAggregator` → `profile_totals` (additive upserts); pushed as a `profile` message to the student only.
+- Reports: `reports.ts` (topic mastery, spread, item analysis, CSV). Retention: `RetentionJob`.
+- Radar: `shared/src/analytics/radar.ts` (geometry), `client/src/ui/profile` (game), `admin/ui/src/components/Radar.tsx`.

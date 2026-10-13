@@ -1,0 +1,86 @@
+import { useQuery } from '@tanstack/react-query';
+import type { AxisScore, ProfileScopeView, RcsbeDimension, ShapeRow } from '@heist/shared';
+import { api } from './client';
+
+export interface StudentRow {
+  playerId: number;
+  name: string;
+  rcsbe: AxisScore[];
+  bloom: AxisScore[];
+}
+
+export interface Spread {
+  dimension: string;
+  students: number;
+  min: number | null;
+  q1: number | null;
+  median: number | null;
+  q3: number | null;
+  max: number | null;
+}
+
+export interface ClassAnalytics {
+  target: Record<RcsbeDimension, number>;
+  class: ProfileScopeView;
+  students: StudentRow[];
+  spread: { rcsbe: Spread[]; bloom: Spread[] };
+  paper: { rows: ShapeRow[]; problems: string[]; questions: number };
+}
+
+/** The class profile, refreshed every few seconds so a teacher can watch a match. */
+export function useClassAnalytics(id: number) {
+  return useQuery({
+    queryKey: ['class', id, 'analytics'],
+    queryFn: () => api<ClassAnalytics>(`/classes/${id}/analytics`),
+    refetchInterval: 3000,
+  });
+}
+
+export interface StudentAnalytics {
+  player: { id: number; name: string };
+  profile: ProfileScopeView;
+  classProfile: ProfileScopeView;
+  target: Record<RcsbeDimension, number>;
+  trend: { round: number; rcsbe: AxisScore[] }[];
+  topics: {
+    topic: string;
+    earned: number;
+    available: number;
+    items: number;
+    solved: number;
+    score: number | null;
+  }[];
+  weakestTopics: { topic: string; score: number | null }[];
+  remediation: AxisScore | null;
+  items: number;
+}
+
+export function useStudentAnalytics(classId: number, playerId: number) {
+  return useQuery({
+    queryKey: ['class', classId, 'student', playerId],
+    queryFn: () => api<StudentAnalytics>(`/classes/${classId}/students/${playerId}`),
+    refetchInterval: 3000,
+  });
+}
+
+export interface ItemRow {
+  questionId: number;
+  slug: string | null;
+  title: string;
+  rcsbe: string;
+  tier: number;
+  attempts: number;
+  students: number;
+  solveRate: number;
+  wrongRate: number;
+  medianSeconds: number | null;
+  discrimination: number | null;
+  flags: string[];
+}
+
+export function useItemAnalysis(classId: number) {
+  return useQuery({
+    queryKey: ['class', classId, 'items'],
+    queryFn: async () => (await api<{ items: ItemRow[] }>(`/classes/${classId}/items`)).items,
+  });
+}

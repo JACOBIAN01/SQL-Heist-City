@@ -53,21 +53,23 @@ const data = workerData as MatchWorkerData;
 const http = createServer();
 // Each thread has its own read-only handle and challenge stack: SQLite allows many readers, and
 // a match then never waits on another thread to ask or grade a question.
-let stack: ChallengeStack | undefined;
+// The analytics settings come from the stack, which needs the analytics sink first: a holder breaks the loop.
+const holder: { stack?: ChallengeStack | undefined } = {};
 // The learning record: every attempt is saved and each student's profile kept live (Phase 15).
 const analytics = data.databaseUrl
   ? new AnalyticsKit(
       PgDatabase.open({ url: data.databaseUrl, max: 2 }),
-      () => stack?.analyticsSettings() ?? DEFAULT_ANALYTICS_SETTINGS,
+      () => holder.stack?.analyticsSettings() ?? DEFAULT_ANALYTICS_SETTINGS,
     )
   : undefined;
-stack =
+const stack: ChallengeStack | undefined =
   data.dbPath && existsSync(data.dbPath)
     ? buildChallengeStack(openDatabase({ path: data.dbPath, readOnly: true }), {
         logger: { warn: (message, meta) => console.warn(message, meta ?? '') },
         ...(analytics ? { attempts: analytics.sink } : {}),
       })
     : undefined;
+holder.stack = stack;
 const heist = data.heist ?? stack?.heistSettings();
 const game = startGame(http, data.settings, mapByName(data.map), {
   ...(heist ? { heist } : {}),

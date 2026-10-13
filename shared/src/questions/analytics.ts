@@ -57,6 +57,10 @@ export const analyticsSettingsSchema = z.object({
   /** A dimension needs this many items and this many marks available before it is scored. */
   minItems: z.number().int().min(1).default(3),
   minMarks: z.number().min(0).default(5),
+  /** Raw attempt events are kept this many days (0 = forever). Totals and finished items are kept longer. */
+  rawEventDays: z.number().int().min(0).default(180),
+  /** Finished items are kept this many days (0 = forever); the profile totals they built are kept regardless. */
+  itemDays: z.number().int().min(0).default(730),
   /** Target share of marks per dimension for a class (sums to 100). */
   targetProfile: z
     .object({

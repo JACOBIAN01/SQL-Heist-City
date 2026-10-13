@@ -20,9 +20,14 @@ import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
 import { PersonalDataRegistry, accountSource } from '@heist/server/players/PersonalData';
 import { HttpGameControl, type GameControl } from './classes/GameControl';
+import { analyticsRoutes } from './analytics/routes';
 import { classRoutes } from './classes/classRoutes';
 import { playerStaffRoutes } from './players/staffRoutes';
-import { NAME_RULES_KEY, settingsParsers } from '@heist/server/config/SettingsReader';
+import {
+  ANALYTICS_SETTINGS_KEY,
+  NAME_RULES_KEY,
+  settingsParsers,
+} from '@heist/server/config/SettingsReader';
 import { playerRoutes, type PlayerAuthOptions } from './players/playerRoutes';
 import { poolRoutes } from './pools/routes';
 import { ReloadNotifier } from './reload/ReloadNotifier';
@@ -158,6 +163,15 @@ export function buildAdmin(
       configRoutes(settings),
       poolRoutes(stores.pools, events),
       playerStaffRoutes(stores.players, nameRules, events),
+      analyticsRoutes({
+        classes: stores.classes,
+        questions: stores.questions,
+        players: stores.players,
+        attempts: stores.attempts,
+        profiles: stores.profiles,
+        settings: async () =>
+          settingsParsers.analyticsFrom(await stores.settings.get(ANALYTICS_SETTINGS_KEY)),
+      }),
       classRoutes({
         classes: stores.classes,
         results: stores.classResults,

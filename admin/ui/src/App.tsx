@@ -5,6 +5,8 @@ import { Shell } from './layout/Shell';
 import { ImportExportPage } from './pages/ImportExportPage';
 import { AuditPage } from './pages/AuditPage';
 import { LoginPage } from './pages/LoginPage';
+import { ClassLearningPage } from './pages/ClassLearningPage';
+import { StudentPage } from './pages/StudentPage';
 import { ClassEditorPage } from './pages/ClassEditorPage';
 import { ClassesPage } from './pages/ClassesPage';
 import { PoolsPage } from './pages/PoolsPage';
@@ -28,6 +30,8 @@ export function App() {
         <Route path="questions/:id" element={<QuestionEditorPage />} />
         <Route path="classes" element={<ClassesPage />} />
         <Route path="classes/:id" element={<ClassEditorPage />} />
+        <Route path="classes/:id/learning" element={<ClassLearningPage />} />
+        <Route path="classes/:id/students/:playerId" element={<StudentPage />} />
         <Route path="pools" element={<PoolsPage />} />
         <Route path="import-export" element={<ImportExportPage />} />
         <Route path="settings" element={<SettingsPage />} />
