@@ -206,6 +206,12 @@ Not measured here: real frame rates on an integrated GPU. Check on the target la
 - **Invitation:** on normal pages a "New here? Play the tutorial" link shows while the mouse is free, until the tutorial has been finished in this browser.
 - The round clock is hidden in the tutorial.
 
+## Full-screen map (12.2)
+M opens the whole map over the game, north up; M (or Esc) closes it. The game keeps running behind it: nothing pauses, and you can still be shot while you look.
+- **Shows:** every bank with its name and vault progress ("Metro Capital · 1/3 locks", "OPEN"), the alarm pulse, safehouses, the hospital, wanted players with their names, cash bags (not loose office cash) and you, as an arrow the way you face. A legend underneath.
+- **Code:** `ui/minimap/FullMapView.ts` (`fitMap`, `toScreen`, `captionFor`). Marker symbols come from `markerArt.ts`, shared with the minimap, so a symbol means the same on both. The street plan is drawn once.
+- **Keys:** sound mute moved from M to **N** to make room.
+
 ## Bank interiors (Phase 11)
 Banks are dressed instead of drawn as plain boxes. Everything is art from the layout; the colliders do not change.
 - **Furniture** (`world/bank/InteriorKit.ts`, `BankFurnitureArt.ts`): the House Pack pieces (tools/city/README.md "Interior furniture") placed from the same list the colliders come from (`placeFurniture`). The file stores quantised positions with the scale on each node, so the loader bakes the node transform into one float geometry per piece. Lamps glow at night; a ceiling panel (`Light_Ceiling5`) is put every 4 m on every storey, kept off stairwells and walls.

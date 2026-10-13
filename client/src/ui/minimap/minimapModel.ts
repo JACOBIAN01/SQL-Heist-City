@@ -26,7 +26,7 @@ export function pinToRim(p: MapPoint, radius: number): MapPoint & { readonly pin
   return { x: (p.x / d) * radius, y: (p.y / d) * radius, pinned: true };
 }
 
-export type MarkerKind = 'bank' | 'safehouse' | 'bag' | 'wanted' | 'objective';
+export type MarkerKind = 'bank' | 'safehouse' | 'hospital' | 'bag' | 'wanted' | 'objective';
 
 export interface Marker {
   readonly kind: MarkerKind;
@@ -127,3 +127,12 @@ export const objectiveMarker = (at: { readonly x: number; readonly z: number }):
   z: at.z,
   pinned: true,
 });
+
+/** The hospital, where the dead wake up: the middle of the map's respawn beds (none on maps without them). */
+export function hospitalMarker(map: GameMap): Marker | undefined {
+  const beds = map.respawns ?? [];
+  if (beds.length === 0) return undefined;
+  const x = beds.reduce((a, b) => a + b.x, 0) / beds.length;
+  const z = beds.reduce((a, b) => a + b.z, 0) / beds.length;
+  return { kind: 'hospital', id: 'hospital', x, z, pinned: true };
+}

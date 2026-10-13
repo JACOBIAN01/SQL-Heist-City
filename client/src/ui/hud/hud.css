@@ -427,3 +427,43 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
   opacity: 0.92;
 }
+
+/* The full-screen map (M): over the game, which keeps running behind it. */
+.hud-fullmap {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: rgba(8, 10, 14, 0.82);
+  color: #fff;
+  font:
+    13px system-ui,
+    sans-serif;
+  pointer-events: none;
+}
+.hud-fullmap[hidden] {
+  display: none;
+}
+.hud-fullmap-title {
+  font-weight: 600;
+  opacity: 0.85;
+}
+.hud-fullmap-canvas {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+.hud-fullmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 18px;
+  opacity: 0.85;
+}
+.hud-fullmap-legend b {
+  color: #ffd34d;
+}

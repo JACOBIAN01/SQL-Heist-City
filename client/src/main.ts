@@ -53,7 +53,13 @@ import { CameraRig } from './render/CameraRig';
 import { FrameStats } from './render/FrameStats';
 import { AimView } from './render/AimView';
 import { WeaponTable } from './game/WeaponTable';
-import { markersFor, objectiveMarker, VaultAlerts } from './ui/minimap/minimapModel';
+import {
+  hospitalMarker,
+  markersFor,
+  objectiveMarker,
+  VaultAlerts,
+} from './ui/minimap/minimapModel';
+import { FullMapView } from './ui/minimap/FullMapView';
 import { TutorialBeacon } from './tutorial/TutorialBeacon';
 import {
   realMatchSearch,
@@ -237,7 +243,7 @@ if (atParam && atParam.length >= 2 && atParam.every(Number.isFinite)) {
 }
 const hint = document.createElement('div');
 hint.textContent =
-  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · right mouse aim · 1–5 guns · M mute · Esc release mouse';
+  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · right mouse aim · 1–5 guns · M map · N mute · Esc release mouse';
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
@@ -310,6 +316,9 @@ const hud = new Hud(document.body);
 const bankingProgress = new BankingProgress(hud);
 // The minimap: every bank's vault progress (flashing while its alarm rings), safehouses, loose cash.
 const minimap = new MinimapView(hud.root, MAP);
+// The full-screen map (M): the whole city, north up; the game keeps running behind it.
+const fullMap = new FullMapView(document.body, MAP);
+const hospital = hospitalMarker(MAP);
 const vaultAlerts = new VaultAlerts(DEFAULT_AUDIO_SETTINGS.alarmSeconds);
 /** Redraw the minimap at most this often (ms): it is a glance, not a view. */
 const MINIMAP_EVERY_MS = 33;
@@ -518,7 +527,9 @@ new Hotkeys()
     sqlTasks.pick();
   })
   .hold('KeyB', (down) => scoreboard.setBoardVisible(down))
-  .bind(['KeyM'], () => hud.toast(sound.toggleMute() ? 'Sound off (M)' : 'Sound on (M)'))
+  .bind(['KeyM'], () => fullMap.toggle())
+  .bind(['Escape'], () => fullMap.setOpen(false))
+  .bind(['KeyN'], () => hud.toast(sound.toggleMute() ? 'Sound off (N)' : 'Sound on (N)'))
   .bind(['KeyF'], () => {
     if (!feedback.isAlive) return;
     // A lift, vault or safehouse in reach comes first; otherwise F is for cars.
@@ -747,23 +758,22 @@ renderer.setAnimationLoop((now) => {
   });
   if (now - lastMinimap >= MINIMAP_EVERY_MS) {
     lastMinimap = now;
-    minimap.draw(
-      // Turned the way the camera looks (behind the car when driving).
-      { x: drawPos.x, z: drawPos.z, yaw: Math.atan2(-earForward.x, -earForward.z) },
-      [
-        ...markersFor(
-          MAP,
-          world.vaults,
-          loot.positions(),
-          vaultAlerts,
-          now / 1000,
-          wanted,
-          client.playerId,
-        ),
-        ...(objective ? [objectiveMarker(objective)] : []),
-      ],
-      now / 1000,
-    );
+    // Turned the way the camera looks (behind the car when driving).
+    const me = { x: drawPos.x, z: drawPos.z, yaw: Math.atan2(-earForward.x, -earForward.z) };
+    const markers = [
+      ...markersFor(
+        MAP,
+        world.vaults,
+        loot.positions(),
+        vaultAlerts,
+        now / 1000,
+        wanted,
+        client.playerId,
+      ),
+      ...(objective ? [objectiveMarker(objective)] : []),
+    ];
+    minimap.draw(me, markers, now / 1000);
+    if (fullMap.isOpen) fullMap.draw(me, hospital ? [...markers, hospital] : markers, now / 1000);
   }
   lighting.frame(camera);
   lighting.follow(myCar ? myCar.model.object : model.object);
