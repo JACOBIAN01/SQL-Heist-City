@@ -23,14 +23,17 @@ export function questionRoutes(
   router.use('/questions', requireLogin);
 
   // Registered before /questions/:id so "export" isn't read as an id.
-  router.get('/questions/export', (req, res) => {
+  router.get('/questions/export', async (req, res) => {
     const { format } = parse(
       z.object({ format: z.enum(['json', 'csv']).default('json') }),
       req.query,
     );
     const f = questionFormats[format];
     const date = new Date().toISOString().slice(0, 10);
-    res.type(f.contentType).attachment(`questions-${date}.${format}`).send(io.export(f));
+    res
+      .type(f.contentType)
+      .attachment(`questions-${date}.${format}`)
+      .send(await io.export(f));
   });
 
   router.post(
@@ -49,8 +52,8 @@ export function questionRoutes(
     },
   );
 
-  router.get('/questions', (req, res) => {
-    res.json({ questions: questions.list(parse(questionListQuerySchema, req.query)) });
+  router.get('/questions', async (req, res) => {
+    res.json({ questions: await questions.list(parse(questionListQuerySchema, req.query)) });
   });
 
   router.post('/questions', async (req, res) => {
@@ -58,8 +61,8 @@ export function questionRoutes(
     res.status(201).json({ question: await questions.create(template, requireUser(res)) });
   });
 
-  router.get('/questions/:id', (req, res) => {
-    res.json({ question: questions.get(idParam(req.params.id)) });
+  router.get('/questions/:id', async (req, res) => {
+    res.json({ question: await questions.get(idParam(req.params.id)) });
   });
 
   router.put('/questions/:id', async (req, res) => {
@@ -69,27 +72,31 @@ export function questionRoutes(
     });
   });
 
-  router.delete('/questions/:id', requireRole('admin'), (req, res) => {
-    questions.remove(idParam(req.params.id), requireUser(res));
+  router.delete('/questions/:id', requireRole('admin'), async (req, res) => {
+    await questions.remove(idParam(req.params.id), requireUser(res));
     res.status(204).end();
   });
 
-  router.post('/questions/:id/enable', (req, res) => {
-    res.json({ question: questions.setEnabled(idParam(req.params.id), true, requireUser(res)) });
+  router.post('/questions/:id/enable', async (req, res) => {
+    res.json({
+      question: await questions.setEnabled(idParam(req.params.id), true, requireUser(res)),
+    });
   });
 
-  router.post('/questions/:id/disable', (req, res) => {
-    res.json({ question: questions.setEnabled(idParam(req.params.id), false, requireUser(res)) });
+  router.post('/questions/:id/disable', async (req, res) => {
+    res.json({
+      question: await questions.setEnabled(idParam(req.params.id), false, requireUser(res)),
+    });
   });
 
-  router.post('/questions/:id/duplicate', (req, res) => {
+  router.post('/questions/:id/duplicate', async (req, res) => {
     res
       .status(201)
-      .json({ question: questions.duplicate(idParam(req.params.id), requireUser(res)) });
+      .json({ question: await questions.duplicate(idParam(req.params.id), requireUser(res)) });
   });
 
-  router.get('/questions/:id/versions', (req, res) => {
-    res.json({ versions: questions.versions(idParam(req.params.id)) });
+  router.get('/questions/:id/versions', async (req, res) => {
+    res.json({ versions: await questions.versions(idParam(req.params.id)) });
   });
 
   router.post('/questions/:id/rollback/:version', async (req, res) => {
@@ -104,7 +111,7 @@ export function questionRoutes(
   // Preview a saved question.
   router.post('/questions/:id/preview', async (req, res) => {
     const { seeds, studentSql } = parse(previewRequestSchema, req.body);
-    const { template } = questions.get(idParam(req.params.id));
+    const { template } = await questions.get(idParam(req.params.id));
     res.json({ report: await tester.test(template, seeds, studentSql) });
   });
 

@@ -7,16 +7,16 @@ import type { AdminEventBus } from '../events/AdminEvents';
 import {
   DuplicatePoolNameError,
   UnknownQuestionsError,
-  type SqlitePoolRepository,
+  type PoolRepository,
 } from './PoolRepository';
 
-export function poolRoutes(pools: SqlitePoolRepository, events: AdminEventBus): Router {
+export function poolRoutes(pools: PoolRepository, events: AdminEventBus): Router {
   const router = Router();
   router.use('/pools', requireLogin);
 
-  const translate = <T>(fn: () => T): T => {
+  const translate = async <T>(fn: () => Promise<T>): Promise<T> => {
     try {
-      return fn();
+      return await fn();
     } catch (err) {
       if (err instanceof DuplicatePoolNameError) throw conflict(err.message);
       if (err instanceof UnknownQuestionsError)
@@ -40,28 +40,28 @@ export function poolRoutes(pools: SqlitePoolRepository, events: AdminEventBus): 
     });
   };
 
-  router.get('/pools', (_req, res) => {
-    res.json({ pools: pools.list() });
+  router.get('/pools', async (_req, res) => {
+    res.json({ pools: await pools.list() });
   });
 
-  router.get('/pools/:id', (req, res) => {
-    const pool = pools.get(idParam(req.params.id));
+  router.get('/pools/:id', async (req, res) => {
+    const pool = await pools.get(idParam(req.params.id));
     if (!pool) throw notFound('Pool');
     res.json({ pool });
   });
 
-  router.post('/pools', (req, res) => {
+  router.post('/pools', async (req, res) => {
     const data = parse(poolInputSchema, req.body);
-    const pool = translate(() => pools.create(data, requireUser(res).email));
+    const pool = await translate(() => pools.create(data, requireUser(res).email));
     audit(res, 'create', pool.id, { name: pool.name, questions: pool.questionIds.length });
     res.status(201).json({ pool });
   });
 
-  router.put('/pools/:id', (req, res) => {
+  router.put('/pools/:id', async (req, res) => {
     const id = idParam(req.params.id);
     const data = parse(poolInputSchema, req.body);
-    const before = pools.get(id);
-    const pool = translate(() => pools.update(id, data));
+    const before = await pools.get(id);
+    const pool = await translate(() => pools.update(id, data));
     if (!pool) throw notFound('Pool');
     audit(res, 'update', id, {
       name: pool.name,
@@ -71,10 +71,10 @@ export function poolRoutes(pools: SqlitePoolRepository, events: AdminEventBus): 
     res.json({ pool });
   });
 
-  router.delete('/pools/:id', (req, res) => {
+  router.delete('/pools/:id', async (req, res) => {
     const id = idParam(req.params.id);
-    const before = pools.get(id);
-    if (!before || !pools.remove(id)) throw notFound('Pool');
+    const before = await pools.get(id);
+    if (!before || !(await pools.remove(id))) throw notFound('Pool');
     audit(res, 'delete', id, { name: before.name });
     res.status(204).end();
   });

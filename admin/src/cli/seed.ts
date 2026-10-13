@@ -1,7 +1,7 @@
-import { mkdirSync, readFileSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openDatabase } from '@heist/server/db/database';
+import { openStores } from '../openStores';
 import { buildAdmin } from '../composition';
 import { questionFormats } from '../questions/io/formats';
 
@@ -19,16 +19,15 @@ const dbPath =
   process.env.DB_PATH ?? fileURLToPath(new URL('../../../data/dev.db', import.meta.url));
 const contentDir = fileURLToPath(new URL('../../../content/questions', import.meta.url));
 
-mkdirSync(dirname(dbPath), { recursive: true });
-const db = openDatabase({ path: dbPath });
+const opened = await openStores(dbPath);
 const admin = buildAdmin(
-  db,
+  opened.stores,
   { secureCookies: false, sessionTtlMs: 0 },
   { error: (m, meta) => console.error(m, meta ?? '') },
 );
 
 await admin.auth.ensureInitialAdmin(process.env.ADMIN_EMAIL, process.env.ADMIN_PASSWORD);
-const actor = admin.auth.listUsers().find((u) => u.role === 'admin' && !u.disabled);
+const actor = (await admin.auth.listUsers()).find((u) => u.role === 'admin' && !u.disabled);
 if (!actor) {
   console.error('No admin account exists. Re-run with ADMIN_EMAIL and ADMIN_PASSWORD set.');
   process.exit(1);
@@ -56,5 +55,6 @@ for (const file of readdirSync(contentDir)
 }
 
 await admin.close();
-console.log(`seeded ${dbPath} as ${actor.email}`);
+await opened.close();
+console.log(`seeded ${opened.label} as ${actor.email}`);
 process.exit(failed > 0 ? 1 : 0);

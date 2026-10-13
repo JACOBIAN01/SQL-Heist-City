@@ -1,18 +1,15 @@
-import type { DatabaseSync } from 'node:sqlite';
 import type { Express } from 'express';
 import { AuthService } from './auth/AuthService';
 import { LoginRateLimiter } from './auth/LoginRateLimiter';
 import { csrfGuard, session } from './auth/middleware';
 import { ScryptPasswordHasher, type PasswordHasher } from './auth/PasswordHasher';
 import { authRoutes } from './auth/routes';
-import { SqliteSessionStore } from './auth/SessionStore';
-import { SqliteUserRepository } from './auth/UserRepository';
+import type { AdminStores } from './stores';
 import { createAdminApp } from './http/app';
 import type { ErrorLogger } from './http/errors';
 import { userRoutes } from './users/routes';
-import { SqliteQuestionRepository } from '@heist/server/questions/SqliteQuestionRepository';
 import { AdminEventBus } from './events/AdminEvents';
-import { SqliteAuditLog, auditAdminEvents } from './audit/AuditLog';
+import { auditAdminEvents } from './audit/AuditLog';
 import { auditRoutes } from './audit/routes';
 import { QuestionAdminService } from './questions/QuestionAdminService';
 import { questionRoutes } from './questions/routes';
@@ -21,7 +18,6 @@ import { SandboxTemplateValidator } from './questions/TemplateValidator';
 import { QuestionImportService } from './questions/io/QuestionImportService';
 import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
-import { SqlitePoolRepository } from './pools/PoolRepository';
 import { poolRoutes } from './pools/routes';
 import { ReloadNotifier } from './reload/ReloadNotifier';
 import { Grader } from '@heist/server/sql/Grader';
@@ -52,6 +48,8 @@ export interface Admin {
   readonly events: AdminEventBus;
   /** Bulk import/export, used by the seed script. */
   readonly io: QuestionImportService;
+  /** Resolves when the audit writes so far have landed (tests and shutdown). */
+  settled(): Promise<void>;
   /** Release worker threads on shutdown. */
   close(): Promise<void>;
 }
@@ -62,19 +60,21 @@ export interface Admin {
  * so tests exercise the real wiring.
  */
 export function buildAdmin(
-  db: DatabaseSync,
+  stores: AdminStores,
   config: AdminConfig,
   logger: ErrorLogger,
   overrides: AdminOverrides = {},
 ): Admin {
   const now = overrides.now ?? Date.now;
-  const users = new SqliteUserRepository(db);
-  const sessions = new SqliteSessionStore(db, config.sessionTtlMs, now);
+  const users = stores.users;
+  const sessions = stores.sessions(config.sessionTtlMs, now);
   const auth = new AuthService(users, sessions, overrides.hasher ?? new ScryptPasswordHasher());
   const limiter = new LoginRateLimiter(5, 15 * 60 * 1000, now);
   const events = new AdminEventBus();
-  const audit = new SqliteAuditLog(db);
-  auditAdminEvents(events, audit);
+  const audit = stores.audit;
+  const auditing = auditAdminEvents(events, audit, (err) =>
+    logger.error('audit write failed', { error: String(err) }),
+  );
   const reload = config.gameServer
     ? new ReloadNotifier({
         gameServerUrl: config.gameServer.url,
@@ -86,9 +86,9 @@ export function buildAdmin(
   const sandbox = overrides.sandbox ?? new WorkerSandboxRunner({ size: 2 });
   const tester = new QuestionTester(new VariantBuilder(builtInDatasets), new Grader(sandbox));
   const validator = new SandboxTemplateValidator(tester);
-  const questions = new QuestionAdminService(new SqliteQuestionRepository(db), events, validator);
+  const questions = new QuestionAdminService(stores.questions, events, validator);
   const io = new QuestionImportService(questions, validator);
-  const settings = new SettingsService(db, events);
+  const settings = new SettingsService(stores.settings, events);
 
   const app = createAdminApp({
     logger,
@@ -100,7 +100,7 @@ export function buildAdmin(
       questionRoutes(questions, tester, io),
       auditRoutes(audit),
       configRoutes(settings),
-      poolRoutes(new SqlitePoolRepository(db), events),
+      poolRoutes(stores.pools, events),
     ],
   });
   return {
@@ -108,7 +108,9 @@ export function buildAdmin(
     auth,
     events,
     io,
+    settled: () => auditing.flush(),
     close: async () => {
+      await auditing.flush();
       await reload?.flush();
       await sandbox.close();
     },

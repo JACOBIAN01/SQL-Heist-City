@@ -21,14 +21,14 @@ export function requireUser(res: Response): AdminUser {
 export function session(auth: AuthService): RequestHandler {
   return (req, res, next) => {
     const token = readCookie(req.headers.cookie, SESSION_COOKIE);
-    if (token) {
-      const user = auth.userForToken(token);
+    if (!token) return next();
+    auth.userForToken(token).then((user) => {
       if (user) {
         res.locals.user = user;
         res.locals.sessionToken = token;
       }
-    }
-    next();
+      next();
+    }, next);
   };
 }
 

@@ -3,6 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { attachChallengeSocket } from './challenges/ChallengeSocket';
 import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
+import { PgDatabase } from './pg/PgDatabase';
+import { syncContent } from './pg/ContentSnapshot';
+import { migratePg } from './pg/migrate';
 import { DEFAULT_MATCH_SETTINGS, cityMapIdFor } from '@heist/shared';
 import { MatchPool } from './game/MatchPool';
 import { mapByName, parseMapName, type MapName } from './game/maps';
@@ -12,7 +15,24 @@ import { attachTutorialSocket } from './tutorial/TutorialRooms';
 
 // Entry point: reads the environment, then wires concrete dependencies.
 const port = Number(process.env.PORT ?? 8080);
-const dbPath = process.env.DB_PATH ?? fileURLToPath(new URL('../../data/dev.db', import.meta.url));
+let dbPath = process.env.DB_PATH ?? fileURLToPath(new URL('../../data/dev.db', import.meta.url));
+
+// With DATABASE_URL, PostgreSQL is the system of record: the game reads a local snapshot of the
+// content that is refreshed at start and whenever the admin asks for a reload (docs/identity.md).
+let refreshContent: () => Promise<void> = async () => {};
+if (process.env.DATABASE_URL) {
+  const pg = PgDatabase.open({ url: process.env.DATABASE_URL, max: 2 });
+  await migratePg(pg);
+  dbPath =
+    process.env.SNAPSHOT_PATH ??
+    fileURLToPath(new URL('../../data/content-snapshot.db', import.meta.url));
+  const snapshot = openDatabase({ path: dbPath });
+  refreshContent = async () => {
+    const counts = await syncContent(pg, snapshot);
+    console.log(`content snapshot: ${counts.questions} questions, ${counts.settings} settings`);
+  };
+  await refreshContent();
+}
 
 // The admin service owns the schema; the game only reads. Until the admin has
 // created the database there are no questions to serve.
@@ -52,7 +72,8 @@ const server = createHttpServer({
   now: Date.now,
   startedAt: Date.now(),
   ...(process.env.INTERNAL_SECRET ? { internalSecret: process.env.INTERNAL_SECRET } : {}),
-  onReload: () => {
+  onReload: async () => {
+    await refreshContent();
     challenges?.invalidate();
     running.pool?.reload();
     console.log('reloaded questions and settings');

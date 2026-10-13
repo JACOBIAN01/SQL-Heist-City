@@ -15,7 +15,7 @@ export interface HttpServerDeps {
   /** Source of numbers for `GET /metrics` (tick time, players, bandwidth). Absent = route disabled. */
   metrics?: () => unknown;
   /** Called on POST /internal/reload, e.g. to drop question/settings caches. */
-  onReload?: () => void;
+  onReload?: () => void | Promise<void>;
 }
 
 // SOLID: D (Dependency Inversion) — Why: the server takes its clock and
@@ -46,8 +46,10 @@ export function createHttpServer(deps: HttpServerDeps): Server {
         sendJson(res, 403, { error: { code: 'forbidden', message: 'Bad internal secret' } });
         return;
       }
-      deps.onReload?.();
-      res.writeHead(204).end();
+      void Promise.resolve(deps.onReload?.()).then(
+        () => res.writeHead(204).end(),
+        () => sendJson(res, 500, { error: { code: 'reload_failed', message: 'Reload failed' } }),
+      );
       return;
     }
     sendJson(res, 404, { error: { code: 'not_found', message: 'Not found' } });

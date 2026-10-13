@@ -139,6 +139,41 @@ export function combatFrom(stored: unknown): CombatSettings {
   };
 }
 
+/** A stored section, or its defaults when missing or no longer valid. */
+function sectionFrom<T>(
+  raw: unknown,
+  schema: { safeParse(v: unknown): { success: true; data: T } | { success: false } },
+  fallback: T,
+): T {
+  if (raw === undefined) return fallback;
+  const parsed = schema.safeParse(raw);
+  return parsed.success ? parsed.data : fallback;
+}
+
+/**
+ * How each stored settings section turns into values: stored JSON over the
+ * defaults, and the defaults again when the stored value is missing or invalid.
+ * The game's reader and the admin's editor both use these, so they cannot disagree.
+ */
+export const settingsParsers = {
+  challengeFrom: (raw: unknown): ChallengeSettings =>
+    sectionFrom(raw, challengeSettingsSchema, DEFAULT_CHALLENGE_SETTINGS),
+  heistFrom: (raw: unknown): HeistSettings =>
+    sectionFrom(raw, heistSettingsSchema, DEFAULT_HEIST_SETTINGS),
+  combatFrom: (raw: unknown): CombatSettings =>
+    raw === undefined ? DEFAULT_COMBAT_SETTINGS : combatFrom(raw),
+  tutorialFrom: (raw: unknown): TutorialSettings =>
+    sectionFrom(raw, tutorialSettingsSchema, DEFAULT_TUTORIAL_SETTINGS),
+  vehicleFrom: (raw: unknown): VehicleSettings =>
+    sectionFrom(raw, vehicleSettingsSchema, DEFAULT_VEHICLE_SETTINGS),
+  atmosphereFrom: (raw: unknown): AtmosphereSettings =>
+    sectionFrom(raw, atmosphereSettingsSchema, DEFAULT_ATMOSPHERE_SETTINGS),
+  cityFrom: (raw: unknown): CitySettings =>
+    sectionFrom(raw, citySettingsSchema, DEFAULT_CITY_SETTINGS),
+  rewardIconsFrom: (raw: unknown): RewardIcons =>
+    sectionFrom(raw, rewardIconsSchema, DEFAULT_REWARD_ICONS),
+} as const;
+
 /**
  * Reads admin overrides from SQLite on top of the shared defaults. Invalid
  * stored values fall back to defaults rather than breaking a live match.
@@ -147,70 +182,35 @@ export class SqliteSettingsReader implements SettingsReader {
   constructor(private readonly db: DatabaseSync) {}
 
   challengeSettings(): ChallengeSettings {
-    const row = this.db
-      .prepare('SELECT value_json FROM settings WHERE key = ?')
-      .get(CHALLENGE_SETTINGS_KEY) as { value_json: string } | undefined;
-    if (!row) return DEFAULT_CHALLENGE_SETTINGS;
-    const parsed = challengeSettingsSchema.safeParse(safeJson(row.value_json));
-    return parsed.success ? parsed.data : DEFAULT_CHALLENGE_SETTINGS;
+    return settingsParsers.challengeFrom(this.raw(CHALLENGE_SETTINGS_KEY));
   }
 
   heistSettings(): HeistSettings {
-    const row = this.db
-      .prepare('SELECT value_json FROM settings WHERE key = ?')
-      .get(HEIST_SETTINGS_KEY) as { value_json: string } | undefined;
-    if (!row) return DEFAULT_HEIST_SETTINGS;
-    const parsed = heistSettingsSchema.safeParse(safeJson(row.value_json));
-    return parsed.success ? parsed.data : DEFAULT_HEIST_SETTINGS;
+    return settingsParsers.heistFrom(this.raw(HEIST_SETTINGS_KEY));
   }
 
   combatSettings(): CombatSettings {
-    const row = this.db
-      .prepare('SELECT value_json FROM settings WHERE key = ?')
-      .get(COMBAT_SETTINGS_KEY) as { value_json: string } | undefined;
-    return row ? combatFrom(safeJson(row.value_json)) : DEFAULT_COMBAT_SETTINGS;
+    return settingsParsers.combatFrom(this.raw(COMBAT_SETTINGS_KEY));
   }
 
   tutorialSettings(): TutorialSettings {
-    const row = this.db
-      .prepare('SELECT value_json FROM settings WHERE key = ?')
-      .get(TUTORIAL_SETTINGS_KEY) as { value_json: string } | undefined;
-    if (!row) return DEFAULT_TUTORIAL_SETTINGS;
-    const parsed = tutorialSettingsSchema.safeParse(safeJson(row.value_json));
-    return parsed.success ? parsed.data : DEFAULT_TUTORIAL_SETTINGS;
+    return settingsParsers.tutorialFrom(this.raw(TUTORIAL_SETTINGS_KEY));
   }
 
   vehicleSettings(): VehicleSettings {
-    return this.stored(VEHICLE_SETTINGS_KEY, vehicleSettingsSchema, DEFAULT_VEHICLE_SETTINGS);
+    return settingsParsers.vehicleFrom(this.raw(VEHICLE_SETTINGS_KEY));
   }
 
   atmosphereSettings(): AtmosphereSettings {
-    return this.stored(
-      ATMOSPHERE_SETTINGS_KEY,
-      atmosphereSettingsSchema,
-      DEFAULT_ATMOSPHERE_SETTINGS,
-    );
+    return settingsParsers.atmosphereFrom(this.raw(ATMOSPHERE_SETTINGS_KEY));
   }
 
   rewardIcons(): RewardIcons {
-    return this.stored(REWARD_ICONS_KEY, rewardIconsSchema, DEFAULT_REWARD_ICONS);
+    return settingsParsers.rewardIconsFrom(this.raw(REWARD_ICONS_KEY));
   }
 
   citySettings(): CitySettings {
-    return this.stored(CITY_SETTINGS_KEY, citySettingsSchema, DEFAULT_CITY_SETTINGS);
-  }
-
-  /** A stored section, or its defaults when missing or no longer valid. */
-  private stored<T>(
-    key: string,
-    schema: { safeParse(v: unknown): { success: true; data: T } | { success: false } },
-    fallback: T,
-  ): T {
-    const row = this.db.prepare('SELECT value_json FROM settings WHERE key = ?').get(key) as
-      { value_json: string } | undefined;
-    if (!row) return fallback;
-    const parsed = schema.safeParse(safeJson(row.value_json));
-    return parsed.success ? parsed.data : fallback;
+    return settingsParsers.cityFrom(this.raw(CITY_SETTINGS_KEY));
   }
 
   rewardTiers(rewardKey: string): TierRange | undefined {
@@ -218,6 +218,12 @@ export class SqliteSettingsReader implements SettingsReader {
       .prepare('SELECT tier_min, tier_max FROM reward_map WHERE reward_key = ?')
       .get(rewardKey) as { tier_min: number; tier_max: number } | undefined;
     return row ? { min: row.tier_min, max: row.tier_max } : DEFAULT_REWARD_TIERS[rewardKey];
+  }
+
+  private raw(key: string): unknown {
+    const row = this.db.prepare('SELECT value_json FROM settings WHERE key = ?').get(key) as
+      { value_json: string } | undefined;
+    return row ? safeJson(row.value_json) : undefined;
   }
 }
 

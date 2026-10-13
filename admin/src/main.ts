@@ -1,7 +1,5 @@
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openDatabase } from '@heist/server/db/database';
+import { openStores } from './openStores';
 import { buildAdmin } from './composition';
 
 // Entry point: reads the environment, then delegates wiring to buildAdmin().
@@ -11,10 +9,9 @@ const logger = {
   error: (message: string, meta?: Record<string, unknown>) => console.error(message, meta ?? ''),
 };
 
-mkdirSync(dirname(dbPath), { recursive: true });
-const db = openDatabase({ path: dbPath });
+const opened = await openStores(dbPath);
 const admin = buildAdmin(
-  db,
+  opened.stores,
   {
     secureCookies: process.env.NODE_ENV === 'production',
     sessionTtlMs: 12 * 60 * 60 * 1000,
@@ -36,7 +33,7 @@ const created = await admin.auth.ensureInitialAdmin(
   process.env.ADMIN_PASSWORD,
 );
 if (created) console.log(`created initial admin ${created.email}`);
-if (admin.auth.listUsers().length === 0) {
+if ((await admin.auth.listUsers()).length === 0) {
   console.warn(
     'No admin accounts exist yet, so nobody can log in.\n' +
       "  Create one:  npm run user:create -w @heist/admin -- --email you@school.test --password '…'\n" +
@@ -45,5 +42,5 @@ if (admin.auth.listUsers().length === 0) {
 }
 
 admin.app.listen(port, () => {
-  console.log(`admin listening on http://localhost:${port} (db: ${dbPath})`);
+  console.log(`admin listening on http://localhost:${port} (db: ${opened.label})`);
 });

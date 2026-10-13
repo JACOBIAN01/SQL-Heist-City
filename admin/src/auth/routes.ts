@@ -41,9 +41,9 @@ export function authRoutes(
     res.json({ user: outcome.user });
   });
 
-  router.post('/auth/logout', (_req, res) => {
+  router.post('/auth/logout', async (_req, res) => {
     const token = res.locals.sessionToken as string | undefined;
-    if (token) auth.logout(token);
+    if (token) await auth.logout(token);
     res.clearCookie(SESSION_COOKIE, cookie);
     res.status(204).end();
   });

@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite';
+import type { PgDatabase } from '@heist/server/pg/PgDatabase';
 import type { AuditEntry } from '@heist/shared';
 import type { AdminEvent, AdminEventBus } from '../events/AdminEvents';
 
@@ -19,10 +20,16 @@ export interface AuditRecord {
   readonly detail: Record<string, unknown> | null;
 }
 
-export class SqliteAuditLog {
+// Pattern: Repository (async) — Why: the log is written on SQLite or PostgreSQL behind one contract.
+export interface AuditLog {
+  record(entry: AuditRecord): Promise<void>;
+  list(query?: AuditQuery): Promise<AuditEntry[]>;
+}
+
+export class SqliteAuditLog implements AuditLog {
   constructor(private readonly db: DatabaseSync) {}
 
-  record(entry: AuditRecord): void {
+  async record(entry: AuditRecord): Promise<void> {
     this.db
       .prepare(
         'INSERT INTO audit_log (user_id, actor, action, entity, entity_id, detail_json) VALUES (?, ?, ?, ?, ?, ?)',
@@ -37,7 +44,7 @@ export class SqliteAuditLog {
       );
   }
 
-  list(query: AuditQuery = {}): AuditEntry[] {
+  async list(query: AuditQuery = {}): Promise<AuditEntry[]> {
     const where: string[] = [];
     const args: (string | number)[] = [];
     const add = (clause: string, value: string | number) => {
@@ -71,9 +78,77 @@ export class SqliteAuditLog {
   }
 }
 
-/** Subscribes the audit log to admin events. Returns the unsubscribe function. */
-export function auditAdminEvents(bus: AdminEventBus, log: SqliteAuditLog): () => void {
-  return bus.subscribe((event) => log.record(toRecord(event)));
+/** The audit log on PostgreSQL. */
+export class PgAuditLog implements AuditLog {
+  constructor(private readonly db: PgDatabase) {}
+
+  async record(entry: AuditRecord): Promise<void> {
+    await this.db.query(
+      'INSERT INTO audit_log (user_id, actor, action, entity, entity_id, detail_json) VALUES ($1, $2, $3, $4, $5, $6)',
+      [
+        entry.userId,
+        entry.actor,
+        entry.action,
+        entry.entity,
+        entry.entityId,
+        entry.detail === null ? null : JSON.stringify(entry.detail),
+      ],
+    );
+  }
+
+  async list(query: AuditQuery = {}): Promise<AuditEntry[]> {
+    const where: string[] = [];
+    const args: unknown[] = [];
+    const add = (clause: string, value: unknown) => {
+      args.push(value);
+      where.push(clause.replace('?', `$${args.length}`));
+    };
+    if (query.entity) add('entity = ?', query.entity);
+    if (query.entityId) add('entity_id = ?', query.entityId);
+    if (query.before) add('id < ?', query.before);
+    args.push(Math.min(query.limit ?? 50, 200));
+    const rows = await this.db.query<{
+      id: string;
+      actor: string | null;
+      action: string;
+      entity: string;
+      entity_id: string | null;
+      detail_json: Record<string, unknown> | null;
+      at: Date;
+    }>(
+      `SELECT * FROM audit_log ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+       ORDER BY id DESC LIMIT $${args.length}`,
+      args,
+    );
+    return rows.map((r) => ({
+      id: Number(r.id),
+      actor: r.actor,
+      action: r.action,
+      entity: r.entity,
+      entityId: r.entity_id,
+      detail: r.detail_json,
+      at: r.at.toISOString(),
+    }));
+  }
+}
+
+/** Waits for the audit writes started so far (each event's write is queued in order). */
+export interface AuditSubscription {
+  readonly unsubscribe: () => void;
+  flush(): Promise<void>;
+}
+
+/** Subscribes the audit log to admin events; writes keep their order and failures are reported, not thrown. */
+export function auditAdminEvents(
+  bus: AdminEventBus,
+  log: AuditLog,
+  onError: (err: unknown) => void = () => {},
+): AuditSubscription {
+  let tail: Promise<void> = Promise.resolve();
+  const unsubscribe = bus.subscribe((event) => {
+    tail = tail.then(() => log.record(toRecord(event))).catch(onError);
+  });
+  return { unsubscribe, flush: () => tail };
 }
 
 function toRecord(event: AdminEvent): AuditRecord {

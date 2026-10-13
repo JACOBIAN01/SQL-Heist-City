@@ -11,13 +11,14 @@ export function userRoutes(auth: AuthService, events: AdminEventBus): Router {
   const router = Router();
   router.use('/users', requireRole('admin'));
 
-  router.get('/users', (_req, res) => {
-    res.json({ users: auth.listUsers() });
+  router.get('/users', async (_req, res) => {
+    res.json({ users: await auth.listUsers() });
   });
 
   router.post('/users', async (req, res) => {
     const body = parse(createUserSchema, req.body);
-    if (auth.findUserByEmail(body.email)) throw conflict('A user with that email already exists');
+    if (await auth.findUserByEmail(body.email))
+      throw conflict('A user with that email already exists');
     const user = await auth.createUser(body.email, body.password, body.role);
     const actor = requireUser(res);
     events.publish({

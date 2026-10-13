@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { PgDatabase, isUniqueViolation, quoteIdent } from './PgDatabase';
+import type { PgDatabase } from './PgDatabase';
+import { isUniqueViolation, quoteIdent } from './PgDatabase';
 import { migratePg } from './migrate';
 import { pgMigrations } from './migrations';
 import { TEST_DATABASE_URL, freshPg } from './testing';

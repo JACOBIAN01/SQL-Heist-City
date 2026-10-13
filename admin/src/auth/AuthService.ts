@@ -20,20 +20,20 @@ export class AuthService {
   ) {}
 
   async login(email: string, password: string): Promise<LoginOutcome> {
-    const user = this.users.findByEmail(email);
+    const user = await this.users.findByEmail(email);
     // Always run a hash so response time doesn't reveal whether the email exists.
     const valid = await this.hasher.verify(password, user?.passwordHash ?? DUMMY_HASH);
     if (!user || !valid || user.disabled) return { ok: false };
-    return { ok: true, user: toPublic(user), token: this.sessions.create(user.id) };
+    return { ok: true, user: toPublic(user), token: await this.sessions.create(user.id) };
   }
 
-  logout(token: string): void {
-    this.sessions.revoke(token);
+  async logout(token: string): Promise<void> {
+    await this.sessions.revoke(token);
   }
 
-  userForToken(token: string): AdminUser | undefined {
-    const id = this.sessions.userIdFor(token);
-    const user = id === undefined ? undefined : this.users.findById(id);
+  async userForToken(token: string): Promise<AdminUser | undefined> {
+    const id = await this.sessions.userIdFor(token);
+    const user = id === undefined ? undefined : await this.users.findById(id);
     return user && !user.disabled ? toPublic(user) : undefined;
   }
 
@@ -41,18 +41,18 @@ export class AuthService {
     return this.users.create({ email, role, passwordHash: await this.hasher.hash(password) });
   }
 
-  listUsers(): AdminUser[] {
+  listUsers(): Promise<AdminUser[]> {
     return this.users.list();
   }
 
-  findUserByEmail(email: string): AdminUser | undefined {
-    const user = this.users.findByEmail(email);
+  async findUserByEmail(email: string): Promise<AdminUser | undefined> {
+    const user = await this.users.findByEmail(email);
     return user && toPublic(user);
   }
 
   /** Disabling a user or changing their password signs them out everywhere. */
   async updateUser(id: number, changes: UpdateUserRequest): Promise<AdminUser | undefined> {
-    const updated = this.users.update(id, {
+    const updated = await this.users.update(id, {
       ...(changes.role === undefined ? {} : { role: changes.role }),
       ...(changes.disabled === undefined ? {} : { disabled: changes.disabled }),
       ...(changes.password === undefined
@@ -60,7 +60,7 @@ export class AuthService {
         : { passwordHash: await this.hasher.hash(changes.password) }),
     });
     if (updated && (changes.disabled === true || changes.password !== undefined)) {
-      this.sessions.revokeAllFor(id);
+      await this.sessions.revokeAllFor(id);
     }
     return updated;
   }
@@ -70,7 +70,7 @@ export class AuthService {
     email: string | undefined,
     password: string | undefined,
   ): Promise<AdminUser | undefined> {
-    if (this.users.count() > 0 || !email || !password) return undefined;
+    if ((await this.users.count()) > 0 || !email || !password) return undefined;
     return this.createUser(email, password, 'admin');
   }
 }

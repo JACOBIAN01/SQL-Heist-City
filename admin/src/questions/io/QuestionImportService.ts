@@ -22,8 +22,8 @@ export class QuestionImportService {
     private readonly validator: TemplateValidator,
   ) {}
 
-  export(format: QuestionFormat): string {
-    return format.serialize(this.questions.allTemplates());
+  async export(format: QuestionFormat): Promise<string> {
+    return format.serialize(await this.questions.allTemplates());
   }
 
   async import(
@@ -76,7 +76,7 @@ export class QuestionImportService {
     options: ImportQuery,
     actor: AdminUser,
   ): Promise<ImportItemResult> {
-    const existing = this.questions.findBySlug(template.slug);
+    const existing = await this.questions.findBySlug(template.slug);
     if (existing && options.onConflict === 'skip') {
       return { index, slug: template.slug, status: 'skipped', errors: ['slug already exists'] };
     }

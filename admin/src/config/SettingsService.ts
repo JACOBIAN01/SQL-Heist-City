@@ -1,4 +1,3 @@
-import type { DatabaseSync } from 'node:sqlite';
 import {
   DEFAULT_CHALLENGE_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
@@ -25,6 +24,7 @@ import {
   type TutorialSettings,
 } from '@heist/shared';
 import {
+  settingsParsers,
   ATMOSPHERE_SETTINGS_KEY,
   CITY_SETTINGS_KEY,
   HEIST_SETTINGS_KEY,
@@ -32,31 +32,41 @@ import {
   VEHICLE_SETTINGS_KEY,
   CHALLENGE_SETTINGS_KEY,
   COMBAT_SETTINGS_KEY,
-  SqliteSettingsReader,
   TUTORIAL_SETTINGS_KEY,
 } from '@heist/server/config/SettingsReader';
+import type { SettingsStore } from '@heist/server/config/SettingsStore';
 import type { ZodType } from 'zod';
 import { HttpError } from '../http/errors';
 import type { AdminEventBus } from '../events/AdminEvents';
 
 /** Writes gameplay settings; reads go through the same reader the game uses. */
 export class SettingsService {
-  private readonly reader: SqliteSettingsReader;
-
   constructor(
-    private readonly db: DatabaseSync,
+    private readonly store: SettingsStore,
     private readonly events: AdminEventBus,
-  ) {
-    this.reader = new SqliteSettingsReader(db);
+  ) {}
+
+  private async current<T>(key: string, parse: (raw: unknown) => T): Promise<T> {
+    return parse(await this.store.get(key));
   }
 
-  challengeSettings(): { current: ChallengeSettings; defaults: ChallengeSettings } {
-    return { current: this.reader.challengeSettings(), defaults: DEFAULT_CHALLENGE_SETTINGS };
+  private async rewardTiersOf(key: string): Promise<{ min: number; max: number }> {
+    const o = (await this.store.rewardOverrides()).find((r) => r.key === key);
+    return o
+      ? { min: o.min, max: o.max }
+      : (DEFAULT_REWARD_TIERS[key] as { min: number; max: number });
+  }
+
+  async challengeSettings(): Promise<{ current: ChallengeSettings; defaults: ChallengeSettings }> {
+    return {
+      current: await this.current(CHALLENGE_SETTINGS_KEY, settingsParsers.challengeFrom),
+      defaults: DEFAULT_CHALLENGE_SETTINGS,
+    };
   }
 
   /** Merges a partial change into the current values; the full result is validated. */
-  updateChallengeSettings(changes: unknown, actor: AdminUser): ChallengeSettings {
-    const before = this.reader.challengeSettings();
+  async updateChallengeSettings(changes: unknown, actor: AdminUser): Promise<ChallengeSettings> {
+    const before = await this.current(CHALLENGE_SETTINGS_KEY, settingsParsers.challengeFrom);
     const parsed = challengeSettingsSchema.safeParse({ ...before, ...(changes as object) });
     if (!parsed.success) {
       throw new HttpError(
@@ -66,11 +76,7 @@ export class SettingsService {
         parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
       );
     }
-    this.db
-      .prepare(
-        'INSERT INTO settings (key, value_json) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json',
-      )
-      .run(CHALLENGE_SETTINGS_KEY, JSON.stringify(parsed.data));
+    await this.store.put(CHALLENGE_SETTINGS_KEY, parsed.data);
     this.events.publish({
       type: 'settings_changed',
       key: CHALLENGE_SETTINGS_KEY,
@@ -81,8 +87,11 @@ export class SettingsService {
     return parsed.data;
   }
 
-  combatSettings(): { current: CombatSettings; defaults: CombatSettings } {
-    return { current: this.reader.combatSettings(), defaults: DEFAULT_COMBAT_SETTINGS };
+  async combatSettings(): Promise<{ current: CombatSettings; defaults: CombatSettings }> {
+    return {
+      current: await this.current(COMBAT_SETTINGS_KEY, settingsParsers.combatFrom),
+      defaults: DEFAULT_COMBAT_SETTINGS,
+    };
   }
 
   /**
@@ -90,8 +99,8 @@ export class SettingsService {
    * given) into the current values; the full result is validated. Applies
    * in matches from their next round.
    */
-  updateCombatSettings(changes: unknown, actor: AdminUser): CombatSettings {
-    const before = this.reader.combatSettings();
+  async updateCombatSettings(changes: unknown, actor: AdminUser): Promise<CombatSettings> {
+    const before = await this.current(COMBAT_SETTINGS_KEY, settingsParsers.combatFrom);
     const given = (changes ?? {}) as Partial<CombatSettings> & {
       weapons?: Record<string, object>;
     };
@@ -112,11 +121,7 @@ export class SettingsService {
         parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
       );
     }
-    this.db
-      .prepare(
-        'INSERT INTO settings (key, value_json) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json',
-      )
-      .run(COMBAT_SETTINGS_KEY, JSON.stringify(parsed.data));
+    await this.store.put(COMBAT_SETTINGS_KEY, parsed.data);
     this.events.publish({
       type: 'settings_changed',
       key: COMBAT_SETTINGS_KEY,
@@ -127,16 +132,19 @@ export class SettingsService {
     return parsed.data;
   }
 
-  tutorialSettings(): { current: TutorialSettings; defaults: TutorialSettings } {
-    return { current: this.reader.tutorialSettings(), defaults: DEFAULT_TUTORIAL_SETTINGS };
+  async tutorialSettings(): Promise<{ current: TutorialSettings; defaults: TutorialSettings }> {
+    return {
+      current: await this.current(TUTORIAL_SETTINGS_KEY, settingsParsers.tutorialFrom),
+      defaults: DEFAULT_TUTORIAL_SETTINGS,
+    };
   }
 
   /**
    * Merges a partial change (the fixed questions one by one) into the current
    * values. Every fixed question must exist; new tutorials use the change.
    */
-  updateTutorialSettings(changes: unknown, actor: AdminUser): TutorialSettings {
-    const before = this.reader.tutorialSettings();
+  async updateTutorialSettings(changes: unknown, actor: AdminUser): Promise<TutorialSettings> {
+    const before = await this.current(TUTORIAL_SETTINGS_KEY, settingsParsers.tutorialFrom);
     const given = (changes ?? {}) as Partial<TutorialSettings>;
     if (typeof given !== 'object' || Array.isArray(given))
       throw new HttpError(400, 'validation_failed', 'Tutorial settings must be an object');
@@ -154,17 +162,10 @@ export class SettingsService {
       );
     }
     for (const [task, slug] of Object.entries(parsed.data.questions)) {
-      const found = this.db
-        .prepare('SELECT 1 FROM questions WHERE slug = ? AND deleted_at IS NULL')
-        .get(slug);
-      if (!found)
+      if (!(await this.store.questionSlugExists(slug)))
         throw new HttpError(400, 'unknown_question', `No question "${slug}" (tutorial ${task})`);
     }
-    this.db
-      .prepare(
-        'INSERT INTO settings (key, value_json) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json',
-      )
-      .run(TUTORIAL_SETTINGS_KEY, JSON.stringify(parsed.data));
+    await this.store.put(TUTORIAL_SETTINGS_KEY, parsed.data);
     this.events.publish({
       type: 'settings_changed',
       key: TUTORIAL_SETTINGS_KEY,
@@ -176,9 +177,9 @@ export class SettingsService {
   }
 
   /** The editable sections that are plain numbers: key → what the admin may change. */
-  section(name: SectionName): { current: object; defaults: object } {
+  async section(name: SectionName): Promise<{ current: object; defaults: object }> {
     const spec = SECTIONS[name];
-    return { current: spec.read(this.reader), defaults: spec.defaults };
+    return { current: await this.current(spec.key, spec.parse), defaults: spec.defaults };
   }
 
   /**
@@ -187,11 +188,11 @@ export class SettingsService {
    * whole. Cars, heist rules and the sky reach running matches at their next
    * round; a new city only applies to matches created afterwards.
    */
-  updateSection(name: SectionName, changes: unknown, actor: AdminUser): object {
+  async updateSection(name: SectionName, changes: unknown, actor: AdminUser): Promise<object> {
     const spec = SECTIONS[name];
     if (typeof changes !== 'object' || changes === null || Array.isArray(changes))
       throw new HttpError(400, 'validation_failed', `${name} settings must be an object`);
-    const before = spec.read(this.reader);
+    const before = await this.current(spec.key, spec.parse);
     const parsed = spec.schema.safeParse(mergeDeep(before, changes));
     if (!parsed.success) {
       throw new HttpError(
@@ -201,11 +202,7 @@ export class SettingsService {
         parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
       );
     }
-    this.db
-      .prepare(
-        'INSERT INTO settings (key, value_json) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json',
-      )
-      .run(spec.key, JSON.stringify(parsed.data));
+    await this.store.put(spec.key, parsed.data);
     this.events.publish({
       type: 'settings_changed',
       key: spec.key,
@@ -216,48 +213,33 @@ export class SettingsService {
     return parsed.data as object;
   }
 
-  rewardMap(): RewardTierEntry[] {
-    const overrides = new Set(
-      (this.db.prepare('SELECT reward_key FROM reward_map').all() as { reward_key: string }[]).map(
-        (r) => r.reward_key,
-      ),
+  async rewardMap(): Promise<RewardTierEntry[]> {
+    const overrides = new Set((await this.store.rewardOverrides()).map((r) => r.key));
+    return Promise.all(
+      Object.keys(DEFAULT_REWARD_TIERS).map(async (key) => {
+        const tiers = await this.rewardTiersOf(key);
+        return { key, min: tiers.min, max: tiers.max, isDefault: !overrides.has(key) };
+      }),
     );
-    return Object.keys(DEFAULT_REWARD_TIERS).map((key) => {
-      const tiers = this.reader.rewardTiers(key) as { min: number; max: number };
-      return { key, min: tiers.min, max: tiers.max, isDefault: !overrides.has(key) };
-    });
   }
 
   /** Saves overrides; entries equal to the default remove the override. */
-  updateRewardMap(update: RewardMapUpdate, actor: AdminUser): RewardTierEntry[] {
+  async updateRewardMap(update: RewardMapUpdate, actor: AdminUser): Promise<RewardTierEntry[]> {
     for (const r of update.rewards) {
       if (!(r.key in DEFAULT_REWARD_TIERS))
         throw new HttpError(400, 'unknown_reward', `Unknown reward "${r.key}"`);
       if (r.min > r.max)
         throw new HttpError(400, 'validation_failed', `${r.key}: min must be ≤ max`);
     }
-    const before = this.rewardMap();
-    this.db.exec('BEGIN');
-    try {
-      for (const r of update.rewards) {
+    const before = await this.rewardMap();
+    await this.store.applyRewards(
+      update.rewards.map((r) => {
         const def = DEFAULT_REWARD_TIERS[r.key] as { min: number; max: number };
-        if (def.min === r.min && def.max === r.max) {
-          this.db.prepare('DELETE FROM reward_map WHERE reward_key = ?').run(r.key);
-        } else {
-          this.db
-            .prepare(
-              `INSERT INTO reward_map (reward_key, tier_min, tier_max) VALUES (?, ?, ?)
-               ON CONFLICT (reward_key) DO UPDATE SET tier_min = excluded.tier_min, tier_max = excluded.tier_max`,
-            )
-            .run(r.key, r.min, r.max);
-        }
-      }
-      this.db.exec('COMMIT');
-    } catch (err) {
-      this.db.exec('ROLLBACK');
-      throw err;
-    }
-    const after = this.rewardMap();
+        const same = def.min === r.min && def.max === r.max;
+        return { key: r.key, override: same ? null : { min: r.min, max: r.max } };
+      }),
+    );
+    const after = await this.rewardMap();
     this.events.publish({
       type: 'settings_changed',
       key: 'reward_map',
@@ -282,7 +264,7 @@ interface SectionSpec {
   readonly key: string;
   readonly schema: ZodType;
   readonly defaults: object;
-  readonly read: (reader: SqliteSettingsReader) => object;
+  readonly parse: (raw: unknown) => object;
 }
 
 // Pattern: Registry — Why: a new editable settings section is one entry here (key, schema, defaults,
@@ -292,31 +274,31 @@ const SECTIONS: Readonly<Record<SectionName, SectionSpec>> = {
     key: HEIST_SETTINGS_KEY,
     schema: heistSettingsSchema,
     defaults: DEFAULT_HEIST_SETTINGS,
-    read: (r) => r.heistSettings(),
+    parse: settingsParsers.heistFrom,
   },
   vehicles: {
     key: VEHICLE_SETTINGS_KEY,
     schema: vehicleSettingsSchema,
     defaults: DEFAULT_VEHICLE_SETTINGS,
-    read: (r) => r.vehicleSettings(),
+    parse: settingsParsers.vehicleFrom,
   },
   atmosphere: {
     key: ATMOSPHERE_SETTINGS_KEY,
     schema: atmosphereSettingsSchema,
     defaults: DEFAULT_ATMOSPHERE_SETTINGS,
-    read: (r) => r.atmosphereSettings(),
+    parse: settingsParsers.atmosphereFrom,
   },
   rewardIcons: {
     key: REWARD_ICONS_KEY,
     schema: rewardIconsSchema,
     defaults: DEFAULT_REWARD_ICONS,
-    read: (r) => r.rewardIcons(),
+    parse: settingsParsers.rewardIconsFrom,
   },
   city: {
     key: CITY_SETTINGS_KEY,
     schema: citySettingsSchema,
     defaults: DEFAULT_CITY_SETTINGS,
-    read: (r) => r.citySettings(),
+    parse: settingsParsers.cityFrom,
   },
 };
 

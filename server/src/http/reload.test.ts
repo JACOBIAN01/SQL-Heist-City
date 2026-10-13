@@ -20,14 +20,14 @@ async function start(deps: Partial<HttpServerDeps>) {
 describe('POST /internal/reload', () => {
   it('runs the reload hook with the right secret', async () => {
     let reloads = 0;
-    const reload = await start({ internalSecret: 's3cret', onReload: () => reloads++ });
+    const reload = await start({ internalSecret: 's3cret', onReload: () => void reloads++ });
     expect((await reload('s3cret')).status).toBe(204);
     expect(reloads).toBe(1);
   });
 
   it('refuses a wrong or missing secret', async () => {
     let reloads = 0;
-    const reload = await start({ internalSecret: 's3cret', onReload: () => reloads++ });
+    const reload = await start({ internalSecret: 's3cret', onReload: () => void reloads++ });
     expect((await reload('nope')).status).toBe(403);
     expect((await reload()).status).toBe(403);
     expect(reloads).toBe(0);
@@ -36,5 +36,25 @@ describe('POST /internal/reload', () => {
   it('does not exist when no secret is configured', async () => {
     const reload = await start({ onReload: () => {} });
     expect((await reload('anything')).status).toBe(404);
+  });
+});
+
+describe('POST /internal/reload (async hook)', () => {
+  it('waits for an async reload, and reports a failed one', async () => {
+    let done = false;
+    const ok = await start({
+      internalSecret: 's',
+      onReload: async () => {
+        await new Promise((r) => setTimeout(r, 20));
+        done = true;
+      },
+    });
+    expect((await ok('s')).status).toBe(204);
+    expect(done).toBe(true);
+    const bad = await start({
+      internalSecret: 's',
+      onReload: () => Promise.reject(new Error('db down')),
+    });
+    expect((await bad('s')).status).toBe(500);
   });
 });

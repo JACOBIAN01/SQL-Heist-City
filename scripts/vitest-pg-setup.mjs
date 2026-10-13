@@ -4,7 +4,7 @@
 // PostgreSQL tests are skipped, loudly.
 import { devUrl, start } from './pg-dev.mjs';
 
-export default function setup() {
+export function setup() {
   if (process.env.TEST_DATABASE_URL) return;
   try {
     start();

@@ -28,7 +28,8 @@
     "size": "node scripts/check-bundle-size.mjs",
     "load:bots": "npm run load:bots -w @heist/server --",
     "db:migrate": "npm run db:migrate -w @heist/server --",
-    "pg:dev": "node scripts/pg-dev.mjs"
+    "pg:dev": "node scripts/pg-dev.mjs",
+    "db:import-sqlite": "npm run db:import-sqlite -w @heist/server --"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
