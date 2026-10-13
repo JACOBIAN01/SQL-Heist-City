@@ -186,6 +186,7 @@ if (workers > 0) {
     ...(auth ? { auth } : {}),
   });
   analytics?.bind(running.game.match);
+  challenges?.review.bind(running.game.match);
 }
 
 server.listen(port, () => {

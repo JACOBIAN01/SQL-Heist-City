@@ -235,4 +235,27 @@ export const pgMigrations: readonly string[] = [
   );
   CREATE INDEX profile_totals_class ON profile_totals (class_id, scope);
   `,
+  // 6 — concept cards (Phase 16.1)
+  `
+  CREATE TABLE concept_cards (
+    topic      TEXT PRIMARY KEY,
+    title      TEXT        NOT NULL,
+    nudge      TEXT        NOT NULL,
+    body_md    TEXT        NOT NULL,
+    version    INTEGER     NOT NULL DEFAULT 1,
+    updated_by TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+
+  CREATE TABLE concept_card_versions (
+    topic      TEXT        NOT NULL,
+    version    INTEGER     NOT NULL,
+    title      TEXT        NOT NULL,
+    nudge      TEXT        NOT NULL,
+    body_md    TEXT        NOT NULL,
+    created_by TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (topic, version)
+  );
+  `,
 ];

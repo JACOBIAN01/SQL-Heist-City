@@ -1,3 +1,4 @@
+import { adviceFor } from './errorAdvice';
 import type { Mismatch } from './ResultComparator';
 import type { SandboxErrorCode } from './SqlSandbox';
 
@@ -6,6 +7,8 @@ export type FeedbackCode = Mismatch['kind'] | SandboxErrorCode | 'timeout';
 export interface Feedback {
   readonly code: FeedbackCode;
   readonly message: string;
+  /** What the error usually means and what to try, in plain words. */
+  readonly advice?: string;
 }
 
 /**
@@ -59,7 +62,8 @@ export class FeedbackBuilder {
 
   fromSandboxError(code: SandboxErrorCode, message: string): Feedback {
     // Sandbox messages describe the student's own query, so they are safe to show.
-    return { code, message };
+    const advice = adviceFor(message);
+    return { code, message, ...(advice ? { advice } : {}) };
   }
 }
 

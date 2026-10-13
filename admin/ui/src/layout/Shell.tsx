@@ -23,6 +23,7 @@ export function Shell({ user }: { user: AdminUser }) {
           <NavLink to="/classes">Classes</NavLink>
           <NavLink to="/questions">Questions</NavLink>
           <NavLink to="/pools">Pools</NavLink>
+          <NavLink to="/concepts">Concepts</NavLink>
           <NavLink to="/import-export">Import / Export</NavLink>
           <NavLink to="/settings">Settings</NavLink>
           {isAdmin && <NavLink to="/audit">Audit log</NavLink>}

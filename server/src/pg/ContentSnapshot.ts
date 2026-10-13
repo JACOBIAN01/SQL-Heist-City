@@ -5,6 +5,7 @@ export interface SnapshotCounts {
   readonly questions: number;
   readonly settings: number;
   readonly rewards: number;
+  readonly concepts: number;
 }
 
 /**
@@ -38,6 +39,16 @@ export async function syncContent(pg: PgDatabase, target: DatabaseSync): Promise
     'SELECT * FROM reward_map',
   );
 
+  const concepts = await pg.query<{
+    topic: string;
+    title: string;
+    nudge: string;
+    body_md: string;
+    version: number;
+    updated_by: string | null;
+    updated_at: Date;
+  }>('SELECT * FROM concept_cards');
+
   target.exec('BEGIN');
   try {
     for (const table of [
@@ -47,6 +58,7 @@ export async function syncContent(pg: PgDatabase, target: DatabaseSync): Promise
       'questions',
       'settings',
       'reward_map',
+      'concept_cards',
     ])
       target.exec(`DELETE FROM ${table}`);
     const insertQuestion = target.prepare(
@@ -75,10 +87,28 @@ export async function syncContent(pg: PgDatabase, target: DatabaseSync): Promise
       'INSERT INTO reward_map (reward_key, tier_min, tier_max) VALUES (?, ?, ?)',
     );
     for (const r of rewards) insertReward.run(r.reward_key, r.tier_min, r.tier_max);
+    const insertConcept = target.prepare(
+      'INSERT INTO concept_cards (topic, title, nudge, body_md, version, updated_by, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    );
+    for (const c of concepts)
+      insertConcept.run(
+        c.topic,
+        c.title,
+        c.nudge,
+        c.body_md,
+        c.version,
+        c.updated_by,
+        c.updated_at.toISOString(),
+      );
     target.exec('COMMIT');
   } catch (err) {
     target.exec('ROLLBACK');
     throw err;
   }
-  return { questions: questions.length, settings: settings.length, rewards: rewards.length };
+  return {
+    questions: questions.length,
+    settings: settings.length,
+    rewards: rewards.length,
+    concepts: concepts.length,
+  };
 }

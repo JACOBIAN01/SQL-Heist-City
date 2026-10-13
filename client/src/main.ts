@@ -35,6 +35,7 @@ import { InputBatcher } from './net/InputBatcher';
 import { HttpAccountApi, accountBase } from './net/account';
 import { classRoomUrl, roomStatus } from './net/classRoom';
 import { h } from './ui/dom';
+import { ReviewView } from './ui/profile/ReviewView';
 import { ProfileView } from './ui/profile/ProfileView';
 import { LiveWorld } from './net/liveWorld';
 import { setRewardIcons } from './ui/icons/icons';
@@ -259,7 +260,7 @@ if (atParam && atParam.length >= 2 && atParam.every(Number.isFinite)) {
 }
 const hint = document.createElement('div');
 hint.textContent =
-  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · right mouse aim · 1–5 guns · M map · P profile · N mute · Esc release mouse';
+  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · right mouse aim · 1–5 guns · M map · P profile · V review · N mute · Esc release mouse';
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
@@ -341,13 +342,15 @@ const fullMap = new FullMapView(document.body, MAP);
 // Your profile (P): two live radars. At the end of a round a card shows this round over all time.
 const profileAll = new ProfileView('all');
 const profilePanel = h('div', { class: 'profile-panel', attrs: { hidden: '' } }, profileAll.root);
+const review = new ReviewView();
+const reviewPanel = h('div', { class: 'profile-panel', attrs: { hidden: '' } }, review.root);
 const profileRound = new ProfileView('round');
 const profileCard = h(
   'div',
   { class: 'profile-card-round', attrs: { hidden: '' } },
   profileRound.root,
 );
-document.body.append(profilePanel, profileCard);
+document.body.append(profilePanel, profileCard, reviewPanel);
 let latestProfile: ProfileMessage | undefined;
 const hospital = hospitalMarker(MAP);
 const vaultAlerts = new VaultAlerts(DEFAULT_AUDIO_SETTINGS.alarmSeconds);
@@ -480,7 +483,10 @@ client.subscribe({
       ownedWeapons = message.owned;
       hud.setArms(message.owned, message.current);
     } else if (message.t === 'weapons') weaponTable.set(message.weapons);
-    else if (message.t === 'profile') {
+    else if (message.t === 'review') {
+      review.update(message);
+      hud.toast('Round review ready — press V');
+    } else if (message.t === 'profile') {
       latestProfile = message;
       profileAll.update(message);
       profileRound.update(message);
@@ -579,6 +585,9 @@ new Hotkeys()
   })
   .hold('KeyB', (down) => scoreboard.setBoardVisible(down))
   .bind(['KeyM'], () => fullMap.toggle())
+  .bind(['KeyV'], () => {
+    reviewPanel.hidden = !reviewPanel.hidden;
+  })
   .bind(['KeyP'], () => {
     profilePanel.hidden = !profilePanel.hidden;
     if (latestProfile) profileAll.update(latestProfile);
@@ -586,6 +595,7 @@ new Hotkeys()
   .bind(['Escape'], () => {
     fullMap.setOpen(false);
     profilePanel.hidden = true;
+    reviewPanel.hidden = true;
   })
   .bind(['KeyN'], () => hud.toast(sound.toggleMute() ? 'Sound off (N)' : 'Sound on (N)'))
   .bind(['KeyF'], () => {

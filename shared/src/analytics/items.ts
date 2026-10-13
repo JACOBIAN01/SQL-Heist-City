@@ -53,6 +53,20 @@ export interface ItemRecord {
   readonly tutorial: boolean;
   readonly issuedAt: number;
   readonly finishedAt: number;
+  /**
+   * What the post-round review needs (Phase 16.2). Kept in memory for the round and sent to the
+   * student after it ends; never saved to the database and never sent during the round.
+   */
+  readonly review?: ItemReview;
+}
+
+export interface ItemReview {
+  readonly title: string;
+  readonly story: string;
+  /** The student's last query on this question, if they ran or submitted one. */
+  readonly lastSql?: string;
+  /** The reference answer for this student's own version of the question. */
+  readonly modelSql: string;
 }
 
 export interface ItemScore {

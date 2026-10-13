@@ -21,6 +21,11 @@ export const challengeSettingsSchema = z.object({
    * (0.05 = 5%) or an absolute amount.
    */
   hintCostMode: z.enum(['fraction', 'absolute']).default('fraction'),
+  /**
+   * Free steps at the start of the hint ladder, before the question's paid hints: 1 = a one-line
+   * nudge, 2 = the nudge, then the topic's concept card. 0 = no free steps. Needs a concept card for the topic.
+   */
+  freeHintSteps: z.number().int().min(0).max(2).default(2),
   /** Rows per table shown to the student as samples. */
   sampleRows: z.number().int().min(0).max(20).default(3),
   /**

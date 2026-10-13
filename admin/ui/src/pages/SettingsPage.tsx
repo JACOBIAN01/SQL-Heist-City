@@ -32,6 +32,11 @@ const FIELDS: { key: NumericKey; label: string; unit: string }[] = [
   { key: 'runCooldownMs', label: 'Min gap between "Run" presses', unit: 'ms' },
   { key: 'submitCooldownMs', label: 'Min gap between "Submit" presses', unit: 'ms' },
   { key: 'requestCooldownMs', label: 'Min gap between new challenges', unit: 'ms' },
+  {
+    key: 'freeHintSteps',
+    label: 'Free hint steps (0 none, 1 nudge, 2 nudge and card)',
+    unit: 'steps',
+  },
   { key: 'sampleRows', label: 'Sample rows shown per table', unit: 'rows' },
   { key: 'exampleRows', label: 'Worked example: rows per table at first', unit: 'rows' },
   { key: 'exampleTries', label: 'Worked example: small tries before full size', unit: 'tries' },

@@ -216,7 +216,7 @@ export class SqlPanelController {
         this.deps.onSolved?.({ rewardKey: result.rewardKey, target: result.target });
         return;
       case 'wrong':
-        view.showMessage(`✘ Not quite. ${result.feedback.message}`, 'wrong');
+        view.showMessage(`✘ Not quite. ${withAdvice(result.feedback)}`, 'wrong');
         this.lockOut(result.lockedUntil);
         return;
       case 'locked': {
@@ -240,7 +240,7 @@ export class SqlPanelController {
     if (result.ok) {
       view.showPreview(result.preview.columns, result.preview.rows, result.preview.truncated);
     } else if (result.reason === 'sql') {
-      view.showMessage(result.feedback.message, 'error');
+      view.showMessage(withAdvice(result.feedback), 'error');
     } else if (result.reason === 'expired') {
       this.expire();
     } else {
@@ -401,4 +401,9 @@ export class SqlPanelController {
       ? CONNECTION_MESSAGE
       : 'Something went wrong. Try again.';
   }
+}
+
+/** The message, and under it what an error usually means and what to try (when known). */
+function withAdvice(feedback: { message: string; advice?: string | undefined }): string {
+  return feedback.advice ? `${feedback.message}\n\nTip: ${feedback.advice}` : feedback.message;
 }

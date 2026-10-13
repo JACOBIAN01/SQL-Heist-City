@@ -96,3 +96,32 @@
 .profile-card-round[hidden] {
   display: none;
 }
+.review-item {
+  border: 1px solid #2c3445;
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  margin: 0.75rem 0;
+}
+.review-item.solved {
+  border-left-color: #2ad25a;
+}
+.review-item.missed {
+  border-left-color: #e69f00;
+}
+.review-item h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+.review-sql pre {
+  margin: 0.15rem 0 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: #0b0d10;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
+.review-story {
+  margin: 0.25rem 0;
+}

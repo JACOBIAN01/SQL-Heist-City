@@ -8,11 +8,13 @@ import type {
   TutorialSettings,
   WorldSettings,
 } from '@heist/shared';
-import type { AttemptSink } from './analytics/AttemptSink';
+import { FanOutSink, type AttemptSink } from './analytics/AttemptSink';
+import { ReviewKeeper } from './analytics/ReviewKeeper';
 import { ChallengeMessageHandler } from './challenges/ChallengeMessageHandler';
 import { ChallengeService, type ChallengeLogger } from './challenges/ChallengeService';
 import { QuestionSelector } from './challenges/QuestionSelector';
 import { CachedSettingsReader } from './config/CachedSettingsReader';
+import { SqliteConceptReader, type ConceptReader } from './concepts/ConceptStore';
 import { SqliteSettingsReader, worldSettingsFrom } from './config/SettingsReader';
 import { CachedQuestionReader } from './questions/CachedQuestionReader';
 import { SqliteQuestionRepository } from './questions/SqliteQuestionRepository';
@@ -24,6 +26,8 @@ import { VariantBuilder } from './variants/VariantBuilder';
 
 export interface ChallengeStack {
   readonly handler: ChallengeMessageHandler;
+  /** Sends each player their review after a round; bind it to the match. */
+  readonly review: ReviewKeeper;
   /** Heist rules as the admin has set them (read when a match starts). */
   heistSettings(): HeistSettings;
   /** Guns as the admin has set them (read when a match starts and at each new round). */
@@ -48,6 +52,8 @@ export interface ChallengeStackOptions {
   readonly matchSeed?: string;
   /** Hears what happens to every issued question (the learning record). */
   readonly attempts?: AttemptSink;
+  /** Concept cards for the free hint steps (default: none). */
+  readonly concepts?: ConceptReader;
   readonly now?: () => number;
 }
 
@@ -63,6 +69,8 @@ export function buildChallengeStack(
   const questions = new CachedQuestionReader(new SqliteQuestionRepository(db));
   const settings = new CachedSettingsReader(new SqliteSettingsReader(db));
   const sandbox = options.sandbox ?? new WorkerSandboxRunner();
+  const concepts = options.concepts ?? new SqliteConceptReader(db);
+  const review = new ReviewKeeper(concepts);
   const service = new ChallengeService({
     matchSeed: options.matchSeed ?? randomUUID(),
     selector: new QuestionSelector(questions),
@@ -70,10 +78,12 @@ export function buildChallengeStack(
     grader: new Grader(sandbox),
     settings,
     ...(options.logger ? { logger: options.logger } : {}),
-    ...(options.attempts ? { attempts: options.attempts } : {}),
+    attempts: options.attempts ? new FanOutSink([options.attempts, review]) : review,
+    ...(concepts ? { concepts } : {}),
     ...(options.now ? { now: options.now } : {}),
   });
   return {
+    review,
     handler: new ChallengeMessageHandler(service, settings, options.now),
     heistSettings: () => settings.heistSettings(),
     combatSettings: () => settings.combatSettings(),
@@ -84,6 +94,7 @@ export function buildChallengeStack(
     invalidate: () => {
       questions.invalidate();
       settings.invalidate();
+      if (concepts instanceof SqliteConceptReader) concepts.invalidate();
     },
     close: () => sandbox.close(),
   };

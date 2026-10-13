@@ -2,6 +2,8 @@ import type { ItemRecord } from '@heist/shared';
 
 /** Who an attempt belongs to, as the match knows it. */
 export interface AttemptWho {
+  /** The match's key for the player (set for unsigned players too); used by the round review. */
+  readonly playerKey?: string;
   readonly accountId?: number;
   readonly classId?: number;
   readonly round?: number;

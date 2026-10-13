@@ -97,4 +97,27 @@ export const migrations: readonly string[] = [
     PRIMARY KEY (pool_id, question_id)
   );
   `,
+  // 4 — concept cards: a short explainer per SQL topic (Phase 16.1)
+  `
+  CREATE TABLE concept_cards (
+    topic      TEXT PRIMARY KEY,
+    title      TEXT    NOT NULL,
+    nudge      TEXT    NOT NULL,
+    body_md    TEXT    NOT NULL,
+    version    INTEGER NOT NULL DEFAULT 1,
+    updated_by TEXT,
+    updated_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  );
+
+  CREATE TABLE concept_card_versions (
+    topic      TEXT    NOT NULL,
+    version    INTEGER NOT NULL,
+    title      TEXT    NOT NULL,
+    nudge      TEXT    NOT NULL,
+    body_md    TEXT    NOT NULL,
+    created_by TEXT,
+    created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    PRIMARY KEY (topic, version)
+  );
+  `,
 ];

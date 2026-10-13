@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_CHALLENGE_SETTINGS, questionTemplateSchema } from '@heist/shared';
 import { sampleQuestion } from '@heist/shared/fixtures';
 import { MemorySink } from '../analytics/AttemptSink';
+import { StaticConcepts } from '../concepts/ConceptStore';
 import { StaticSettings } from '../config/SettingsReader';
 import { InMemoryQuestionRepository } from '../questions/InMemoryQuestionRepository';
 import { Grader } from '../sql/Grader';
@@ -61,7 +62,7 @@ describe('attempt events and item records (15.2)', () => {
     expect(done.status).toBe('correct');
     expect(kinds()).toEqual(['issued', 'submit_correct']);
     expect(sink.items).toHaveLength(1);
-    expect(sink.items[0]?.who).toEqual(who);
+    expect(sink.items[0]?.who).toEqual({ ...who, playerKey: 'p1' });
     expect(last()).toMatchObject({
       challengeId: 'c1',
       accountId: 42,
@@ -158,5 +159,114 @@ describe('attempt events and item records (15.2)', () => {
     const r = await plain.issue({ player: 'p', rewardKey: 'heal:small' });
     expect(r.ok).toBe(true);
     plain.abandon('p');
+  });
+});
+
+describe('the hint ladder (16.3)', () => {
+  const card = {
+    topic: 'where',
+    title: 'WHERE: filter rows',
+    nudge: 'WHERE keeps only matching rows.',
+    body_md: 'Use conditions.',
+  };
+  const build = (
+    freeHintSteps: number,
+    concepts: StaticConcepts | null = new StaticConcepts([card]),
+  ) => {
+    const repo = new InMemoryQuestionRepository();
+    repo.create(base, null); // topics: select, where
+    const sink = new MemorySink();
+    const svc = new ChallengeService({
+      matchSeed: 'm',
+      selector: new QuestionSelector(repo),
+      variants,
+      grader: new Grader(new InProcessSandboxRunner()),
+      settings: new StaticSettings({ ...DEFAULT_CHALLENGE_SETTINGS, freeHintSteps }),
+      now: () => 1_000_000,
+      newId: () => 'c1',
+      attempts: sink,
+      ...(concepts ? { concepts } : {}),
+    });
+    return { svc, sink };
+  };
+  const issue = async (svc: ChallengeService, over: object = {}) => {
+    const r = await svc.issue({ player: 'p', rewardKey: 'heal:small', ...over });
+    if (!r.ok) throw new Error(r.reason);
+    return r.challenge;
+  };
+
+  it('starts with a free nudge, then the free concept card, then the question’s paid hint', async () => {
+    const { svc } = build(2);
+    const c = await issue(svc);
+    expect(c.hintCosts).toEqual([0, 0, 0.05]);
+    const steps = [0, 1, 2].map((i) => svc.hint('p', c.id, i));
+    expect(steps.map((s) => s.ok && s.hint.text)).toEqual([
+      card.nudge,
+      'WHERE: filter rows\nUse conditions.',
+      'Combine two conditions with AND.',
+    ]);
+    expect(steps.map((s) => s.ok && s.hint.cost)).toEqual([0, 0, 0.05]);
+    expect(svc.hint('p', c.id, 3)).toMatchObject({ ok: false, reason: 'no_such_hint' });
+  });
+
+  it('opens steps in order', async () => {
+    const { svc } = build(2);
+    const c = await issue(svc);
+    expect(svc.hint('p', c.id, 1)).toMatchObject({ ok: false, reason: 'out_of_order' });
+  });
+
+  it('follows the setting: none, only the nudge, or both', async () => {
+    expect((await issue(build(0).svc)).hintCosts).toEqual([0.05]);
+    expect((await issue(build(1).svc)).hintCosts).toEqual([0, 0.05]);
+    expect((await issue(build(2).svc)).hintCosts).toEqual([0, 0, 0.05]);
+  });
+
+  it('adds nothing when the topic has no card, or there are no cards at all', async () => {
+    expect(
+      (await issue(build(2, new StaticConcepts([{ ...card, topic: 'window' }])).svc)).hintCosts,
+    ).toEqual([0.05]);
+    expect((await issue(build(2, null).svc)).hintCosts).toEqual([0.05]);
+  });
+
+  it('counts only the paid steps against the profile', async () => {
+    const { svc, sink } = build(2);
+    const c = await issue(svc);
+    for (const i of [0, 1]) svc.hint('p', c.id, i); // both free
+    svc.abandon('p');
+    expect(sink.items.at(-1)?.item.hintsPaid).toBe(0);
+    const again = await issue(svc, { player: 'q' });
+    for (const i of [0, 1, 2]) svc.hint('q', again.id, i);
+    svc.abandon('q');
+    expect(sink.items.at(-1)?.item.hintsPaid).toBe(1);
+  });
+
+  it('keeps every step free in the tutorial', async () => {
+    const { svc } = build(2);
+    expect((await issue(svc, { revealSolution: true })).hintCosts).toEqual([0, 0, 0]);
+  });
+});
+
+describe('review material on an item (16.2)', () => {
+  it('carries the student’s last query and the model answer, for the review only', async () => {
+    const sink2 = new MemorySink();
+    const repo = new InMemoryQuestionRepository();
+    repo.create(base, null);
+    const svc = new ChallengeService({
+      matchSeed: 'm',
+      selector: new QuestionSelector(repo),
+      variants,
+      grader: new Grader(new InProcessSandboxRunner()),
+      settings: new StaticSettings(),
+      now: () => 1_000_000,
+      attempts: sink2,
+    });
+    const r = await svc.issue({ player: 'p1', rewardKey: 'heal:small' });
+    if (!r.ok) throw new Error(r.reason);
+    await svc.submit('p1', r.challenge.id, 'SELECT 1');
+    svc.abandon('p1');
+    const done = sink2.items[0];
+    expect(done?.item.review).toMatchObject({ title: base.title, lastSql: 'SELECT 1' });
+    expect(done?.item.review?.modelSql).toMatch(/^SELECT name FROM employees/);
+    expect(done?.who.playerKey).toBe('p1');
   });
 });

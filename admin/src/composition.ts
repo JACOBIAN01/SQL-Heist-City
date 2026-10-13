@@ -20,6 +20,7 @@ import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
 import { PersonalDataRegistry, accountSource } from '@heist/server/players/PersonalData';
 import { HttpGameControl, type GameControl } from './classes/GameControl';
+import { conceptRoutes } from './concepts';
 import { analyticsRoutes } from './analytics/routes';
 import { classRoutes } from './classes/classRoutes';
 import { playerStaffRoutes } from './players/staffRoutes';
@@ -163,6 +164,7 @@ export function buildAdmin(
       configRoutes(settings),
       poolRoutes(stores.pools, events),
       playerStaffRoutes(stores.players, nameRules, events),
+      conceptRoutes(stores.concepts, events),
       analyticsRoutes({
         classes: stores.classes,
         questions: stores.questions,

@@ -54,8 +54,21 @@ export interface ClassChanged {
   readonly detail: Record<string, unknown>;
 }
 
+export interface ConceptChanged {
+  readonly type: 'concept_changed';
+  readonly topic: string;
+  readonly version: number;
+  readonly actor: { readonly id: number; readonly email: string };
+}
+
 export type AdminEvent =
-  QuestionChanged | SettingsChanged | UserChanged | PoolChanged | PlayerChanged | ClassChanged;
+  | QuestionChanged
+  | SettingsChanged
+  | UserChanged
+  | PoolChanged
+  | PlayerChanged
+  | ClassChanged
+  | ConceptChanged;
 export type AdminEventListener = (event: AdminEvent) => void;
 
 // Pattern: Observer — Why: audit logging and game-server reload both react to

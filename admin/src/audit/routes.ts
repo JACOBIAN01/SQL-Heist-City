@@ -5,7 +5,7 @@ import { parse } from '../http/errors';
 import type { AuditLog } from './AuditLog';
 
 const auditQuerySchema = z.object({
-  entity: z.enum(['question', 'settings', 'user', 'pool', 'player', 'class']).optional(),
+  entity: z.enum(['question', 'settings', 'user', 'pool', 'player', 'class', 'concept']).optional(),
   entityId: z.string().max(100).optional(),
   before: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().min(1).max(200).optional(),

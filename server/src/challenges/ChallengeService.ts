@@ -9,12 +9,14 @@ import {
   type RunResult,
   type SubmitResult,
   type ItemOutcome,
+  type QuestionTemplate,
   type ItemRecord,
   type TierRange,
   type WorkedExampleView,
   marksFor,
 } from '@heist/shared';
 import type { AttemptEventKind, AttemptSink, AttemptWho } from '../analytics/AttemptSink';
+import type { ConceptReader } from '../concepts/ConceptStore';
 import type { SettingsReader } from '../config/SettingsReader';
 import type { Grader } from '../sql/Grader';
 import { ReferenceQueryError } from '../sql/Grader';
@@ -60,6 +62,8 @@ export interface ChallengeServiceDeps {
   readonly logger?: ChallengeLogger;
   /** Hears what happens to every issued question (the learning record). */
   readonly attempts?: AttemptSink;
+  /** Concept cards, for the free steps of the hint ladder. */
+  readonly concepts?: ConceptReader;
 }
 
 /** Server-side state of one issued challenge. Never sent to clients. */
@@ -82,6 +86,8 @@ interface ActiveChallenge {
   readonly revealSolution: boolean;
   /** How many hints (in order) the player has revealed and been charged for. */
   hintsRevealed: number;
+  /** Revealed steps that cost something: only these count against the profile. */
+  paidHints: number;
   lockedUntil: number;
   lastRunAt: number;
   lastSubmitAt: number;
@@ -99,6 +105,7 @@ interface ActiveChallenge {
   runs: number;
   submits: number;
   wrongSubmits: number;
+  lastSql: string | undefined;
   finished: boolean;
 }
 
@@ -198,18 +205,22 @@ export class ChallengeService {
         expected,
         example,
         expiresAt: now + settings.ttlSec * 1000,
-        // Tutorial hints are free.
-        hints: request.revealSolution
-          ? question.template.hints.map((h) => ({ ...h, cost: 0 }))
-          : question.template.hints,
+        // The ladder: free steps from the topic's concept card first, then the question's own paid hints
+        // (the tutorial's are all free).
+        hints: this.ladder(
+          question.template,
+          settings.freeHintSteps,
+          request.revealSolution === true,
+        ),
         hintCostMode: settings.hintCostMode,
         revealSolution: request.revealSolution ?? false,
         hintsRevealed: 0,
+        paidHints: 0,
         lockedUntil: 0,
         lastRunAt: Number.NEGATIVE_INFINITY,
         lastSubmitAt: Number.NEGATIVE_INFINITY,
         solved: false,
-        who: request.who ?? {},
+        who: { ...request.who, playerKey: request.player },
         issuedAt: now,
         tags: {
           tier: question.template.tier,
@@ -221,6 +232,7 @@ export class ChallengeService {
         runs: 0,
         submits: 0,
         wrongSubmits: 0,
+        lastSql: undefined,
         finished: false,
       };
       this.byPlayer.set(request.player, challenge);
@@ -244,6 +256,7 @@ export class ChallengeService {
       return { ok: false, reason: 'rate_limited', retryAt: challenge.lastRunAt + runCooldownMs };
     }
     challenge.lastRunAt = now;
+    challenge.lastSql = sql;
 
     const preview = await this.deps.grader.preview(challenge.variant, sql);
     if (preview.status !== 'unavailable') {
@@ -272,6 +285,7 @@ export class ChallengeService {
       };
     }
     challenge.lastSubmitAt = now;
+    challenge.lastSql = sql;
 
     const grade = await this.deps.grader.grade(challenge.variant, challenge.expected, sql);
     // The challenge may have been replaced or solved while grading ran.
@@ -314,6 +328,7 @@ export class ChallengeService {
     const charged = index === challenge.hintsRevealed;
     if (charged) {
       challenge.hintsRevealed++;
+      if (hint.cost > 0) challenge.paidHints++;
       this.note(challenge, 'hint', { index, cost: hint.cost });
     }
     return {
@@ -412,14 +427,31 @@ export class ChallengeService {
         runs: challenge.runs,
         submits: challenge.submits,
         wrongSubmits: challenge.wrongSubmits,
-        hintsPaid: challenge.hintsRevealed,
+        hintsPaid: challenge.paidHints,
         secondsOpen: Math.max(0, (at - challenge.issuedAt) / 1000),
         tutorial: challenge.revealSolution,
         issuedAt: challenge.issuedAt,
         finishedAt: at,
+        review: {
+          title: challenge.variant.title,
+          story: challenge.variant.story,
+          ...(challenge.lastSql === undefined ? {} : { lastSql: challenge.lastSql }),
+          modelSql: challenge.variant.referenceSql,
+        },
       },
       challenge.who,
     );
+  }
+
+  /** The hint ladder for a question: a free nudge, the free concept card, then its paid hints. */
+  private ladder(template: QuestionTemplate, freeSteps: number, tutorial: boolean): Hint[] {
+    const own = template.hints.map((h) => (tutorial ? { ...h, cost: 0 } : h));
+    if (freeSteps === 0 || !this.deps.concepts) return own;
+    const card = template.topic.map((t) => this.deps.concepts?.get(t)).find((c) => c !== undefined);
+    if (!card) return own;
+    const free: Hint[] = [{ text: card.nudge, cost: 0 }];
+    if (freeSteps >= 2) free.push({ text: `${card.title}\n${card.body_md}`, cost: 0 });
+    return [...free, ...own];
   }
 
   private nextAttempt(player: string, rewardKey: string): number {

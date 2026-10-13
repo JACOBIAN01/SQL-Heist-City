@@ -7,9 +7,11 @@ import {
   radarModel,
   type ItemRecord,
   type ProfileMessage,
+  type ReviewMessage,
 } from '@heist/shared';
 import { drawRadar } from './RadarChart';
 import { ProfileView } from './ProfileView';
+import { ReviewView } from './ReviewView';
 import { scopeViewOf } from './testing';
 
 afterEach(() => document.body.replaceChildren());
@@ -141,5 +143,73 @@ describe('ProfileView', () => {
     const m = message();
     v.update({ t: 'profile', all: m.all });
     expect(v.root.textContent).toContain('No questions answered this round yet');
+  });
+});
+
+describe('ReviewView (16.2)', () => {
+  const message: ReviewMessage = {
+    t: 'review',
+    round: 2,
+    items: [
+      {
+        title: 'Payroll Leak',
+        story: 'List <b>names</b>',
+        outcome: 'expired',
+        rewardKey: 'heal:small',
+        tier: 1,
+        rcsbe: 'S',
+        topics: ['where'],
+        secondsOpen: 42,
+        hintsUsed: 1,
+        yourSql: 'SELECT name FROM employees',
+        modelSql: "SELECT name FROM employees WHERE dept = 'IT'",
+        cards: [{ topic: 'where', title: 'WHERE: filter rows', body_md: 'Use conditions.' }],
+      },
+      {
+        title: 'Second',
+        story: 's',
+        outcome: 'solved',
+        rewardKey: 'gun:pistol',
+        tier: 1,
+        rcsbe: 'S',
+        topics: [],
+        secondsOpen: 9,
+        hintsUsed: 0,
+        yourSql: null,
+        modelSql: 'SELECT 2',
+        cards: [],
+      },
+    ],
+  };
+
+  it('shows each question with your query, the model answer and its concept card', () => {
+    const v = new ReviewView();
+    v.update(message);
+    expect(v.root.querySelector('h2')?.textContent).toBe('Round 2 review');
+    const items = v.root.querySelectorAll('.review-item');
+    expect(items).toHaveLength(2);
+    expect(items[0]?.className).toContain('missed');
+    expect(items[1]?.className).toContain('solved');
+    const first = items[0] as HTMLElement;
+    expect(first.textContent).toContain('Ran out of time · 42 s · 1 paid hint · where');
+    expect(first.querySelectorAll('pre')[0]?.textContent).toBe('SELECT name FROM employees');
+    expect(first.querySelectorAll('pre')[1]?.textContent).toContain("dept = 'IT'");
+    expect(first.querySelector('summary')?.textContent).toBe('Concept: WHERE: filter rows');
+    expect(items[1]?.querySelector('pre')?.textContent).toBe('(you did not run a query)');
+    expect(v.hasReview).toBe(true);
+  });
+
+  it('draws text as text', () => {
+    const v = new ReviewView();
+    v.update(message);
+    expect(v.root.querySelector('.review-story b')).toBeNull();
+    expect(v.root.querySelector('.review-story')?.textContent).toBe('List <b>names</b>');
+  });
+
+  it('says there is nothing yet before a round has ended', () => {
+    const v = new ReviewView();
+    v.update({ t: 'review', round: 1, items: [] });
+    expect(v.root.textContent).toContain('No questions to review yet');
+    expect(v.hasReview).toBe(false);
   });
 });

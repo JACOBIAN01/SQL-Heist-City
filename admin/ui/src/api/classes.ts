@@ -170,3 +170,36 @@ export function useRound(id: number, roundId: number | undefined) {
     queryFn: () => api<RoundDetail>(`/classes/${id}/results/${roundId}`),
   });
 }
+
+export interface ConceptCardView {
+  topic: string;
+  title: string;
+  nudge: string;
+  body_md: string;
+  version: number;
+  updatedBy: string | null;
+  updatedAt: string;
+}
+
+export function useConcepts() {
+  return useQuery({
+    queryKey: ['concepts'],
+    queryFn: async () => (await api<{ cards: ConceptCardView[] }>('/concepts')).cards,
+  });
+}
+
+export function useSaveConcept() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      topic,
+      ...body
+    }: {
+      topic: string;
+      title: string;
+      nudge: string;
+      body_md: string;
+    }) => api<{ card: ConceptCardView }>(`/concepts/${topic}`, { method: 'PUT', body }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['concepts'] }),
+  });
+}

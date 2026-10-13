@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { openStores } from '../openStores';
 import { buildAdmin } from '../composition';
+import { conceptFileSchema } from '@heist/shared';
 import { questionFormats } from '../questions/io/formats';
 
 /**
@@ -17,6 +18,7 @@ import { questionFormats } from '../questions/io/formats';
 const update = process.argv.includes('--update');
 const dbPath =
   process.env.DB_PATH ?? fileURLToPath(new URL('../../../data/dev.db', import.meta.url));
+const conceptsDir = fileURLToPath(new URL('../../../content/concepts', import.meta.url));
 const contentDir = fileURLToPath(new URL('../../../content/questions', import.meta.url));
 
 const opened = await openStores(dbPath);
@@ -53,6 +55,21 @@ for (const file of readdirSync(contentDir)
   }
   failed += invalid;
 }
+
+// Concept cards: one per SQL topic (content/concepts/cards.json). Existing cards are kept unless --update.
+const conceptFile = conceptFileSchema.parse(
+  JSON.parse(readFileSync(join(conceptsDir, 'cards.json'), 'utf8')),
+);
+let cardsAdded = 0;
+let cardsUpdated = 0;
+for (const card of conceptFile.cards) {
+  const existing = await opened.stores.concepts.get(card.topic);
+  if (existing && !update) continue;
+  await opened.stores.concepts.save(card, actor.email);
+  if (existing) cardsUpdated++;
+  else cardsAdded++;
+}
+console.log(`concept cards: ${cardsAdded} added, ${cardsUpdated} updated`);
 
 await admin.close();
 await opened.close();

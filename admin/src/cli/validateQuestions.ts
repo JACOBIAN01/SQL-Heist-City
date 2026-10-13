@@ -9,6 +9,7 @@ import {
   compareToTarget,
   coverageOf,
   DEFAULT_ANALYTICS_SETTINGS,
+  conceptFileSchema,
   questionTemplateSchema,
   shapeProblems,
 } from '@heist/shared';
@@ -88,4 +89,24 @@ const gaps = shapeProblems(
   RCSBE_NAMES,
 );
 if (gaps.length) console.log('Against the default target profile: ' + gaps.join('; ') + '.');
-process.exit(errors > 0 ? 1 : 0);
+
+// Every topic a question uses has a concept card (Phase 16.1).
+const cardTopics = new Set(
+  conceptFileSchema
+    .parse(
+      JSON.parse(
+        readFileSync(
+          fileURLToPath(new URL('../../../content/concepts/cards.json', import.meta.url)),
+          'utf8',
+        ),
+      ),
+    )
+    .cards.map((c) => c.topic),
+);
+const missingCards = [...new Set(templates.flatMap((t) => t.topic))].filter(
+  (t) => !cardTopics.has(t),
+);
+if (missingCards.length > 0) {
+  console.log(`✗ no concept card for topic(s): ${missingCards.join(', ')}`);
+}
+process.exit(errors > 0 || missingCards.length > 0 ? 1 : 0);

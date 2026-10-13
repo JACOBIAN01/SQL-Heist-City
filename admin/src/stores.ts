@@ -19,6 +19,11 @@ import {
   type ProfileStore,
 } from '@heist/server/analytics/AttemptStore';
 import {
+  PgConceptStore,
+  SqliteConceptStore,
+  type ConceptStore,
+} from '@heist/server/concepts/ConceptStore';
+import {
   InMemoryClassResults,
   PgClassResults,
   type ClassResultRepository,
@@ -60,6 +65,7 @@ export interface AdminStores {
   /** Finished rounds of classes (written by the game server). */
   readonly classResults: ClassResultRepository;
   /** The learning record (written by the game server). */
+  readonly concepts: ConceptStore;
   readonly attempts: AttemptStore;
   readonly profiles: ProfileStore;
   playerSessions(ttlMs: number, now: () => number): PlayerSessions;
@@ -76,6 +82,7 @@ export function sqliteStores(db: DatabaseSync): AdminStores {
     settings: new SqliteSettingsStore(db),
     players: new InMemoryPlayerRepository(),
     classResults: new InMemoryClassResults(),
+    concepts: new SqliteConceptStore(db),
     attempts: new InMemoryAttemptStore(),
     profiles: new InMemoryProfileStore(),
     classes: new InMemoryClassRepository(
@@ -97,6 +104,7 @@ export function pgStores(db: PgDatabase): AdminStores {
     players: new PgPlayerRepository(db),
     classes: new PgClassRepository(db),
     classResults: new PgClassResults(db),
+    concepts: new PgConceptStore(db),
     attempts: new PgAttemptStore(db),
     profiles: new PgProfileStore(db),
     playerSessions: (ttl, now) => new PgPlayerSessions(db, ttl, now),

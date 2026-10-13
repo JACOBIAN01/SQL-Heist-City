@@ -301,6 +301,38 @@ export interface ProfileMessage {
   readonly moved?: readonly { readonly lens: 'rcsbe' | 'bloom'; readonly dimension: string }[];
 }
 
+/** One question a student met this round, with what they wrote and the model answer. */
+export interface ReviewItem {
+  readonly title: string;
+  readonly story: string;
+  readonly outcome: string;
+  readonly rewardKey: string;
+  readonly tier: number;
+  readonly rcsbe: string;
+  readonly topics: readonly string[];
+  readonly secondsOpen: number;
+  readonly hintsUsed: number;
+  readonly yourSql: string | null;
+  readonly modelSql: string;
+  /** The concept cards for the question's topics that have one. */
+  readonly cards: readonly {
+    readonly topic: string;
+    readonly title: string;
+    readonly body_md: string;
+  }[];
+}
+
+/**
+ * Sent to a player once, after the round has ended: every question they met,
+ * their last query and the model answer. The model answers never leave the
+ * server before this (docs/rules.md: no reference solutions during play).
+ */
+export interface ReviewMessage {
+  readonly t: 'review';
+  readonly round: number;
+  readonly items: readonly ReviewItem[];
+}
+
 /** The numbers clients simulate and draw with (cars, time of day), sent on join and at each new round. */
 export interface WorldMessage {
   readonly t: 'world';
@@ -311,6 +343,7 @@ export interface WorldMessage {
 }
 
 export type HeistServerMessage =
+  | ReviewMessage
   | ProfileMessage
   | WorldMessage
   | InteractReply

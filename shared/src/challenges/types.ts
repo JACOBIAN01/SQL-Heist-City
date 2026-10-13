@@ -53,6 +53,8 @@ export interface PublicChallenge {
 export interface ChallengeFeedback {
   readonly code: string;
   readonly message: string;
+  /** What an error usually means and what to try, in plain words. */
+  readonly advice?: string;
 }
 
 export interface PreviewRows {

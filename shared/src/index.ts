@@ -60,3 +60,4 @@ export * from './analytics/items';
 export * from './analytics/profile';
 export * from './analytics/radar';
 export * from './analytics/profileRadar';
+export * from './questions/concepts';

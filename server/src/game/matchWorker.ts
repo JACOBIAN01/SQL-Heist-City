@@ -87,6 +87,7 @@ const game = startGame(http, data.settings, mapByName(data.map), {
 });
 
 analytics?.bind(game.match);
+stack?.review.bind(game.match);
 if (data.classConfig) {
   const classId = data.classConfig.classId;
   game.match.heist.events.subscribe((event) => {

@@ -199,6 +199,14 @@ function toRecord(event: AdminEvent): AuditRecord {
         entityId: String(event.poolId),
         detail: event.detail,
       };
+    case 'concept_changed':
+      return {
+        ...actor,
+        action: 'update',
+        entity: 'concept',
+        entityId: event.topic,
+        detail: { version: event.version },
+      };
     case 'class_changed':
       return {
         ...actor,

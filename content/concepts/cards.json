@@ -1,0 +1,348 @@
+{
+  "format": "heist-concepts",
+  "version": 1,
+  "cards": [
+    {
+      "topic": "select",
+      "title": "SELECT: choose columns",
+      "nudge": "Name the columns you want after SELECT, then say which table with FROM.",
+      "body_md": "`SELECT name, salary FROM employees;` returns just those two columns for every row. Use `*` for all columns, and `AS` to rename: `SELECT salary * 12 AS yearly FROM employees;`."
+    },
+    {
+      "topic": "where",
+      "title": "WHERE: filter rows",
+      "nudge": "WHERE keeps only the rows where its condition is true.",
+      "body_md": "`SELECT name FROM employees WHERE dept = 'Audit';` keeps the Audit rows. Text goes in single quotes; numbers don't. Compare with `=`, `<>`, `<`, `>`, `<=`, `>=`."
+    },
+    {
+      "topic": "and",
+      "title": "AND: both conditions",
+      "nudge": "AND needs every condition to be true.",
+      "body_md": "`WHERE dept = 'Audit' AND salary > 5000` keeps rows that are both in Audit and above 5000. Put each condition on its own."
+    },
+    {
+      "topic": "or",
+      "title": "OR: either condition",
+      "nudge": "OR needs at least one condition to be true; use brackets to mix with AND.",
+      "body_md": "`WHERE dept = 'Audit' OR dept = 'IT'` keeps both groups. When mixing, bracket: `WHERE (a OR b) AND c`, because AND binds tighter than OR."
+    },
+    {
+      "topic": "not",
+      "title": "NOT: flip a condition",
+      "nudge": "NOT turns a true condition false and the other way round.",
+      "body_md": "`WHERE NOT dept = 'Audit'` (or `dept <> 'Audit'`) keeps everyone outside Audit. `NOT IN`, `NOT LIKE` and `NOT BETWEEN` work the same way."
+    },
+    {
+      "topic": "in",
+      "title": "IN: one of a list",
+      "nudge": "IN checks a value against a list or a subquery.",
+      "body_md": "`WHERE dept IN ('Audit', 'IT')` is shorter than two ORs. `WHERE id IN (SELECT manager_id FROM branches)` compares with a query's result."
+    },
+    {
+      "topic": "not-in",
+      "title": "NOT IN: none of a list",
+      "nudge": "NOT IN keeps rows whose value is not in the list; beware NULLs in the list.",
+      "body_md": "`WHERE id NOT IN (SELECT manager_id FROM branches)` returns nothing if the subquery contains a NULL, because `x <> NULL` is never true. Prefer NOT EXISTS, or filter the NULLs out."
+    },
+    {
+      "topic": "between",
+      "title": "BETWEEN: a range",
+      "nudge": "BETWEEN low AND high includes both ends.",
+      "body_md": "`WHERE salary BETWEEN 3000 AND 5000` equals `salary >= 3000 AND salary <= 5000`. It works on numbers, dates and text."
+    },
+    {
+      "topic": "like",
+      "title": "LIKE: patterns in text",
+      "nudge": "% matches any run of characters, _ matches exactly one.",
+      "body_md": "`WHERE name LIKE 'A%'` starts with A; `'%son'` ends with son; `'_a%'` has a as the second letter. LIKE ignores case for plain letters in SQLite."
+    },
+    {
+      "topic": "limit",
+      "title": "LIMIT: only some rows",
+      "nudge": "LIMIT n returns at most n rows, usually after ORDER BY.",
+      "body_md": "`SELECT name FROM employees ORDER BY salary DESC LIMIT 3;` is the three best paid. Without ORDER BY, which rows you get is not defined."
+    },
+    {
+      "topic": "offset",
+      "title": "OFFSET: skip rows",
+      "nudge": "OFFSET skips rows before LIMIT starts counting.",
+      "body_md": "`ORDER BY salary DESC LIMIT 3 OFFSET 3` gives places four to six. Always sort first, or the pages are arbitrary."
+    },
+    {
+      "topic": "order-by",
+      "title": "ORDER BY: sort the result",
+      "nudge": "ORDER BY sorts; ASC is the default, DESC reverses it.",
+      "body_md": "`ORDER BY dept, salary DESC` sorts by department, then by salary highest first within each. You can sort by a column you did not select."
+    },
+    {
+      "topic": "distinct",
+      "title": "DISTINCT: remove repeats",
+      "nudge": "DISTINCT keeps one copy of each different row.",
+      "body_md": "`SELECT DISTINCT dept FROM employees;` lists each department once. It applies to the whole row of selected columns, not just the first."
+    },
+    {
+      "topic": "text",
+      "title": "Text functions",
+      "nudge": "UPPER, LOWER, LENGTH, SUBSTR and || work on text.",
+      "body_md": "`SELECT UPPER(name), LENGTH(name) FROM employees;`. `first || ' ' || last` joins text. `SUBSTR(name, 1, 3)` is the first three letters."
+    },
+    {
+      "topic": "string",
+      "title": "String functions",
+      "nudge": "Cut, join and search text with SUBSTR, INSTR, REPLACE, TRIM and ||.",
+      "body_md": "`SUBSTR(email, INSTR(email, '@') + 1)` is the part after the @. `REPLACE(phone, '-', '')` removes dashes. `TRIM(x)` strips spaces at both ends."
+    },
+    {
+      "topic": "dates",
+      "title": "Dates in SQLite",
+      "nudge": "Dates are text like 2025-03-14; use date functions to work with them.",
+      "body_md": "`strftime('%Y', hired)` is the year, `date('now')` today, `julianday(a) - julianday(b)` days between. Text in year-month-day order also sorts and compares correctly."
+    },
+    {
+      "topic": "count",
+      "title": "COUNT: how many",
+      "nudge": "COUNT(*) counts rows; COUNT(col) counts rows where col is not NULL.",
+      "body_md": "`SELECT COUNT(*) FROM employees WHERE dept = 'IT';`. `COUNT(DISTINCT dept)` counts different departments."
+    },
+    {
+      "topic": "sum",
+      "title": "SUM: add up",
+      "nudge": "SUM adds a column's values, ignoring NULLs.",
+      "body_md": "`SELECT SUM(salary) FROM employees WHERE dept = 'IT';`. With GROUP BY you get one total per group."
+    },
+    {
+      "topic": "avg",
+      "title": "AVG: the average",
+      "nudge": "AVG gives the mean of the non-NULL values.",
+      "body_md": "`SELECT AVG(salary) FROM employees;`. It returns a decimal; wrap in `ROUND(AVG(salary), 2)` to tidy it."
+    },
+    {
+      "topic": "min-max",
+      "title": "MIN and MAX",
+      "nudge": "MIN and MAX give the smallest and largest value.",
+      "body_md": "`SELECT MIN(hired), MAX(hired) FROM employees;` also works on text and dates. To get the whole row of the maximum, use ORDER BY ... LIMIT 1 or a subquery."
+    },
+    {
+      "topic": "aggregate",
+      "title": "Aggregates",
+      "nudge": "Aggregate functions turn many rows into one value: COUNT, SUM, AVG, MIN, MAX.",
+      "body_md": "Without GROUP BY they summarise the whole table to one row. Do not mix them with plain columns unless those columns are grouped."
+    },
+    {
+      "topic": "group-by",
+      "title": "GROUP BY: one row per group",
+      "nudge": "GROUP BY makes one result row for each different value, and aggregates work inside each group.",
+      "body_md": "`SELECT dept, COUNT(*) FROM employees GROUP BY dept;`. Every selected column should be either in GROUP BY or inside an aggregate. WHERE filters rows before grouping."
+    },
+    {
+      "topic": "having",
+      "title": "HAVING: filter groups",
+      "nudge": "HAVING filters groups after they are formed; WHERE filters rows before.",
+      "body_md": "`SELECT dept, COUNT(*) FROM employees GROUP BY dept HAVING COUNT(*) > 5;` keeps departments with more than five people. You cannot use an aggregate in WHERE."
+    },
+    {
+      "topic": "case",
+      "title": "CASE: if/then in SQL",
+      "nudge": "CASE picks a value by testing conditions in order.",
+      "body_md": "`CASE WHEN salary > 6000 THEN 'high' WHEN salary > 3000 THEN 'mid' ELSE 'low' END`. Use it inside SELECT, ORDER BY, or an aggregate: `SUM(CASE WHEN dept = 'IT' THEN 1 ELSE 0 END)`."
+    },
+    {
+      "topic": "coalesce",
+      "title": "COALESCE: replace NULL",
+      "nudge": "COALESCE returns the first value that is not NULL.",
+      "body_md": "`COALESCE(bonus, 0)` treats a missing bonus as zero, so `salary + COALESCE(bonus, 0)` never becomes NULL. Chain several: `COALESCE(a, b, 'none')`."
+    },
+    {
+      "topic": "null",
+      "title": "NULL: unknown",
+      "nudge": "NULL means unknown; compare it with IS NULL, never with =.",
+      "body_md": "`WHERE bonus IS NULL` finds missing values; `bonus = NULL` finds nothing. NULL in arithmetic gives NULL, and aggregates skip NULLs (except COUNT(*))."
+    },
+    {
+      "topic": "join",
+      "title": "JOIN: combine tables",
+      "nudge": "JOIN matches rows of two tables on a condition.",
+      "body_md": "`SELECT e.name, b.city FROM employees e JOIN branches b ON e.branch_id = b.id;`. Rows with no match on either side disappear (that is an INNER JOIN). Give tables short aliases."
+    },
+    {
+      "topic": "left-join",
+      "title": "LEFT JOIN: keep every left row",
+      "nudge": "LEFT JOIN keeps all rows of the first table, with NULLs where nothing matches.",
+      "body_md": "`FROM branches b LEFT JOIN employees e ON e.branch_id = b.id` keeps branches with no employees. To find them: `WHERE e.id IS NULL`."
+    },
+    {
+      "topic": "multi-join",
+      "title": "Joining three or more tables",
+      "nudge": "Chain JOINs; each ON links the new table to one you already have.",
+      "body_md": "`FROM a JOIN b ON b.a_id = a.id JOIN c ON c.b_id = b.id`. Read it left to right and check each ON uses the right pair of keys."
+    },
+    {
+      "topic": "self-join",
+      "title": "Self join: a table with itself",
+      "nudge": "Give the table two different aliases and join them.",
+      "body_md": "`SELECT e.name, m.name FROM employees e JOIN employees m ON e.manager_id = m.id;` pairs each employee with their manager. The aliases are what tell the two copies apart."
+    },
+    {
+      "topic": "subquery",
+      "title": "Subquery: a query inside",
+      "nudge": "A subquery is a SELECT in brackets that gives a value, a list or a table.",
+      "body_md": "`WHERE salary > (SELECT AVG(salary) FROM employees)` compares with one value. `FROM (SELECT ...) AS t` uses a result as a table. Run the inner query alone first."
+    },
+    {
+      "topic": "scalar",
+      "title": "Scalar subquery: one value",
+      "nudge": "A scalar subquery returns exactly one row and one column.",
+      "body_md": "`SELECT name, salary - (SELECT AVG(salary) FROM employees) AS diff FROM employees;`. If it can return more than one row, add LIMIT 1 or aggregate."
+    },
+    {
+      "topic": "correlated-subquery",
+      "title": "Correlated subquery",
+      "nudge": "A correlated subquery uses a column from the outer query, so it runs once per outer row.",
+      "body_md": "`WHERE salary > (SELECT AVG(salary) FROM employees x WHERE x.dept = e.dept)` compares each person with their own department. Alias both tables."
+    },
+    {
+      "topic": "exists",
+      "title": "EXISTS: is there any row",
+      "nudge": "EXISTS is true if the subquery returns at least one row.",
+      "body_md": "`WHERE EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)` keeps customers with an order. What the subquery selects does not matter."
+    },
+    {
+      "topic": "not-exists",
+      "title": "NOT EXISTS: there is no row",
+      "nudge": "NOT EXISTS keeps rows for which the subquery finds nothing.",
+      "body_md": "`WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.customer_id = c.id)` keeps customers who never ordered. Safer than NOT IN when NULLs are possible."
+    },
+    {
+      "topic": "union",
+      "title": "UNION: stack results",
+      "nudge": "UNION puts two results on top of each other and removes repeats; UNION ALL keeps them.",
+      "body_md": "Both queries need the same number of columns, in a compatible order. `SELECT name FROM a UNION SELECT name FROM b;`."
+    },
+    {
+      "topic": "intersect",
+      "title": "INTERSECT: in both",
+      "nudge": "INTERSECT keeps only the rows that appear in both results.",
+      "body_md": "`SELECT customer_id FROM orders_2024 INTERSECT SELECT customer_id FROM orders_2025;` gives customers who ordered in both years."
+    },
+    {
+      "topic": "except",
+      "title": "EXCEPT: in the first, not the second",
+      "nudge": "EXCEPT keeps rows of the first result that are not in the second.",
+      "body_md": "`SELECT id FROM customers EXCEPT SELECT customer_id FROM orders;` gives customers with no orders. Order matters: swap the queries and the answer changes."
+    },
+    {
+      "topic": "cte",
+      "title": "CTE: a named step with WITH",
+      "nudge": "WITH names a query so later queries can use it like a table.",
+      "body_md": "`WITH rich AS (SELECT * FROM employees WHERE salary > 6000) SELECT dept, COUNT(*) FROM rich GROUP BY dept;`. Several steps are separated by commas. It makes long queries readable."
+    },
+    {
+      "topic": "recursive-cte",
+      "title": "Recursive CTE",
+      "nudge": "A recursive CTE has a starting query UNION ALL a step that refers to the CTE itself.",
+      "body_md": "`WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 10) SELECT i FROM n;`. Always include a stop condition, or it never ends. Used for hierarchies and sequences."
+    },
+    {
+      "topic": "window",
+      "title": "Window functions",
+      "nudge": "A window function computes over related rows without collapsing them: function() OVER (...).",
+      "body_md": "`SUM(salary) OVER (PARTITION BY dept)` puts each department's total on every row. PARTITION BY splits into groups, ORDER BY inside OVER sets the order within each."
+    },
+    {
+      "topic": "analytics",
+      "title": "Analytic queries",
+      "nudge": "Combine windows, grouping and CTEs to answer 'compared with the rest' questions.",
+      "body_md": "Typical steps: compute a measure per group in a CTE, then use a window function to rank, total or compare. Build it one step at a time and check each."
+    },
+    {
+      "topic": "row-number",
+      "title": "ROW_NUMBER: number the rows",
+      "nudge": "ROW_NUMBER() OVER (ORDER BY ...) gives 1, 2, 3 ... with no ties.",
+      "body_md": "`ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC)` numbers people within each department. Filter `= 1` (in an outer query) for the top of each group."
+    },
+    {
+      "topic": "rank",
+      "title": "RANK: ties share a place",
+      "nudge": "RANK() gives equal rows the same number and then skips.",
+      "body_md": "Scores 90, 90, 80 rank 1, 1, 3. Use DENSE_RANK to get 1, 1, 2. Both need `OVER (ORDER BY ...)`."
+    },
+    {
+      "topic": "dense-rank",
+      "title": "DENSE_RANK: no gaps",
+      "nudge": "DENSE_RANK() numbers ties the same and carries on with the next number.",
+      "body_md": "Scores 90, 90, 80 give 1, 1, 2. Use it for 'the second highest value'."
+    },
+    {
+      "topic": "ntile",
+      "title": "NTILE: equal buckets",
+      "nudge": "NTILE(n) splits ordered rows into n nearly equal groups.",
+      "body_md": "`NTILE(4) OVER (ORDER BY salary)` labels quartiles 1 to 4. If rows do not divide evenly, the first groups get one extra."
+    },
+    {
+      "topic": "lag",
+      "title": "LAG: the previous row",
+      "nudge": "LAG(col) looks at the row before, in the order you give.",
+      "body_md": "`salary - LAG(salary) OVER (ORDER BY month)` is the change since last month. The first row has no previous, so it gives NULL (or a default: `LAG(x, 1, 0)`)."
+    },
+    {
+      "topic": "lead",
+      "title": "LEAD: the next row",
+      "nudge": "LEAD(col) looks at the row after.",
+      "body_md": "`LEAD(day) OVER (ORDER BY day) - day` is the gap to the next event. The last row has no next row, so it gives NULL."
+    },
+    {
+      "topic": "first-value",
+      "title": "FIRST_VALUE",
+      "nudge": "FIRST_VALUE(col) OVER (...) repeats the first row's value of the window.",
+      "body_md": "`FIRST_VALUE(price) OVER (PARTITION BY product ORDER BY day)` puts each product's first price on every row, so you can compare with it."
+    },
+    {
+      "topic": "running-total",
+      "title": "Running total",
+      "nudge": "A running total is SUM over an ordered window.",
+      "body_md": "`SUM(amount) OVER (ORDER BY day)` adds up everything to the current row. Add `PARTITION BY account` to restart for each account."
+    },
+    {
+      "topic": "moving-average",
+      "title": "Moving average",
+      "nudge": "A moving average averages a sliding frame of rows.",
+      "body_md": "`AVG(x) OVER (ORDER BY day ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)` is the mean of today and the two days before. The first rows use fewer."
+    },
+    {
+      "topic": "range",
+      "title": "Window frames: ROWS and RANGE",
+      "nudge": "A frame says which rows around the current one the function sees.",
+      "body_md": "`ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING` is the row before, this one and the next. `RANGE` groups rows with equal ORDER BY values together."
+    },
+    {
+      "topic": "percentile",
+      "title": "Percentiles",
+      "nudge": "A percentile is the value below which a share of rows fall; compute it from a rank.",
+      "body_md": "Order the rows, number them with ROW_NUMBER, and pick the row at share × count. Or use `NTILE(100)`. State how you treat ties."
+    },
+    {
+      "topic": "top-n",
+      "title": "Top N per group",
+      "nudge": "Rank within each group, then keep ranks up to N.",
+      "body_md": "`WITH r AS (SELECT *, ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC) AS rn FROM employees) SELECT * FROM r WHERE rn <= 3;`. LIMIT alone cannot do this per group."
+    },
+    {
+      "topic": "gaps-islands",
+      "title": "Gaps and islands",
+      "nudge": "Islands are runs of consecutive values; find them by comparing a value with its row number.",
+      "body_md": "For consecutive days, `day - ROW_NUMBER() OVER (ORDER BY day)` is the same inside one run. Group by that to get each island's start and end."
+    },
+    {
+      "topic": "pivot",
+      "title": "Pivot: rows into columns",
+      "nudge": "SQLite has no PIVOT: use SUM(CASE ...) per column.",
+      "body_md": "`SELECT dept, SUM(CASE WHEN year = 2024 THEN pay END) AS y2024, SUM(CASE WHEN year = 2025 THEN pay END) AS y2025 FROM pay GROUP BY dept;`. One CASE column per value you want across the top."
+    },
+    {
+      "topic": "graph",
+      "title": "Graphs in SQL",
+      "nudge": "Store edges as pairs and walk them with a recursive CTE.",
+      "body_md": "Start from the root nodes, then join the CTE to the edge table to reach the next nodes, UNION ALL, stop when no new nodes appear. Track the path to avoid loops."
+    }
+  ]
+}

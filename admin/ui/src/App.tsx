@@ -9,6 +9,7 @@ import { ClassLearningPage } from './pages/ClassLearningPage';
 import { StudentPage } from './pages/StudentPage';
 import { ClassEditorPage } from './pages/ClassEditorPage';
 import { ClassesPage } from './pages/ClassesPage';
+import { ConceptsPage } from './pages/ConceptsPage';
 import { PoolsPage } from './pages/PoolsPage';
 import { UsersPage } from './pages/UsersPage';
 import { QuestionListPage } from './pages/QuestionListPage';
@@ -32,6 +33,7 @@ export function App() {
         <Route path="classes/:id" element={<ClassEditorPage />} />
         <Route path="classes/:id/learning" element={<ClassLearningPage />} />
         <Route path="classes/:id/students/:playerId" element={<StudentPage />} />
+        <Route path="concepts" element={<ConceptsPage />} />
         <Route path="pools" element={<PoolsPage />} />
         <Route path="import-export" element={<ImportExportPage />} />
         <Route path="settings" element={<SettingsPage />} />
