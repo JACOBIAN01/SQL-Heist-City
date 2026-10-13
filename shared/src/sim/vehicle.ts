@@ -194,7 +194,7 @@ export interface CarFootprint {
 }
 
 /** Bodies standing this high or higher (an upper floor) are above every car. */
-const BODY_ABOVE_CARS = VEHICLE_ROOF;
+export const BODY_ABOVE_CARS = VEHICLE_ROOF;
 const BODY_GAP = 1e-4;
 const bodyNear: Aabb[] = [];
 

@@ -86,6 +86,8 @@ Tier 1 ≈ 30–60 s, tier 5 ≈ 4–6 min. Admin analytics show real medians; t
   - A head-on hit bounces the car back with `bounce` × its speed.
   - A glancing hit scrapes along the wall, losing some speed.
 
+**Running people over (12.3).** A car with a driver hurts anyone on foot it touches (within `runOver.reach` of its body). Damage is `(speed − minSpeed) × damagePerSpeed × mass/1000` hit points, so below `runOver.minSpeed` (5 m/s) a car only shoves, and a fast, heavy car kills a full-health player. One pass is one hit (`hitCooldownSec`). The kill goes to the driver (kills, bounty, feed, awards). Empty rolling cars and people on upper floors are never hit. All numbers are `VehicleSettings.runOver` and the `mass` of each kind.
+
 **Kinds:** the numbers per kind (`sedan`, `sports`, `suv`) are in `VehicleSettings` (`shared/src/config/vehicles.ts`, defaults only).
 
 | | top speed | accel | brake | full lock | footprint |

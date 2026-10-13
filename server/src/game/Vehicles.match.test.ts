@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   Button,
+  DEFAULT_COMBAT_SETTINGS,
   DEFAULT_MATCH_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
   DEFAULT_VEHICLE_SETTINGS,
@@ -210,5 +211,34 @@ describe('Match: getting out', () => {
     expect(a.vehicleId).toBe(0);
     expect(match.vehicles.get(1)?.driver).toBe(0);
     expect(ask(a, { action: 'enter', vehicle: 1 })).toMatchObject({ reason: 'dead' });
+  });
+});
+
+describe('Match: cars hurt people (12.3)', () => {
+  /** Ana drives the sedan at the origin; Ben stands `ahead` m in front of its nose. */
+  function chase(ahead: number, steps: number) {
+    const { match, join, input, ask } = setup();
+    const ana = join('Ana').player;
+    const ben = join('Ben').player;
+    match.teleport(ana, 1.8, 0, 0);
+    ask(ana, { action: 'enter', vehicle: 1 });
+    match.teleport(ben, 0, 0, -(DEFAULT_VEHICLE_SETTINGS.kinds.sedan.length / 2 + ahead));
+    ben.protectedUntilTick = 0;
+    for (let i = 0; i < steps; i++) input(ana, { moveY: 127 });
+    return { ana, ben };
+  }
+
+  it('kills a person a fast car drives into, and credits the driver', () => {
+    const { ana, ben } = chase(30, 90);
+    expect(ben.alive).toBe(false);
+    expect(ana.kills).toBe(1);
+    expect(ben.deaths).toBe(1);
+  });
+
+  it('does not hurt a person a slow car nudges', () => {
+    const { ana, ben } = chase(1, 3);
+    expect(ben.hp).toBe(DEFAULT_COMBAT_SETTINGS.maxHp);
+    expect(ben.alive).toBe(true);
+    expect(ana.kills).toBe(0);
   });
 });

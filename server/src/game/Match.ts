@@ -21,6 +21,7 @@ import {
   hasButton,
   resolveShotInto,
   stepBody,
+  BODY_ABOVE_CARS,
   pushBodyOutOfCars,
   damageAt,
   spreadFor,
@@ -45,6 +46,7 @@ import {
   type VehicleSettings,
   type VehicleWire,
 } from '@heist/shared';
+import { RunOverRule } from './RunOverRule';
 import { VehicleFleet, type Vehicle } from './VehicleFleet';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import type { IssueOptions } from '../challenges/ChallengeService';
@@ -111,6 +113,7 @@ export class Match implements MatchApi {
   readonly heist: HeistController;
   /** Every car in the match; the server drives them (docs/gameplay.md "Vehicles"). */
   readonly vehicles: VehicleFleet;
+  private readonly runOver: RunOverRule;
   private readonly vehicleScratch: VehicleWire[] = [];
   private readonly vehicleRemoved: number[] = [];
   private readonly inRange = new Set<number>();
@@ -179,7 +182,14 @@ export class Match implements MatchApi {
     );
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
-    this.vehicles = new VehicleFleet(deps.map, deps.vehicles ?? DEFAULT_VEHICLE_SETTINGS);
+    const vehicleSettings = deps.vehicles ?? DEFAULT_VEHICLE_SETTINGS;
+    this.vehicles = new VehicleFleet(deps.map, vehicleSettings);
+    this.runOver = new RunOverRule(
+      vehicleSettings.runOver,
+      deps.settings.tickRate,
+      this.movement.radius,
+      BODY_ABOVE_CARS,
+    );
     this.heist = new HeistController(
       this,
       deps.heist,
@@ -420,9 +430,28 @@ export class Match implements MatchApi {
       const car = player.vehicleId ? this.vehicles.get(player.vehicleId) : undefined;
       if (car) this.ride(player, car);
     }
+    this.runOverPass();
     this.recordHistory();
     this.heist.onTick();
     this.sendSnapshots();
+  }
+
+  /** Cars with a driver hurt people on foot they touch; the kill is the driver's (12.3). */
+  private runOverPass(): void {
+    for (const car of this.vehicles.all()) {
+      const driver = car.driver ? this.players.get(car.driver) : undefined;
+      if (!driver || car.state.speed === 0) continue;
+      for (const person of this.players.values()) {
+        if (person === driver || !person.alive || person.vehicleId !== 0) continue;
+        const damage = this.runOver.hit(this.tick, car, {
+          id: person.id,
+          x: person.body.x,
+          z: person.body.z,
+          y: person.body.y,
+        });
+        if (damage > 0) this.damage(person, damage, driver);
+      }
+    }
   }
 
   /**
