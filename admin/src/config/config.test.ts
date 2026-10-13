@@ -226,3 +226,21 @@ describe('heist, vehicle, atmosphere and city settings API (12.4)', () => {
     expect((await h.client.put('/api/config/city', { city: { blocks: 5 } })).status).toBe(403);
   });
 });
+
+describe('reward icons API (12.5)', () => {
+  it('changes one icon, keeps the rest, and refuses an icon outside the library', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    const res = await h.client.put<{ rewardIcons: Record<string, string> }>(
+      '/api/config/rewardIcons',
+      { rewardIcons: { 'gun:smg': 'rifle' } },
+    );
+    expect(res.body.rewardIcons['gun:smg']).toBe('rifle');
+    expect(res.body.rewardIcons['gun:pistol']).toBe('pistol');
+    expect(new SqliteSettingsReader(h.db).rewardIcons()['gun:smg']).toBe('rifle');
+    expect(
+      (await h.client.put('/api/config/rewardIcons', { rewardIcons: { 'gun:smg': 'banana' } }))
+        .status,
+    ).toBe(400);
+  });
+});

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
-import { DEFAULT_REWARD_TIERS } from '@heist/shared';
-import { rewardIcon } from './icons';
+import { afterEach, describe, expect, it } from 'vitest';
+import { DEFAULT_REWARD_ICONS, DEFAULT_REWARD_TIERS, REWARD_ICON_IDS } from '@heist/shared';
+import { rewardIcon, setRewardIcons } from './icons';
 
 const svgOf = (key: string) => rewardIcon(key).innerHTML;
 
@@ -23,5 +23,29 @@ describe('rewardIcon', () => {
     expect(el.getAttribute('aria-hidden')).toBe('true');
     expect(el.innerHTML).toContain('currentColor');
     expect(el.innerHTML).not.toContain('#fff');
+  });
+});
+
+describe('admin-chosen icons', () => {
+  afterEach(() => setRewardIcons(DEFAULT_REWARD_ICONS));
+
+  it('draws the picture the server says a reward uses', () => {
+    const before = svgOf('gun:smg');
+    setRewardIcons({ ...DEFAULT_REWARD_ICONS, 'gun:smg': 'sniper' });
+    expect(svgOf('gun:smg')).toBe(svgOf('gun:sniper'));
+    expect(svgOf('gun:smg')).not.toBe(before);
+  });
+
+  it('changes every vault lock at once', () => {
+    setRewardIcons({ ...DEFAULT_REWARD_ICONS, vault: 'lock' });
+    expect(svgOf('vault:bank-2:lock-1')).not.toBe(svgOf('gun:pistol'));
+    expect(svgOf('vault:bank-2:lock-1')).toBe(svgOf('vault:bank-4:lock-3'));
+  });
+
+  it('has a picture for every id the admin can choose', () => {
+    for (const id of REWARD_ICON_IDS) {
+      setRewardIcons({ ...DEFAULT_REWARD_ICONS, 'gun:pistol': id });
+      expect(svgOf('gun:pistol'), id).toContain('<svg');
+    }
   });
 });

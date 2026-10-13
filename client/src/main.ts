@@ -32,6 +32,7 @@ import { GameClient } from './net/GameClient';
 import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
 import { InputBatcher } from './net/InputBatcher';
 import { LiveWorld } from './net/liveWorld';
+import { setRewardIcons } from './ui/icons/icons';
 import { chooseGameUrl, tutorialUrl } from './net/lobby';
 import { buildTaskOptions } from './heist/taskOptions';
 import { Hotkeys } from './input/Hotkeys';
@@ -436,8 +437,10 @@ client.subscribe({
       ownedWeapons = message.owned;
       hud.setArms(message.owned, message.current);
     } else if (message.t === 'weapons') weaponTable.set(message.weapons);
-    else if (message.t === 'world') liveWorld.apply(message);
-    else if (message.t === 'feed') {
+    else if (message.t === 'world') {
+      liveWorld.apply(message);
+      setRewardIcons(message.rewardIcons);
+    } else if (message.t === 'feed') {
       const line = feedText(message.item, client.playerId);
       hud.addEvent(line.text, line.tone);
     } else if (message.t === 'bounties') wanted = message.wanted;

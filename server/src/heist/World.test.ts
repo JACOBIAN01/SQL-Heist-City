@@ -4,6 +4,7 @@ import {
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_HEIST_SETTINGS,
   DEFAULT_MATCH_SETTINGS,
+  DEFAULT_REWARD_ICONS,
   DEFAULT_VEHICLE_SETTINGS,
   HEIST_MAP,
   PROTOCOL_VERSION,
@@ -26,6 +27,7 @@ function setup() {
     heist: quick,
     vehicles: DEFAULT_VEHICLE_SETTINGS,
     atmosphere: DEFAULT_ATMOSPHERE_SETTINGS,
+    rewardIcons: DEFAULT_REWARD_ICONS,
   };
   const match = new Match({
     map: HEIST_MAP,
@@ -81,6 +83,13 @@ describe('admin edits reach a running match at the next round (12.4)', () => {
     expect(world.length).toBeGreaterThan(before);
     expect(world.at(-1)).toMatchObject({ atmosphere: { dayMinutes: 10 } });
     expect(world.at(-1)?.vehicles.kinds.sedan.maxSpeed).toBe(33);
+  });
+
+  it('sends the reward icons the admin picked', () => {
+    const { connection, wait, set } = setup();
+    set({ rewardIcons: { ...DEFAULT_REWARD_ICONS, 'gun:smg': 'rifle' } });
+    wait(10);
+    expect(connection.jsonOf('world').at(-1)?.rewardIcons['gun:smg']).toBe('rifle');
   });
 
   it('never rewrites the shared defaults', () => {

@@ -7,6 +7,7 @@ import {
   DEFAULT_CITY_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_HEIST_SETTINGS,
+  DEFAULT_REWARD_ICONS,
   DEFAULT_REWARD_TIERS,
   DEFAULT_VEHICLE_SETTINGS,
   DEFAULT_TUTORIAL_SETTINGS,
@@ -63,6 +64,12 @@ function api(user: typeof admin | typeof teacher) {
     'GET /config/city': () => ({
       body: { city: { current: DEFAULT_CITY_SETTINGS, defaults: DEFAULT_CITY_SETTINGS } },
     }),
+    'GET /config/rewardIcons': () => ({
+      body: {
+        rewardIcons: { current: DEFAULT_REWARD_ICONS, defaults: DEFAULT_REWARD_ICONS },
+      },
+    }),
+    'PUT /config/rewardIcons': (b) => ({ body: b }),
     'PUT /config/vehicles': (b) => ({ body: b }),
     'PUT /config/city': (b) => ({ body: b }),
     'GET /questions': () => ({
@@ -169,6 +176,17 @@ describe('SettingsPage', () => {
     await screen.findByText('Saved ✓');
     const put = calls.find((c) => c.method === 'PUT' && c.path === '/config/city');
     expect(put?.body).toEqual({ city: { seed: 'autumn' } });
+  });
+
+  it('admins pick another icon for a reward and send only that change', async () => {
+    const calls = api(admin);
+    renderWithProviders(<SettingsPage />);
+    const user = userEvent.setup();
+    await user.selectOptions(await screen.findByLabelText('icon gun:smg'), 'sniper');
+    await user.click(screen.getByRole('button', { name: 'Save icons' }));
+    await screen.findByText('Saved ✓');
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/config/rewardIcons');
+    expect(put?.body).toEqual({ rewardIcons: { 'gun:smg': 'sniper' } });
   });
 
   it('teachers see values read-only', async () => {

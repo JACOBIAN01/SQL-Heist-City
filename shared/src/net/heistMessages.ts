@@ -279,6 +279,8 @@ export interface WorldMessage {
   readonly t: 'world';
   readonly vehicles: VehicleSettings;
   readonly atmosphere: AtmosphereSettings;
+  /** Which picture each reward shows (the admin picks them). */
+  readonly rewardIcons: Readonly<Record<string, string>>;
 }
 
 export type HeistServerMessage =

@@ -106,6 +106,7 @@ function worldDeps(world: () => WorldSettings) {
     heist: first.heist,
     vehicles: first.vehicles,
     atmosphere: first.atmosphere,
+    rewardIcons: first.rewardIcons,
     worldSource: world,
   };
 }

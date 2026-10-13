@@ -2,6 +2,7 @@ import type {
   AtmosphereSettings,
   ChallengeSettings,
   CitySettings,
+  RewardIcons,
   VehicleSettings,
   CombatSettings,
   HeistSettings,
@@ -20,6 +21,7 @@ export class CachedSettingsReader implements SettingsReader {
   private vehicles: VehicleSettings | undefined;
   private atmosphere: AtmosphereSettings | undefined;
   private city: CitySettings | undefined;
+  private icons: RewardIcons | undefined;
   private tiers = new Map<string, TierRange | undefined>();
 
   constructor(private readonly inner: SettingsReader) {}
@@ -54,6 +56,11 @@ export class CachedSettingsReader implements SettingsReader {
     return this.atmosphere;
   }
 
+  rewardIcons(): RewardIcons {
+    this.icons ??= this.inner.rewardIcons();
+    return this.icons;
+  }
+
   citySettings(): CitySettings {
     this.city ??= this.inner.citySettings();
     return this.city;
@@ -72,6 +79,7 @@ export class CachedSettingsReader implements SettingsReader {
     this.vehicles = undefined;
     this.atmosphere = undefined;
     this.city = undefined;
+    this.icons = undefined;
     this.tiers = new Map();
   }
 }

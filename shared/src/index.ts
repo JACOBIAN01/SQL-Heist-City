@@ -39,6 +39,7 @@ export * from './world/city/cityMaps';
 export * from './config/movement';
 export * from './sim/input';
 export * from './sim/movement';
+export * from './config/rewardIcons';
 export * from './config/vehicles';
 export * from './config/world';
 export * from './sim/vehicle';

@@ -3,6 +3,7 @@ import {
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
   DEFAULT_ATMOSPHERE_SETTINGS,
+  DEFAULT_REWARD_ICONS,
   DEFAULT_VEHICLE_SETTINGS,
   colliderGridFor,
   controlsOf,
@@ -47,6 +48,7 @@ import {
   type VehicleSettings,
   type VehicleWire,
   type AtmosphereSettings,
+  type RewardIcons,
   type WorldMessage,
   type WorldSettings,
 } from '@heist/shared';
@@ -84,6 +86,7 @@ export interface MatchDeps {
   readonly heist?: HeistSettings;
   readonly vehicles?: VehicleSettings;
   readonly atmosphere?: AtmosphereSettings;
+  readonly rewardIcons?: RewardIcons;
   /** Where to read heist, car and time-of-day settings again at each new round (admin edits); none keeps the fixed ones. */
   readonly worldSource?: () => WorldSettings;
   /** SQL tasks; without it every task request is answered "unavailable". */
@@ -123,6 +126,7 @@ export class Match implements MatchApi {
   private readonly runOver: RunOverRule;
   private vehicleSettings: VehicleSettings;
   private atmosphere: AtmosphereSettings;
+  private rewardIcons: RewardIcons = DEFAULT_REWARD_ICONS;
   private readonly vehicleScratch: VehicleWire[] = [];
   private readonly vehicleRemoved: number[] = [];
   private readonly inRange = new Set<number>();
@@ -194,6 +198,7 @@ export class Match implements MatchApi {
     const vehicleSettings = deps.vehicles ?? DEFAULT_VEHICLE_SETTINGS;
     this.vehicleSettings = vehicleSettings;
     this.atmosphere = deps.atmosphere ?? DEFAULT_ATMOSPHERE_SETTINGS;
+    this.rewardIcons = deps.rewardIcons ?? DEFAULT_REWARD_ICONS;
     this.vehicles = new VehicleFleet(deps.map, vehicleSettings);
     this.runOver = new RunOverRule(
       vehicleSettings.runOver,
@@ -246,6 +251,7 @@ export class Match implements MatchApi {
     this.heist.refreshSettings(next.heist);
     this.vehicleSettings = next.vehicles;
     this.atmosphere = next.atmosphere;
+    this.rewardIcons = next.rewardIcons;
     this.vehicles.apply(next.vehicles);
     this.runOver.configure(next.vehicles.runOver);
     this.broadcastJson(this.worldMessage());
@@ -257,7 +263,12 @@ export class Match implements MatchApi {
   }
 
   private worldMessage(): WorldMessage {
-    return { t: 'world', vehicles: this.vehicleSettings, atmosphere: this.atmosphere };
+    return {
+      t: 'world',
+      vehicles: this.vehicleSettings,
+      atmosphere: this.atmosphere,
+      rewardIcons: this.rewardIcons,
+    };
   }
 
   refreshCombat(): void {

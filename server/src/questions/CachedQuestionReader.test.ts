@@ -34,6 +34,7 @@ describe('CachedSettingsReader', () => {
       vehicleSettings: () => (calls++, inner.vehicleSettings()),
       atmosphereSettings: () => (calls++, inner.atmosphereSettings()),
       citySettings: () => (calls++, inner.citySettings()),
+      rewardIcons: () => (calls++, inner.rewardIcons()),
       rewardTiers: (k: string) => (calls++, inner.rewardTiers(k)),
     };
     const cached = new CachedSettingsReader(counting);

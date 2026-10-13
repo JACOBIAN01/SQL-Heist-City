@@ -7,7 +7,10 @@ import {
   DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_CITY_SETTINGS,
   DEFAULT_HEIST_SETTINGS,
+  DEFAULT_REWARD_ICONS,
   DEFAULT_VEHICLE_SETTINGS,
+  rewardIconsSchema,
+  type RewardIcons,
   atmosphereSettingsSchema,
   citySettingsSchema,
   vehicleSettingsSchema,
@@ -38,6 +41,8 @@ export interface SettingsReader {
   vehicleSettings(): VehicleSettings;
   /** Time of day. */
   atmosphereSettings(): AtmosphereSettings;
+  /** Which picture each reward shows. */
+  rewardIcons(): RewardIcons;
   /** How the city is generated; read when a match is created. */
   citySettings(): CitySettings;
   /** The tutorial: room limits and the fixed question of each task. */
@@ -57,7 +62,12 @@ export class StaticSettings implements SettingsReader {
     private readonly vehicles: VehicleSettings = DEFAULT_VEHICLE_SETTINGS,
     private readonly atmosphere: AtmosphereSettings = DEFAULT_ATMOSPHERE_SETTINGS,
     private readonly city: CitySettings = DEFAULT_CITY_SETTINGS,
+    private readonly icons: RewardIcons = DEFAULT_REWARD_ICONS,
   ) {}
+
+  rewardIcons(): RewardIcons {
+    return this.icons;
+  }
 
   vehicleSettings(): VehicleSettings {
     return this.vehicles;
@@ -99,6 +109,7 @@ export const TUTORIAL_SETTINGS_KEY = 'tutorial';
 export const VEHICLE_SETTINGS_KEY = 'vehicles';
 export const ATMOSPHERE_SETTINGS_KEY = 'atmosphere';
 export const CITY_SETTINGS_KEY = 'city';
+export const REWARD_ICONS_KEY = 'reward_icons';
 
 /** What a match re-reads each round. */
 export function worldSettingsFrom(reader: SettingsReader): WorldSettings {
@@ -106,6 +117,7 @@ export function worldSettingsFrom(reader: SettingsReader): WorldSettings {
     heist: reader.heistSettings(),
     vehicles: reader.vehicleSettings(),
     atmosphere: reader.atmosphereSettings(),
+    rewardIcons: reader.rewardIcons(),
   };
 }
 
@@ -178,6 +190,10 @@ export class SqliteSettingsReader implements SettingsReader {
       atmosphereSettingsSchema,
       DEFAULT_ATMOSPHERE_SETTINGS,
     );
+  }
+
+  rewardIcons(): RewardIcons {
+    return this.stored(REWARD_ICONS_KEY, rewardIconsSchema, DEFAULT_REWARD_ICONS);
   }
 
   citySettings(): CitySettings {

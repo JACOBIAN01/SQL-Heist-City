@@ -19,6 +19,8 @@ import {
 import { useQuestions } from '../api/questions';
 import { useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { RewardIconsCard } from './RewardIconsCard';
+import { REWARD_LABELS } from './rewardLabels';
 import { SectionCard } from './SectionCard';
 
 type NumericKey = Exclude<keyof ChallengeSettings, 'hintCostMode'>;
@@ -35,18 +37,6 @@ const FIELDS: { key: NumericKey; label: string; unit: string }[] = [
   { key: 'exampleShownRows', label: 'Worked example: rows shown', unit: 'rows' },
 ];
 
-const REWARD_LABELS: Record<string, string> = {
-  'heal:small': 'Heal +20',
-  'heal:medium': 'Heal +50',
-  'heal:full': 'Full heal',
-  'ammo:refill': 'Ammo refill',
-  'gun:pistol': 'Pistol',
-  'gun:smg': 'SMG',
-  'gun:shotgun': 'Shotgun',
-  'gun:rifle': 'Rifle',
-  'gun:sniper': 'Sniper',
-};
-
 export function SettingsPage() {
   const isAdmin = useMe().data?.role === 'admin';
   return (
@@ -57,6 +47,7 @@ export function SettingsPage() {
         <ChallengeSettingsCard editable={isAdmin} />
         <RewardMapCard editable={isAdmin} />
       </div>
+      <RewardIconsCard editable={isAdmin} />
       <GunsCard editable={isAdmin} />
       <TutorialCard editable={isAdmin} />
       <SectionCard

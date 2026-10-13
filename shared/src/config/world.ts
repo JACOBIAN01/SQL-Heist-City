@@ -1,5 +1,6 @@
 import type { AtmosphereSettings } from './atmosphere';
 import type { HeistSettings } from './heist';
+import type { RewardIcons } from './rewardIcons';
 import type { VehicleSettings } from './vehicles';
 
 /**
@@ -11,4 +12,5 @@ export interface WorldSettings {
   readonly heist: HeistSettings;
   readonly vehicles: VehicleSettings;
   readonly atmosphere: AtmosphereSettings;
+  readonly rewardIcons: RewardIcons;
 }

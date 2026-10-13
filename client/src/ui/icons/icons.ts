@@ -1,3 +1,4 @@
+import { DEFAULT_REWARD_ICONS, iconIdFor } from '@heist/shared';
 import { h } from '../dom';
 import ammo from './svg/ammo.svg?raw';
 import cash from './svg/cash.svg?raw';
@@ -10,28 +11,38 @@ import shotgun from './svg/shotgun.svg?raw';
 import smg from './svg/smg.svg?raw';
 import sniper from './svg/sniper.svg?raw';
 import vault from './svg/vault.svg?raw';
+import lock from './svg/lock.svg?raw';
 
 /**
  * Icons are from game-icons.net (CC BY 3.0; credits in docs/credits.md), bundled
  * as inline SVG so they take the text colour (currentColor) and need no requests.
- * Which icon a reward gets is presentation only, like labels.ts.
+ * The admin chooses which one a reward shows (an id from this library, sent in
+ * the `world` message); until the server says, the defaults apply.
  */
-const ICONS: Readonly<Record<string, string>> = {
-  'heal:small': healSmall,
-  'heal:medium': healMedium,
-  'heal:full': healFull,
-  'ammo:refill': ammo,
-  'gun:pistol': pistol,
-  'gun:smg': smg,
-  'gun:shotgun': shotgun,
-  'gun:rifle': rifle,
-  'gun:sniper': sniper,
+const LIBRARY: Readonly<Record<string, string>> = {
+  ammo,
+  cash,
+  lock,
+  pistol,
+  rifle,
+  shotgun,
+  smg,
+  sniper,
+  vault,
+  'heal-full': healFull,
+  'heal-medium': healMedium,
+  'heal-small': healSmall,
 };
 
-/** Every vault lock shares one icon; unknown rewards fall back to cash. */
+let chosen: Readonly<Record<string, string>> = DEFAULT_REWARD_ICONS;
+
+/** Which picture each reward shows, as the server last said. */
+export function setRewardIcons(icons: Readonly<Record<string, string>>): void {
+  chosen = icons;
+}
+
 function svgFor(rewardKey: string): string {
-  if (rewardKey.startsWith('vault:')) return vault;
-  return ICONS[rewardKey] ?? cash;
+  return LIBRARY[iconIdFor(chosen, rewardKey)] ?? cash;
 }
 
 /**
