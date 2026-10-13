@@ -7,8 +7,11 @@ import {
   DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_CITY_SETTINGS,
   DEFAULT_HEIST_SETTINGS,
+  DEFAULT_NAME_RULES,
   DEFAULT_REWARD_ICONS,
   DEFAULT_VEHICLE_SETTINGS,
+  nameRulesSchema,
+  type NameRules,
   rewardIconsSchema,
   type RewardIcons,
   atmosphereSettingsSchema,
@@ -110,6 +113,7 @@ export const VEHICLE_SETTINGS_KEY = 'vehicles';
 export const ATMOSPHERE_SETTINGS_KEY = 'atmosphere';
 export const CITY_SETTINGS_KEY = 'city';
 export const REWARD_ICONS_KEY = 'reward_icons';
+export const NAME_RULES_KEY = 'names';
 
 /** What a match re-reads each round. */
 export function worldSettingsFrom(reader: SettingsReader): WorldSettings {
@@ -170,6 +174,7 @@ export const settingsParsers = {
     sectionFrom(raw, atmosphereSettingsSchema, DEFAULT_ATMOSPHERE_SETTINGS),
   cityFrom: (raw: unknown): CitySettings =>
     sectionFrom(raw, citySettingsSchema, DEFAULT_CITY_SETTINGS),
+  namesFrom: (raw: unknown): NameRules => sectionFrom(raw, nameRulesSchema, DEFAULT_NAME_RULES),
   rewardIconsFrom: (raw: unknown): RewardIcons =>
     sectionFrom(raw, rewardIconsSchema, DEFAULT_REWARD_ICONS),
 } as const;

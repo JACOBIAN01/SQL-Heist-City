@@ -24,6 +24,8 @@ export interface AuditRecord {
 export interface AuditLog {
   record(entry: AuditRecord): Promise<void>;
   list(query?: AuditQuery): Promise<AuditEntry[]>;
+  /** Blanks the detail of every entry about one entity (a deleted player's old names), keeping that it happened. */
+  scrubDetail(entity: string, entityId: string): Promise<void>;
 }
 
 export class SqliteAuditLog implements AuditLog {
@@ -42,6 +44,12 @@ export class SqliteAuditLog implements AuditLog {
         entry.entityId,
         entry.detail === null ? null : JSON.stringify(entry.detail),
       );
+  }
+
+  async scrubDetail(entity: string, entityId: string): Promise<void> {
+    this.db
+      .prepare('UPDATE audit_log SET detail_json = NULL WHERE entity = ? AND entity_id = ?')
+      .run(entity, entityId);
   }
 
   async list(query: AuditQuery = {}): Promise<AuditEntry[]> {
@@ -93,6 +101,13 @@ export class PgAuditLog implements AuditLog {
         entry.entityId,
         entry.detail === null ? null : JSON.stringify(entry.detail),
       ],
+    );
+  }
+
+  async scrubDetail(entity: string, entityId: string): Promise<void> {
+    await this.db.query(
+      'UPDATE audit_log SET detail_json = NULL WHERE entity = $1 AND entity_id = $2',
+      [entity, entityId],
     );
   }
 
@@ -182,6 +197,14 @@ function toRecord(event: AdminEvent): AuditRecord {
         action: event.action,
         entity: 'pool',
         entityId: String(event.poolId),
+        detail: event.detail,
+      };
+    case 'player_changed':
+      return {
+        ...actor,
+        action: event.action,
+        entity: 'player',
+        entityId: String(event.playerId),
         detail: event.detail,
       };
     case 'user_changed':

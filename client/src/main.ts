@@ -31,6 +31,7 @@ import { PredictedPlayer } from './game/PredictedPlayer';
 import { GameClient } from './net/GameClient';
 import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
 import { InputBatcher } from './net/InputBatcher';
+import { HttpAccountApi, accountBase } from './net/account';
 import { LiveWorld } from './net/liveWorld';
 import { setRewardIcons } from './ui/icons/icons';
 import { chooseGameUrl, tutorialUrl } from './net/lobby';
@@ -384,9 +385,16 @@ const feedback = new CombatFeedback({
 });
 // Connect only once everything that reacts to the server exists: the first messages (welcome, vault and
 // loot state) arrive right after joining and would be dropped if nobody were listening yet.
+// Signed in? The account service gives a one-use ticket; the server then takes the name from the account.
+const ticket = await new HttpAccountApi(
+  accountBase(location.hostname, params.get('account')),
+).ticket();
 let transport: GameTransport = new WebSocketGameTransport(gameUrl);
 if (lag > 0) transport = new DelayedTransport(transport, lag);
-const client = new GameClient(transport, { name: params.get('name') ?? 'Player' });
+const client = new GameClient(transport, {
+  name: params.get('name') ?? 'Player',
+  ...(ticket ? { ticket } : {}),
+});
 client.subscribe({
   welcome: (message) => {
     const next = followServerMap(MAP.id, message.mapId, location.search);
@@ -418,7 +426,11 @@ client.subscribe({
   closed: (reason) => {
     // The server said why (round under way, match full, out of date): show it and stay on screen.
     hint.hidden = false;
-    hint.textContent = `Disconnected: ${reason}. Reload the page to try again.`;
+    hint.textContent = `Disconnected: ${reason}. ${
+      /sign in|ticket/i.test(reason)
+        ? 'Open the menu (remove everything after the address) to sign in.'
+        : 'Reload the page to try again.'
+    }`;
   },
   json: (message) => {
     if (challengeApi.handle(message) || interactions.handle(message)) return;

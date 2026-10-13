@@ -1,5 +1,6 @@
-import { Router, type Request, type Response } from 'express';
+import express, { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
+import { NAME_REASONS, checkDisplayName, type NameRules } from '@heist/shared';
 import { issueTicket } from '@heist/server/auth/ticket';
 import type {
   Player,
@@ -9,6 +10,7 @@ import type {
 import { readCookie } from '../auth/middleware';
 import type { GoogleOidc } from './GoogleOidc';
 import { OidcError, type OidcFlow } from './GoogleOidc';
+import type { PersonalDataRegistry } from '@heist/server/players/PersonalData';
 import { readSigned, signValue } from './signedValue';
 
 export const PLAYER_COOKIE = 'heist_player';
@@ -29,6 +31,14 @@ export interface PlayerAuthOptions {
   readonly allowedDomains: readonly string[];
   readonly secureCookies: boolean;
   readonly sessionTtlMs: number;
+  /** Development only: `GET /auth/dev/login?name=…` signs in a test player with no Google. Never in production. */
+  readonly devLogin?: boolean;
+  /** Who holds personal data about a player (for export and deletion). */
+  readonly personalData: PersonalDataRegistry;
+  /** False when no Google client is configured (only the development sign-in then works). Default true. */
+  readonly googleEnabled?: boolean;
+  /** The display-name rules in force (the admin edits the word lists). */
+  readonly nameRules: () => Promise<NameRules>;
   readonly now?: () => number;
 }
 
@@ -69,6 +79,12 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
   router.use('/auth/ticket', corsFor(allowedOrigin));
 
   router.get('/auth/google/login', (req, res) => {
+    if (options.googleEnabled === false) {
+      res.status(503).json({
+        error: { code: 'not_configured', message: 'Google sign-in is not set up on this server' },
+      });
+      return;
+    }
     const target = returnSchema.safeParse(req.query.return);
     if (!target.success || !options.gameOrigins.includes(new URL(target.data).origin)) {
       res.status(400).json({ error: { code: 'bad_return', message: 'Unknown return address' } });
@@ -82,6 +98,38 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
     });
     res.redirect(302, url);
   });
+
+  if (options.devLogin) {
+    router.get('/auth/dev/login', async (req, res) => {
+      const target = returnSchema.safeParse(req.query.return);
+      const name = checkDisplayName(String(req.query.name ?? ''), {
+        ...(await options.nameRules()),
+        blocked: [],
+      });
+      if (
+        !target.success ||
+        !options.gameOrigins.includes(new URL(target.data).origin) ||
+        !name.ok
+      ) {
+        res
+          .status(400)
+          .json({ error: { code: 'bad_request', message: 'Need ?name= and ?return=' } });
+        return;
+      }
+      const player = await options.players.upsertFromGoogle(
+        {
+          sub: `dev:${name.name.toLowerCase()}`,
+          email: `${name.name.toLowerCase().replace(/[^a-z0-9]+/g, '.')}@dev.test`,
+          name: name.name,
+          domain: 'dev.test',
+        },
+        new Date(now()),
+      );
+      const token = await options.sessions.create(player.id);
+      res.cookie(PLAYER_COOKIE, token, { ...baseCookie, maxAge: options.sessionTtlMs });
+      res.redirect(302, target.data);
+    });
+  }
 
   router.get('/auth/google/callback', async (req, res) => {
     const flow = readSigned<FlowCookie>(
@@ -138,6 +186,56 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
       return;
     }
     res.json({ player: publicPlayer(player) });
+  });
+
+  router.patch('/auth/player/me', express.json(), async (req, res) => {
+    if (!fromGamePage(req, res)) return;
+    const player = await currentPlayer(req);
+    if (!player) {
+      res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
+      return;
+    }
+    const given = z.object({ displayName: z.string().max(100) }).safeParse(req.body);
+    const verdict = given.success
+      ? checkDisplayName(given.data.displayName, await options.nameRules())
+      : ({ ok: false, reason: 'characters' } as const);
+    if (!verdict.ok) {
+      res.status(400).json({
+        error: {
+          code: 'bad_name',
+          message: NAME_REASONS[verdict.reason] ?? 'That name is not allowed',
+        },
+      });
+      return;
+    }
+    const renamed = await options.players.rename(player.id, verdict.name);
+    res.json({ player: renamed && publicPlayer(renamed) });
+  });
+
+  router.get('/auth/player/export', async (req, res) => {
+    if (!fromGamePage(req, res)) return;
+    const player = await currentPlayer(req);
+    if (!player) {
+      res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
+      return;
+    }
+    res.setHeader('content-disposition', 'attachment; filename="my-heist-data.json"');
+    res.json({
+      exportedAt: new Date(now()).toISOString(),
+      data: await options.personalData.exportAll(player),
+    });
+  });
+
+  router.delete('/auth/player/me', async (req, res) => {
+    if (!fromGamePage(req, res)) return;
+    const player = await currentPlayer(req);
+    if (!player) {
+      res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
+      return;
+    }
+    await options.personalData.eraseAll(player);
+    res.clearCookie(PLAYER_COOKIE, baseCookie);
+    res.status(204).end();
   });
 
   router.post('/auth/player/logout', async (req, res) => {

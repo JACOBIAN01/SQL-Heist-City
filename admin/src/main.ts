@@ -16,16 +16,20 @@ const opened = await openStores(dbPath);
 // Google sign-in for players. Off until GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set (docs/identity.md).
 const production = process.env.NODE_ENV === 'production';
 const ticketSecret = process.env.TICKET_SECRET ?? (production ? undefined : 'dev-ticket-secret');
+const googleConfigured = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+const devLogin = process.env.DEV_LOGIN === '1' && !production;
 const playerAuth =
-  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && ticketSecret
+  (googleConfigured || devLogin) && ticketSecret
     ? {
         oidc: new GoogleOidc({
-          clientId: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          clientId: process.env.GOOGLE_CLIENT_ID ?? 'not-configured',
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? 'not-configured',
           redirectUri:
             process.env.GOOGLE_REDIRECT_URI ?? `http://localhost:${port}/auth/google/callback`,
           keys: createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs')),
         }),
+        googleEnabled: googleConfigured,
+        devLogin,
         ticketSecret,
         cookieSecret: process.env.COOKIE_SECRET ?? ticketSecret,
         gameOrigins: (process.env.GAME_ORIGINS ?? 'http://localhost:5173').split(','),

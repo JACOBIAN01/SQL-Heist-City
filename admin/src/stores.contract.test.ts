@@ -110,6 +110,12 @@ describe.each(implementations)('%s', (_name, make) => {
         'one',
       ]);
       expect((await audit.list({ entityId: 'one' })).length).toBe(1);
+      await audit.scrubDetail('settings', 'one');
+      expect((await audit.list({ entityId: 'one' }))[0]).toMatchObject({
+        action: 'update',
+        detail: null,
+      });
+      expect((await audit.list({ entityId: 'two' }))[0]?.detail).toEqual({ n: 'two' });
       const page = await audit.list({ before: all[0]?.id as number, limit: 1 });
       expect(page.map((e) => e.entityId)).toEqual(['two']);
     });

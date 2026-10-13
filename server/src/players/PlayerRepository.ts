@@ -28,6 +28,8 @@ export interface PlayerRepository {
   findById(id: number): Promise<Player | undefined>;
   findBySub(sub: string): Promise<Player | undefined>;
   rename(id: number, displayName: string): Promise<Player | undefined>;
+  /** Players whose name or email contains `q` (any case), newest first, for the staff page. */
+  search(q: string, limit?: number): Promise<Player[]>;
   /** Removes the player and everything keyed to them (13.10). */
   remove(id: number): Promise<boolean>;
 }
@@ -94,6 +96,15 @@ export class PgPlayerRepository implements PlayerRepository {
       [displayName, id],
     );
     return row && fromRow(row);
+  }
+
+  async search(q: string, limit = 50): Promise<Player[]> {
+    const like = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const rows = await this.db.query<PlayerRow>(
+      `SELECT * FROM players WHERE display_name ILIKE $1 OR email ILIKE $1 ORDER BY id DESC LIMIT $2`,
+      [like, Math.min(limit, 200)],
+    );
+    return rows.map(fromRow);
   }
 
   async remove(id: number): Promise<boolean> {
@@ -176,6 +187,17 @@ export class InMemoryPlayerRepository implements PlayerRepository {
     const next = { ...p, displayName };
     this.players.set(id, next);
     return next;
+  }
+
+  async search(q: string, limit = 50) {
+    const needle = q.toLowerCase();
+    return [...this.players.values()]
+      .filter(
+        (p) =>
+          p.displayName.toLowerCase().includes(needle) || p.email.toLowerCase().includes(needle),
+      )
+      .sort((a, b) => b.id - a.id)
+      .slice(0, Math.min(limit, 200));
   }
 
   async remove(id: number) {

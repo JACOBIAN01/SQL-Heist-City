@@ -29,8 +29,8 @@
 | 9 | Banks 2–5, weapons, UX | ✅ Done |
 | 10 | Polish: sound, SQL pop-up, tutorial | ✅ Done |
 | 11 | Bank design | ✅ Done |
-| 12 | Known gaps | ⬜ |
-| 13 | Identity and persistence (Google sign-in, PostgreSQL) | ⬜ |
+| 12 | Known gaps | ✅ |
+| 13 | Identity and persistence (Google sign-in, PostgreSQL) | ✅ |
 | 14 | Classroom mode | ⬜ |
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ⬜ |
 | 16 | Teaching loop | ⬜ |
@@ -272,7 +272,7 @@ Phases 12–36 come from the pre-launch audit and the user's feedback on it (Oct
 Phases 12–25 are **pre-launch**: they make the game safe to put in front of real classes and prove that it teaches. Phases 26–36 are **post-launch**: they take each GTA-style pillar to at least 8/10 and build the breakthrough features. Each phase still ends with an approval gate.
 
 ---
-## Phase 12 — Known gaps  ⬜
+## Phase 12 — Known gaps  ✅
 Items left over from Phases 7–9 (audit con 19).
 
 | # | Subphase | Done when | Status |
@@ -284,7 +284,7 @@ Items left over from Phases 7–9 (audit con 19).
 | 12.5 | Admin-editable reward icons (an `icon` field per reward plus a picker; the client map moves out of code) | changing an icon in the admin changes it in the game | ✅ `rewardIcons` settings (an id from the bundled library per reward, `vault` for all locks); an icon picker card; the client follows the `world` message (frontend.md "Reward icons") |
 
 ---
-## Phase 13 — Identity and persistence (Google sign-in, PostgreSQL)  ⬜
+## Phase 13 — Identity and persistence (Google sign-in, PostgreSQL)  ✅
 Fixes audit cons 1 and 3: who is playing, and records that last.
 
 | # | Subphase | Done when | Status |
@@ -295,10 +295,10 @@ Fixes audit cons 1 and 3: who is playing, and records that last.
 | 13.4 | Players table and repository (Google subject id, email, display name, school domain, created and last seen) | contract tests pass; no other personal data stored | ✅ `players` + `player_sessions` (migration 2), `PlayerRepository` with in-memory and PostgreSQL versions under one contract suite |
 | 13.5 | Google sign-in on the server: login, callback, ID-token check, optional allow-list of school domains, sessions | sign-in works end to end against a test Google project; a bad or expired token is refused | ✅ authorization code + PKCE + state + nonce, ID token verified with `jose`, school-domain allow-list, signed flow cookie, player session cookie; tested against a fake Google (real Google needs the OAuth client in docs/inputs-needed.md #1) |
 | 13.6 | Signed, short-lived game tickets: the game socket admits only a valid ticket, and the name comes from the account, not the URL | `?name=` is gone; a socket without a ticket is refused | ✅ join carries a signed one-use ticket (protocol 5); the name comes from the account; required in production, optional in development; one account = one player per match |
-| 13.7 | Client main menu and sign-in screen (sign in, profile, play, tutorial, settings) | a new player reaches a match only through the menu | ⬜ |
-| 13.8 | Display names: rules plus a word filter (configurable lists), teacher rename | an offensive name is refused; teachers can rename a student | ⬜ |
-| 13.9 | Local dev and test sign-in bypass (dev builds only, never in production) | bots, tests and `?at=` debugging keep working without Google | ⬜ |
-| 13.10 | Account deletion and data export for a player | deleting an account removes or anonymises every row that refers to it | ⬜ |
+| 13.7 | Client main menu and sign-in screen (sign in, profile, play, tutorial, settings) | a new player reaches a match only through the menu | ✅ `entry.ts` shows the menu on a bare address (sign in with Google, play, tutorial, change name, download data, delete account, sign out); any `?param` still goes straight to the game for developers; production requires a ticket so the menu is the only way in |
+| 13.8 | Display names: rules plus a word filter (configurable lists), teacher rename | an offensive name is refused; teachers can rename a student | ✅ `checkDisplayName` (length, characters, look-alike-proof word filter, allowed exceptions); word lists editable in Settings; players rename in the menu, staff rename from `/api/players` (audited) |
+| 13.9 | Local dev and test sign-in bypass (dev builds only, never in production) | bots, tests and `?at=` debugging keep working without Google | ✅ unsigned joins work unless the server requires tickets (always in production); `DEV_LOGIN=1` adds a made-up-player sign-in for testing the signed flow, refused in production |
+| 13.10 | Account deletion and data export for a player | deleting an account removes or anonymises every row that refers to it | ✅ `PersonalDataRegistry`: each store of player data registers an exporter and an eraser (account, audit trail today; attempts, profiles and rosters join in later phases); export and delete are in the menu |
 
 ---
 ## Phase 14 — Classroom mode  ⬜

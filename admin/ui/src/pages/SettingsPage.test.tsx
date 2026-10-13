@@ -7,6 +7,7 @@ import {
   DEFAULT_CITY_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_HEIST_SETTINGS,
+  DEFAULT_NAME_RULES,
   DEFAULT_REWARD_ICONS,
   DEFAULT_REWARD_TIERS,
   DEFAULT_VEHICLE_SETTINGS,
@@ -70,6 +71,10 @@ function api(user: typeof admin | typeof teacher) {
       },
     }),
     'PUT /config/rewardIcons': (b) => ({ body: b }),
+    'GET /config/names': () => ({
+      body: { names: { current: DEFAULT_NAME_RULES, defaults: DEFAULT_NAME_RULES } },
+    }),
+    'PUT /config/names': (b) => ({ body: b }),
     'PUT /config/vehicles': (b) => ({ body: b }),
     'PUT /config/city': (b) => ({ body: b }),
     'GET /questions': () => ({
@@ -187,6 +192,21 @@ describe('SettingsPage', () => {
     await screen.findByText('Saved ✓');
     const put = calls.find((c) => c.method === 'PUT' && c.path === '/config/rewardIcons');
     expect(put?.body).toEqual({ rewardIcons: { 'gun:smg': 'sniper' } });
+  });
+
+  it('admins edit the blocked words, one per line', async () => {
+    const calls = api(admin);
+    renderWithProviders(<SettingsPage />);
+    const user = userEvent.setup();
+    const box = await screen.findByLabelText('Blocked words');
+    await user.clear(box);
+    await user.type(box, 'banana{enter}split');
+    await user.click(screen.getByRole('button', { name: 'Save names' }));
+    await screen.findByText('Saved ✓');
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/config/names');
+    expect(put?.body).toEqual({
+      names: { blocked: ['banana', 'split'], allowed: DEFAULT_NAME_RULES.allowed },
+    });
   });
 
   it('teachers see values read-only', async () => {

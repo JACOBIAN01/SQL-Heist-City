@@ -19,6 +19,7 @@ import {
 import { useQuestions } from '../api/questions';
 import { useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { NameRulesCard } from './NameRulesCard';
 import { RewardIconsCard } from './RewardIconsCard';
 import { REWARD_LABELS } from './rewardLabels';
 import { SectionCard } from './SectionCard';
@@ -48,6 +49,7 @@ export function SettingsPage() {
         <RewardMapCard editable={isAdmin} />
       </div>
       <RewardIconsCard editable={isAdmin} />
+      <NameRulesCard editable={isAdmin} />
       <GunsCard editable={isAdmin} />
       <TutorialCard editable={isAdmin} />
       <SectionCard

@@ -282,6 +282,171 @@ describe('player sign-in with Google', () => {
   });
 });
 
+describe('display names', () => {
+  beforeEach(() => boot());
+  afterEach(async () => {
+    await h.close();
+    await google.close();
+  });
+  const asGame = (cookies: string) => ({
+    cookie: cookies,
+    origin: GAME,
+    'x-heist-player': '1',
+    'content-type': 'application/json',
+  });
+  const rename = (cookies: string, displayName: string) =>
+    fetch(`${base}/auth/player/me`, {
+      method: 'PATCH',
+      headers: asGame(cookies),
+      body: JSON.stringify({ displayName }),
+    });
+
+  it('lets a player pick a clean name, and refuses a rude or broken one', async () => {
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana Silva' };
+    const { cookies } = await signIn();
+    const ok = await rename(cookies, '  Agent   Ana ');
+    expect(((await ok.json()) as { player: { displayName: string } }).player.displayName).toBe(
+      'Agent Ana',
+    );
+    for (const bad of ['sh1t head', '<script>', 'A', 'x'.repeat(40)]) {
+      const res = await rename(cookies, bad);
+      expect(res.status, bad).toBe(400);
+    }
+    const me = await (
+      await fetch(`${base}/auth/player/me`, { headers: { cookie: cookies } })
+    ).json();
+    expect((me as { player: { displayName: string } }).player.displayName).toBe('Agent Ana');
+    expect(
+      (
+        await fetch(`${base}/auth/player/me`, {
+          method: 'PATCH',
+          headers: { ...asGame(cookies), origin: 'https://evil.test' },
+          body: '{}',
+        })
+      ).status,
+    ).toBe(403);
+  });
+
+  it('uses the word lists the admin sets', async () => {
+    await h.loginAs('admin@school.test', 'admin');
+    await h.client.put('/api/config/names', { names: { blocked: ['banana'] } });
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    expect((await rename(cookies, 'Banana Joe')).status).toBe(400);
+    expect((await rename(cookies, 'shit')).status).toBe(200); // not on this school's list any more
+  });
+
+  it('lets staff find a player and rename them, with an audit entry, still through the filter', async () => {
+    google.state.claims = { email: 'kid@school.edu', name: 'Kid One' };
+    const { cookies } = await signIn();
+    const me = (await (
+      await fetch(`${base}/auth/player/me`, { headers: { cookie: cookies } })
+    ).json()) as {
+      player: { id: number };
+    };
+    await h.loginAs('teacher@school.test', 'teacher');
+    const found = await h.client.get<{ players: { id: number; displayName: string }[] }>(
+      '/api/players?q=kid',
+    );
+    expect(found.body.players.map((p) => p.id)).toEqual([me.player.id]);
+    expect(
+      (await h.client.put(`/api/players/${me.player.id}`, { displayName: 'fuck' })).status,
+    ).toBe(400);
+    const ok = await h.client.put<{ player: { displayName: string } }>(
+      `/api/players/${me.player.id}`,
+      {
+        displayName: 'Kid Renamed',
+      },
+    );
+    expect(ok.body.player.displayName).toBe('Kid Renamed');
+    expect((await h.client.put('/api/players/9999', { displayName: 'Nobody' })).status).toBe(404);
+    await h.admin.settled();
+    h.client.clearCookie();
+    await h.loginAs('boss@school.test', 'admin');
+    const audit = await h.client.get<{ entries: { entity: string; detail: { to?: string } }[] }>(
+      '/api/audit?entity=player',
+    );
+    expect(audit.body.entries[0]).toMatchObject({
+      entity: 'player',
+      detail: { from: 'Kid One', to: 'Kid Renamed' },
+    });
+  });
+});
+
+describe('my data', () => {
+  beforeEach(() => boot());
+  afterEach(async () => {
+    await h.close();
+    await google.close();
+  });
+  const marked = (cookies: string) => ({ cookie: cookies, origin: GAME, 'x-heist-player': '1' });
+
+  it('hands a player their data, only to them and only from the game page', async () => {
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana Silva' };
+    const { cookies } = await signIn();
+    const res = await fetch(`${base}/auth/player/export`, { headers: marked(cookies) });
+    expect(res.headers.get('content-disposition')).toContain('attachment');
+    const body = (await res.json()) as {
+      data: { account: { email: string; googleSubject: string } };
+    };
+    expect(body.data.account).toMatchObject({
+      email: 'ana@school.edu',
+      googleSubject: 'google-sub-1',
+    });
+    expect(
+      (await fetch(`${base}/auth/player/export`, { headers: { cookie: cookies } })).status,
+    ).toBe(403);
+    expect(
+      (
+        await fetch(`${base}/auth/player/export`, {
+          headers: { origin: GAME, 'x-heist-player': '1' },
+        })
+      ).status,
+    ).toBe(401);
+  });
+
+  it('deletes the account: signed out, gone for good, old names scrubbed from the audit', async () => {
+    google.state.claims = { email: 'kid@school.edu', name: 'Kid Original' };
+    const { cookies } = await signIn();
+    const me = (await (
+      await fetch(`${base}/auth/player/me`, { headers: { cookie: cookies } })
+    ).json()) as {
+      player: { id: number };
+    };
+    await h.loginAs('teacher@school.test', 'teacher');
+    await h.client.put(`/api/players/${me.player.id}`, { displayName: 'Kid Renamed' });
+    await h.admin.settled();
+
+    const del = await fetch(`${base}/auth/player/me`, {
+      method: 'DELETE',
+      headers: marked(cookies),
+    });
+    expect(del.status).toBe(204);
+    expect((await fetch(`${base}/auth/player/me`, { headers: { cookie: cookies } })).status).toBe(
+      401,
+    );
+    expect((await h.client.get<{ players: unknown[] }>('/api/players?q=kid')).body.players).toEqual(
+      [],
+    );
+
+    h.client.clearCookie();
+    await h.loginAs('boss@school.test', 'admin');
+    const audit = await h.client.get<{
+      entries: { entity: string; action: string; detail: unknown }[];
+    }>('/api/audit?entity=player');
+    expect(audit.body.entries[0]).toMatchObject({ action: 'rename', detail: null });
+    // Signing in again starts a brand-new account.
+    const again = await signIn();
+    const me2 = (await (
+      await fetch(`${base}/auth/player/me`, { headers: { cookie: again.cookies } })
+    ).json()) as {
+      player: { id: number; displayName: string };
+    };
+    expect(me2.player.id).not.toBe(me.player.id);
+    expect(me2.player.displayName).toBe('Kid Original');
+  });
+});
+
 describe('player sign-in with a school allow-list', () => {
   beforeEach(() => boot(['school.edu']));
   afterEach(async () => {
@@ -299,5 +464,64 @@ describe('player sign-in with a school allow-list', () => {
     google.state.claims = { email: 'kid@school.edu', name: 'Kid' };
     const yes = await signIn();
     expect(yes.cookies).toContain('heist_player=');
+  });
+});
+
+describe('development sign-in', () => {
+  afterEach(async () => {
+    await h.close();
+    await google.close();
+  });
+
+  async function bootDev(devLogin: boolean) {
+    await boot();
+    await h.close();
+    h = await startAdmin({
+      playerAuth: {
+        oidc: new GoogleOidc({
+          clientId: 'x',
+          clientSecret: 'x',
+          redirectUri: 'http://x',
+          keys: google.keys,
+        }),
+        ticketSecret: TICKET_SECRET,
+        cookieSecret: 'cookie-secret-cookie-secret',
+        gameOrigins: [GAME],
+        allowedDomains: [],
+        devLogin,
+        googleEnabled: false,
+      },
+    });
+    base = `http://127.0.0.1:${h.client.port}`;
+  }
+  const dev = (name: string) =>
+    fetch(`${base}/auth/dev/login?name=${name}&return=${encodeURIComponent(`${GAME}/`)}`, {
+      redirect: 'manual',
+    });
+
+  it('signs in a made-up player when enabled, who then gets tickets like anyone', async () => {
+    await bootDev(true);
+    const res = await dev('Tester');
+    expect(res.status).toBe(302);
+    const cookies = cookieOf(res).join('; ');
+    const t = await fetch(`${base}/auth/ticket`, {
+      method: 'POST',
+      headers: { cookie: cookies, origin: GAME, 'x-heist-player': '1' },
+    });
+    expect(
+      verifyTicket(TICKET_SECRET, ((await t.json()) as { ticket: string }).ticket),
+    ).toMatchObject({
+      ok: true,
+      claims: { name: 'Tester' },
+    });
+  });
+
+  it('does not exist when disabled, and Google says so when it is not set up', async () => {
+    await bootDev(false);
+    expect((await dev('Tester')).status).toBe(404);
+    const g = await fetch(`${base}/auth/google/login?return=${encodeURIComponent(`${GAME}/`)}`, {
+      redirect: 'manual',
+    });
+    expect(g.status).toBe(503);
   });
 });

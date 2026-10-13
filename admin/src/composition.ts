@@ -18,6 +18,9 @@ import { SandboxTemplateValidator } from './questions/TemplateValidator';
 import { QuestionImportService } from './questions/io/QuestionImportService';
 import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
+import { PersonalDataRegistry, accountSource } from '@heist/server/players/PersonalData';
+import { playerStaffRoutes } from './players/staffRoutes';
+import { NAME_RULES_KEY, settingsParsers } from '@heist/server/config/SettingsReader';
 import { playerRoutes, type PlayerAuthOptions } from './players/playerRoutes';
 import { poolRoutes } from './pools/routes';
 import { ReloadNotifier } from './reload/ReloadNotifier';
@@ -34,7 +37,13 @@ export interface AdminConfig {
   /** Google sign-in for players; without it the player routes are not mounted. */
   readonly playerAuth?: Pick<
     PlayerAuthOptions,
-    'oidc' | 'ticketSecret' | 'cookieSecret' | 'gameOrigins' | 'allowedDomains'
+    | 'oidc'
+    | 'ticketSecret'
+    | 'cookieSecret'
+    | 'gameOrigins'
+    | 'allowedDomains'
+    | 'devLogin'
+    | 'googleEnabled'
   >;
   /** When set, admin changes trigger a cache reload on the game server. */
   readonly gameServer?: { readonly url: string; readonly secret: string };
@@ -96,6 +105,21 @@ export function buildAdmin(
   const io = new QuestionImportService(questions, validator);
   const settings = new SettingsService(stores.settings, events);
 
+  // Everything that keeps data about a player registers here, so export and deletion stay complete.
+  const playerSessions = stores.playerSessions(config.sessionTtlMs, now);
+  const personalData = new PersonalDataRegistry()
+    .register({
+      name: 'auditTrail',
+      export: async () => ({
+        note: 'Staff actions about your account (renames) are kept without names.',
+      }),
+      erase: async (p) => stores.audit.scrubDetail('player', String(p.id)),
+    })
+    // The account goes last: a failure above leaves an account that can try again.
+    .register(accountSource(stores.players, playerSessions));
+  const nameRules = async () =>
+    settingsParsers.namesFrom(await stores.settings.get(NAME_RULES_KEY));
+
   const app = createAdminApp({
     logger,
     ...(config.playerAuth
@@ -104,7 +128,9 @@ export function buildAdmin(
             playerRoutes({
               ...config.playerAuth,
               players: stores.players,
-              sessions: stores.playerSessions(config.sessionTtlMs, now),
+              nameRules: nameRules,
+              personalData,
+              sessions: playerSessions,
               secureCookies: config.secureCookies,
               sessionTtlMs: config.sessionTtlMs,
               now,
@@ -121,6 +147,7 @@ export function buildAdmin(
       auditRoutes(audit),
       configRoutes(settings),
       poolRoutes(stores.pools, events),
+      playerStaffRoutes(stores.players, nameRules, events),
     ],
   });
   return {
