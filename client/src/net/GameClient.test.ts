@@ -44,7 +44,9 @@ describe('GameClient', () => {
   it('joins when the socket opens and plays after the welcome', () => {
     expect(client.status).toBe('connecting');
     transport.open();
-    expect(transport.of('join')).toEqual([{ t: 'join', protocol: PROTOCOL_VERSION, name: 'Ana' }]);
+    expect(transport.of('join')).toEqual([
+      { t: 'join', protocol: PROTOCOL_VERSION, name: 'Ana', ticket: '' },
+    ]);
     expect(client.status).toBe('joining');
     transport.receive(welcome);
     expect(client.status).toBe('playing');

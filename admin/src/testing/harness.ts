@@ -3,7 +3,7 @@ import { openDatabase } from '@heist/server/db/database';
 import { ScryptPasswordHasher } from '../auth/PasswordHasher';
 import { InProcessSandboxRunner } from '@heist/server/sql/SandboxRunner';
 import type { PgDatabase } from '@heist/server/pg/PgDatabase';
-import { buildAdmin } from '../composition';
+import { buildAdmin, type AdminConfig } from '../composition';
 import { pgStores, sqliteStores } from '../stores';
 import { startTestServer } from './http';
 
@@ -16,6 +16,7 @@ export async function startAdmin(
     gameServer?: { url: string; secret: string };
     /** Run on PostgreSQL (a migrated test schema) instead of in-memory SQLite. */
     pg?: PgDatabase;
+    playerAuth?: AdminConfig['playerAuth'];
   } = {},
 ) {
   const db = openDatabase({ path: ':memory:' });
@@ -26,6 +27,7 @@ export async function startAdmin(
       secureCookies: false,
       sessionTtlMs: 60 * 60 * 1000,
       ...(options.gameServer ? { gameServer: options.gameServer } : {}),
+      ...(options.playerAuth ? { playerAuth: options.playerAuth } : {}),
     },
     { error: (m, meta) => errors.push(`${m} ${JSON.stringify(meta)}`) },
     {

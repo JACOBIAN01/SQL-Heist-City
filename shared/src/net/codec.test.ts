@@ -31,8 +31,15 @@ const command = (seq: number, over = {}) => ({
 
 describe('client messages', () => {
   it('round-trips join', () => {
-    const m = { t: 'join', protocol: 1, name: 'Zoë' } as const;
+    const m = { t: 'join', protocol: 1, name: 'Zoë', ticket: '' } as const;
     expect(decodeClientMessage(encodeClientMessage(m))).toEqual(m);
+  });
+
+  it('round-trips a join with a ticket, and refuses one that is too long', () => {
+    const ticket = `${'a'.repeat(150)}.${'b'.repeat(43)}`;
+    const m = { t: 'join', protocol: 5, name: 'Ana', ticket } as const;
+    expect(decodeClientMessage(encodeClientMessage(m))).toEqual(m);
+    expect(() => encodeClientMessage({ ...m, ticket: 'x'.repeat(300) })).toThrow('ticket too long');
   });
 
   it('round-trips input commands, quantising angles and lag', () => {
@@ -76,9 +83,9 @@ describe('client messages', () => {
   });
 
   it('rejects an over-long name', () => {
-    expect(() => encodeClientMessage({ t: 'join', protocol: 1, name: 'x'.repeat(30) })).toThrow(
-      CodecError,
-    );
+    expect(() =>
+      encodeClientMessage({ t: 'join', protocol: 1, name: 'x'.repeat(30), ticket: '' }),
+    ).toThrow(CodecError);
   });
 
   it('treats −128 sticks as −127', () => {

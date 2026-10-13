@@ -198,7 +198,9 @@ describe('tutorial socket', () => {
       ws.on('open', () => resolve());
       ws.on('error', reject);
     });
-    ws.send(encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: 'Newbie' }));
+    ws.send(
+      encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: 'Newbie', ticket: '' }),
+    );
     const until = async (ok: () => boolean) => {
       for (let i = 0; i < 100 && !ok(); i++) await new Promise((r) => setTimeout(r, 20));
     };

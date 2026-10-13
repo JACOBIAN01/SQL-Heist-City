@@ -16,6 +16,8 @@ export interface MatchExtras {
   readonly heist?: HeistSettings;
   /** Question database (opened read-only inside the thread) so the match can serve SQL tasks. */
   readonly dbPath?: string;
+  readonly ticketSecret?: string;
+  readonly requireTicket?: boolean;
 }
 
 export interface MatchInfo {
@@ -72,6 +74,8 @@ export class MatchPool {
       ...(map ? { map } : {}),
       ...(extras.heist ? { heist: extras.heist } : {}),
       ...(extras.dbPath ? { dbPath: extras.dbPath } : {}),
+      ...(extras.ticketSecret ? { ticketSecret: extras.ticketSecret } : {}),
+      ...(extras.requireTicket ? { requireTicket: true } : {}),
     };
     const worker = new Worker(workerUrl, { execArgv: workerExecArgv, workerData: data });
     return new Promise((resolve, reject) => {

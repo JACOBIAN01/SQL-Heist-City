@@ -5,6 +5,14 @@ import type { PgDatabase } from '@heist/server/pg/PgDatabase';
 import { PgQuestionStore } from '@heist/server/questions/PgQuestionStore';
 import { SqliteQuestionRepository } from '@heist/server/questions/SqliteQuestionRepository';
 import { SyncQuestionStore, type QuestionStore } from '@heist/server/questions/QuestionStore';
+import {
+  InMemoryPlayerRepository,
+  InMemoryPlayerSessions,
+  PgPlayerRepository,
+  PgPlayerSessions,
+  type PlayerRepository,
+  type PlayerSessions,
+} from '@heist/server/players/PlayerRepository';
 import { PgAuditLog, SqliteAuditLog, type AuditLog } from './audit/AuditLog';
 import { PgSessionStore, SqliteSessionStore, type SessionStore } from './auth/SessionStore';
 import { PgUserRepository, SqliteUserRepository, type UserRepository } from './auth/UserRepository';
@@ -27,6 +35,9 @@ export interface AdminStores {
   readonly audit: AuditLog;
   readonly pools: PoolRepository;
   readonly settings: SettingsStore;
+  /** Players who sign in with Google. SQLite development keeps them in memory only. */
+  readonly players: PlayerRepository;
+  playerSessions(ttlMs: number, now: () => number): PlayerSessions;
   sessions(ttlMs: number, now: () => number): SessionStore;
 }
 
@@ -37,6 +48,8 @@ export function sqliteStores(db: DatabaseSync): AdminStores {
     audit: new SqliteAuditLog(db),
     pools: new SqlitePoolRepository(db),
     settings: new SqliteSettingsStore(db),
+    players: new InMemoryPlayerRepository(),
+    playerSessions: (ttl, now) => new InMemoryPlayerSessions(ttl, now),
     sessions: (ttl, now) => new SqliteSessionStore(db, ttl, now),
   };
 }
@@ -48,6 +61,8 @@ export function pgStores(db: PgDatabase): AdminStores {
     audit: new PgAuditLog(db),
     pools: new PgPoolRepository(db),
     settings: new PgSettingsStore(db),
+    players: new PgPlayerRepository(db),
+    playerSessions: (ttl, now) => new PgPlayerSessions(db, ttl, now),
     sessions: (ttl, now) => new PgSessionStore(db, ttl, now),
   };
 }

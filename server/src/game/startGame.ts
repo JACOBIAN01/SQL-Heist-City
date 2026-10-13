@@ -10,6 +10,7 @@ import {
 } from '@heist/shared';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import { GameLoop } from './GameLoop';
+import type { GameAuth } from './GameAuth';
 import { attachGameSocket, type GameSocket } from './GameSocket';
 import { Match } from './Match';
 import { RateMeter } from './RateMeter';
@@ -44,6 +45,8 @@ export interface GameOptions {
   readonly challenges?: ChallengeGateway;
   /** Heist, car and sky settings, read at the start and again at each new round (admin edits apply then). */
   readonly world?: () => WorldSettings;
+  /** Who may join (signed tickets). None: anyone, under any name. */
+  readonly auth?: GameAuth;
 }
 
 /** Wires one match to the HTTP server and starts ticking. Composition only, no rules. */
@@ -65,7 +68,11 @@ export function startGame(
     .slice(0, settings.sandboxDummies)
     .forEach((spot, i) => match.addDummy(`Dummy ${i + 1}`, spot));
   const loop = new GameLoop(1000 / settings.tickRate, () => match.step());
-  const socket: GameSocket = attachGameSocket(http, match);
+  const socket: GameSocket = attachGameSocket(
+    http,
+    match,
+    options.auth ? { auth: options.auth } : {},
+  );
   const bytes = new RateMeter();
   const snapshots = new RateMeter();
   const sampler = setInterval(() => {

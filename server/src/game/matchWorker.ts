@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs';
 import { buildChallengeStack } from '../composition';
 import { openDatabase } from '../db/database';
 import { mapByName, type MapName } from './maps';
+import { ticketAuth } from './GameAuth';
 import { startGame } from './startGame';
 
 /** What the pool hands each worker at startup. */
@@ -18,6 +19,9 @@ export interface MatchWorkerData {
   readonly heist?: HeistSettings;
   /** Question database; the thread opens it read-only and serves SQL tasks from it. */
   readonly dbPath?: string;
+  /** Sign-in: tickets signed with this secret (set by the pool; workers cannot be handed objects). */
+  readonly ticketSecret?: string;
+  readonly requireTicket?: boolean;
 }
 
 /** Messages worker → pool. */
@@ -47,6 +51,9 @@ const stack =
 const heist = data.heist ?? stack?.heistSettings();
 const game = startGame(http, data.settings, mapByName(data.map), {
   ...(heist ? { heist } : {}),
+  ...(data.ticketSecret
+    ? { auth: ticketAuth(data.ticketSecret, data.requireTicket ?? false) }
+    : {}),
   ...(stack
     ? {
         combat: () => stack.combatSettings(),

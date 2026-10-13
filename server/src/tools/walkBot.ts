@@ -24,7 +24,14 @@ for (let n = 0; n < count; n++) {
   let seq = 0;
   let tick = 0;
   ws.on('open', () =>
-    ws.send(encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: `Bot ${n + 1}` })),
+    ws.send(
+      encodeClientMessage({
+        t: 'join',
+        protocol: PROTOCOL_VERSION,
+        name: `Bot ${n + 1}`,
+        ticket: '',
+      }),
+    ),
   );
   ws.on('message', (data: Buffer) => {
     if (!decodeServerMessages(new Uint8Array(data), snapshots).some((m) => m.t === 'welcome'))

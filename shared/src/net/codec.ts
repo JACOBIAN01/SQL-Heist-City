@@ -13,6 +13,7 @@ import {
   MAX_COMMANDS_PER_MESSAGE,
   MAX_JSON_BYTES,
   MAX_NAME_LENGTH,
+  MAX_TICKET_LENGTH,
   type ClientMessage,
   type GameEvent,
   type HitKind,
@@ -53,10 +54,14 @@ export function encodeClientMessage(message: ClientMessage): Uint8Array {
       if (utf8.encode(message.name).length > MAX_NAME_LENGTH) {
         throw new CodecError('name too long');
       }
-      return new Writer(2 + stringBytes(message.name))
+      if (utf8.encode(message.ticket).length > MAX_TICKET_LENGTH) {
+        throw new CodecError('ticket too long');
+      }
+      return new Writer(2 + stringBytes(message.name) + stringBytes(message.ticket))
         .u8(ClientType.Join)
         .u8(message.protocol)
-        .string(message.name).bytes;
+        .string(message.name)
+        .string(message.ticket).bytes;
     }
     case 'input': {
       const count = message.commands.length;
@@ -98,8 +103,9 @@ export function decodeClientMessage(bytes: Uint8Array): ClientMessage {
     case ClientType.Join: {
       const protocol = r.u8();
       const name = r.string(MAX_NAME_LENGTH);
+      const ticket = r.string(MAX_TICKET_LENGTH);
       r.end();
-      return { t: 'join', protocol, name };
+      return { t: 'join', protocol, name, ticket };
     }
     case ClientType.Input: {
       const count = r.u8();

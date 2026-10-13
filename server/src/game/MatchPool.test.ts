@@ -28,7 +28,7 @@ function join(port: number) {
   const messages: ServerMessage[] = [];
   const decoder = new SnapshotDecoder();
   ws.on('open', () =>
-    ws.send(encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: 'T' })),
+    ws.send(encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: 'T', ticket: '' })),
   );
   ws.on('message', (data: Buffer) =>
     messages.push(...decodeServerMessages(new Uint8Array(data), decoder)),

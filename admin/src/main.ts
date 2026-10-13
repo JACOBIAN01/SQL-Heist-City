@@ -1,6 +1,8 @@
 import { fileURLToPath } from 'node:url';
 import { openStores } from './openStores';
+import { createRemoteJWKSet } from 'jose';
 import { buildAdmin } from './composition';
+import { GoogleOidc } from './players/GoogleOidc';
 
 // Entry point: reads the environment, then delegates wiring to buildAdmin().
 const port = Number(process.env.PORT ?? 8081);
@@ -10,12 +12,37 @@ const logger = {
 };
 
 const opened = await openStores(dbPath);
+
+// Google sign-in for players. Off until GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set (docs/identity.md).
+const production = process.env.NODE_ENV === 'production';
+const ticketSecret = process.env.TICKET_SECRET ?? (production ? undefined : 'dev-ticket-secret');
+const playerAuth =
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && ticketSecret
+    ? {
+        oidc: new GoogleOidc({
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          redirectUri:
+            process.env.GOOGLE_REDIRECT_URI ?? `http://localhost:${port}/auth/google/callback`,
+          keys: createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs')),
+        }),
+        ticketSecret,
+        cookieSecret: process.env.COOKIE_SECRET ?? ticketSecret,
+        gameOrigins: (process.env.GAME_ORIGINS ?? 'http://localhost:5173').split(','),
+        allowedDomains: (process.env.ALLOWED_EMAIL_DOMAINS ?? '')
+          .split(',')
+          .map((d) => d.trim().toLowerCase())
+          .filter(Boolean),
+      }
+    : undefined;
+if (production && !ticketSecret) console.warn('TICKET_SECRET is not set: player sign-in is off.');
 const admin = buildAdmin(
   opened.stores,
   {
     secureCookies: process.env.NODE_ENV === 'production',
     sessionTtlMs: 12 * 60 * 60 * 1000,
     uiDistDir: fileURLToPath(new URL('../ui/dist', import.meta.url)),
+    ...(playerAuth ? { playerAuth } : {}),
     ...(process.env.INTERNAL_SECRET
       ? {
           gameServer: {

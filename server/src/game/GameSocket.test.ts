@@ -65,7 +65,7 @@ async function connect() {
     throw new Error('timed out waiting for message');
   };
   const join = (name = 'Ana', protocol = PROTOCOL_VERSION) =>
-    ws.send(encodeClientMessage({ t: 'join', protocol, name }));
+    ws.send(encodeClientMessage({ t: 'join', protocol, name, ticket: '' }));
   return { ws, messages, closed, waitFor, join };
 }
 

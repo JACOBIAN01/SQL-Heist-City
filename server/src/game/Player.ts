@@ -61,6 +61,8 @@ export class Player {
   vehicleId = 0;
   /** Cars this client has been told about (so cars leaving its range can be removed). */
   readonly knownVehicles = new Set<number>();
+  /** The signed-in account behind this player; none for bots, dummies and unsigned development play. */
+  accountId: number | undefined;
   /** Earliest tick this player may use an anchor again. */
   interactReadyTick = 0;
   /** Cash on the player: dropped as a bag on death, banked at a safehouse. */

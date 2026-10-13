@@ -58,7 +58,12 @@ export async function runSocketBots(options: SocketBotOptions): Promise<SocketBo
       const snapshotState = new SnapshotDecoder();
       ws.on('open', () =>
         ws.send(
-          encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: `bot-${index}` }),
+          encodeClientMessage({
+            t: 'join',
+            protocol: PROTOCOL_VERSION,
+            name: `bot-${index}`,
+            ticket: '',
+          }),
         ),
       );
       ws.on('message', (data: Buffer) => {

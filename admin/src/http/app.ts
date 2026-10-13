@@ -8,6 +8,8 @@ export interface AdminAppDeps {
   readonly logger: ErrorLogger;
   /** Runs before every /api route (session, CSRF guard). */
   readonly apiMiddleware?: readonly RequestHandler[];
+  /** Routers mounted at the root, outside /api's session and CSRF guard (player sign-in). */
+  readonly root?: readonly Router[];
   /** Feature routers mounted under /api (auth, questions, …), built in main.ts. */
   readonly api?: readonly Router[];
   /** Built React UI to serve; skipped when the folder doesn't exist (in dev, Vite serves it). */
@@ -27,6 +29,8 @@ export function createAdminApp(deps: AdminAppDeps): Express {
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'admin', protocolVersion: PROTOCOL_VERSION });
   });
+
+  for (const router of deps.root ?? []) app.use(router);
 
   const api = express.Router();
   for (const middleware of deps.apiMiddleware ?? []) api.use(middleware);

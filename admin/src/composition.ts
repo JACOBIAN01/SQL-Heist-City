@@ -18,6 +18,7 @@ import { SandboxTemplateValidator } from './questions/TemplateValidator';
 import { QuestionImportService } from './questions/io/QuestionImportService';
 import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
+import { playerRoutes, type PlayerAuthOptions } from './players/playerRoutes';
 import { poolRoutes } from './pools/routes';
 import { ReloadNotifier } from './reload/ReloadNotifier';
 import { Grader } from '@heist/server/sql/Grader';
@@ -30,6 +31,11 @@ export interface AdminConfig {
   readonly secureCookies: boolean;
   readonly sessionTtlMs: number;
   readonly uiDistDir?: string;
+  /** Google sign-in for players; without it the player routes are not mounted. */
+  readonly playerAuth?: Pick<
+    PlayerAuthOptions,
+    'oidc' | 'ticketSecret' | 'cookieSecret' | 'gameOrigins' | 'allowedDomains'
+  >;
   /** When set, admin changes trigger a cache reload on the game server. */
   readonly gameServer?: { readonly url: string; readonly secret: string };
 }
@@ -92,6 +98,20 @@ export function buildAdmin(
 
   const app = createAdminApp({
     logger,
+    ...(config.playerAuth
+      ? {
+          root: [
+            playerRoutes({
+              ...config.playerAuth,
+              players: stores.players,
+              sessions: stores.playerSessions(config.sessionTtlMs, now),
+              secureCookies: config.secureCookies,
+              sessionTtlMs: config.sessionTtlMs,
+              now,
+            }),
+          ],
+        }
+      : {}),
     ...(config.uiDistDir === undefined ? {} : { uiDistDir: config.uiDistDir }),
     apiMiddleware: [csrfGuard, session(auth)],
     api: [

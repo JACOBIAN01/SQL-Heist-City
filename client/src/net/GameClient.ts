@@ -28,6 +28,8 @@ export interface GameClientListener {
 
 export interface GameClientOptions {
   readonly name: string;
+  /** The signed game ticket from the account service (empty: play unsigned, development only). */
+  readonly ticket?: string;
   readonly now?: () => number;
   readonly pingIntervalMs?: number;
 }
@@ -85,7 +87,12 @@ export class GameClient {
   private handleOpen(): void {
     this.status = 'joining';
     this.transport.send(
-      encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name: this.options.name }),
+      encodeClientMessage({
+        t: 'join',
+        protocol: PROTOCOL_VERSION,
+        name: this.options.name,
+        ticket: this.options.ticket ?? '',
+      }),
     );
   }
 

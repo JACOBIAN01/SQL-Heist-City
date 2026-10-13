@@ -7,6 +7,7 @@ import { PgDatabase } from './pg/PgDatabase';
 import { syncContent } from './pg/ContentSnapshot';
 import { migratePg } from './pg/migrate';
 import { DEFAULT_MATCH_SETTINGS, cityMapIdFor } from '@heist/shared';
+import { ticketAuth } from './game/GameAuth';
 import { MatchPool } from './game/MatchPool';
 import { mapByName, parseMapName, type MapName } from './game/maps';
 import { startGame, type RunningGame } from './game/startGame';
@@ -66,6 +67,13 @@ const lobby = () => {
   const only = { id: 0, port, players, maxPlayers: max };
   return { matches: [only], open: players < max ? only : undefined };
 };
+// Sign-in: tickets signed with TICKET_SECRET (the same secret the account service uses). In
+// production a ticket is required; in development an unsigned join with a typed name still works.
+const production = process.env.NODE_ENV === 'production';
+const ticketSecret = process.env.TICKET_SECRET ?? (production ? undefined : 'dev-ticket-secret');
+const requireTicket = production || process.env.REQUIRE_TICKET === '1';
+if (production && !ticketSecret) throw new Error('TICKET_SECRET is required in production');
+const auth = ticketSecret ? ticketAuth(ticketSecret, requireTicket) : undefined;
 const server = createHttpServer({
   lobby,
   metrics: () => (running.pool ? running.pool.metrics() : (running.game?.metrics() ?? {})),
@@ -82,13 +90,17 @@ const server = createHttpServer({
 if (challenges) {
   attachChallengeSocket(server, challenges.handler);
   // The tutorial: a private room per player, always on this port (it needs the questions).
-  attachTutorialSocket(server, {
-    settings: () => challenges.tutorialSettings(),
-    match: matchSettings,
-    heist: challenges.heistSettings(),
-    combat: () => challenges.combatSettings(),
-    challenges: challenges.handler,
-  });
+  attachTutorialSocket(
+    server,
+    {
+      settings: () => challenges.tutorialSettings(),
+      match: matchSettings,
+      heist: challenges.heistSettings(),
+      combat: () => challenges.combatSettings(),
+      challenges: challenges.handler,
+    },
+    auth ? { auth } : {},
+  );
 }
 // MATCH_WORKERS=N runs N matches, each in its own thread on its own port (the lobby tells
 // clients where); 0 (default) runs one match in this process.
@@ -98,6 +110,7 @@ if (workers > 0) {
   for (let i = 0; i < workers; i++) {
     const info = await running.pool.start(matchSettings, 0, mapName, {
       ...(challenges ? { heist: challenges.heistSettings(), dbPath } : {}),
+      ...(ticketSecret ? { ticketSecret, requireTicket } : {}),
     });
     console.log(`match ${info.id} listening on ws://localhost:${info.port}/ws/game`);
   }
@@ -111,6 +124,7 @@ if (workers > 0) {
           challenges: challenges.handler,
         }
       : {}),
+    ...(auth ? { auth } : {}),
   });
 }
 

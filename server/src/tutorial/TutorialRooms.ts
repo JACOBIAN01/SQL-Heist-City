@@ -13,6 +13,7 @@ import {
 import type { IssueOptions } from '../challenges/ChallengeService';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import { GameLoop } from '../game/GameLoop';
+import type { GameAuth } from '../game/GameAuth';
 import { serveGameConnection } from '../game/GameSocket';
 import { CLOSE_FULL, CLOSE_ROUND, Match } from '../game/Match';
 import { upgradeRouterFor } from '../net/UpgradeRouter';
@@ -112,7 +113,11 @@ export interface TutorialSocket {
 export function attachTutorialSocket(
   http: Server,
   deps: TutorialDeps,
-  options: { readonly path?: string; readonly joinTimeoutMs?: number } = {},
+  options: {
+    readonly path?: string;
+    readonly joinTimeoutMs?: number;
+    readonly auth?: GameAuth;
+  } = {},
 ): TutorialSocket {
   const wss = new WebSocketServer({ noServer: true, maxPayload: MAX_JSON_BYTES + 16 });
   upgradeRouterFor(http).route(options.path ?? '/ws/tutorial', wss);
@@ -133,6 +138,7 @@ export function attachTutorialSocket(
     );
     serveGameConnection(room.match, {
       ...(options.joinTimeoutMs !== undefined ? { joinTimeoutMs: options.joinTimeoutMs } : {}),
+      ...(options.auth ? { auth: options.auth } : {}),
     })(socket, {
       onJoined: (player) => room.coach.onJoin(player),
       onClosed: () => {

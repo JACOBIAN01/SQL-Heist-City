@@ -8,7 +8,8 @@ import {
 } from '@heist/shared';
 import { TokenBucket } from '../net/TokenBucket';
 import { upgradeRouterFor } from '../net/UpgradeRouter';
-import type { Match } from './Match';
+import type { GameAuth } from './GameAuth';
+import { CLOSE_SIGN_IN, type Match } from './Match';
 import type { Player, PlayerConnection } from './Player';
 
 export interface GameSocketOptions {
@@ -19,6 +20,8 @@ export interface GameSocketOptions {
   readonly messagesPerSecond?: number;
   /** A client that does not send `join` within this many ms is dropped. */
   readonly joinTimeoutMs?: number;
+  /** Who may join: signed tickets. Without it anyone may, under any name (tests, bots). */
+  readonly auth?: GameAuth;
   /** Unsent bytes allowed to queue for one client before it is dropped as too slow. */
   readonly maxBufferedBytes?: number;
 }
@@ -118,7 +121,18 @@ export function serveGameConnection(
           socket.close(CLOSE_BAD_MESSAGE, 'Join first');
           return;
         }
-        const result = match.join(message.protocol, message.name, connection);
+        const verdict = options.auth?.admit(message.ticket) ?? { ok: true as const };
+        if (!verdict.ok) {
+          socket.close(CLOSE_SIGN_IN, verdict.reason);
+          return;
+        }
+        // The account decides the name; a typed one is only for play without sign-in.
+        const result = match.join(
+          message.protocol,
+          verdict.identity?.name ?? message.name,
+          connection,
+          verdict.identity?.playerId,
+        );
         if (!result.ok) {
           socket.close(result.code, result.reason);
           return;

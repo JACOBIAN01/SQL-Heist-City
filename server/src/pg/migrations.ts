@@ -97,4 +97,25 @@ export const pgMigrations: readonly string[] = [
     PRIMARY KEY (pool_id, question_id)
   );
   `,
+  // 2 — players: who signs in with Google (Phase 13.4). No other personal data is stored.
+  `
+  CREATE TABLE players (
+    id             BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    google_sub     TEXT        NOT NULL UNIQUE,
+    email          TEXT        NOT NULL,
+    display_name   TEXT        NOT NULL,
+    school_domain  TEXT,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_seen_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX players_email_lower ON players (lower(email));
+
+  CREATE TABLE player_sessions (
+    token_hash TEXT        PRIMARY KEY,
+    player_id  BIGINT      NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    expires_at BIGINT      NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX player_sessions_player ON player_sessions (player_id);
+  `,
 ];

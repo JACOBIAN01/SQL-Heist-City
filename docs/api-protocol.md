@@ -125,3 +125,9 @@ The SQL pop-up uses the same challenge messages as before, now over `json` frame
 - `round { phase: 'playing', endsInSec }` / `{ phase: 'ended', nextInSec, winner, standings }` (server → client): the round clock (the client counts down locally) and the final standings (top 10, `winner` is null if nobody banked) and `awards: [{id, playerId, name, value}]` (only awards somebody earned; ids and wording in `shared/src/config/awards.ts`). Sent on join, when overtime starts, at the end and at the start of the next round.
 - `scores { top: [{id,name,banked,kills}], players }` (broadcast every `scoreboardEverySec`) and `standing { rank, players }` (per player, only when their rank or the player count changed).
 - Joining after the join window of a round closes the socket with code 4003 ("This round is under way"); between rounds joining is open. The sandbox map has no rounds.
+
+## Sign-in and the join ticket (13.5, 13.6)
+- `join` (client → server) is now `protocol, name, ticket` (protocol 5). `ticket` is empty when playing without sign-in (development, bots).
+- **Account service** (the admin server): `GET /auth/google/login?return=<game url>` → Google; `GET /auth/google/callback` (code, state) sets the `heist_player` session cookie and returns to the game; `GET /auth/player/me`; `POST /auth/player/logout`; `POST /auth/ticket` → `{ticket}`. The last two need the cookie, an allowed `Origin` and the `x-heist-player: 1` header.
+- **Ticket:** `base64url([playerId, expirySeconds, id, name]).hmac`, valid 60 s, accepted once. The game server verifies it locally with `TICKET_SECRET` (same value as the account service). A bad ticket closes the socket with code 4005; a second connection by the same account closes with 4004. In production a ticket is required (`NODE_ENV=production`, or `REQUIRE_TICKET=1`).
+- Environment: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `TICKET_SECRET`, `COOKIE_SECRET`, `GAME_ORIGINS`, `ALLOWED_EMAIL_DOMAINS`.

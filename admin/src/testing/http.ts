@@ -47,6 +47,7 @@ export async function startTestServer(app: Express) {
   }
 
   return {
+    port,
     request,
     get: <T = unknown>(path: string) => request<T>('GET', path),
     post: <T = unknown>(path: string, body?: unknown) => request<T>('POST', path, body ?? {}),

@@ -7,6 +7,8 @@ import type { InputCommand } from '../sim/input';
  */
 
 export const MAX_NAME_LENGTH = 24;
+/** Longest game ticket on the wire (a one-byte length). */
+export const MAX_TICKET_LENGTH = 255;
 /** Most commands one INPUT message may carry. */
 export const MAX_COMMANDS_PER_MESSAGE = 8;
 
@@ -16,6 +18,8 @@ export interface JoinMessage {
   readonly t: 'join';
   readonly protocol: number;
   readonly name: string;
+  /** A signed game ticket from the account service; empty when playing without sign-in (development). */
+  readonly ticket: string;
 }
 
 export interface InputMessage {

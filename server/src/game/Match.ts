@@ -68,6 +68,8 @@ export const CLOSE_PROTOCOL = 4000;
 export const CLOSE_FULL = 4001;
 export const CLOSE_IDLE = 4002;
 export const CLOSE_ROUND = 4003;
+export const CLOSE_DUPLICATE = 4004;
+export const CLOSE_SIGN_IN = 4005;
 
 /** The snapshot scratch objects are written in place, so they are not readonly here. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
@@ -359,7 +361,12 @@ export class Match implements MatchApi {
     this.heist.onJson(player, text);
   }
 
-  join(protocol: number, rawName: string, connection: PlayerConnection): JoinResult {
+  join(
+    protocol: number,
+    rawName: string,
+    connection: PlayerConnection,
+    accountId?: number,
+  ): JoinResult {
     if (protocol !== PROTOCOL_VERSION) {
       return { ok: false, code: CLOSE_PROTOCOL, reason: 'Client is out of date, reload the page' };
     }
@@ -372,6 +379,12 @@ export class Match implements MatchApi {
         code: CLOSE_ROUND,
         reason: 'This round is under way. Join the next one.',
       };
+    }
+    if (
+      accountId !== undefined &&
+      [...this.players.values()].some((p) => p.accountId === accountId)
+    ) {
+      return { ok: false, code: CLOSE_DUPLICATE, reason: 'You are already in this match' };
     }
     const id = this.allocateId();
     const key = `${this.deps.keyPrefix ?? ''}p${++this.joinCount}`;
@@ -388,6 +401,7 @@ export class Match implements MatchApi {
       this.combat.maxHp,
     );
     player.key = key;
+    if (accountId !== undefined) player.accountId = accountId;
     this.equipStartingGear(player);
     player.protectedUntilTick = this.tick + this.ticksFor(this.combat.spawnProtectionSec);
     this.players.set(id, player);
