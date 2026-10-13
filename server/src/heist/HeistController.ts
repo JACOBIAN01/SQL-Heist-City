@@ -94,12 +94,22 @@ export class HeistController implements ArmsControl {
     if ((match.map.vaults?.length ?? 0) > 0) {
       this.round = new RoundController(match, settings, {
         allVaultsEmptied: () =>
-          [...this.vaults.all()].every((v) => v.isOpen) && this.loot.count === 0,
+          [...this.vaults.all()].every((v) => v.isOpen) && this.loot.stakes === 0,
         reset: () => this.resetWorld(),
         awards: () => this.awards.results((id) => this.match.getPlayer(id)),
         onEnd: () => this.banking.cancelAll('round_over'),
       });
+      this.layLooseCash();
     }
+  }
+
+  /** Loose cash on the offices' desks (12.1): laid out again every round, by the bank's tier. */
+  private layLooseCash(): void {
+    const piles = (this.match.map.cashSpots ?? []).flatMap((c) => {
+      const amount = this.settings.looseCashByTier[String(c.tier)] ?? 0;
+      return amount > 0 ? [this.loot.add(c.x, c.y, c.z, amount, true)] : [];
+    });
+    if (piles.length > 0) this.match.broadcastJson({ t: 'loot', add: piles, remove: [] });
   }
 
   /** Whether the round is between rounds: nothing counts then. */
@@ -120,6 +130,7 @@ export class HeistController implements ArmsControl {
     this.refreshDoors();
     const gone = this.loot.clear();
     if (gone.length > 0) this.match.broadcastJson({ t: 'loot', add: [], remove: gone });
+    this.layLooseCash();
     this.match.broadcastJson({ t: 'vaults', vaults: this.vaults.views() });
     this.banking.cancelAll('round_over');
     this.match.refreshCombat();

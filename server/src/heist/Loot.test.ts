@@ -91,7 +91,40 @@ describe('vault loot', () => {
   it('shows a newcomer the bags already lying around', () => {
     const { match, join } = setup();
     match.heist.openLock('bank-1:vault', 1);
-    expect(join('Late').connection.jsonOf('loot')[0]?.add).toHaveLength(5);
+    const add = join('Late').connection.jsonOf('loot')[0]?.add ?? [];
+    expect(add.filter((b) => !b.loose)).toHaveLength(5); // the vault's bags, plus the offices' cash
+  });
+});
+
+describe('loose office cash (12.1)', () => {
+  const piles = HEIST_MAP.cashSpots ?? [];
+
+  it('lies on the desks from the start of the round, by the bank tier, and is not vault loot', () => {
+    const { match } = setup();
+    const loose = match.heist.loot.all().filter((b) => b.loose);
+    expect(piles.length).toBeGreaterThan(0);
+    expect(loose).toHaveLength(piles.length);
+    for (const b of loose) expect(b.amount).toBe(DEFAULT_HEIST_SETTINGS.looseCashByTier['1']);
+    expect(match.heist.loot.stakes).toBe(0);
+  });
+
+  it('is picked up by walking over it, like a bag', () => {
+    const { match, join } = setup();
+    const pile = piles[0];
+    if (!pile) throw new Error('no piles');
+    const a = join('A', { x: pile.x + 0.8, y: Math.floor(pile.y / 3) * 3, z: pile.z });
+    match.step();
+    expect(a.player.cash).toBe(DEFAULT_HEIST_SETTINGS.looseCashByTier['1']);
+  });
+
+  it('pays what the settings say, and nothing when a tier is set to 0', () => {
+    const match = new Match({
+      map: HEIST_MAP,
+      settings: DEFAULT_MATCH_SETTINGS,
+      combat: DEFAULT_COMBAT_SETTINGS,
+      heist: { ...DEFAULT_HEIST_SETTINGS, looseCashByTier: { '1': 0 } },
+    });
+    expect(match.heist.loot.count).toBe(0);
   });
 });
 

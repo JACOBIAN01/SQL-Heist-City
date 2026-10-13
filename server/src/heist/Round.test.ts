@@ -131,7 +131,9 @@ describe('the round', () => {
     expect(a.player.weaponId).toBe('');
     expect(b.player.hp).toBe(DEFAULT_COMBAT_SETTINGS.maxHp);
     expect(match.heist.vaults.get('bank-1:vault')?.locksOpen).toBe(0);
-    expect(match.heist.loot.count).toBe(0);
+    // Only the offices' loose cash lies out again: no vault or dropped bags carry over.
+    expect(match.heist.loot.stakes).toBe(0);
+    expect(match.heist.loot.count).toBe(HEIST_MAP.cashSpots?.length ?? 0);
     expect(a.connection.jsonOf('vaults').at(-1)?.vaults[0]?.opened).toBe(0);
     expect(rounds(a.connection).at(-1)).toMatchObject({ phase: 'playing' });
     expect(a.connection.jsonOf('purse').at(-1)).toMatchObject({ carried: 0, banked: 0 });
@@ -145,7 +147,9 @@ describe('finishing early', () => {
     match.heist.openLock('bank-1:vault', 1);
     wait(1);
     expect(match.heist.round?.phase).toBe('playing'); // bags still on the floor
-    for (const bag of match.heist.loot.all()) match.heist.loot.remove(bag.id);
+    // The vault's bags are taken; the offices' loose cash lying about does not hold the round open.
+    for (const bag of match.heist.loot.all()) if (!bag.loose) match.heist.loot.remove(bag.id);
+    expect(match.heist.loot.count).toBeGreaterThan(0);
     wait(1);
     expect(match.heist.round?.phase).toBe('playing');
     expect(rounds(a.connection).at(-1)).toMatchObject({ phase: 'playing', endsInSec: 3 });

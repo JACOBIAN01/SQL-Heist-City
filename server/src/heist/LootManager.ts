@@ -1,12 +1,13 @@
 import type { BagView } from '@heist/shared';
 
-/** Cash bags lying in the world: from an opened vault, or dropped by a player who died. */
+/** Cash lying in the world: vault bags, bags dropped by the dead, and loose office cash. */
 export class LootManager {
   private readonly bags = new Map<number, BagView>();
   private nextId = 1;
 
-  add(x: number, y: number, z: number, amount: number): BagView {
-    const bag: BagView = { id: this.nextId++, x, y, z, amount };
+  /** `loose`: office cash (12.1), which never holds a round open. */
+  add(x: number, y: number, z: number, amount: number, loose = false): BagView {
+    const bag: BagView = { id: this.nextId++, x, y, z, amount, ...(loose ? { loose: true } : {}) };
     this.bags.set(bag.id, bag);
     return bag;
   }
@@ -30,6 +31,13 @@ export class LootManager {
 
   get count(): number {
     return this.bags.size;
+  }
+
+  /** Bags worth fighting over: vault loot and dropped cash, not the offices' loose piles. */
+  get stakes(): number {
+    let n = 0;
+    for (const bag of this.bags.values()) if (!bag.loose) n++;
+    return n;
   }
 
   /** Splits a vault's cash over its loot spots; the remainder (if any) goes in the first bag. */
