@@ -11,6 +11,8 @@ import {
   type RewardTierEntry,
   DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_NAME_RULES,
+  DEFAULT_ANALYTICS_SETTINGS,
+  analyticsSettingsSchema,
   nameRulesSchema,
   DEFAULT_REWARD_ICONS,
   rewardIconsSchema,
@@ -29,6 +31,7 @@ import {
   settingsParsers,
   ATMOSPHERE_SETTINGS_KEY,
   CITY_SETTINGS_KEY,
+  ANALYTICS_SETTINGS_KEY,
   HEIST_SETTINGS_KEY,
   NAME_RULES_KEY,
   REWARD_ICONS_KEY,
@@ -254,7 +257,8 @@ export class SettingsService {
   }
 }
 
-export type SectionName = 'heist' | 'vehicles' | 'atmosphere' | 'city' | 'rewardIcons' | 'names';
+export type SectionName =
+  'heist' | 'vehicles' | 'atmosphere' | 'city' | 'rewardIcons' | 'names' | 'analytics';
 export const SECTION_NAMES: readonly SectionName[] = [
   'heist',
   'vehicles',
@@ -262,6 +266,7 @@ export const SECTION_NAMES: readonly SectionName[] = [
   'city',
   'rewardIcons',
   'names',
+  'analytics',
 ];
 
 interface SectionSpec {
@@ -291,6 +296,12 @@ const SECTIONS: Readonly<Record<SectionName, SectionSpec>> = {
     schema: atmosphereSettingsSchema,
     defaults: DEFAULT_ATMOSPHERE_SETTINGS,
     parse: settingsParsers.atmosphereFrom,
+  },
+  analytics: {
+    key: ANALYTICS_SETTINGS_KEY,
+    schema: analyticsSettingsSchema,
+    defaults: DEFAULT_ANALYTICS_SETTINGS,
+    parse: settingsParsers.analyticsFrom,
   },
   names: {
     key: NAME_RULES_KEY,

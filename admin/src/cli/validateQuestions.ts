@@ -1,6 +1,17 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  BLOOM_LEVELS,
+  BLOOM_NAMES,
+  RCSBE_DIMENSIONS,
+  RCSBE_NAMES,
+  compareToTarget,
+  coverageOf,
+  DEFAULT_ANALYTICS_SETTINGS,
+  questionTemplateSchema,
+  shapeProblems,
+} from '@heist/shared';
 import { Grader } from '@heist/server/sql/Grader';
 import { WorkerSandboxRunner } from '@heist/server/sql/WorkerSandboxRunner';
 import { builtInDatasets } from '@heist/server/variants/datasets';
@@ -49,4 +60,32 @@ console.log(
   `\n${report.questions} questions (${tiers}) in ${files.length} files — ${errors} errors, ` +
     `${report.problems.length - errors} warnings — ${((Date.now() - started) / 1000).toFixed(1)}s`,
 );
+
+// Coverage (docs/RCBSE.md §5.2): where the question set stands against the target profile.
+const templates = files.flatMap((f) => {
+  const list = Array.isArray(f.data)
+    ? f.data
+    : ((f.data as { questions?: unknown[] }).questions ?? []);
+  return list.flatMap((raw) => {
+    const parsed = questionTemplateSchema.safeParse(raw);
+    return parsed.success ? [parsed.data] : [];
+  });
+});
+const coverage = coverageOf(templates);
+console.log('\nRCSBE coverage (marks):');
+for (const d of RCSBE_DIMENSIONS) {
+  const t = coverage.byDimension[d];
+  console.log(
+    `  ${d} ${RCSBE_NAMES[d].padEnd(10)} ${String(t.items).padStart(4)} items ${String(t.marks).padStart(5)} marks`,
+  );
+}
+console.log(
+  'Bloom coverage (items): ' +
+    BLOOM_LEVELS.map((b) => `${BLOOM_NAMES[b]} ${coverage.byBloom[b].items}`).join(' · '),
+);
+const gaps = shapeProblems(
+  compareToTarget(coverage, DEFAULT_ANALYTICS_SETTINGS.targetProfile),
+  RCSBE_NAMES,
+);
+if (gaps.length) console.log('Against the default target profile: ' + gaps.join('; ') + '.');
 process.exit(errors > 0 ? 1 : 0);

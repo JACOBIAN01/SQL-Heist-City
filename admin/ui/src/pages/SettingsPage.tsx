@@ -71,6 +71,12 @@ export function SettingsPage() {
         editable={isAdmin}
       />
       <SectionCard
+        name="analytics"
+        title="Learning measures"
+        note="Marks per tier, the hint penalty, when an unfinished question counts, and how much evidence a dimension needs before it is scored. See docs/RCBSE.md."
+        editable={isAdmin}
+      />
+      <SectionCard
         name="city"
         title="City"
         note="How the city is generated. A new city appears in matches created after the change; running matches keep theirs."

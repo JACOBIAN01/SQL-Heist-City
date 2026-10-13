@@ -3,6 +3,7 @@ import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   DEFAULT_CHALLENGE_SETTINGS,
+  DEFAULT_ANALYTICS_SETTINGS,
   DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_CITY_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
@@ -75,6 +76,11 @@ function api(user: typeof admin | typeof teacher) {
       body: { names: { current: DEFAULT_NAME_RULES, defaults: DEFAULT_NAME_RULES } },
     }),
     'PUT /config/names': (b) => ({ body: b }),
+    'GET /config/analytics': () => ({
+      body: {
+        analytics: { current: DEFAULT_ANALYTICS_SETTINGS, defaults: DEFAULT_ANALYTICS_SETTINGS },
+      },
+    }),
     'PUT /config/vehicles': (b) => ({ body: b }),
     'PUT /config/city': (b) => ({ body: b }),
     'GET /questions': () => ({

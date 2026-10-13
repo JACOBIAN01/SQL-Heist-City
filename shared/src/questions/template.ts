@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { bloomSchema, marksSchema, rcsbeSchema } from './analytics';
 
 /**
  * Question template: the import/export + storage format for one SQL question.
@@ -115,6 +116,12 @@ export const questionTemplateSchema = z
     tier: z.number().int().min(MIN_TIER).max(MAX_TIER),
     topic: z.array(z.string().min(1)).min(1),
     title: z.string().min(1).max(120),
+    /** What this question measures: exactly one RCSBE dimension (docs/RCBSE.md). */
+    rcsbe: rcsbeSchema,
+    /** The cognitive level, for curriculum alignment. */
+    bloom: bloomSchema,
+    /** Weight in marks; empty means the default for its tier. */
+    marks: marksSchema.optional(),
     story_md: z.string().min(1),
     schema_sql: z.string().min(1),
     data_gen: z.record(identifier, tableSpecSchema),
@@ -192,3 +199,16 @@ export type ColumnSpec = z.infer<typeof columnSpecSchema>;
 export type TableSpec = z.infer<typeof tableSpecSchema>;
 export type ParamSpec = z.infer<typeof paramSpecSchema>;
 export type Hint = z.infer<typeof hintSchema>;
+
+/**
+ * A template read back from storage. Questions saved before the RCSBE tags
+ * existed have none; they read as Solve / Apply (what every one of them was)
+ * until a teacher or `db:seed --update` tags them properly.
+ */
+export function parseStoredTemplate(raw: unknown): QuestionTemplate {
+  const legacy =
+    typeof raw === 'object' && raw !== null
+      ? { rcsbe: 'S', bloom: 'apply', ...(raw as Record<string, unknown>) }
+      : raw;
+  return questionTemplateSchema.parse(legacy);
+}

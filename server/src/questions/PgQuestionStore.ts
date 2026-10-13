@@ -1,4 +1,4 @@
-import { questionTemplateSchema, type QuestionTemplate } from '@heist/shared';
+import { parseStoredTemplate, type QuestionTemplate } from '@heist/shared';
 import type { PgDatabase, PgTx } from '../pg/PgDatabase';
 import { isUniqueViolation } from '../pg/PgDatabase';
 import {
@@ -146,7 +146,7 @@ export class PgQuestionStore implements QuestionStore {
     );
     return rows.map((r) => ({
       version: r.version,
-      template: questionTemplateSchema.parse(r.template_json),
+      template: parseStoredTemplate(r.template_json),
       createdBy: r.created_by,
       createdAt: r.created_at.toISOString(),
     }));
@@ -185,7 +185,7 @@ function toStored(row: QuestionRow): StoredQuestion {
     slug: row.slug,
     version: row.current_version,
     enabled: row.enabled,
-    template: questionTemplateSchema.parse(row.template_json),
+    template: parseStoredTemplate(row.template_json),
     updatedAt: row.updated_at.toISOString(),
   };
 }

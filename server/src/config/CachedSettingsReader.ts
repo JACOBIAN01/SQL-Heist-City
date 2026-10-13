@@ -1,6 +1,7 @@
 import type {
   AtmosphereSettings,
   ChallengeSettings,
+  AnalyticsSettings,
   CitySettings,
   RewardIcons,
   VehicleSettings,
@@ -22,6 +23,7 @@ export class CachedSettingsReader implements SettingsReader {
   private atmosphere: AtmosphereSettings | undefined;
   private city: CitySettings | undefined;
   private icons: RewardIcons | undefined;
+  private analytics: AnalyticsSettings | undefined;
   private tiers = new Map<string, TierRange | undefined>();
 
   constructor(private readonly inner: SettingsReader) {}
@@ -56,6 +58,11 @@ export class CachedSettingsReader implements SettingsReader {
     return this.atmosphere;
   }
 
+  analyticsSettings(): AnalyticsSettings {
+    this.analytics ??= this.inner.analyticsSettings();
+    return this.analytics;
+  }
+
   rewardIcons(): RewardIcons {
     this.icons ??= this.inner.rewardIcons();
     return this.icons;
@@ -80,6 +87,7 @@ export class CachedSettingsReader implements SettingsReader {
     this.atmosphere = undefined;
     this.city = undefined;
     this.icons = undefined;
+    this.analytics = undefined;
     this.tiers = new Map();
   }
 }

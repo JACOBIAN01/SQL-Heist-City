@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { BLOOM_LEVELS, BLOOM_NAMES, RCSBE_DIMENSIONS, RCSBE_NAMES } from '@heist/shared';
 import { useNavigate, useParams } from 'react-router';
 import { useDeleteQuestion, useQuestion, useSaveQuestion } from '../api/questions';
 import { useMe } from '../auth/useMe';
@@ -132,6 +133,47 @@ export function QuestionEditorPage() {
                 <label style={{ flex: 1 }}>
                   Topics (comma-separated)
                   <input value={draft.topics} onChange={(e) => set('topics', e.target.value)} />
+                </label>
+              </div>
+              <div className="row">
+                <label>
+                  What it measures (RCSBE)
+                  <select
+                    aria-label="RCSBE dimension"
+                    value={draft.rcsbe}
+                    onChange={(e) => set('rcsbe', e.target.value as Draft['rcsbe'])}
+                  >
+                    {RCSBE_DIMENSIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d} · {RCSBE_NAMES[d]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Bloom level
+                  <select
+                    aria-label="Bloom level"
+                    value={draft.bloom}
+                    onChange={(e) => set('bloom', e.target.value as Draft['bloom'])}
+                  >
+                    {BLOOM_LEVELS.map((b) => (
+                      <option key={b} value={b}>
+                        {BLOOM_NAMES[b]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Marks (empty = default for the tier)
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    aria-label="Marks"
+                    value={draft.marks}
+                    onChange={(e) => set('marks', e.target.value)}
+                  />
                 </label>
               </div>
               <div className="row">

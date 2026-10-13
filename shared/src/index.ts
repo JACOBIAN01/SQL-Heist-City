@@ -1,6 +1,8 @@
 /** Bumped whenever the client/server wire protocol changes incompatibly. */
 export const PROTOCOL_VERSION = 5;
 
+export * from './questions/analytics';
+export * from './questions/coverage';
 export * from './questions/template';
 export * from './random/Rng';
 export * from './config/challenges';

@@ -1,4 +1,4 @@
-import type { QuestionTemplateInput } from '@heist/shared';
+import type { BloomLevel, QuestionTemplateInput, RcsbeDimension } from '@heist/shared';
 
 /**
  * Editor form state. Nested generator specs are edited as JSON text, so the
@@ -8,6 +8,10 @@ export interface Draft {
   slug: string;
   title: string;
   tier: number;
+  rcsbe: RcsbeDimension;
+  bloom: BloomLevel;
+  /** Empty uses the default for the tier. */
+  marks: string;
   topics: string;
   enabled: boolean;
   story_md: string;
@@ -27,6 +31,8 @@ export const STARTER_TEMPLATE: QuestionTemplateInput = {
   tier: 1,
   topic: ['select'],
   title: 'New question',
+  rcsbe: 'S',
+  bloom: 'apply',
   story_md: 'List the names of accounts with a balance above **{min_balance}**.',
   schema_sql: 'CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, balance INTEGER);',
   data_gen: {
@@ -50,6 +56,9 @@ export function toDraft(t: QuestionTemplateInput): Draft {
     slug: t.slug,
     title: t.title,
     tier: t.tier,
+    rcsbe: t.rcsbe,
+    bloom: t.bloom,
+    marks: t.marks === undefined ? '' : String(t.marks),
     topics: t.topic.join(', '),
     enabled: t.enabled ?? true,
     story_md: t.story_md,
@@ -88,6 +97,9 @@ export function fromDraft(d: Draft): DraftResult {
       slug: d.slug.trim(),
       title: d.title.trim(),
       tier: d.tier,
+      rcsbe: d.rcsbe,
+      bloom: d.bloom,
+      ...(d.marks.trim() === '' ? {} : { marks: Number(d.marks) }),
       topic: d.topics
         .split(',')
         .map((t) => t.trim())

@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite';
-import { questionTemplateSchema, type QuestionTemplate } from '@heist/shared';
+import { parseStoredTemplate, type QuestionTemplate } from '@heist/shared';
 import {
   DuplicateSlugError,
   QuestionNotFoundError,
@@ -196,5 +196,5 @@ function toStored(row: QuestionRow): StoredQuestion {
 
 /** Re-validate on read so a hand-edited row can't feed bad data to the game. */
 function parseTemplate(json: string): QuestionTemplate {
-  return questionTemplateSchema.parse(JSON.parse(json));
+  return parseStoredTemplate(JSON.parse(json));
 }

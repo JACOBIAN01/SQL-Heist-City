@@ -58,6 +58,9 @@ const CSV_COLUMNS = [
   'slug',
   'title',
   'tier',
+  'rcsbe',
+  'bloom',
+  'marks',
   'topic',
   'enabled',
   'story_md',
@@ -102,6 +105,7 @@ export class CsvQuestionFormat implements QuestionFormat {
     const rows = questions.map((q) =>
       CSV_COLUMNS.map((column) => {
         const value = q[column];
+        if (value === undefined) return '';
         if (column === 'topic') return (value as string[]).join(';');
         if (JSON_COLUMNS.has(column)) return JSON.stringify(value);
         return String(value);
@@ -111,7 +115,7 @@ export class CsvQuestionFormat implements QuestionFormat {
   }
 
   private decode(column: CsvColumn, cell: string): unknown {
-    if (column === 'tier') return Number(cell);
+    if (column === 'tier' || column === 'marks') return Number(cell);
     if (column === 'topic')
       return cell
         .split(';')

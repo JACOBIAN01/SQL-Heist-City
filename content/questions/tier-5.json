@@ -7,6 +7,8 @@
       "tier": 5,
       "topic": ["recursive-cte"],
       "title": "Up the Ladder",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Who does crew member **{member}** ultimately answer to?\n\nReturn **id**, **name** and **level** for the member (level 0), their boss (level 1), the boss's boss (level 2) … up to the top.",
       "schema_sql": "CREATE TABLE crew (id INTEGER PRIMARY KEY, name TEXT, role TEXT, boss_id INTEGER, cut INTEGER);",
       "data_gen": {
@@ -71,6 +73,8 @@
       "tier": 5,
       "topic": ["recursive-cte"],
       "title": "Whole Team",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Turn crew member **{boss}** and you get their whole team.\n\nReturn **id** and **name** of member {boss} **and everyone who reports to them directly or indirectly**.",
       "schema_sql": "CREATE TABLE crew (id INTEGER PRIMARY KEY, name TEXT, role TEXT, boss_id INTEGER, cut INTEGER);",
       "data_gen": {
@@ -131,6 +135,8 @@
       "tier": 5,
       "topic": ["recursive-cte"],
       "title": "Org Depth",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Map the whole hierarchy.\n\nReturn **id** and **depth** of every crew member (members with no boss have depth 0).",
       "schema_sql": "CREATE TABLE crew (id INTEGER PRIMARY KEY, name TEXT, role TEXT, boss_id INTEGER, cut INTEGER);",
       "data_gen": {
@@ -184,6 +190,8 @@
       "tier": 5,
       "topic": ["recursive-cte", "aggregate"],
       "title": "Team Payout",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "What does boss **{boss}**'s whole operation cost?\n\nReturn two numbers: the **number of people** in the team **including the boss**, and their **total cut**.",
       "schema_sql": "CREATE TABLE crew (id INTEGER PRIMARY KEY, name TEXT, role TEXT, boss_id INTEGER, cut INTEGER);",
       "data_gen": {
@@ -244,6 +252,8 @@
       "tier": 5,
       "topic": ["recursive-cte", "left-join", "dates"],
       "title": "Every Single Day",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Guards notice patterns, including quiet days.\n\nFor the **14 days** starting **{start}**, return each **day** and the **number of alarms** that day — days without alarms must show **0**.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
@@ -312,6 +322,8 @@
       "tier": 5,
       "topic": ["recursive-cte", "graph"],
       "title": "Tunnel Network",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Tunnels connect zones (one-way, `from_zone` → `to_zone`).\n\nReturn every **zone reachable** from **{zone}** and the **fewest tunnels** needed to get there — include **{zone}** itself with **0**. Watch out for loops; no route needs more than 8 tunnels.",
       "schema_sql": "CREATE TABLE tunnels (id INTEGER PRIMARY KEY, from_zone TEXT, to_zone TEXT);",
       "data_gen": {
@@ -363,6 +375,8 @@
       "tier": 5,
       "topic": ["gaps-islands", "window"],
       "title": "Work Streaks",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Find employee **{emp}**'s streaks of consecutive working days in March.\n\nCount each day once (they may have several shifts a day). Return **start day**, **end day** and **length** (days) of every streak.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
@@ -466,6 +480,8 @@
       "tier": 5,
       "topic": ["gaps-islands", "window", "cte"],
       "title": "Iron Man",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Who never takes a day off?\n\nFor every employee with shifts, return **employee_id** and the **length of their longest streak** of consecutive working days.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
@@ -562,6 +578,8 @@
       "tier": 5,
       "topic": ["gaps-islands", "window"],
       "title": "Days Off",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "When is employee **{emp}** away?\n\nReturn **first day off** and **last day off** for every gap between two of their working days in March (a gap is one or more days with no shift).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
@@ -661,6 +679,8 @@
       "tier": 5,
       "topic": ["gaps-islands", "window"],
       "title": "Escalations",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "In zone **{zone}**, alarms come in runs of the same level.\n\nOrdering the zone's alarms by **triggered, then id**, group **consecutive alarms with the same level** into runs. Return **level**, the **id of the first alarm** in the run and the **run length**.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
@@ -724,6 +744,8 @@
       "tier": 5,
       "topic": ["gaps-islands", "window", "cte"],
       "title": "Restless Zones",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "A streak is a run of consecutive days on which a zone raised at least one alarm.\n\nFor every zone return **zone**, the **number of streaks** and the **longest streak** (days).",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
@@ -782,6 +804,8 @@
       "tier": 5,
       "topic": ["top-n", "window"],
       "title": "Top Earners",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Each department's top **{n}** earners have the codes.\n\nReturn **dept**, **first_name** and **salary** for the top {n} per department (highest salary first; ties broken by lower id).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -852,6 +876,8 @@
       "tier": 5,
       "topic": ["top-n", "window"],
       "title": "Best in Show",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "One item per zone — the best one.\n\nReturn **zone**, **tag** and **value** of the most valuable item in each zone (ties: lower id).",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -911,6 +937,8 @@
       "tier": 5,
       "topic": ["top-n", "window", "group-by"],
       "title": "Favourite Shops",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Where does each target shop most?\n\nFor each account, return **account_id**, **merchant** and **total spent** for its **top 2 merchants** by total amount (ignore missing merchants; ties: merchant name A→Z).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
@@ -1010,6 +1038,8 @@
       "tier": 5,
       "topic": ["top-n", "window", "rank"],
       "title": "Joint Winners",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Best-paid person in each branch — and if there is a tie, all of them.\n\nReturn **branch_id**, **first_name** and **salary** of everyone with the **highest salary in their branch**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1073,6 +1103,8 @@
       "tier": 5,
       "topic": ["top-n", "window"],
       "title": "Fresh Tracks",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "The latest movements per zone matter most.\n\nReturn **zone**, **log id** and **at** of the **{n} most recent** log entries in each zone (latest date first; same date → higher id first).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);",
       "data_gen": {
@@ -1170,6 +1202,8 @@
       "tier": 5,
       "topic": ["pivot", "case"],
       "title": "Threat Board",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "One row per zone, one column per alarm level.\n\nReturn **zone**, and the counts of **low**, **medium**, **high** and **critical** alarms (in that column order, 0 if none).",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
@@ -1228,6 +1262,8 @@
       "tier": 5,
       "topic": ["pivot", "case", "dates"],
       "title": "Monthly Ledger",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "A spreadsheet the boss can read.\n\nReturn **month** (`YYYY-MM`) and the total amounts of **deposit**, **withdrawal** and **transfer** transactions that month (in that column order, 0 if none).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
@@ -1327,6 +1363,8 @@
       "tier": 5,
       "topic": ["pivot", "case"],
       "title": "Rota",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Who works which shift?\n\nReturn **employee_id** and how many **morning**, **day**, **evening** and **night** shifts they worked (that column order; only employees with shifts).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE shifts (id INTEGER PRIMARY KEY, employee_id INTEGER, day TEXT, shift TEXT, hours INTEGER);",
       "data_gen": {
@@ -1419,6 +1457,8 @@
       "tier": 5,
       "topic": ["pivot", "case"],
       "title": "Account Matrix",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Rows are account types, columns are statuses.\n\nReturn **type** and the number of **active**, **frozen** and **closed** accounts (that column order).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1483,6 +1523,8 @@
       "tier": 5,
       "topic": ["cte", "analytics"],
       "title": "Spending Spree",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Someone suddenly spends more — maybe a bribe.\n\nReturn **account_id**, **H1 total** (Jan–Jun 2025) and **H2 total** (Jul–Dec 2025) of **withdrawal** amounts for accounts whose H2 total is **at least {pct}% higher** than H1 (only accounts with withdrawals in both halves).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
@@ -1589,6 +1631,8 @@
       "tier": 5,
       "topic": ["cte", "analytics", "window"],
       "title": "Payroll Share",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Which department costs the most?\n\nReturn **dept**, **total salary**, its **share of the whole payroll in % (2 decimals)** and its **rank** by total (largest = 1).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1652,6 +1696,8 @@
       "tier": 5,
       "topic": ["cte", "analytics", "join"],
       "title": "Inside Job",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Suspicious: being in a zone on a day it raised an alarm.\n\nReturn **employee_id** and the **number of distinct (zone, day) matches** for employees with **at least {n}** such matches.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);\nCREATE TABLE vault_logs (id INTEGER PRIMARY KEY, employee_id INTEGER, action TEXT, zone TEXT, at TEXT);\nCREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
@@ -1782,6 +1828,8 @@
       "tier": 5,
       "topic": ["cte", "analytics"],
       "title": "Branch Health",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "A branch report card.\n\nFor every branch id with accounts, return **branch_id**, **number of accounts**, **average balance (2 decimals)** and **% frozen (2 decimals)**, but only for branches where **more than {pct}%** of accounts are frozen.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1853,6 +1901,8 @@
       "tier": 5,
       "topic": ["cte", "analytics", "window", "top-n"],
       "title": "Shop of the Month",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Where did the money go each month?\n\nReturn **month** (`YYYY-MM`), the **merchant with the highest total amount** that month and that **total** (ignore missing merchants; ties: merchant name A→Z).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
@@ -1952,6 +2002,8 @@
       "tier": 5,
       "topic": ["window", "percentile"],
       "title": "The Middle",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Averages lie; medians don't.\n\nReturn **dept** and the **median salary** (2 decimals). For an even count, the median is the average of the two middle salaries.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -2019,6 +2071,8 @@
       "tier": 5,
       "topic": ["window", "percentile"],
       "title": "Percentile",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "How rare is each item in zone **{zone}**?\n\nReturn **tag**, **value** and its **CUME_DIST** by value ascending (fraction of items with value ≤ this one), rounded to 3 decimals.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -2083,6 +2137,8 @@
       "tier": 5,
       "topic": ["window"],
       "title": "Above the Line",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Compare everyone to their peers without a GROUP BY.\n\nReturn **id**, **dept**, **salary** and **salary minus the department average** (2 decimals), using a window function.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -2146,6 +2202,8 @@
       "tier": 5,
       "topic": ["window", "first-value"],
       "title": "Crown of the Zone",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Each item next to its zone's crown jewel.\n\nReturn **zone**, **tag**, **value** and the **tag of the most valuable item in the same zone** (ties: lower id).",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -2205,6 +2263,8 @@
       "tier": 5,
       "topic": ["window", "range"],
       "title": "Hot Week",
+      "rcsbe": "S",
+      "bloom": "analyze",
       "story_md": "Is zone **{zone}** heating up?\n\nFor each of its alarms, return **id**, **triggered** and the **number of alarms in that zone during the 7 days ending on that date** (that date and the 6 before; same-day alarms all count).",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {

@@ -6,6 +6,8 @@ export const sampleQuestion: QuestionTemplateInput = {
   tier: 1,
   topic: ['select', 'where'],
   title: 'Payroll Leak',
+  rcsbe: 'S',
+  bloom: 'apply',
   story_md: 'List the names of employees in **{dept}** who earn more than **{min_salary}**.',
   schema_sql:
     'CREATE TABLE employees(id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER);',

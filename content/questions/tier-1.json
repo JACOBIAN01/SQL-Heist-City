@@ -7,6 +7,8 @@
       "tier": 1,
       "topic": ["select"],
       "title": "Staff Roster",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "The crew needs to know who works at the bank.\n\nReturn every employee's **first_name** and **last_name**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -74,6 +76,8 @@
       "tier": 1,
       "topic": ["select"],
       "title": "Vault Inventory",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "List what is stored in the vault.\n\nReturn **tag**, **item** and **value** for every row of `vault_items`.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -133,6 +137,8 @@
       "tier": 1,
       "topic": ["select"],
       "title": "Balance Sheet",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Get a quick look at the money.\n\nReturn **id**, **owner** and **balance** of every account.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -197,6 +203,8 @@
       "tier": 1,
       "topic": ["select"],
       "title": "Alarm Feed",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Tap into the alarm feed.\n\nReturn **zone**, **level** and **triggered** for every alarm.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
@@ -255,6 +263,8 @@
       "tier": 1,
       "topic": ["where"],
       "title": "Big Earners",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Big salaries mean big access.\n\nReturn **first_name** and **salary** of employees earning more than **{min_salary}**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -329,6 +339,8 @@
       "tier": 1,
       "topic": ["where"],
       "title": "Fat Accounts",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Find the juiciest accounts.\n\nReturn **id** and **balance** of accounts with a balance of at least **{min_balance}**.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -400,6 +412,8 @@
       "tier": 1,
       "topic": ["where"],
       "title": "Light Loot",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "You can only carry light items.\n\nReturn **tag** and **weight_kg** of items weighing less than **{max_kg}** kg.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -466,6 +480,8 @@
       "tier": 1,
       "topic": ["where"],
       "title": "Slow Response",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Some alarms rang for ages.\n\nReturn **id** and **minutes** of alarms that lasted more than **{min_minutes}** minutes.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
@@ -531,6 +547,8 @@
       "tier": 1,
       "topic": ["where"],
       "title": "Tall Buildings",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Taller banks have more floors to search.\n\nReturn **name** and **city** of branches with exactly **{floors}** floors.",
       "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);",
       "data_gen": {
@@ -591,6 +609,8 @@
       "tier": 1,
       "topic": ["where", "text"],
       "title": "Department Directory",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Target one department.\n\nReturn **first_name** and **last_name** of employees in the **{dept}** department.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -659,6 +679,8 @@
       "tier": 1,
       "topic": ["where", "text"],
       "title": "Shopping List",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Your buyer only wants one kind of loot.\n\nReturn **tag** and **value** of every **{item}** in the vault.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -723,6 +745,8 @@
       "tier": 1,
       "topic": ["like"],
       "title": "Name Game",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "An informant only remembers the start of a name.\n\nReturn **id**, **first_name** and **last_name** of employees whose last name starts with **{prefix}**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -795,6 +819,8 @@
       "tier": 1,
       "topic": ["like"],
       "title": "Tagged",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Tags with a certain digit are fakes.\n\nReturn the **tag** of items whose tag contains the digit **{digit}**.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -859,6 +885,8 @@
       "tier": 1,
       "topic": ["like"],
       "title": "Shady Shops",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Payments at some shops look suspicious.\n\nReturn **id**, **merchant** and **amount** of transactions whose merchant name contains **{fragment}** (case does not matter).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
@@ -963,6 +991,8 @@
       "tier": 1,
       "topic": ["where", "and"],
       "title": "Payroll Leak",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Find well-paid insiders.\n\nReturn **first_name** and **salary** of **{dept}** employees earning more than **{min_salary}**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1037,6 +1067,8 @@
       "tier": 1,
       "topic": ["where", "or"],
       "title": "Red Alerts",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Security takes two kinds of alarm seriously.\n\nReturn **id**, **level** and **minutes** of alarms that are **critical** OR lasted more than **{min_minutes}** minutes.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
@@ -1102,6 +1134,8 @@
       "tier": 1,
       "topic": ["where", "not"],
       "title": "Still Open",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Closed accounts are useless.\n\nReturn **id** and **owner** of accounts whose status is NOT **closed**.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1166,6 +1200,8 @@
       "tier": 1,
       "topic": ["where", "and"],
       "title": "Open Alarms",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Unresolved alarms mean guards are busy.\n\nReturn **id** and **triggered** of alarms in zone **{zone}** that are not resolved (`resolved = 0`).",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
@@ -1229,6 +1265,8 @@
       "tier": 1,
       "topic": ["between"],
       "title": "Salary Band",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Mid-level staff are easiest to bribe.\n\nReturn **first_name** and **salary** of employees whose salary is between **{lo}** and **{hi}** (inclusive).",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1305,6 +1343,8 @@
       "tier": 1,
       "topic": ["in"],
       "title": "Two Teams",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Only two departments have vault keys.\n\nReturn **id** and **dept** of employees in **{d1}** or **{d2}**.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1377,6 +1417,8 @@
       "tier": 1,
       "topic": ["between", "dates"],
       "title": "Hiring Window",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "People hired in a certain window had weak background checks.\n\nReturn **first_name** and **hired** of employees hired between **{from}** and **{to}** (inclusive). Dates are stored as text like `2021-06-30`.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1449,6 +1491,8 @@
       "tier": 1,
       "topic": ["in"],
       "title": "Inner Vaults",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "The good stuff is in the inner vaults.\n\nReturn **tag** and **zone** of items stored in **Vault A** or **Vault B**.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -1508,6 +1552,8 @@
       "tier": 1,
       "topic": ["order-by"],
       "title": "Pay Ladder",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Rank the staff.\n\nReturn **first_name** and **salary** of all employees, **highest salary first**. Break ties by **id** ascending.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1575,6 +1621,8 @@
       "tier": 1,
       "topic": ["order-by"],
       "title": "Old Money",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Older branches have older locks.\n\nReturn **name** and **opened** of every branch, **oldest first**. Break ties by **id**.",
       "schema_sql": "CREATE TABLE branches (id INTEGER PRIMARY KEY, name TEXT, city TEXT, opened TEXT, floors INTEGER);",
       "data_gen": {
@@ -1628,6 +1676,8 @@
       "tier": 1,
       "topic": ["order-by"],
       "title": "Heavy Lifting",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Plan the getaway van.\n\nReturn **tag** and **weight_kg** of items in zone **{zone}**, **heaviest first**, ties by **tag** A→Z.",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -1692,6 +1742,8 @@
       "tier": 1,
       "topic": ["limit"],
       "title": "Grab and Go",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "You only have time for a few items.\n\nReturn **tag** and **value** of the **{n}** most valuable items (highest value first, ties by **id**).",
       "schema_sql": "CREATE TABLE vault_items (id INTEGER PRIMARY KEY, item TEXT, value INTEGER, zone TEXT, weight_kg REAL, tag TEXT);",
       "data_gen": {
@@ -1758,6 +1810,8 @@
       "tier": 1,
       "topic": ["limit", "offset"],
       "title": "Page Two",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "The ledger shows 5 accounts per page.\n\nReturn **id** and **balance** for **page {page}** of accounts sorted by balance (highest first, ties by **id**). Page 1 is the first 5 rows.",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -1833,6 +1887,8 @@
       "tier": 1,
       "topic": ["distinct"],
       "title": "Where They Shop",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Profile one target's habits.\n\nReturn the **distinct** merchant names used by account **{account}** (skip transactions with no merchant).",
       "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, type TEXT, balance INTEGER, opened TEXT, status TEXT, branch_id INTEGER);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, kind TEXT, amount INTEGER, at TEXT, merchant TEXT);",
       "data_gen": {
@@ -1943,6 +1999,8 @@
       "tier": 1,
       "topic": ["distinct"],
       "title": "Family Business",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Families stick together.\n\nReturn each **distinct last_name** found among **{dept}** employees.",
       "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, first_name TEXT, last_name TEXT, dept TEXT, salary INTEGER, hired TEXT, branch_id INTEGER);",
       "data_gen": {
@@ -2011,6 +2069,8 @@
       "tier": 1,
       "topic": ["distinct"],
       "title": "Hot Zones",
+      "rcsbe": "S",
+      "bloom": "apply",
       "story_md": "Which zones have raised a **{level}** alarm?\n\nReturn each **distinct zone** with at least one alarm of that level.",
       "schema_sql": "CREATE TABLE alarms (id INTEGER PRIMARY KEY, zone TEXT, level TEXT, triggered TEXT, minutes INTEGER, resolved INTEGER);",
       "data_gen": {
