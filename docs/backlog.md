@@ -1,5 +1,7 @@
 # Backlog (ideas outside the current phase)
 
+> Since the October 2026 audit, most of this list is scheduled in docs/Phases.md: teams (27), gamepad and touch (22), replays and kill-cam (35), student accounts and progress (13, 26), classroom rooms and dashboards (14, 15), dialect packs (17.7), structural variants (17.5), the game side of pools (14.4), admin analytics (15.8), reward icons (12.5). Voice and chat stay out of scope for now.
+
 - Teams/squads and shared vault progress
 - Gamepad support
 - Voice/proximity chat

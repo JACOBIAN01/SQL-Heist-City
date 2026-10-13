@@ -28,8 +28,32 @@
 | 8 | City, vehicles, atmosphere | ✅ Done |
 | 9 | Banks 2–5, weapons, UX | ✅ Done |
 | 10 | Polish: sound, SQL pop-up, tutorial | ✅ Done |
-| 11 | Bank design | 🟦 In progress |
-| — | Todo (later): harden & ship | ⬜ |
+| 11 | Bank design | ✅ Done |
+| 12 | Known gaps | ⬜ |
+| 13 | Identity and persistence (Google sign-in, PostgreSQL) | ⬜ |
+| 14 | Classroom mode | ⬜ |
+| 15 | Learning analytics (Bloom, RCBSE) | ⬜ |
+| 16 | Teaching loop | ⬜ |
+| 17 | Question types and content | ⬜ |
+| 18 | Security hardening | ⬜ |
+| 19 | Scale proof | ⬜ |
+| 20 | Operations and deployment | ⬜ |
+| 21 | Privacy and compliance | ⬜ |
+| 22 | Settings, accessibility and devices | ⬜ |
+| 23 | Game test plan | ⬜ |
+| 24 | Classroom pilot | ⬜ |
+| 25 | Launch checklist and release | ⬜ |
+| 26 | Progression and the meta-loop | ⬜ |
+| 27 | Squads and roles | ⬜ |
+| 28 | Game modes | ⬜ |
+| 29 | Living city | ⬜ |
+| 30 | Exploration and freedom | ⬜ |
+| 31 | Missions and heist structure | ⬜ |
+| 32 | Story and characters | ⬜ |
+| 33 | SQL in the world: queries as superpowers | ⬜ |
+| 34 | Breakthrough features | ⬜ |
+| 35 | Polish | ⬜ |
+| 36 | GTA scorecard gate | ⬜ |
 
 ---
 ## Phase 0 — Docs & scaffold  ✅
@@ -219,7 +243,7 @@ Quick fixes that improve play right away, before the bank work.
 | 10.3 | Tutorial: one fixed question per task (heal, gun, vault), same for everyone every run, solution free | every tutorial run asks the same 3 questions; "Show solution" fills the editor at no cost | ✅ fixed slug + seed per task, `solution` only in tutorial rooms, free hints; admin "Tutorial questions" card (gameplay.md "Tutorial") |
 
 ---
-## Phase 11 — Bank design  🟦
+## Phase 11 — Bank design  ✅
 The bank is the most important place in the game: realistic interiors and a realistic vault, built from the House Pack (Quaternius, CC0) plus procedural pieces the pack lacks. Bank 1 is finished first as a showcase and reviewed, then the kit rolls out to Banks 2–5. Art is derived from the layout, so it never changes play; furniture with a collider goes through the shared layout so the server and the route tests see it.
 
 | # | Subphase | Done when | Status |
@@ -236,15 +260,349 @@ The bank is the most important place in the game: realistic interiors and a real
 | 11.10 | Interior performance | detail only near/inside a bank; draw-call and triangle budget test in CI; 60 fps kept | ✅ `BankLod`, merged meshes, `bankBudget.test.ts`: one bank ≤ 50 draw calls and 80k triangles anywhere (worst today 39 / 59k; before: 100–200 calls per bank) |
 
 ---
-## Todo (later) — Harden & ship  ⬜
-Moved behind Phases 10–11. Not numbered until it is scheduled.
+## Roadmap after Phase 11 (from the pre-launch audit)
+Phases 12–36 come from the pre-launch audit and the user's feedback on it (October 2026). The decisions behind them:
+- **Guns stay.** No non-violent mode.
+- **Class size is 60+ (usually 100+).** The map stays sized for 100 players.
+- **Chat and voice are out of scope for now**, including quick-chat and pings.
+- **Identity:** Google sign-in (OpenID Connect).
+- **Persistence:** PostgreSQL is the system of record for accounts, classes, attempts and content. The SQL sandboxes stay in-memory SQLite.
+- **Learning analytics:** each question maps to a Bloom level and an RCBSE profile. The user supplies the RCBSE definition.
 
-| Item | Done when | Status |
-|---|---|---|
-| Rate limits on every message/route | limits tested | ⬜ |
-| Anti-cheat validation (speed, fire rate, LOS) | cheat tests fail | ⬜ |
-| 100 and 200 player load test | report in docs | ⬜ |
-| Logging, metrics dashboards, backups | documented + working | ⬜ |
-| Containers + deploy scripts | staging deploy works | ⬜ |
-| Production deploy + release checklist | live | ⬜ |
-| Known gaps: office loose cash, full-screen map, cars hurting people, admin edits for city/day/vehicle/heist/tutorial settings | each built or dropped | ⬜ |
+Phases 12–25 are **pre-launch**: they make the game safe to put in front of real classes and prove that it teaches. Phases 26–36 are **post-launch**: they take each GTA-style pillar to at least 8/10 and build the breakthrough features. Each phase still ends with an approval gate.
+
+---
+## Phase 12 — Known gaps  ⬜
+Items left over from Phases 7–9 (audit con 19).
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 12.1 | Office loose cash: small cash piles on bank office storeys, picked up with F, respawned each round, amounts in settings | piles spawn, can be carried and banked, and their amounts are admin-editable | ⬜ |
+| 12.2 | Full-screen map (M): the whole city, banks with lock progress, safehouses, hospital, bounties, your position | opens and closes without pausing the world; tested on every map | ⬜ |
+| 12.3 | Cars hurt people: run-over damage from speed and car mass, the kill credited to the driver, no damage below a speed floor | a test shows a fast car kills and a slow nudge does not; the numbers are settings | ⬜ |
+| 12.4 | Admin editing for the city, day/night, vehicle, heist and tutorial settings (cards on the Settings page) | each settings key is editable, validated and hot-reloaded into a running match | ⬜ |
+| 12.5 | Admin-editable reward icons (an `icon` field per reward plus a picker; the client map moves out of code) | changing an icon in the admin changes it in the game | ⬜ |
+
+---
+## Phase 13 — Identity and persistence (Google sign-in, PostgreSQL)  ⬜
+Fixes audit cons 1 and 3: who is playing, and records that last.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 13.1 | Decision record: Google OpenID Connect (authorization code with PKCE, server-side), PostgreSQL for persistence; options weighed and rejected | `docs/identity.md` written and approved | ⬜ |
+| 13.2 | PostgreSQL in dev (compose), a migration tool, a test database for CI | `npm run db:migrate` builds an empty database; CI runs against it | ⬜ |
+| 13.3 | Move admin content (questions, versions, settings, pools, audit, users) from the SQLite file to PostgreSQL behind the existing repositories | every repository contract test passes on both; a one-shot import from `dev.db` works | ⬜ |
+| 13.4 | Players table and repository (Google subject id, email, display name, school domain, created and last seen) | contract tests pass; no other personal data stored | ⬜ |
+| 13.5 | Google sign-in on the server: login, callback, ID-token check, optional allow-list of school domains, sessions | sign-in works end to end against a test Google project; a bad or expired token is refused | ⬜ |
+| 13.6 | Signed, short-lived game tickets: the game socket admits only a valid ticket, and the name comes from the account, not the URL | `?name=` is gone; a socket without a ticket is refused | ⬜ |
+| 13.7 | Client main menu and sign-in screen (sign in, profile, play, tutorial, settings) | a new player reaches a match only through the menu | ⬜ |
+| 13.8 | Display names: rules plus a word filter (configurable lists), teacher rename | an offensive name is refused; teachers can rename a student | ⬜ |
+| 13.9 | Local dev and test sign-in bypass (dev builds only, never in production) | bots, tests and `?at=` debugging keep working without Google | ⬜ |
+| 13.10 | Account deletion and data export for a player | deleting an account removes or anonymises every row that refers to it | ⬜ |
+
+---
+## Phase 14 — Classroom mode  ⬜
+Fixes audit con 2. A teacher sets up a class in the admin. Students enter the class code and land in the same city and match.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 14.1 | Class model: name, code, owner teacher, city seed, banks in play, round length, player cap (60–200), status | create, read, update and archive tested; codes are unique and hard to guess | ⬜ |
+| 14.2 | Admin: class editor; pick which banks are open | a closed bank's vault cannot be worked, and its marker says "closed" | ⬜ |
+| 14.3 | Admin: class question release, by bank lock, heal, gun and ammo, choosing existing questions or creating new ones and mapping them to the class | a class only ever receives questions mapped to it | ⬜ |
+| 14.4 | Wire pools into `QuestionSelector` (the backlog's "game side of pools"): selection respects the class's mapping and tiers, with no repeats | tests prove nothing outside the class set is issued | ⬜ |
+| 14.5 | Join by code: the student signs in, types the code, waits in a lobby, and the match starts on the teacher's word | 100 headless clients join one class and land in the same match | ⬜ |
+| 14.6 | One match per class: `MatchPool` and the lobby route by class code; many classes run side by side | two classes at once never see each other's players or questions | ⬜ |
+| 14.7 | Teacher live controls: start, end round, next round, lock the room, kick, rename | each control works from the admin during a match | ⬜ |
+| 14.8 | Class roster: everyone who joined, linked to their account, with round history | the roster lists students and their rounds | ⬜ |
+| 14.9 | Class results stored (rounds, scores, awards) | a finished round can be reviewed later from the admin | ⬜ |
+
+---
+## Phase 15 — Learning analytics  ⬜
+Fixes audit con 4. Every question maps to a Bloom level and an RCBSE profile; every attempt is recorded; teachers see learning, not just scores.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 15.1 | RCBSE definition from the user, written into `docs/learning-analytics.md` with the Bloom levels | the doc is approved | ⛔ waiting for the RCBSE definition |
+| 15.2 | Attempt events: issued, run, submit (right or wrong, error kind), hint, lockout, switch, expiry, with player, class, question, seed and timings | every attempt in a match lands in PostgreSQL; the write path costs < 0.5 ms per tick | ⬜ |
+| 15.3 | Question metadata: Bloom level and RCBSE profile fields in the schema, editor, import/export and validation | a question cannot be saved without them | ⬜ |
+| 15.4 | Tag all 150 questions with Bloom and RCBSE (`questions:validate` checks the tags) | 100% tagged; a coverage report per tier, Bloom level and RCBSE dimension | ⬜ |
+| 15.5 | Mastery model per student per topic (and per Bloom level), updated from attempts (Elo or knowledge tracing; the method chosen in 15.1) | the model is unit-tested and stable on replayed attempt logs | ⬜ |
+| 15.6 | Teacher dashboard: class overview, per student, per question, per topic, per Bloom level and per RCBSE dimension | each view renders real data from a played class | ⬜ |
+| 15.7 | Student report card (after a round and over time) | a student sees their mastery and progress | ⬜ |
+| 15.8 | Question-quality analytics in the admin: solve rate, median time, wrong-answer rate, how well it separates strong and weak students | each question page shows them; outliers flagged | ⬜ |
+| 15.9 | CSV export for teachers (class, student, question) | export opens in a spreadsheet with no data missing | ⬜ |
+| 15.10 | Retention and aggregation rules (raw events kept N days, aggregates kept) | a job prunes on schedule and is tested | ⬜ |
+
+---
+## Phase 16 — Teaching loop  ⬜
+Fixes audit cons 5 and 6: the game teaches as well as tests, and weaker students are never locked out.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 16.1 | Concept cards: one short explainer per topic (all topics across tiers 1–5), admin-editable | every topic has a card; cards are editable and versioned | ⬜ |
+| 16.2 | Post-round review: every question you saw, your last query, the model answer (after the round only) and the concept card | the review shows for every player; nothing leaks during the round | ⬜ |
+| 16.3 | Escalating hints: a free nudge, then the concept card, then paid hints (costs in settings) | hint ladder tested; costs are settings | ⬜ |
+| 16.4 | Syntax-error explainer: SQLite errors turned into plain-language advice | the common errors (unknown column, missing GROUP BY, ambiguous column…) are explained | ⬜ |
+| 16.5 | Editor autocomplete from the challenge schema (tables, columns, keywords) | autocomplete offers only this challenge's names | ⬜ |
+| 16.6 | Tables sidebar that stays open while fighting (minimised pop-up keeps the schema in view) | schema visible with the pop-up minimised | ⬜ |
+| 16.7 | Skill-scaled difficulty: each student's question tier follows their mastery, with rewards and times scaled, so every student can earn a gun and crack some lock | a beginner can complete each reward type; a test covers the scaling | ⬜ |
+| 16.8 | Spaced repetition: weak topics come back in later rounds and daily contracts | resurfacing schedule tested against replayed data | ⬜ |
+| 16.9 | Practice mode: no combat, no clock, any topic | a student can practise any topic alone | ⬜ |
+| 16.10 | Safe zone: the safehouse interior is a no-damage zone for solving, time-limited (settings) | damage is refused inside; the stay limit is enforced | ⬜ |
+| 16.11 | Pre/post assessment: a short test before and after a unit, results in the dashboard | the teacher can run both and see the gain | ⬜ |
+
+---
+## Phase 17 — Question types and content  ⬜
+Covers every Bloom level (Remember to Create), the backlog's structural variants and dialect packs (audit con 20).
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 17.1 | Question type "fix the query": a broken query is given; the answer must produce the right result | type in the schema, grader, pop-up and admin; 10 questions | ⬜ |
+| 17.2 | Question type "which is right": choose between queries, or predict the output | type built; 10 questions | ⬜ |
+| 17.3 | Question type "make it faster": correct and under a cost (rows scanned or plan steps) | the cost is measured in the sandbox; 10 questions | ⬜ |
+| 17.4 | Question type "build it": `CREATE`/`INSERT`/`UPDATE` in a writable scratch sandbox, graded by the resulting state | the writable sandbox keeps the safety limits; 10 questions | ⬜ |
+| 17.5 | Structural variants: table and column renames, story-theme swaps (designed in questions.md) | one question renders under two themes with the same grading | ⬜ |
+| 17.6 | Bloom coverage: new content until every tier has every Bloom level | the coverage report shows no empty cell | ⬜ |
+| 17.7 | Dialect packs: PostgreSQL and MySQL notes and per-dialect cheat-sheets; quirks flagged per question | a class can pick a dialect pack; the pop-up shows its notes | ⬜ |
+
+---
+## Phase 18 — Security hardening  ⬜
+Audit con 9 plus the old "rate limits" and "anti-cheat" todo items.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 18.1 | Socket origin allow-list; lobby CORS limited to the game's own origins | requests from another origin are refused | ⬜ |
+| 18.2 | Rate limits on every message and route (game, challenge, lobby, admin, auth), with tests | each limit has a test that exceeds it | ⬜ |
+| 18.3 | Anti-cheat: line-of-sight checks on hits, a speed envelope, fire-rate audit, impossible-action logging | cheat tests fail as expected; anomalies are logged | ⬜ |
+| 18.4 | SQL sandbox fuzzing (hostile and oversized queries, resource bombs) in CI | the fuzzer runs nightly with no escapes | ⬜ |
+| 18.5 | Secrets management and a dependency audit in CI | no secret in the repo; audit failures block a merge | ⬜ |
+| 18.6 | External penetration test and fixes | report received and every high or critical finding fixed | ⬜ |
+
+---
+## Phase 19 — Scale proof  ⬜
+Audit con 10 plus the old "100 and 200 player load test" todo item.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 19.1 | 100- and 200-client socket load test on production-like cloud hardware | tick p99 < 15 ms at 100, numbers in performance.md | ⬜ |
+| 19.2 | Grader stress: 100 simultaneous submits including heavy recursive queries | queue wait p95 recorded and within target | ⬜ |
+| 19.3 | Per-player grader limits (one job in flight, cooldown) | a flooding client cannot starve others | ⬜ |
+| 19.4 | Several classes per server: capacity per core | sizing table in deployment.md | ⬜ |
+| 19.5 | Soak test (4 h) and reconnect chaos (drops, rejoin mid-heist) | no leak, no lost progress | ⬜ |
+
+---
+## Phase 20 — Operations and deployment  ⬜
+Audit con 8 plus the old "logging, metrics, backups, containers, deploy" todo items.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 20.1 | Containers for the game server and admin; compose for local staging | `docker compose up` runs the full stack | ⬜ |
+| 20.2 | Staging environment and a CI deploy to it | a merge to main deploys to staging | ⬜ |
+| 20.3 | Managed PostgreSQL with nightly backups and a tested restore drill | restore drill documented and passed | ⬜ |
+| 20.4 | Structured logs, metrics dashboards, alerts (tick, players, grader queue, errors) | dashboards live; alerts fire in a test | ⬜ |
+| 20.5 | Client error reporting | a thrown error in the browser reaches the error log | ⬜ |
+| 20.6 | CDN for the client, TLS and WSS, domain | the game loads over HTTPS from the CDN | ⬜ |
+| 20.7 | Release and rollback procedure | a rollback is rehearsed on staging | ⬜ |
+
+---
+## Phase 21 — Privacy and compliance  ⬜
+Required before student data flows: Google accounts, attempts and classes.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 21.1 | Data map: every field stored, why and for how long | `docs/privacy.md` approved | ⬜ |
+| 21.2 | Privacy policy and terms for schools and students (minors), reviewed for COPPA, GDPR and India's DPDP Act | published in the game and the admin | ⬜ |
+| 21.3 | School consent flow (teacher or school admin accepts on the class's behalf) | a class cannot start without it | ⬜ |
+| 21.4 | Retention and deletion jobs tied to 15.10 and 13.10 | tested | ⬜ |
+| 21.5 | Log audit: no personal data in logs or metrics | a scan of the logs finds none | ⬜ |
+| 21.6 | Data processing agreement template for schools | template ready | ⬜ |
+
+---
+## Phase 22 — Settings, accessibility and devices  ⬜
+Audit con 17.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 22.1 | In-game settings menu: sensitivity, invert, FOV, volume per channel, graphics quality | settings persist per account | ⬜ |
+| 22.2 | Key remapping | every action remappable; conflicts flagged | ⬜ |
+| 22.3 | Accessibility: text size, colour-blind palettes, reduced motion, subtitles for sound cues | a WCAG-style check of the HUD and pop-up passes | ⬜ |
+| 22.4 | Gamepad support | full play with a controller | ⬜ |
+| 22.5 | Touch controls (tablets and touch Chromebooks) | full play by touch | ⬜ |
+| 22.6 | Real-device performance pass (3 low-end Chromebooks, integrated GPUs) | ≥ 60 fps target, 30 fps floor, numbers recorded | ⬜ |
+| 22.7 | Localisation framework (UI strings out of code) and the first two languages | the UI switches language at runtime | ⬜ |
+
+---
+## Phase 23 — Game test plan  ⬜
+Audit section "Pre-launch checklist" and the user's item 5.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 23.1 | Test strategy doc: levels, owners, entry/exit criteria, bug severity scale, triage process | `docs/testing.md` updated and approved | ⬜ |
+| 23.2 | End-to-end browser tests: sign in, join class, solve, crack, carry, bank, round end, review | the suite runs in CI on every merge | ⬜ |
+| 23.3 | Multiplayer integration tests with headless clients (class of 100, two classes at once) | runs nightly | ⬜ |
+| 23.4 | Performance regression in CI (bundle, draw calls, triangles, tick) | a regression fails CI | ⬜ |
+| 23.5 | Internal playtests (scripted sessions, observation notes, survey) | three sessions run, findings filed | ⬜ |
+| 23.6 | Usability tests with students (think-aloud, first-time-user flow) | findings filed and triaged | ⬜ |
+| 23.7 | Bug bash and triage until no critical or high bugs remain open | zero open critical or high | ⬜ |
+
+---
+## Phase 24 — Classroom pilot  ⬜
+Proof that it is fun and that it teaches before launch.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 24.1 | Pilot plan: 2–3 schools, classes of 60+, pre/post test, survey, consent | plan approved | ⬜ |
+| 24.2 | Run the pilot (several sessions per class) | sessions held; data collected | ⬜ |
+| 24.3 | Pilot report: learning gain, fun, retention, bugs, teacher feedback | report in `docs/review/pilot.md` | ⬜ |
+| 24.4 | Fix what the pilot found (critical and major) | each fix shipped and re-checked | ⬜ |
+
+---
+## Phase 25 — Launch checklist and release  ⬜
+The release gate. Every line is verified, not assumed.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 25.1 | Release checklist document (identity, classroom, analytics, teaching loop, security, scale, ops, privacy, accessibility, tests, pilot) | the checklist is approved | ⬜ |
+| 25.2 | Walk the checklist; every item evidenced (test, report or screenshot) | all items ticked with evidence | ⬜ |
+| 25.3 | Production deploy | live | ⬜ |
+| 25.4 | Launch monitoring for the first two weeks (dashboards, on-call, daily triage) | two clean weeks or issues fixed | ⬜ |
+| 25.5 | First 30 days: tune tiers, times and rewards from real attempt data | a tuning report and settings changes | ⬜ |
+
+---
+## Phase 26 — Progression and the meta-loop  ⬜
+Post-launch. Audit con 14 and "Rewards" and "Progression" in the GTA audit (target 8–9).
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 26.1 | XP and ranks from play and from learning (mastery counts more than kills) | XP rules in settings; ranks shown | ⬜ |
+| 26.2 | Skill tree by SQL topic, driven by mastery | tree shows locked and unlocked topics per student | ⬜ |
+| 26.3 | Cosmetics (masks, outfits, car paint) unlocked by mastery and rank, no loot boxes | unlocks work and show to others | ⬜ |
+| 26.4 | In-round streak bonus for consecutive correct answers (in gameplay.md, never built) | bonus paid; settings-driven | ⬜ |
+| 26.5 | Daily contracts (three short SQL jobs a day) and day streaks | contracts refresh daily; streak tracked | ⬜ |
+| 26.6 | Weekly class leagues on mastery as well as cash | league table per class | ⬜ |
+| 26.7 | Seasons: themed content, a free progression track | a season can be configured and run | ⬜ |
+| 26.8 | Share cards: the round's best query, time, haul and award as an image | a card can be saved and shared | ⬜ |
+| 26.9 | Player profile page (rank, mastery, history, cosmetics) | profile shows real data | ⬜ |
+
+---
+## Phase 27 — Squads and roles  ⬜
+Post-launch. Audit con 13. No chat (out of scope).
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 27.1 | Squads of 3–4 inside a class; shared vault progress and shared banked cash | squads score as one | ⬜ |
+| 27.2 | Squad forming: teacher picks, self-pick, or auto-balance by mastery | all three ways work | ⬜ |
+| 27.3 | Roles (hacker, driver, enforcer, lookout) with small perks, tuned in settings | each role's perk works and is balanced in a playtest | ⬜ |
+| 27.4 | Squad HUD: teammates on the minimap, their task and health | visible in play | ⬜ |
+| 27.5 | Squad awards and squad leaderboard | shown at round end | ⬜ |
+
+---
+## Phase 28 — Game modes  ⬜
+Post-launch. Audit con 16.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 28.1 | Mode framework: a class picks a mode; rules as settings | modes switch without code changes | ⬜ |
+| 28.2 | Smash and Grab: a 5-minute round, one bank | playable end to end | ⬜ |
+| 28.3 | SQL Quick Draw: 1v1 duel, the same question, the first correct answer wins the shot | playable end to end | ⬜ |
+| 28.4 | Classic heist (today's mode), with teacher-picked length | unchanged behaviour under the framework | ⬜ |
+
+---
+## Phase 29 — Living city (world immersion)  ⬜
+Post-launch. GTA audit "World immersion" from 5 to 8–9.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 29.1 | Pedestrians: a cheap crowd (instanced, LOD), react to gunfire and flee | crowd at budget; reacts to shots | ⬜ |
+| 29.2 | Traffic on the lanes, obeying junctions, reacting to crashes | traffic flows; server-owned and cheap | ⬜ |
+| 29.3 | Bank guards (PvE) that patrol and respond to alarms | guards fight back; numbers in settings | ⬜ |
+| 29.4 | Police response: wanted level from alarms and kills, chases, roadblocks | escaping the police is a real challenge | ⬜ |
+| 29.5 | Weather (rain, fog) and richer ambient sound | weather cycles; budgets kept | ⬜ |
+| 29.6 | Shops and vendors: spend cash on armour, ammo and cosmetics | buying works and is server-checked | ⬜ |
+| 29.7 | Car radio | stations play in cars | ⬜ |
+| 29.8 | Immersion review: re-score World immersion | scored ≥ 8 in a review with screenshots | ⬜ |
+
+---
+## Phase 30 — Exploration and freedom  ⬜
+Post-launch. GTA audit "Exploration" (3) and "Freedom" (5) to 8–9.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 30.1 | Districts with their own look and landmarks | each district recognisable on sight and on the map | ⬜ |
+| 30.2 | Points of interest and hidden caches (found through SQL intel, see Phase 33) | caches spawn and pay out | ⬜ |
+| 30.3 | Collectibles tied to SQL trivia | collectibles tracked per player | ⬜ |
+| 30.4 | Safehouse properties and upgrades bought with banked cash | upgrades persist and matter | ⬜ |
+| 30.5 | Map discovery (fog over unexplored districts) on the full-screen map | discovery persists per player | ⬜ |
+| 30.6 | Side activities: street races, deliveries, each with an SQL twist | two side activities playable | ⬜ |
+| 30.7 | Approach choice in heists: stealth versus loud, each with its own payoff | both approaches can win | ⬜ |
+| 30.8 | Review: re-score Exploration and Freedom | both ≥ 8 | ⬜ |
+
+---
+## Phase 31 — Missions and heist structure  ⬜
+Post-launch. GTA audit "Missions" from 3 to 8–9.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 31.1 | Three-act heists: setup (intel jobs), the heist, the getaway | a full three-act heist plays end to end | ⬜ |
+| 31.2 | Contract board with varied jobs (intel, sabotage, data theft, escort) | at least four contract types | ⬜ |
+| 31.3 | Getaway: police roadblocks placed by what your intel queries revealed | intel changes the getaway | ⬜ |
+| 31.4 | Payout screen: the take split, bonuses, mastery gained | shown after every heist | ⬜ |
+| 31.5 | Review: re-score Missions | ≥ 8 | ⬜ |
+
+---
+## Phase 32 — Story and characters  ⬜
+Post-launch. GTA audit "Story" from 1 to 8–9.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 32.1 | Story bible: the city, the crew, a fixer per bank, the arc across tiers | approved | ⬜ |
+| 32.2 | Story missions (solo or co-op), one chain per bank | five chains playable | ⬜ |
+| 32.3 | In-engine cut-scenes and character barks (text) | scenes play and can be skipped | ⬜ |
+| 32.4 | Question stories rewritten to follow the arc | stories match the chain they appear in | ⬜ |
+| 32.5 | Review: re-score Story | ≥ 8 | ⬜ |
+
+---
+## Phase 33 — SQL in the world: queries as superpowers  ⬜
+Post-launch. Breakthrough feature 1 and GTA audit "SQL fit" from 4 to 8–9.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 33.1 | City database: live tables mirroring the world (guards, cameras, cash drops, wanted players, police) | tables update from the match state, cheaply | ⬜ |
+| 33.2 | Intel queries: a correct query shows its rows on the minimap for a while | intel appears and expires | ⬜ |
+| 33.3 | Better queries give better intel (filters, joins, freshness) | quality scales the reward | ⬜ |
+| 33.4 | Camera hacking and door control through queries | both usable in a heist | ⬜ |
+| 33.5 | Anti-abuse: cooldowns, ranges, fairness tests | balance playtest passes | ⬜ |
+| 33.6 | Review: re-score SQL fit | ≥ 8 | ⬜ |
+
+---
+## Phase 34 — Breakthrough features  ⬜
+Post-launch. Audit section "Breakthrough features" 2–8.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 34.1 | Cops and robbers: police team queries logs to track the robbers | playable mode | ⬜ |
+| 34.2 | Co-op split queries: a tier-5 vault needs a three-part CTE, one part per squad member | parts join and grade together | ⬜ |
+| 34.3 | Fix the inside man's query mid-heist (uses 17.1) | appears in heists | ⬜ |
+| 34.4 | Optimisation leaderboards (rows scanned, query length) | per class and global | ⬜ |
+| 34.5 | Teacher heist builder: a story plus a question chain makes a custom heist; shareable | a teacher builds and shares one | ⬜ |
+| 34.6 | Async ghost heists: replay a top player's heist as a ghost to beat | ghost replays work | ⬜ |
+| 34.7 | Localised stories, bank names and currencies per country (uses 22.7) | two countries' themes ship | ⬜ |
+
+---
+## Phase 35 — Polish  ⬜
+Post-launch. Minor items from the audit.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 35.1 | Kill-cam showing the killer's view and how long their last query took | plays on death | ⬜ |
+| 35.2 | Round replay (server-recorded) for teachers | a round can be replayed | ⬜ |
+| 35.3 | Small UX fixes from pilot and launch feedback | backlog emptied | ⬜ |
+
+---
+## Phase 36 — GTA scorecard gate  ⬜
+Post-launch. A review proving every pillar is at least 8/10.
+
+| # | Subphase | Done when | Status |
+|---|---|---|---|
+| 36.1 | Re-score all eight pillars (immersion, exploration, missions, story, progression, freedom, rewards, SQL fit) with playtest evidence | every pillar ≥ 8 | ⬜ |
+| 36.2 | Fix any pillar under 8 | re-scored ≥ 8 | ⬜ |
