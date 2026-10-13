@@ -9,6 +9,7 @@ import type {
   WorldSettings,
 } from '@heist/shared';
 import { FanOutSink, type AttemptSink } from './analytics/AttemptSink';
+import type { PracticeTopic } from './challenges/PracticeSocket';
 import { ReviewKeeper } from './analytics/ReviewKeeper';
 import { ChallengeMessageHandler } from './challenges/ChallengeMessageHandler';
 import { ChallengeService, type ChallengeLogger } from './challenges/ChallengeService';
@@ -40,6 +41,8 @@ export interface ChallengeStack {
   citySettings(): CitySettings;
   /** The tutorial as the admin has set it (read for every new tutorial room). */
   tutorialSettings(): TutorialSettings;
+  /** Topics a student can drill on their own (Phase 16.9). */
+  practiceTopics(): PracticeTopic[];
   /** Drop cached questions and settings (admin edited something). */
   invalidate(): void;
   close(): Promise<void>;
@@ -88,6 +91,7 @@ export function buildChallengeStack(
     heistSettings: () => settings.heistSettings(),
     combatSettings: () => settings.combatSettings(),
     tutorialSettings: () => settings.tutorialSettings(),
+    practiceTopics: () => practiceTopicsOf(questions, concepts),
     analyticsSettings: () => settings.analyticsSettings(),
     worldSettings: () => worldSettingsFrom(settings),
     citySettings: () => settings.citySettings(),
@@ -98,4 +102,27 @@ export function buildChallengeStack(
     },
     close: () => sandbox.close(),
   };
+}
+
+/** Every topic that has an enabled question, with its concept card title and the tiers it appears in. */
+function practiceTopicsOf(
+  questions: CachedQuestionReader,
+  concepts: ConceptReader,
+): PracticeTopic[] {
+  const by = new Map<string, { questions: number; tiers: Set<number> }>();
+  for (const q of questions.list({ enabled: true }))
+    for (const topic of q.template.topic) {
+      const t = by.get(topic) ?? { questions: 0, tiers: new Set<number>() };
+      t.questions++;
+      t.tiers.add(q.template.tier);
+      by.set(topic, t);
+    }
+  return [...by]
+    .map(([topic, t]) => ({
+      topic,
+      title: concepts.get(topic)?.title ?? topic,
+      questions: t.questions,
+      tiers: [...t.tiers].sort(),
+    }))
+    .sort((a, b) => a.title.localeCompare(b.title));
 }

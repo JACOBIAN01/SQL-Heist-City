@@ -31,8 +31,12 @@ export class QuestionSelector {
     allowed?: ReadonlySet<number>,
     /** Prefer questions on these topics (spaced repetition); ignored when none are available in range. */
     focus?: ReadonlySet<string>,
+    /** Only these topics (the practice drill's chosen topic); nothing else is ever drawn. */
+    only?: ReadonlySet<string>,
   ): StoredQuestion | undefined {
     let candidates = this.candidates(tiers, allowed);
+    if (only && only.size > 0)
+      candidates = candidates.filter((q) => q.template.topic.some((t) => only.has(t)));
     if (focus && focus.size > 0) {
       const onTopic = candidates.filter((q) => q.template.topic.some((t) => focus.has(t)));
       if (onTopic.length > 0) candidates = onTopic;

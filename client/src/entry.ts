@@ -8,14 +8,18 @@ import { MainMenu } from './ui/menu/MainMenu';
  * straight to the game, so every developer workflow keeps working.
  */
 const params = new URLSearchParams(location.search);
+const wantsPractice = params.has('practice');
 const onlyAnError = [...params.keys()].every((k) => k === 'signin_error');
 
-if (onlyAnError) {
+if (wantsPractice) {
+  await import('./practice');
+} else if (onlyAnError) {
   const account = new HttpAccountApi(accountBase(location.hostname, params.get('account')));
   void new MainMenu({
     account,
     go: (destination) => {
-      location.search = destination === 'play' ? '?play' : '?tutorial';
+      location.search =
+        destination === 'play' ? '?play' : destination === 'practice' ? '?practice' : '?tutorial';
     },
     navigate: (url) => location.assign(url),
     roomStatus: (classId) => roomStatus(location.hostname, params.get('server') ?? '8080', classId),

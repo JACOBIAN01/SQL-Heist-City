@@ -40,7 +40,8 @@ export class WebSocketChallengeApi implements ChallengeApi {
   private readonly socketFactory: SocketFactory;
 
   constructor(
-    private readonly url: string,
+    /** The address, or a function that makes a fresh one for each connection (a one-use ticket in it). */
+    private readonly url: string | (() => Promise<string>),
     options: WebSocketChallengeApiOptions = {},
   ) {
     this.now = options.now ?? Date.now;
@@ -117,8 +118,15 @@ export class WebSocketChallengeApi implements ChallengeApi {
 
   private connect(): Promise<SocketLike> {
     if (this.socket?.readyState === OPEN) return Promise.resolve(this.socket);
-    this.opening ??= new Promise<SocketLike>((resolve, reject) => {
-      const socket = this.socketFactory(this.url);
+    this.opening ??= (async () => (typeof this.url === 'string' ? this.url : this.url()))().then(
+      (address) => this.openSocket(address),
+    );
+    return this.opening;
+  }
+
+  private openSocket(address: string): Promise<SocketLike> {
+    return new Promise<SocketLike>((resolve, reject) => {
+      const socket = this.socketFactory(address);
       socket.addEventListener('open', () => {
         this.socket = socket;
         resolve(socket);
@@ -135,7 +143,6 @@ export class WebSocketChallengeApi implements ChallengeApi {
       });
       socket.addEventListener('message', (event) => this.onMessage(event.data));
     });
-    return this.opening;
   }
 
   private onMessage(data: unknown): void {

@@ -35,6 +35,8 @@ export interface IssueOptions {
   readonly revealSolution?: boolean;
   /** Whose attempt this is, for the learning record. */
   readonly who?: AttemptWho;
+  /** Only questions on these topics (the practice drill); none available means no question. */
+  readonly onlyTopics?: readonly string[];
   /** Topics this student is weakest at: some questions are drawn from them (spaced repetition). */
   readonly focusTopics?: readonly string[];
   /** Eases this question for a struggling student (easier tier, more time). */
@@ -182,6 +184,7 @@ export class ChallengeService {
           new SeededRng(`${seed}/select`),
           request.allowedQuestions,
           this.focusFor(request, seed),
+          request.onlyTopics?.length ? new Set(request.onlyTopics) : undefined,
         );
       if (!question) return { ok: false, reason: 'no_questions' };
 

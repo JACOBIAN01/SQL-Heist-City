@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { attachPracticeSocket } from './challenges/PracticeSocket';
 import { attachChallengeSocket } from './challenges/ChallengeSocket';
 import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
@@ -121,6 +122,11 @@ const server = createHttpServer({
 });
 if (challenges) {
   attachChallengeSocket(server, challenges.handler);
+  // The solo drill: practise a topic with no match (Phase 16.9).
+  attachPracticeSocket(server, challenges.handler, {
+    topics: () => challenges.practiceTopics(),
+    ...(auth ? { auth } : {}),
+  });
   // The tutorial: a private room per player, always on this port (it needs the questions).
   attachTutorialSocket(
     server,

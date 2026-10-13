@@ -34,6 +34,46 @@ async function opened() {
   await vi.advanceTimersByTimeAsync(0);
 }
 
+describe('WebSocketChallengeApi with a fresh address for each connection', () => {
+  it('asks for a new address (a new one-use ticket) every time it connects', async () => {
+    let n = 0;
+    const made: FakeSocket[] = [];
+    const a = new WebSocketChallengeApi(async () => `ws://game/ws/practice?ticket=t${++n}`, {
+      socketFactory: (url) => {
+        const s = new FakeSocket(url);
+        made.push(s);
+        return s;
+      },
+      timeoutMs: 5_000,
+    });
+    const first = a.request('practice:1');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(made[0]?.url).toBe('ws://game/ws/practice?ticket=t1');
+    made[0]?.open();
+    await vi.advanceTimersByTimeAsync(0);
+    made[0]?.reply({
+      t: 'challenge',
+      ref: 1,
+      now: 1,
+      result: { ok: true, challenge: { id: 'c' } as never },
+    });
+    await first;
+    a.close();
+    const second = a.request('practice:1');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(made[1]?.url).toBe('ws://game/ws/practice?ticket=t2');
+    made[1]?.open();
+    await vi.advanceTimersByTimeAsync(0);
+    made[1]?.reply({
+      t: 'challenge',
+      ref: 2,
+      now: 1,
+      result: { ok: true, challenge: { id: 'd' } as never },
+    });
+    await second;
+  });
+});
+
 describe('WebSocketChallengeApi', () => {
   it('connects on first use, sends a ref-tagged request and resolves with the matching reply', async () => {
     const pending = api.request('heal:small', 'self');

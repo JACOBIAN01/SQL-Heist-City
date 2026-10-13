@@ -6,7 +6,7 @@ import './menu.css';
 export interface MenuOptions {
   readonly account: AccountApi;
   /** Go to a place in the game ('play' or 'tutorial'). */
-  readonly go: (destination: 'play' | 'tutorial') => void;
+  readonly go: (destination: 'play' | 'tutorial' | 'practice') => void;
   /** Send the browser away (to Google). */
   readonly navigate: (url: string) => void;
   /** Where Google should send the player back to. */
@@ -241,6 +241,11 @@ export class MainMenu {
         on: { click: () => this.options.go('play') },
       }),
       h('button', { text: 'Tutorial', on: { click: () => this.options.go('tutorial') } }),
+      h('button', {
+        text: 'Practice SQL (solo)',
+        attrs: { title: 'Drill a topic on your own: no match, no combat' },
+        on: { click: () => this.options.go('practice') },
+      }),
       h('button', {
         text: 'Settings',
         attrs: { disabled: '', title: 'Coming with the settings menu' },

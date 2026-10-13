@@ -60,6 +60,7 @@ describe('MainMenu', () => {
       'Join class',
       'Play (open match)',
       'Tutorial',
+      'Practice SQL (solo)',
       'Settings',
       'Download my data',
       'Delete my account',
