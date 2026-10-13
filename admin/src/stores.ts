@@ -11,6 +11,11 @@ import {
   type ClassRepository,
 } from '@heist/server/classes/ClassRepository';
 import {
+  InMemoryClassResults,
+  PgClassResults,
+  type ClassResultRepository,
+} from '@heist/server/classes/ClassResults';
+import {
   InMemoryPlayerRepository,
   InMemoryPlayerSessions,
   PgPlayerRepository,
@@ -44,6 +49,8 @@ export interface AdminStores {
   readonly players: PlayerRepository;
   /** Teachers' classes, their question sets and rosters. SQLite development keeps them in memory only. */
   readonly classes: ClassRepository;
+  /** Finished rounds of classes (written by the game server). */
+  readonly classResults: ClassResultRepository;
   playerSessions(ttlMs: number, now: () => number): PlayerSessions;
   sessions(ttlMs: number, now: () => number): SessionStore;
 }
@@ -57,6 +64,7 @@ export function sqliteStores(db: DatabaseSync): AdminStores {
     pools: new SqlitePoolRepository(db),
     settings: new SqliteSettingsStore(db),
     players: new InMemoryPlayerRepository(),
+    classResults: new InMemoryClassResults(),
     classes: new InMemoryClassRepository(
       undefined,
       () => new Set(questionRepo.list().map((q) => q.id)),
@@ -75,6 +83,7 @@ export function pgStores(db: PgDatabase): AdminStores {
     settings: new PgSettingsStore(db),
     players: new PgPlayerRepository(db),
     classes: new PgClassRepository(db),
+    classResults: new PgClassResults(db),
     playerSessions: (ttl, now) => new PgPlayerSessions(db, ttl, now),
     sessions: (ttl, now) => new PgSessionStore(db, ttl, now),
   };

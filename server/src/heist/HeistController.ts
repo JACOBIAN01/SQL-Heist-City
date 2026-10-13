@@ -106,6 +106,7 @@ export class HeistController implements ArmsControl {
         reset: () => this.resetWorld(),
         awards: () => this.awards.results((id) => this.match.getPlayer(id)),
         onEnd: () => this.banking.cancelAll('round_over'),
+        onResult: (result) => this.events.publish({ type: 'round_end', result }),
       });
       this.layLooseCash();
     }
@@ -136,6 +137,15 @@ export class HeistController implements ArmsControl {
       return amount > 0 ? [this.loot.add(c.x, c.y, c.z, amount, true)] : [];
     });
     if (piles.length > 0) this.match.broadcastJson({ t: 'loot', add: piles, remove: [] });
+  }
+
+  /** Teacher controls: end the round now / begin the next one now. */
+  endRound(): void {
+    this.round?.endNow();
+  }
+
+  startNextRound(): void {
+    this.round?.startNow();
   }
 
   /** Whether the round is between rounds: nothing counts then. */

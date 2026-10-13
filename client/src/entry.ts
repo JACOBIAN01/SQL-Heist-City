@@ -1,4 +1,5 @@
 import { HttpAccountApi, accountBase } from './net/account';
+import { roomStatus } from './net/classRoom';
 import { MainMenu } from './ui/menu/MainMenu';
 
 /**
@@ -17,6 +18,10 @@ if (onlyAnError) {
       location.search = destination === 'play' ? '?play' : '?tutorial';
     },
     navigate: (url) => location.assign(url),
+    roomStatus: (classId) => roomStatus(location.hostname, params.get('server') ?? '8080', classId),
+    goClass: (classId) => {
+      location.search = `?class=${classId}`;
+    },
     confirm: (message) => window.confirm(message),
     saveFile: (name, text) => {
       const link = document.createElement('a');

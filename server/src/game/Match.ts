@@ -71,6 +71,7 @@ export const CLOSE_IDLE = 4002;
 export const CLOSE_ROUND = 4003;
 export const CLOSE_DUPLICATE = 4004;
 export const CLOSE_SIGN_IN = 4005;
+export const CLOSE_KICKED = 4006;
 
 /** The snapshot scratch objects are written in place, so they are not readonly here. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
@@ -491,6 +492,30 @@ export class Match implements MatchApi {
     this.lagComp.forget(id);
     this.interest.remove(id);
     this.broadcast({ e: 'left', id });
+  }
+
+  /** The teacher removes a player: their connection closes and they leave the match. */
+  kick(id: number, reason = 'Removed by your teacher'): boolean {
+    const player = this.players.get(id);
+    if (!player) return false;
+    player.connection.close(CLOSE_KICKED, reason);
+    this.leave(id);
+    return true;
+  }
+
+  /** The teacher renamed a player: it takes effect now, and everyone is told. */
+  renameByAccount(accountId: number, name: string): void {
+    for (const p of this.players.values()) {
+      if (p.accountId !== accountId) continue;
+      p.name = cleanName(name, p.id);
+      this.broadcast({ e: 'joined', id: p.id, name: p.name });
+    }
+  }
+
+  /** Player id of a signed-in account in this match, if present. */
+  playerIdOfAccount(accountId: number): number | undefined {
+    for (const p of this.players.values()) if (p.accountId === accountId) return p.id;
+    return undefined;
   }
 
   /** Called with decoded input; applied on the next tick. */

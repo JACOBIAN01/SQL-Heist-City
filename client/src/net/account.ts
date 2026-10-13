@@ -17,7 +17,9 @@ export type WhoAmI =
 export interface AccountApi {
   me(): Promise<WhoAmI>;
   /** A one-use ticket for joining a match, or undefined when not signed in. */
-  ticket(): Promise<string | undefined>;
+  ticket(classId?: number): Promise<string | undefined>;
+  /** Joins a class by the code the teacher gave out. */
+  joinClass(code: string): Promise<{ id: number; name: string } | { error: string }>;
   signOut(): Promise<void>;
   rename(displayName: string): Promise<AccountPlayer | { error: string }>;
   /** The player's data as JSON text, to save as a file. */
@@ -61,9 +63,30 @@ export class HttpAccountApi implements AccountApi {
     }
   }
 
-  async ticket(): Promise<string | undefined> {
+  async joinClass(code: string): Promise<{ id: number; name: string } | { error: string }> {
     try {
-      const res = await this.call('/auth/ticket', { method: 'POST' });
+      const res = await this.call('/auth/class/join', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const body = (await res.json()) as {
+        class?: { id: number; name: string };
+        error?: { message: string };
+      };
+      return res.ok && body.class ? body.class : { error: body.error?.message ?? 'Could not join' };
+    } catch {
+      return { error: 'The account service is not reachable' };
+    }
+  }
+
+  async ticket(classId?: number): Promise<string | undefined> {
+    try {
+      const res = await this.call('/auth/ticket', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(classId === undefined ? {} : { classId }),
+      });
       if (!res.ok) return undefined;
       return ((await res.json()) as { ticket: string }).ticket;
     } catch {

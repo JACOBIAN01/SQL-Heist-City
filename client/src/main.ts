@@ -32,6 +32,7 @@ import { GameClient } from './net/GameClient';
 import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
 import { InputBatcher } from './net/InputBatcher';
 import { HttpAccountApi, accountBase } from './net/account';
+import { classRoomUrl, roomStatus } from './net/classRoom';
 import { LiveWorld } from './net/liveWorld';
 import { setRewardIcons } from './ui/icons/icons';
 import { chooseGameUrl, tutorialUrl } from './net/lobby';
@@ -112,7 +113,18 @@ const params = new URLSearchParams(location.search);
 // ?tutorial plays the tutorial: a private room on the tutorial map, with a guide.
 const tutorial = params.has('tutorial');
 // Without ?map the page builds the default city (the server's default too, so no reload).
-const MAP = mapById(tutorial ? 'tutorial' : (params.get('map') ?? 'city')) ?? TEST_MAP;
+// ?class=<id> plays the city of that class's room, whatever the page was opened with.
+const classId = Number(params.get('class') ?? 0) || undefined;
+const classRoom = classId
+  ? await roomStatus(location.hostname, params.get('server') ?? '8080', classId)
+  : undefined;
+if (classId && classRoom?.state !== 'live') {
+  // The room closed (or never opened): back to the menu.
+  location.search = '';
+  await new Promise(() => {});
+}
+const classMap = classRoom?.state === 'live' ? classRoom.mapId : undefined;
+const MAP = mapById(tutorial ? 'tutorial' : (classMap ?? params.get('map') ?? 'city')) ?? TEST_MAP;
 /** Remote players are drawn this far in the past (smooth interpolation); shots are rewound by it too. */
 const INTERP_DELAY_MS = 100;
 const renderer = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -272,9 +284,12 @@ let chaseYaw: number | undefined;
 const port = params.get('server') ?? '8080';
 const lag = Number(params.get('lag') ?? 0);
 // The lobby says which match (and which port, when matches run in their own threads) to join.
+// ?class=<id>: the room a teacher started for that class (the lobby says where it runs).
 const gameUrl = tutorial
   ? tutorialUrl(location.hostname, port)
-  : await chooseGameUrl(location.hostname, port);
+  : classRoom?.state === 'live'
+    ? classRoomUrl(location.hostname, classRoom.port)
+    : await chooseGameUrl(location.hostname, port);
 const thresholds = thresholdsFor(
   DEFAULT_MOVEMENT_SETTINGS.walkSpeed,
   DEFAULT_MOVEMENT_SETTINGS.sprintSpeed,
@@ -388,7 +403,7 @@ const feedback = new CombatFeedback({
 // Signed in? The account service gives a one-use ticket; the server then takes the name from the account.
 const ticket = await new HttpAccountApi(
   accountBase(location.hostname, params.get('account')),
-).ticket();
+).ticket(classId);
 let transport: GameTransport = new WebSocketGameTransport(gameUrl);
 if (lag > 0) transport = new DelayedTransport(transport, lag);
 const client = new GameClient(transport, {

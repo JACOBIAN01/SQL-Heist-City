@@ -1,8 +1,31 @@
+import type { AwardView } from '@heist/shared';
 import type { Player } from '../game/Player';
 import type { Vault } from './Vault';
 
 /** What happened in the heist, as rule code reports it. */
+/** One player's result for a finished round (plain data, safe to send between threads). */
+export interface PlayerRoundResult {
+  readonly rank: number;
+  /** The signed-in account behind the player; absent for unsigned play. */
+  readonly accountId?: number;
+  readonly name: string;
+  readonly banked: number;
+  readonly kills: number;
+  readonly deaths: number;
+}
+
+export interface RoundResult {
+  /** 1 for the first round of the match. */
+  readonly number: number;
+  readonly startedAt: number;
+  readonly endedAt: number;
+  readonly standings: readonly PlayerRoundResult[];
+  readonly awards: readonly AwardView[];
+}
+
 export type HeistEvent =
+  /** A round just finished. */
+  | { readonly type: 'round_end'; readonly result: RoundResult }
   | {
       readonly type: 'lock_opened';
       readonly vault: Vault;

@@ -87,3 +87,86 @@ export function useRoster(id: number) {
     queryFn: async () => (await api<{ roster: RosterEntry[] }>(`/classes/${id}/roster`)).roster,
   });
 }
+
+export interface LiveStatus {
+  status: { state: 'waiting' | 'live'; port?: number; players?: number; maxPlayers?: number };
+  /** False when the admin cannot reach the game server. */
+  connected: boolean;
+}
+
+/** The class room's state, looked at every few seconds. */
+export function useLive(id: number) {
+  return useQuery({
+    queryKey: ['class', id, 'live'],
+    queryFn: () => api<LiveStatus>(`/classes/${id}/live`),
+    refetchInterval: 3000,
+  });
+}
+
+export type LiveAction = 'start' | 'stop' | 'end-round' | 'next-round';
+
+export function useLiveCommand(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      command: { action: LiveAction } | { kick: number } | { rename: number; name: string },
+    ) => {
+      if ('action' in command)
+        return api(`/classes/${id}/live/${command.action}`, { method: 'POST' });
+      if ('kick' in command)
+        return api(`/classes/${id}/live/kick`, {
+          method: 'POST',
+          body: { playerId: command.kick },
+        });
+      return api(`/classes/${id}/live/rename`, {
+        method: 'POST',
+        body: { playerId: command.rename, displayName: command.name },
+      });
+    },
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['class', id, 'live'] });
+      void client.invalidateQueries({ queryKey: ['class', id, 'roster'] });
+    },
+  });
+}
+
+export function useLockClass(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (locked: boolean) =>
+      api<{ class: ClassRecord }>(`/classes/${id}/lock`, { method: 'POST', body: { locked } }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['class', id] });
+      void client.invalidateQueries({ queryKey: ['classes'] });
+    },
+  });
+}
+
+export interface RoundSummary {
+  id: number;
+  number: number;
+  startedAt: string;
+  endedAt: string;
+  players: number;
+  winner: { name: string; banked: number } | null;
+}
+
+export interface RoundDetail {
+  round: RoundSummary & { awards: { id: string; name: string; value: number }[] };
+  standings: { rank: number; name: string; banked: number; kills: number; deaths: number }[];
+}
+
+export function useRounds(id: number) {
+  return useQuery({
+    queryKey: ['class', id, 'rounds'],
+    queryFn: async () => (await api<{ rounds: RoundSummary[] }>(`/classes/${id}/results`)).rounds,
+  });
+}
+
+export function useRound(id: number, roundId: number | undefined) {
+  return useQuery({
+    queryKey: ['class', id, 'rounds', roundId],
+    enabled: roundId !== undefined,
+    queryFn: () => api<RoundDetail>(`/classes/${id}/results/${roundId}`),
+  });
+}

@@ -19,6 +19,7 @@ import { QuestionImportService } from './questions/io/QuestionImportService';
 import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
 import { PersonalDataRegistry, accountSource } from '@heist/server/players/PersonalData';
+import { HttpGameControl, type GameControl } from './classes/GameControl';
 import { classRoutes } from './classes/classRoutes';
 import { playerStaffRoutes } from './players/staffRoutes';
 import { NAME_RULES_KEY, settingsParsers } from '@heist/server/config/SettingsReader';
@@ -56,6 +57,8 @@ export interface AdminOverrides {
   readonly now?: () => number;
   /** Tests run SQL in-process; production isolates it in worker threads. */
   readonly sandbox?: SandboxRunner;
+  /** How the admin reaches the running game (live class controls); production builds an HTTP one. */
+  readonly gameControl?: GameControl;
 }
 
 export interface Admin {
@@ -118,6 +121,11 @@ export function buildAdmin(
     })
     // The account goes last: a failure above leaves an account that can try again.
     .register(accountSource(stores.players, playerSessions));
+  const gameControl =
+    overrides.gameControl ??
+    (config.gameServer
+      ? new HttpGameControl(config.gameServer.url, config.gameServer.secret)
+      : undefined);
   const nameRules = async () =>
     settingsParsers.namesFrom(await stores.settings.get(NAME_RULES_KEY));
 
@@ -131,6 +139,7 @@ export function buildAdmin(
               players: stores.players,
               nameRules: nameRules,
               personalData,
+              classes: stores.classes,
               sessions: playerSessions,
               secureCookies: config.secureCookies,
               sessionTtlMs: config.sessionTtlMs,
@@ -151,9 +160,12 @@ export function buildAdmin(
       playerStaffRoutes(stores.players, nameRules, events),
       classRoutes({
         classes: stores.classes,
+        results: stores.classResults,
         questions: stores.questions,
         players: stores.players,
         events,
+        nameRules,
+        ...(gameControl ? { game: gameControl } : {}),
       }),
     ],
   });

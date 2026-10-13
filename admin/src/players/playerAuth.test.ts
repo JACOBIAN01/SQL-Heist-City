@@ -22,6 +22,7 @@ async function fakeGoogle() {
     lastForm: undefined as URLSearchParams | undefined,
     nonceOverride: undefined as string | undefined,
     fail: false,
+    sub: 'google-sub-1',
   };
   let nonceForNextToken = '';
   const server: Server = createServer((req, res) => {
@@ -38,7 +39,7 @@ async function fakeGoogle() {
         .setProtectedHeader({ alg: 'RS256' })
         .setIssuer('https://accounts.google.com')
         .setAudience(state.audience)
-        .setSubject('google-sub-1')
+        .setSubject(state.sub)
         .setIssuedAt()
         .setExpirationTime('5m')
         .sign(privateKey);
@@ -444,6 +445,86 @@ describe('my data', () => {
     };
     expect(me2.player.id).not.toBe(me.player.id);
     expect(me2.player.displayName).toBe('Kid Original');
+  });
+});
+
+describe('joining a class', () => {
+  beforeEach(() => boot());
+  afterEach(async () => {
+    await h.close();
+    await google.close();
+  });
+  const marked = (cookies: string) => ({
+    cookie: cookies,
+    origin: GAME,
+    'x-heist-player': '1',
+    'content-type': 'application/json',
+  });
+  const join = (cookies: string, code: string) =>
+    fetch(`${base}/auth/class/join`, {
+      method: 'POST',
+      headers: marked(cookies),
+      body: JSON.stringify({ code }),
+    });
+  const ticketFor = (cookies: string, classId?: number) =>
+    fetch(`${base}/auth/ticket`, {
+      method: 'POST',
+      headers: marked(cookies),
+      body: JSON.stringify(classId === undefined ? {} : { classId }),
+    });
+
+  async function teacherClass() {
+    await h.loginAs('teacher@school.test', 'teacher');
+    return (
+      await h.client.post<{ class: { id: number; code: string } }>('/api/classes', { name: '9B' })
+    ).body.class;
+  }
+
+  it('a student types the code, joins the roster once, and gets a ticket for that class only', async () => {
+    const cls = await teacherClass();
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    const res = await join(
+      cookies,
+      ` ${cls.code.toLowerCase().slice(0, 3)}-${cls.code.slice(3).toLowerCase()} `,
+    );
+    expect(await res.json()).toEqual({ class: { id: cls.id, name: '9B' } });
+    await join(cookies, cls.code); // a second time changes nothing
+    const roster = await h.client.get<{ roster: { displayName: string }[] }>(
+      `/api/classes/${cls.id}/roster`,
+    );
+    expect(roster.body.roster.map((r) => r.displayName)).toEqual(['Ana']);
+    const t = (await (await ticketFor(cookies, cls.id)).json()) as { ticket: string };
+    expect(verifyTicket(TICKET_SECRET, t.ticket)).toMatchObject({
+      ok: true,
+      claims: { classId: cls.id },
+    });
+  });
+
+  it('refuses a wrong code, a locked class for newcomers, and a class ticket for a non-member', async () => {
+    const cls = await teacherClass();
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    expect((await join(cookies, 'ZZZZZZ')).status).toBe(404);
+    expect((await join(cookies, 'abc')).status).toBe(404);
+    expect((await ticketFor(cookies, cls.id)).status).toBe(403);
+    await join(cookies, cls.code);
+    // Lock the class (as the teacher): Ana, already in, may return; a newcomer may not.
+    await h.client.post(`/api/classes/${cls.id}/lock`, { locked: true });
+    expect((await join(cookies, cls.code)).status).toBe(200);
+    google.state.claims = { email: 'ben@school.edu', name: 'Ben' };
+    google.state.sub = 'google-sub-ben';
+    const ben = await signIn();
+    expect((await join(ben.cookies, cls.code)).status).toBe(403);
+  });
+
+  it('limits code guessing per player', async () => {
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    const statuses: number[] = [];
+    for (let i = 0; i < 12; i++) statuses.push((await join(cookies, 'ZZZZZZ')).status);
+    expect(statuses.slice(0, 8).every((s) => s === 404)).toBe(true);
+    expect(statuses.at(-1)).toBe(429);
   });
 });
 

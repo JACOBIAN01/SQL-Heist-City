@@ -22,6 +22,11 @@ export interface GameSocketOptions {
   readonly joinTimeoutMs?: number;
   /** Who may join: signed tickets. Without it anyone may, under any name (tests, bots). */
   readonly auth?: GameAuth;
+  /**
+   * The class room this socket serves. A signed-in player must hold a ticket for exactly this
+   * class; a socket with none (open play) refuses class tickets.
+   */
+  readonly classId?: number;
   /** Unsent bytes allowed to queue for one client before it is dropped as too slow. */
   readonly maxBufferedBytes?: number;
 }
@@ -124,6 +129,11 @@ export function serveGameConnection(
         const verdict = options.auth?.admit(message.ticket) ?? { ok: true as const };
         if (!verdict.ok) {
           socket.close(CLOSE_SIGN_IN, verdict.reason);
+          return;
+        }
+        const ticketClass = verdict.identity?.classId ?? 0;
+        if (verdict.identity && ticketClass !== (options.classId ?? 0)) {
+          socket.close(CLOSE_SIGN_IN, 'This ticket is for a different room');
           return;
         }
         // The account decides the name; a typed one is only for play without sign-in.

@@ -7,9 +7,14 @@ import {
   type QuestionUsage,
 } from '@heist/shared';
 import {
+  useLive,
+  useLiveCommand,
+  useLockClass,
   useClass,
   useClassQuestions,
   useNewCode,
+  useRound,
+  useRounds,
   useRoster,
   useSaveClassQuestions,
   useUpdateClass,
@@ -142,7 +147,9 @@ function ClassEditor({ record }: { record: ClassRecord }) {
         </div>
       </div>
 
+      <LiveRoom record={record} />
       <QuestionRelease classId={record.id} />
+      <Rounds classId={record.id} />
       <Roster classId={record.id} />
     </div>
   );
@@ -256,11 +263,12 @@ function QuestionRelease({ classId }: { classId: number }) {
 
 function Roster({ classId }: { classId: number }) {
   const roster = useRoster(classId);
+  const command = useLiveCommand(classId);
   const isAdmin = useMe().data?.role === 'admin';
   return (
     <div className="card stack">
       <h2>Students who joined</h2>
-      <ErrorMessage error={roster.error} />
+      <ErrorMessage error={roster.error ?? command.error} />
       {roster.data?.length === 0 && <p className="muted">Nobody has joined yet.</p>}
       <table>
         <tbody>
@@ -269,10 +277,152 @@ function Roster({ classId }: { classId: number }) {
               <td>{s.displayName}</td>
               <td className="muted">{isAdmin ? s.email : ''}</td>
               <td className="muted">{new Date(s.joinedAt).toLocaleString()}</td>
+              <td>
+                <button
+                  onClick={() => {
+                    const name = window.prompt('New display name', s.displayName);
+                    if (name) command.mutate({ rename: s.playerId, name });
+                  }}
+                >
+                  Rename
+                </button>{' '}
+                <button
+                  className="danger"
+                  onClick={() =>
+                    window.confirm(`Remove ${s.displayName} from the room?`) &&
+                    command.mutate({ kick: s.playerId })
+                  }
+                >
+                  Remove
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/** Start and run the room: the teacher's word begins the match. */
+function LiveRoom({ record }: { record: ClassRecord }) {
+  const live = useLive(record.id);
+  const command = useLiveCommand(record.id);
+  const lock = useLockClass(record.id);
+  const status = live.data?.status;
+  const running = status?.state === 'live';
+  return (
+    <div className="card stack">
+      <h2>Room</h2>
+      {live.data && !live.data.connected && (
+        <p className="muted">
+          The admin cannot reach the game server, so the room cannot be run from here.
+        </p>
+      )}
+      <p>
+        {running ? (
+          <>
+            <span className="badge">LIVE</span> {status?.players ?? 0} of{' '}
+            {status?.maxPlayers ?? record.playerCap} students in the match.
+          </>
+        ) : (
+          <>
+            <span className="badge">NOT STARTED</span> Students who joined with the code are
+            waiting.
+          </>
+        )}
+      </p>
+      <div className="row">
+        {!running && (
+          <button
+            className="primary"
+            disabled={command.isPending}
+            onClick={() => command.mutate({ action: 'start' })}
+          >
+            Start the match
+          </button>
+        )}
+        {running && (
+          <>
+            <button onClick={() => command.mutate({ action: 'end-round' })}>End this round</button>
+            <button onClick={() => command.mutate({ action: 'next-round' })}>
+              Start next round now
+            </button>
+            <button
+              className="danger"
+              onClick={() =>
+                window.confirm('Stop the match? Everyone is disconnected.') &&
+                command.mutate({ action: 'stop' })
+              }
+            >
+              Stop the match
+            </button>
+          </>
+        )}
+        <span className="spacer" />
+        <button disabled={lock.isPending} onClick={() => lock.mutate(!record.locked)}>
+          {record.locked ? 'Let new students join' : 'Lock the room to new students'}
+        </button>
+      </div>
+      <ErrorMessage error={command.error ?? lock.error ?? live.error} />
+    </div>
+  );
+}
+
+/** Finished rounds, kept after the room closes. */
+function Rounds({ classId }: { classId: number }) {
+  const rounds = useRounds(classId);
+  const [open, setOpen] = useState<number | undefined>();
+  const detail = useRound(classId, open);
+  return (
+    <div className="card stack">
+      <h2>Finished rounds</h2>
+      <ErrorMessage error={rounds.error ?? detail.error} />
+      {rounds.data?.length === 0 && <p className="muted">No round has finished yet.</p>}
+      <table>
+        <tbody>
+          {rounds.data?.map((r) => (
+            <tr
+              key={r.id}
+              className="clickable"
+              onClick={() => setOpen(open === r.id ? undefined : r.id)}
+            >
+              <td>Round {r.number}</td>
+              <td className="muted">{new Date(r.endedAt).toLocaleString()}</td>
+              <td className="num">{r.players} students</td>
+              <td>
+                {r.winner
+                  ? `Won by ${r.winner.name} ($${r.winner.banked.toLocaleString()})`
+                  : 'No winner'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {detail.data && open !== undefined && (
+        <table aria-label="Round results">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student</th>
+              <th>Banked</th>
+              <th>Kills</th>
+              <th>Deaths</th>
+            </tr>
+          </thead>
+          <tbody>
+            {detail.data.standings.map((s) => (
+              <tr key={s.rank}>
+                <td className="num">{s.rank}</td>
+                <td>{s.name}</td>
+                <td className="num">${s.banked.toLocaleString()}</td>
+                <td className="num">{s.kills}</td>
+                <td className="num">{s.deaths}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

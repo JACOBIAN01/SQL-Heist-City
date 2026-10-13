@@ -31,7 +31,7 @@
 | 11 | Bank design | ✅ Done |
 | 12 | Known gaps | ✅ |
 | 13 | Identity and persistence (Google sign-in, PostgreSQL) | ✅ |
-| 14 | Classroom mode | ⬜ |
+| 14 | Classroom mode | ✅ |
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ⬜ |
 | 16 | Teaching loop | ⬜ |
 | 17 | Question types and content (filling R, C, B, E) | ⬜ |
@@ -301,7 +301,7 @@ Fixes audit cons 1 and 3: who is playing, and records that last.
 | 13.10 | Account deletion and data export for a player | deleting an account removes or anonymises every row that refers to it | ✅ `PersonalDataRegistry`: each store of player data registers an exporter and an eraser (account, audit trail today; attempts, profiles and rosters join in later phases); export and delete are in the menu |
 
 ---
-## Phase 14 — Classroom mode  ⬜
+## Phase 14 — Classroom mode  ✅
 Fixes audit con 2. A teacher sets up a class in the admin. Students enter the class code and land in the same city and match.
 
 | # | Subphase | Done when | Status |
@@ -310,11 +310,11 @@ Fixes audit con 2. A teacher sets up a class in the admin. Students enter the cl
 | 14.2 | Admin: class editor; pick which banks are open | a closed bank's vault cannot be worked, and its marker says "closed" | ✅ Classes page + editor (banks, seed, round length, cap 60–200); closed banks refuse locks, drop their loose cash, do not hold the round open, and show CLOSED on the minimap, full map and task menu |
 | 14.3 | Admin: class question release, by bank lock, heal, gun and ammo, choosing existing questions or creating new ones and mapping them to the class | a class only ever receives questions mapped to it | ✅ per-usage question release (vault, heal, gun, ammo) with a tick table; "write a new question" links to the editor |
 | 14.4 | Wire pools into `QuestionSelector` (the backlog's "game side of pools"): selection respects the class's mapping and tiers, with no repeats | tests prove nothing outside the class set is issued | ✅ `QuestionSelector` takes an allowed set (tiers widen only inside it; empty set = nothing); a class match passes the set with every task |
-| 14.5 | Join by code: the student signs in, types the code, waits in a lobby, and the match starts on the teacher's word | 100 headless clients join one class and land in the same match | ⬜ |
-| 14.6 | One match per class: `MatchPool` and the lobby route by class code; many classes run side by side | two classes at once never see each other's players or questions | ⬜ |
-| 14.7 | Teacher live controls: start, end round, next round, lock the room, kick, rename | each control works from the admin during a match | ⬜ |
-| 14.8 | Class roster: everyone who joined, linked to their account, with round history | the roster lists students and their rounds | 🟨 roster of who joined is in the editor; rounds follow in 14.9 |
-| 14.9 | Class results stored (rounds, scores, awards) | a finished round can be reviewed later from the admin | ⬜ |
+| 14.5 | Join by code: the student signs in, types the code, waits in a lobby, and the match starts on the teacher's word | 100 headless clients join one class and land in the same match | ✅ the menu's Join class (code → roster → waiting room → room), class-bound tickets, `GET /class/:id`; an integration test puts 100 ticketed sockets in one worker-thread match and turns away the 101st |
+| 14.6 | One match per class: `MatchPool` and the lobby route by class code; many classes run side by side | two classes at once never see each other's players or questions | ✅ `ClassRooms`: one worker-thread match per class, its own port, city seed, question set and cap; a class ticket opens only its own room; rooms are never offered to open play |
+| 14.7 | Teacher live controls: start, end round, next round, lock the room, kick, rename | each control works from the admin during a match | ✅ Room card: start the match, end round, next round, stop, lock to new students; remove or rename a student; edits to a running class apply at once (`refresh`); all audited |
+| 14.8 | Class roster: everyone who joined, linked to their account, with round history | the roster lists students and their rounds | ✅ roster (joined, rename, remove) linked to accounts; each student's per-round results are available from the class results store (`forPlayer`) and shown in the rounds table |
+| 14.9 | Class results stored (rounds, scores, awards) | a finished round can be reviewed later from the admin | ✅ `class_rounds` + `class_results` (migration 4); the room reports each round's standings and awards to the game server, which records them; the editor lists rounds and opens a table |
 
 ---
 ## Phase 15 — Learning analytics (RCSBE and Bloom, live radars)  ⬜

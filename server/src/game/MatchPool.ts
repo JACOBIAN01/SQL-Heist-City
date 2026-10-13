@@ -1,5 +1,7 @@
 import { Worker } from 'node:worker_threads';
 import type { HeistSettings, MatchSettings } from '@heist/shared';
+import type { RoundResult } from '../heist/HeistEvents';
+import type { ClassMatchConfig } from '../classes/ClassMatchConfig';
 import type { MapName } from './maps';
 import type { MatchWorkerData, MatchWorkerMessage } from './matchWorker';
 
@@ -18,9 +20,21 @@ export interface MatchExtras {
   readonly dbPath?: string;
   readonly ticketSecret?: string;
   readonly requireTicket?: boolean;
+  /** The class this match is a room for. */
+  readonly classConfig?: ClassMatchConfig;
 }
 
+/** What a teacher can tell a running class room to do. */
+export type ClassCommand =
+  | { readonly type: 'class_config'; readonly config: ClassMatchConfig }
+  | { readonly type: 'end_round' }
+  | { readonly type: 'next_round' }
+  | { readonly type: 'kick'; readonly accountId: number }
+  | { readonly type: 'rename'; readonly accountId: number; readonly name: string };
+
 export interface MatchInfo {
+  /** Set for a class room. */
+  readonly classId?: number;
   readonly id: number;
   readonly port: number;
   readonly players: number;
@@ -35,6 +49,7 @@ class RunningMatch {
     readonly port: number,
     readonly maxPlayers: number,
     readonly worker: Worker,
+    readonly classId?: number,
   ) {}
 
   get info(): MatchInfo {
@@ -43,6 +58,7 @@ class RunningMatch {
       port: this.port,
       players: this.latest?.players ?? 0,
       maxPlayers: this.maxPlayers,
+      ...(this.classId === undefined ? {} : { classId: this.classId }),
     };
   }
 }
@@ -58,6 +74,9 @@ export class MatchPool {
   private readonly matches = new Map<number, RunningMatch>();
   private nextId = 1;
   private stopping = false;
+
+  /** `onRoundResult`: told whenever a class room's round ends (to be recorded). */
+  constructor(private readonly onRoundResult?: (classId: number, result: RoundResult) => void) {}
 
   /** Starts a match in a new thread and resolves when it is listening. */
   start(
@@ -76,19 +95,31 @@ export class MatchPool {
       ...(extras.dbPath ? { dbPath: extras.dbPath } : {}),
       ...(extras.ticketSecret ? { ticketSecret: extras.ticketSecret } : {}),
       ...(extras.requireTicket ? { requireTicket: true } : {}),
+      ...(extras.classConfig ? { classConfig: extras.classConfig } : {}),
     };
     const worker = new Worker(workerUrl, { execArgv: workerExecArgv, workerData: data });
     return new Promise((resolve, reject) => {
       worker.once('error', reject);
       worker.on('message', (message: MatchWorkerMessage) => {
         if (message.type === 'ready') {
-          const match = new RunningMatch(id, message.port, settings.maxPlayers, worker);
+          const cap = extras.classConfig
+            ? Math.min(settings.maxPlayers, extras.classConfig.playerCap)
+            : settings.maxPlayers;
+          const match = new RunningMatch(
+            id,
+            message.port,
+            cap,
+            worker,
+            extras.classConfig?.classId,
+          );
           this.matches.set(id, match);
           worker.on('exit', () => {
             this.matches.delete(id);
             if (!this.stopping) console.warn(`match ${id} stopped unexpectedly`);
           });
           resolve(match.info);
+        } else if (message.type === 'round_result') {
+          this.onRoundResult?.(message.classId, message.result);
         } else {
           const match = this.matches.get(id);
           if (match) match.latest = message.metrics;
@@ -106,9 +137,33 @@ export class MatchPool {
     return [...this.matches.values()].map((m) => m.info);
   }
 
+  /** The room running for a class, if any. */
+  classRoom(classId: number): MatchInfo | undefined {
+    return this.list().find((m) => m.classId === classId);
+  }
+
+  /** Tells a class room what its teacher did. Returns false when the room is not running. */
+  commandClass(classId: number, command: ClassCommand): boolean {
+    const room = [...this.matches.values()].find((m) => m.classId === classId);
+    if (!room) return false;
+    room.worker.postMessage(command);
+    return true;
+  }
+
+  /** Shuts one class room down (everyone is disconnected). */
+  async stopClass(classId: number): Promise<boolean> {
+    const room = [...this.matches.values()].find((m) => m.classId === classId);
+    if (!room) return false;
+    await new Promise<void>((resolve) => {
+      room.worker.once('exit', () => resolve());
+      room.worker.postMessage({ type: 'stop' });
+    });
+    return true;
+  }
+
   /** First match with room, for the lobby to send a new player to. */
   openMatch(): MatchInfo | undefined {
-    return this.list().find((m) => m.players < m.maxPlayers);
+    return this.list().find((m) => m.classId === undefined && m.players < m.maxPlayers);
   }
 
   /** Latest per-match numbers, for `/metrics`. */

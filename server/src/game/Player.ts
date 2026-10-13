@@ -86,7 +86,7 @@ export class Player {
 
   constructor(
     readonly id: number,
-    readonly name: string,
+    public name: string,
     readonly connection: PlayerConnection,
     spawn: SpawnPoint,
     now: number,

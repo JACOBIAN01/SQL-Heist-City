@@ -19,12 +19,13 @@ let http: Server;
 let socket: GameSocket;
 const open: WebSocket[] = [];
 
-async function boot(required: boolean) {
+async function boot(required: boolean, classId?: number) {
   http = createServer();
   const match = new Match({ map: TEST_MAP, settings: DEFAULT_MATCH_SETTINGS });
   socket = attachGameSocket(http, match, {
     joinTimeoutMs: 500,
     auth: ticketAuth(SECRET, required),
+    ...(classId === undefined ? {} : { classId }),
   });
   await new Promise<void>((r) => http.listen(0, r));
   const url = `ws://localhost:${(http.address() as AddressInfo).port}/ws/game`;
@@ -103,5 +104,34 @@ describe('joining with a ticket', () => {
     expect((await joinWith(url, 'x', issueTicket(SECRET, player))).welcomed).toBe(true);
     expect(await joinWith(url, 'x', issueTicket(SECRET, player))).toMatchObject({ code: 4004 });
     expect(match.players.size).toBe(1);
+  });
+});
+
+describe('class rooms', () => {
+  it('admit only tickets for that class, and class tickets are refused in open play', async () => {
+    const room = await boot(true, 5);
+    const p = { id: 1, name: 'Ana' };
+    expect(
+      (await joinWith(room.url, 'x', issueTicket(SECRET, { ...p, classId: 5 }))).welcomed,
+    ).toBe(true);
+    expect(
+      await joinWith(room.url, 'x', issueTicket(SECRET, { id: 2, name: 'B', classId: 6 })),
+    ).toMatchObject({
+      welcomed: false,
+      code: 4005,
+    });
+    expect((await joinWith(room.url, 'x', issueTicket(SECRET, { id: 3, name: 'C' }))).code).toBe(
+      4005,
+    );
+    for (const ws of open.splice(0)) ws.terminate();
+    await socket.close();
+    await new Promise((r) => http.close(r));
+    const open_ = await boot(true);
+    expect(
+      (await joinWith(open_.url, 'x', issueTicket(SECRET, { id: 4, name: 'D', classId: 5 }))).code,
+    ).toBe(4005);
+    expect(
+      (await joinWith(open_.url, 'x', issueTicket(SECRET, { id: 5, name: 'E' }))).welcomed,
+    ).toBe(true);
   });
 });

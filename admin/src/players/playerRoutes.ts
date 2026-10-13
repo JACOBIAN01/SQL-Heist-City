@@ -10,6 +10,9 @@ import type {
 import { readCookie } from '../auth/middleware';
 import type { GoogleOidc } from './GoogleOidc';
 import { OidcError, type OidcFlow } from './GoogleOidc';
+import { isClassCode, normaliseClassCode } from '@heist/server/classes/classCode';
+import type { ClassRepository } from '@heist/server/classes/ClassRepository';
+import { TokenBucket } from '@heist/server/net/TokenBucket';
 import type { PersonalDataRegistry } from '@heist/server/players/PersonalData';
 import { readSigned, signValue } from './signedValue';
 
@@ -33,6 +36,8 @@ export interface PlayerAuthOptions {
   readonly sessionTtlMs: number;
   /** Development only: `GET /auth/dev/login?name=…` signs in a test player with no Google. Never in production. */
   readonly devLogin?: boolean;
+  /** Classes: joining by code and class tickets. */
+  readonly classes: ClassRepository;
   /** Who holds personal data about a player (for export and deletion). */
   readonly personalData: PersonalDataRegistry;
   /** False when no Google client is configured (only the development sign-in then works). Default true. */
@@ -253,9 +258,58 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
       res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
       return;
     }
+    // A class ticket is only for a student who joined that class (by its code).
+    const wanted = z
+      .object({ classId: z.number().int().positive().optional() })
+      .safeParse(req.body ?? {});
+    const classId = wanted.success ? wanted.data.classId : undefined;
+    if (classId !== undefined && !(await options.classes.isMember(classId, player.id))) {
+      res.status(403).json({ error: { code: 'not_in_class', message: 'Join the class first' } });
+      return;
+    }
     res.json({
-      ticket: issueTicket(options.ticketSecret, { id: player.id, name: player.displayName }, now()),
+      ticket: issueTicket(
+        options.ticketSecret,
+        { id: player.id, name: player.displayName, ...(classId === undefined ? {} : { classId }) },
+        now(),
+      ),
     });
+  });
+
+  // Joining a class by its code: records the student on the roster. Guesses are limited per player.
+  const guesses = new Map<number, TokenBucket>();
+  router.post('/auth/class/join', async (req, res) => {
+    if (!fromGamePage(req, res)) return;
+    const player = await currentPlayer(req);
+    if (!player) {
+      res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
+      return;
+    }
+    let bucket = guesses.get(player.id);
+    if (!bucket) guesses.set(player.id, (bucket = new TokenBucket(8, 8 / 60, now)));
+    if (!bucket.take()) {
+      res
+        .status(429)
+        .json({ error: { code: 'too_many_attempts', message: 'Too many tries. Wait a minute.' } });
+      return;
+    }
+    const code = normaliseClassCode(
+      String((req.body as { code?: unknown } | undefined)?.code ?? ''),
+    );
+    const record = isClassCode(code) ? await options.classes.findByCode(code) : undefined;
+    if (!record || record.archived) {
+      res.status(404).json({ error: { code: 'unknown_code', message: 'No class has that code.' } });
+      return;
+    }
+    const already = await options.classes.isMember(record.id, player.id);
+    if (record.locked && !already) {
+      res.status(403).json({
+        error: { code: 'class_locked', message: 'This class is closed to new students.' },
+      });
+      return;
+    }
+    await options.classes.addMember(record.id, player.id, new Date(now()));
+    res.json({ class: { id: record.id, name: record.name } });
   });
 
   return router;

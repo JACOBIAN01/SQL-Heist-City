@@ -14,6 +14,11 @@ export interface HttpServerDeps {
   lobby?: () => unknown;
   /** Source of numbers for `GET /metrics` (tick time, players, bandwidth). Absent = route disabled. */
   metrics?: () => unknown;
+  /** Class rooms: `GET /class/:id` (public status) and `POST /internal/class/:id` (the admin's live controls). */
+  classRooms?: {
+    status(classId: number): unknown;
+    handle(classId: number, body: unknown): Promise<unknown>;
+  };
   /** Called on POST /internal/reload, e.g. to drop question/settings caches. */
   onReload?: () => void | Promise<void>;
 }
@@ -52,6 +57,33 @@ export function createHttpServer(deps: HttpServerDeps): Server {
       );
       return;
     }
+    const publicRoom = /^\/class\/(\d{1,9})$/.exec(req.url ?? '');
+    if (req.method === 'GET' && publicRoom && deps.classRooms) {
+      res.setHeader('access-control-allow-origin', '*');
+      sendJson(res, 200, deps.classRooms.status(Number(publicRoom[1])));
+      return;
+    }
+    const control = /^\/internal\/class\/(\d{1,9})$/.exec(req.url ?? '');
+    if (req.method === 'POST' && control && deps.classRooms && deps.internalSecret) {
+      if (!secretMatches(req.headers[INTERNAL_SECRET_HEADER], deps.internalSecret)) {
+        sendJson(res, 403, { error: { code: 'forbidden', message: 'Bad internal secret' } });
+        return;
+      }
+      const rooms = deps.classRooms;
+      void readBody(req).then(
+        (body) =>
+          rooms.handle(Number(control[1]), body).then(
+            (result) => sendJson(res, 200, result),
+            () => sendJson(res, 500, { error: { code: 'failed', message: 'Class room error' } }),
+          ),
+        () => sendJson(res, 400, { error: { code: 'bad_body', message: 'Bad request body' } }),
+      );
+      return;
+    }
+    if (req.method === 'OPTIONS' && publicRoom) {
+      res.writeHead(204, { 'access-control-allow-origin': '*' }).end();
+      return;
+    }
     sendJson(res, 404, { error: { code: 'not_found', message: 'Not found' } });
   });
 }
@@ -66,4 +98,26 @@ function secretMatches(given: string | string[] | undefined, expected: string): 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.writeHead(status, { 'content-type': 'application/json' });
   res.end(JSON.stringify(body));
+}
+
+/** A small JSON body (internal calls only); anything bigger is refused. */
+function readBody(req: IncomingMessage): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let text = '';
+    req.on('data', (chunk: Buffer) => {
+      text += chunk.toString('utf8');
+      if (text.length > 4096) {
+        reject(new Error('too large'));
+        req.destroy();
+      }
+    });
+    req.on('end', () => {
+      try {
+        resolve(text ? JSON.parse(text) : {});
+      } catch (err) {
+        reject(err);
+      }
+    });
+    req.on('error', reject);
+  });
 }

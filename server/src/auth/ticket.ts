@@ -8,6 +8,8 @@ export interface TicketClaims {
   readonly expiresAt: number;
   /** Random id, so a ticket can be used once. */
   readonly jti: string;
+  /** The class room this ticket is for; 0 for none (open play). */
+  readonly classId: number;
 }
 
 export type TicketFailure = 'malformed' | 'bad_signature' | 'expired' | 'reused';
@@ -24,13 +26,19 @@ const sign = (secret: string, body: string) =>
  */
 export function issueTicket(
   secret: string,
-  player: { id: number; name: string },
+  player: { id: number; name: string; classId?: number },
   now = Date.now(),
   ttlMs = TICKET_TTL_MS,
 ): string {
   const jti = randomBytes(6).toString('base64url');
   const body = Buffer.from(
-    JSON.stringify([player.id, Math.floor((now + ttlMs) / 1000), jti, player.name]),
+    JSON.stringify([
+      player.id,
+      Math.floor((now + ttlMs) / 1000),
+      jti,
+      player.name,
+      player.classId ?? 0,
+    ]),
   ).toString('base64url');
   return `${body}.${sign(secret, body)}`;
 }
@@ -54,16 +62,17 @@ export function verifyTicket(
   }
   if (
     !Array.isArray(parsed) ||
-    parsed.length !== 4 ||
+    parsed.length !== 5 ||
     !Number.isInteger(parsed[0]) ||
     !Number.isInteger(parsed[1]) ||
     typeof parsed[2] !== 'string' ||
-    typeof parsed[3] !== 'string'
+    typeof parsed[3] !== 'string' ||
+    !Number.isInteger(parsed[4])
   )
     return { ok: false, reason: 'malformed' };
-  const [playerId, exp, jti, name] = parsed as [number, number, string, string];
+  const [playerId, exp, jti, name, classId] = parsed as [number, number, string, string, number];
   if (exp * 1000 <= now) return { ok: false, reason: 'expired' };
-  return { ok: true, claims: { playerId, name, expiresAt: exp * 1000, jti } };
+  return { ok: true, claims: { playerId, name, expiresAt: exp * 1000, jti, classId } };
 }
 
 /**

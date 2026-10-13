@@ -2,7 +2,15 @@ import { TicketGuard } from '../auth/ticket';
 
 /** Who is joining, as far as the server can prove. */
 export type JoinVerdict =
-  | { readonly ok: true; readonly identity?: { readonly playerId: number; readonly name: string } }
+  | {
+      readonly ok: true;
+      readonly identity?: {
+        readonly playerId: number;
+        readonly name: string;
+        /** The class room the ticket is for; 0 for open play. */
+        readonly classId: number;
+      };
+    }
   | { readonly ok: false; readonly reason: string };
 
 // SOLID: D — Why: the socket asks "may this join?" of a policy it is given; tests, bots, the
@@ -27,7 +35,11 @@ export function ticketAuth(secret: string, required: boolean, now?: () => number
       if (result.ok)
         return {
           ok: true,
-          identity: { playerId: result.claims.playerId, name: result.claims.name },
+          identity: {
+            playerId: result.claims.playerId,
+            name: result.claims.name,
+            classId: result.claims.classId,
+          },
         };
       return {
         ok: false,

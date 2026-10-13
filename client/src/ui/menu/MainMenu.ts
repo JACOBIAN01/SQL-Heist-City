@@ -1,4 +1,5 @@
 import type { AccountApi, AccountPlayer, WhoAmI } from '../../net/account';
+import type { RoomStatus } from '../../net/classRoom';
 import { clear, h } from '../dom';
 import './menu.css';
 
@@ -10,6 +11,12 @@ export interface MenuOptions {
   readonly navigate: (url: string) => void;
   /** Where Google should send the player back to. */
   readonly returnTo: string;
+  /** Where a class's room stands (not started, or live). */
+  readonly roomStatus?: (classId: number) => Promise<RoomStatus>;
+  /** Enter a class's live room. */
+  readonly goClass?: (classId: number) => void;
+  /** Milliseconds between looks at the room while waiting (default 2000). */
+  readonly pollMs?: number;
   /** Asked before an account is deleted. */
   readonly confirm?: (message: string) => boolean;
   /** Offers a file to the user. */
@@ -38,6 +45,7 @@ const ERRORS: Readonly<Record<string, string>> = {
 export class MainMenu {
   readonly root = h('main', { class: 'menu', attrs: { 'data-role': 'menu' } });
   private who: WhoAmI | undefined;
+  private timer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(private readonly options: MenuOptions) {}
 
@@ -126,6 +134,45 @@ export class MainMenu {
     }
   }
 
+  /** Shows the waiting room and looks at the class's room until the teacher starts it. */
+  private waitForRoom(classId: number, className: string): void {
+    clearTimeout(this.timer);
+    clear(this.root);
+    const status = h('p', { class: 'menu-note', text: 'Waiting for your teacher to start…' });
+    this.root.appendChild(
+      h(
+        'div',
+        { class: 'menu-card' },
+        h('h1', { text: className }),
+        status,
+        h('button', {
+          class: 'menu-quiet',
+          text: 'Leave',
+          on: {
+            click: () => {
+              clearTimeout(this.timer);
+              if (this.who) this.draw(this.who);
+            },
+          },
+        }),
+      ),
+    );
+    const look = async () => {
+      const room = (await this.options.roomStatus?.(classId)) ?? { state: 'unavailable' as const };
+      if (room.state === 'live') {
+        status.textContent = 'Starting…';
+        this.options.goClass?.(classId);
+        return;
+      }
+      status.textContent =
+        room.state === 'unavailable'
+          ? 'Cannot reach the game server. Trying again…'
+          : 'Waiting for your teacher to start…';
+      this.timer = setTimeout(() => void look(), this.options.pollMs ?? 2000);
+    };
+    void look();
+  }
+
   private drawSignedIn(card: HTMLElement, player: AccountPlayer): void {
     card.appendChild(
       h(
@@ -145,6 +192,15 @@ export class MainMenu {
       },
     });
     const nameNote = h('span', { class: 'menu-muted' });
+    const codeInput = h('input', {
+      attrs: {
+        type: 'text',
+        maxlength: '12',
+        placeholder: 'Class code',
+        'aria-label': 'Class code',
+      },
+    });
+    const classNote = h('span', { class: 'menu-error' });
     card.append(
       h(
         'div',
@@ -162,9 +218,26 @@ export class MainMenu {
         }),
       ),
       nameNote,
+      h(
+        'div',
+        { class: 'menu-row' },
+        codeInput,
+        h('button', {
+          class: 'menu-primary',
+          text: 'Join class',
+          on: {
+            click: async () => {
+              classNote.textContent = '';
+              const joined = await this.options.account.joinClass(codeInput.value);
+              if ('error' in joined) classNote.textContent = joined.error;
+              else this.waitForRoom(joined.id, joined.name);
+            },
+          },
+        }),
+      ),
+      classNote,
       h('button', {
-        class: 'menu-primary',
-        text: 'Play',
+        text: 'Play (open match)',
         on: { click: () => this.options.go('play') },
       }),
       h('button', { text: 'Tutorial', on: { click: () => this.options.go('tutorial') } }),

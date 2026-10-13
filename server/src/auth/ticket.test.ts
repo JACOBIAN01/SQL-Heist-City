@@ -31,6 +31,16 @@ describe('tickets', () => {
     });
   });
 
+  it('carries the class room it is for, or none', () => {
+    expect(verifyTicket(SECRET, issueTicket(SECRET, { ...ana, classId: 12 }))).toMatchObject({
+      ok: true,
+      claims: { classId: 12 },
+    });
+    expect(verifyTicket(SECRET, issueTicket(SECRET, ana))).toMatchObject({
+      claims: { classId: 0 },
+    });
+  });
+
   it('stays short enough for the join message, even with a long name', () => {
     const name = '语'.repeat(24);
     expect(issueTicket(SECRET, { id: 123_456, name }).length).toBeLessThan(255);

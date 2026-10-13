@@ -16,6 +16,9 @@ function menu(who: WhoAmI, over: Partial<MenuOptions> = {}) {
     ticket: async () => undefined,
     signOut,
     rename: async () => ({ error: 'no' }),
+    joinClass: vi.fn(async (code: string) =>
+      code === 'GOOD22' ? { id: 5, name: '9B SQL' } : { error: 'No class has that code.' },
+    ),
     exportData: async () => '{"data":1}',
     deleteAccount: vi.fn(async () => true),
     signInUrl: (to) => `https://acct.test/login?return=${to}`,
@@ -54,14 +57,15 @@ describe('MainMenu', () => {
     expect(m.root.textContent).toContain('Ana Silva');
     expect(buttons(m)).toEqual([
       'Save name',
-      'Play',
+      'Join class',
+      'Play (open match)',
       'Tutorial',
       'Settings',
       'Download my data',
       'Delete my account',
       'Sign out',
     ]);
-    press(m, 'Play');
+    press(m, 'Play (open match)');
     press(m, 'Tutorial');
     expect(go.mock.calls).toEqual([['play'], ['tutorial']]);
     expect(m.root.querySelector('button[disabled]')?.textContent).toBe('Settings');
@@ -104,7 +108,7 @@ describe('MainMenu', () => {
     await no.m.show();
     press(no.m, 'Delete my account');
     await Promise.resolve();
-    expect(buttons(no.m)).toContain('Play');
+    expect(buttons(no.m)).toContain('Play (open match)');
     const yes = menu({ state: 'signed_in', player: ana }, { confirm: () => true });
     await yes.m.show();
     press(yes.m, 'Delete my account');
@@ -158,5 +162,54 @@ describe('MainMenu', () => {
     });
     await evil.m.show();
     expect(evil.m.root.querySelector('img')).toBeNull();
+  });
+});
+
+describe('joining a class from the menu', () => {
+  const type = (m: MainMenu, code: string) => {
+    (m.root.querySelector('input[aria-label="Class code"]') as HTMLInputElement).value = code;
+  };
+
+  it('explains a wrong code', async () => {
+    const { m } = menu({ state: 'signed_in', player: ana });
+    await m.show();
+    type(m, 'NOPE');
+    press(m, 'Join class');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(m.root.textContent).toContain('No class has that code.');
+  });
+
+  it('waits for the teacher, then goes into the room once it is live', async () => {
+    const statuses = [
+      { state: 'waiting' as const },
+      { state: 'waiting' as const },
+      { state: 'live' as const, port: 9001, players: 3, maxPlayers: 100 },
+    ];
+    const roomStatus = vi.fn(async () => statuses.shift() ?? { state: 'waiting' as const });
+    const goClass = vi.fn();
+    const { m } = menu({ state: 'signed_in', player: ana }, { roomStatus, goClass, pollMs: 5 });
+    await m.show();
+    type(m, 'GOOD22');
+    press(m, 'Join class');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(m.root.textContent).toContain('9B SQL');
+    expect(m.root.textContent).toContain('Waiting for your teacher');
+    await new Promise((r) => setTimeout(r, 60));
+    expect(goClass).toHaveBeenCalledWith(5);
+    expect(roomStatus).toHaveBeenCalledTimes(3);
+  });
+
+  it('lets the student leave the waiting room, and stops looking', async () => {
+    const roomStatus = vi.fn(async () => ({ state: 'waiting' as const }));
+    const { m } = menu({ state: 'signed_in', player: ana }, { roomStatus, pollMs: 5 });
+    await m.show();
+    type(m, 'GOOD22');
+    press(m, 'Join class');
+    await new Promise((r) => setTimeout(r, 20));
+    press(m, 'Leave');
+    const calls = roomStatus.mock.calls.length;
+    await new Promise((r) => setTimeout(r, 40));
+    expect(roomStatus.mock.calls.length).toBe(calls);
+    expect(buttons(m)).toContain('Join class');
   });
 });

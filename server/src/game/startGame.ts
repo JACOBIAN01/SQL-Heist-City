@@ -11,6 +11,7 @@ import {
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import { GameLoop } from './GameLoop';
 import type { GameAuth } from './GameAuth';
+import type { ClassMatchConfig } from '../classes/ClassMatchConfig';
 import { attachGameSocket, type GameSocket } from './GameSocket';
 import { Match } from './Match';
 import { RateMeter } from './RateMeter';
@@ -47,6 +48,8 @@ export interface GameOptions {
   readonly world?: () => WorldSettings;
   /** Who may join (signed tickets). None: anyone, under any name. */
   readonly auth?: GameAuth;
+  /** This match is a room for a class. */
+  readonly classConfig?: ClassMatchConfig;
 }
 
 /** Wires one match to the HTTP server and starts ticking. Composition only, no rules. */
@@ -59,6 +62,7 @@ export function startGame(
   const match = new Match({
     map,
     settings,
+    ...(options.classConfig ? { classConfig: options.classConfig } : {}),
     ...(options.world ? worldDeps(options.world) : {}),
     ...(options.heist ? { heist: options.heist } : {}),
     ...(options.combat ? { combat: options.combat(), combatSource: options.combat } : {}),
@@ -68,11 +72,10 @@ export function startGame(
     .slice(0, settings.sandboxDummies)
     .forEach((spot, i) => match.addDummy(`Dummy ${i + 1}`, spot));
   const loop = new GameLoop(1000 / settings.tickRate, () => match.step());
-  const socket: GameSocket = attachGameSocket(
-    http,
-    match,
-    options.auth ? { auth: options.auth } : {},
-  );
+  const socket: GameSocket = attachGameSocket(http, match, {
+    ...(options.auth ? { auth: options.auth } : {}),
+    ...(options.classConfig ? { classId: options.classConfig.classId } : {}),
+  });
   const bytes = new RateMeter();
   const snapshots = new RateMeter();
   const sampler = setInterval(() => {

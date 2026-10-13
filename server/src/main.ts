@@ -7,6 +7,9 @@ import { PgDatabase } from './pg/PgDatabase';
 import { syncContent } from './pg/ContentSnapshot';
 import { migratePg } from './pg/migrate';
 import { DEFAULT_MATCH_SETTINGS, cityMapIdFor } from '@heist/shared';
+import { ClassRooms, type RoomAction } from './classes/ClassRooms';
+import { PgClassResults } from './classes/ClassResults';
+import { PgClassRepository } from './classes/ClassRepository';
 import { ticketAuth } from './game/GameAuth';
 import { MatchPool } from './game/MatchPool';
 import { mapByName, parseMapName, type MapName } from './game/maps';
@@ -21,15 +24,16 @@ let dbPath = process.env.DB_PATH ?? fileURLToPath(new URL('../../data/dev.db', i
 // With DATABASE_URL, PostgreSQL is the system of record: the game reads a local snapshot of the
 // content that is refreshed at start and whenever the admin asks for a reload (docs/identity.md).
 let refreshContent: () => Promise<void> = async () => {};
+let pg: PgDatabase | undefined;
 if (process.env.DATABASE_URL) {
-  const pg = PgDatabase.open({ url: process.env.DATABASE_URL, max: 2 });
+  pg = PgDatabase.open({ url: process.env.DATABASE_URL, max: 2 });
   await migratePg(pg);
   dbPath =
     process.env.SNAPSHOT_PATH ??
     fileURLToPath(new URL('../../data/content-snapshot.db', import.meta.url));
   const snapshot = openDatabase({ path: dbPath });
   refreshContent = async () => {
-    const counts = await syncContent(pg, snapshot);
+    const counts = await syncContent(pg as PgDatabase, snapshot);
     console.log(`content snapshot: ${counts.questions} questions, ${counts.settings} settings`);
   };
   await refreshContent();
@@ -74,7 +78,26 @@ const ticketSecret = process.env.TICKET_SECRET ?? (production ? undefined : 'dev
 const requireTicket = production || process.env.REQUIRE_TICKET === '1';
 if (production && !ticketSecret) throw new Error('TICKET_SECRET is required in production');
 const auth = ticketSecret ? ticketAuth(ticketSecret, requireTicket) : undefined;
+// Class rooms (one match per class, in its own thread) exist when PostgreSQL holds the classes.
+const classResults = pg ? new PgClassResults(pg) : undefined;
+const classPool = pg
+  ? new MatchPool((classId, result) => {
+      classResults?.record(classId, result).catch((err: unknown) => {
+        console.error(`could not record round ${result.number} of class ${classId}`, err);
+      });
+    })
+  : undefined;
+let rooms: ClassRooms | undefined;
 const server = createHttpServer({
+  ...(classPool
+    ? {
+        classRooms: {
+          status: (id: number) => rooms?.status(id) ?? { state: 'waiting' },
+          handle: async (id: number, body: unknown) =>
+            rooms ? rooms.handle(id, body as RoomAction) : { ok: false, reason: 'unknown_class' },
+        },
+      }
+    : {}),
   lobby,
   metrics: () => (running.pool ? running.pool.metrics() : (running.game?.metrics() ?? {})),
   now: Date.now,
@@ -84,6 +107,7 @@ const server = createHttpServer({
     await refreshContent();
     challenges?.invalidate();
     running.pool?.reload();
+    classPool?.reload();
     console.log('reloaded questions and settings');
   },
 });
@@ -101,6 +125,18 @@ if (challenges) {
     },
     auth ? { auth } : {},
   );
+}
+if (pg && classPool && challenges) {
+  const stack = challenges;
+  rooms = new ClassRooms({
+    classes: new PgClassRepository(pg),
+    pool: classPool,
+    matchSettings,
+    extras: () => ({ dbPath, ...(ticketSecret ? { ticketSecret, requireTicket } : {}) }),
+    city: () => stack.citySettings(),
+    heist: () => stack.heistSettings(),
+  });
+  console.log('class rooms: on (teachers start a room from the admin)');
 }
 // MATCH_WORKERS=N runs N matches, each in its own thread on its own port (the lobby tells
 // clients where); 0 (default) runs one match in this process.

@@ -151,4 +151,28 @@ export const pgMigrations: readonly string[] = [
   );
   CREATE INDEX class_members_player ON class_members (player_id);
   `,
+  // 4 — what happened in a class's rounds (Phase 14.9)
+  `
+  CREATE TABLE class_rounds (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    class_id   BIGINT      NOT NULL REFERENCES classes (id) ON DELETE CASCADE,
+    number     INTEGER     NOT NULL,
+    started_at TIMESTAMPTZ NOT NULL,
+    ended_at   TIMESTAMPTZ NOT NULL,
+    awards     JSONB       NOT NULL DEFAULT '[]'
+  );
+  CREATE INDEX class_rounds_class ON class_rounds (class_id, ended_at DESC);
+
+  CREATE TABLE class_results (
+    round_id   BIGINT  NOT NULL REFERENCES class_rounds (id) ON DELETE CASCADE,
+    rank       INTEGER NOT NULL,
+    player_id  BIGINT  REFERENCES players (id) ON DELETE SET NULL,
+    name       TEXT    NOT NULL,
+    banked     BIGINT  NOT NULL,
+    kills      INTEGER NOT NULL,
+    deaths     INTEGER NOT NULL,
+    PRIMARY KEY (round_id, rank)
+  );
+  CREATE INDEX class_results_player ON class_results (player_id);
+  `,
 ];

@@ -70,3 +70,23 @@ describe('HttpAccountApi', () => {
     ).toEqual({ error: 'That name is not allowed' });
   });
 });
+
+describe('classes', () => {
+  it('joins by code and asks for a class ticket', async () => {
+    const { api: a, calls } = api((url) =>
+      url.endsWith('/join') ? json({ class: { id: 5, name: '9B' } }) : json({ ticket: 'T' }),
+    );
+    expect(await a.joinClass('abc')).toEqual({ id: 5, name: '9B' });
+    expect(calls[0]?.init.body).toBe(JSON.stringify({ code: 'abc' }));
+    expect(await a.ticket(5)).toBe('T');
+    expect(calls[1]?.init.body).toBe(JSON.stringify({ classId: 5 }));
+  });
+
+  it('reports why a code did not work', async () => {
+    expect(
+      await api(() => json({ error: { message: 'No class has that code.' } }, 404)).api.joinClass(
+        'x',
+      ),
+    ).toEqual({ error: 'No class has that code.' });
+  });
+});

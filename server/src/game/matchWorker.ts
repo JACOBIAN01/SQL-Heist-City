@@ -5,6 +5,10 @@ import { existsSync } from 'node:fs';
 import { buildChallengeStack } from '../composition';
 import { openDatabase } from '../db/database';
 import { mapByName, type MapName } from './maps';
+import type { ClassMatchConfig } from '../classes/ClassMatchConfig';
+import type { RoundResult } from '../heist/HeistEvents';
+import type { ClassCommand } from './MatchPool';
+import type { Match } from './Match';
 import { ticketAuth } from './GameAuth';
 import { startGame } from './startGame';
 
@@ -22,6 +26,7 @@ export interface MatchWorkerData {
   /** Sign-in: tickets signed with this secret (set by the pool; workers cannot be handed objects). */
   readonly ticketSecret?: string;
   readonly requireTicket?: boolean;
+  readonly classConfig?: ClassMatchConfig;
 }
 
 /** Messages worker → pool. */
@@ -30,7 +35,9 @@ export type MatchWorkerMessage =
   | {
       readonly type: 'metrics';
       readonly metrics: ReturnType<ReturnType<typeof startGame>['metrics']>;
-    };
+    }
+  /** A class room's round finished. */
+  | { readonly type: 'round_result'; readonly classId: number; readonly result: RoundResult };
 
 /**
  * One match, one thread: this file is the thread's entry point. It owns its own
@@ -51,6 +58,7 @@ const stack =
 const heist = data.heist ?? stack?.heistSettings();
 const game = startGame(http, data.settings, mapByName(data.map), {
   ...(heist ? { heist } : {}),
+  ...(data.classConfig ? { classConfig: data.classConfig } : {}),
   ...(data.ticketSecret
     ? { auth: ticketAuth(data.ticketSecret, data.requireTicket ?? false) }
     : {}),
@@ -62,6 +70,18 @@ const game = startGame(http, data.settings, mapByName(data.map), {
       }
     : {}),
 });
+
+if (data.classConfig) {
+  const classId = data.classConfig.classId;
+  game.match.heist.events.subscribe((event) => {
+    if (event.type === 'round_end')
+      parentPort?.postMessage({
+        type: 'round_result',
+        classId,
+        result: event.result,
+      } satisfies MatchWorkerMessage);
+  });
+}
 
 http.listen(data.port, () => {
   const address = http.address();
@@ -76,11 +96,12 @@ const report = setInterval(() => {
   } satisfies MatchWorkerMessage);
 }, 1000);
 
-parentPort?.on('message', (message: { type: string }) => {
+parentPort?.on('message', (message: { type: string } | ClassCommand) => {
   if (message.type === 'reload') {
     stack?.invalidate();
     return;
   }
+  if (applyClassCommand(game.match, message as ClassCommand)) return;
   if (message.type !== 'stop') return;
   clearInterval(report);
   void game
@@ -91,3 +112,28 @@ parentPort?.on('message', (message: { type: string }) => {
       process.exit(0);
     });
 });
+
+/** Teacher commands for a class room; false when the message is not one. */
+function applyClassCommand(match: Match, command: ClassCommand): boolean {
+  switch (command.type) {
+    case 'class_config':
+      match.applyClassConfig(command.config);
+      return true;
+    case 'end_round':
+      match.heist.endRound();
+      return true;
+    case 'next_round':
+      match.heist.startNextRound();
+      return true;
+    case 'kick': {
+      const id = match.playerIdOfAccount(command.accountId);
+      if (id !== undefined) match.kick(id);
+      return true;
+    }
+    case 'rename':
+      match.renameByAccount(command.accountId, command.name);
+      return true;
+    default:
+      return false;
+  }
+}

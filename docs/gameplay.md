@@ -156,3 +156,12 @@ When a round ends, the results card shows the winner, then one card per award so
 - `RoundAwards` (server) listens on the heist event bus; each award is one rule (Strategy). Tallies reset when the next round starts. Players joining during the intermission see the same card.
 - The award names and units are in `shared/src/config/awards.ts`; the server sends only the award id, the winner and the number (`awards` on the `round` ended message).
 
+
+## Classroom mode (Phase 14)
+A teacher makes a **class** in the admin: a name, a six-character **join code**, which **banks are open**, a **city seed**, an optional **round length**, a **player cap** (60–200) and the **question set**: each question is released for a kind of task (vault locks, healing, guns, ammo). A class only ever receives questions released to it, for that kind of task.
+
+**Joining.** A student signs in with Google, types the code in the menu (limited to 8 wrong guesses a minute) and is added to the class's roster. They wait in a lobby until the teacher presses **Start the match**; the match is a private room (its own thread and port) that plays the class's city. They connect with a ticket made for that class, so a ticket opens only that room. A locked class lets in only students already on its roster.
+
+**Closed banks.** A bank the teacher did not open stays on the map marked CLOSED. Its vault cannot be worked, it has no loose cash, and the round does not wait for it.
+
+**During a match** the teacher can end the round, start the next now, stop the room, remove or rename a student, lock the room to newcomers, and edit the class (the new question set and open banks apply at once, round length at the next round). When a round ends its standings and awards are saved and can be reviewed later.

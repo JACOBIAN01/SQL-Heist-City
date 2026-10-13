@@ -1,6 +1,7 @@
 import type { AwardView, HeistSettings } from '@heist/shared';
 import type { Player } from '../game/Player';
 import type { MatchApi } from './MatchApi';
+import type { RoundResult } from './HeistEvents';
 import { rankPlayers, toStanding } from './Scoreboard';
 
 export type RoundPhase = 'playing' | 'ended';
@@ -14,6 +15,8 @@ export interface RoundHooks {
   onEnd(): void;
   /** Who earned what this round (asked when the round ends, and of anyone joining before the next). */
   awards(): readonly AwardView[];
+  /** The finished round's full result (for the class record). */
+  onResult(result: RoundResult): void;
 }
 
 const TOP = 10;
@@ -30,6 +33,8 @@ export class RoundController {
   private endTick: number;
   private nextRoundTick = 0;
   private overtimeArmed = false;
+  private roundNumber = 1;
+  private startedAtMs = Date.now();
   private nextScoresTick = 0;
 
   constructor(
@@ -43,6 +48,16 @@ export class RoundController {
 
   get over(): boolean {
     return this.phase === 'ended';
+  }
+
+  /** The teacher ends the round now (scores, awards, then the intermission). */
+  endNow(): void {
+    if (this.phase === 'playing') this.end();
+  }
+
+  /** The teacher starts the next round without waiting out the intermission. */
+  startNow(): void {
+    if (this.phase === 'ended') this.start();
   }
 
   /** New players may join early in a round and between rounds, so nobody joins a race already decided. */
@@ -78,6 +93,8 @@ export class RoundController {
   }
 
   private start(): void {
+    this.roundNumber++;
+    this.startedAtMs = Date.now();
     this.hooks.reset();
     this.phase = 'playing';
     this.overtimeArmed = false;
@@ -91,6 +108,20 @@ export class RoundController {
     this.phase = 'ended';
     this.nextRoundTick = this.match.tick + this.ticks(this.settings.intermissionSeconds);
     this.hooks.onEnd();
+    this.hooks.onResult({
+      number: this.roundNumber,
+      startedAt: this.startedAtMs,
+      endedAt: Date.now(),
+      standings: rankPlayers(this.match.playerList()).map((p, i) => ({
+        rank: i + 1,
+        ...(p.accountId === undefined ? {} : { accountId: p.accountId }),
+        name: p.name,
+        banked: p.banked,
+        kills: p.kills,
+        deaths: p.deaths,
+      })),
+      awards: this.hooks.awards(),
+    });
     this.match.broadcastJson(this.roundMessage());
     this.publishScores();
   }

@@ -131,3 +131,9 @@ The SQL pop-up uses the same challenge messages as before, now over `json` frame
 - **Account service** (the admin server): `GET /auth/google/login?return=<game url>` → Google; `GET /auth/google/callback` (code, state) sets the `heist_player` session cookie and returns to the game; `GET /auth/player/me`; `POST /auth/player/logout`; `POST /auth/ticket` → `{ticket}`. The last two need the cookie, an allowed `Origin` and the `x-heist-player: 1` header.
 - **Ticket:** `base64url([playerId, expirySeconds, id, name]).hmac`, valid 60 s, accepted once. The game server verifies it locally with `TICKET_SECRET` (same value as the account service). A bad ticket closes the socket with code 4005; a second connection by the same account closes with 4004. In production a ticket is required (`NODE_ENV=production`, or `REQUIRE_TICKET=1`).
 - Environment: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `TICKET_SECRET`, `COOKIE_SECRET`, `GAME_ORIGINS`, `ALLOWED_EMAIL_DOMAINS`.
+
+## Class rooms (14.5–14.7)
+- Account service: `POST /auth/class/join {code}` → `{class:{id,name}}` (records the student); `POST /auth/ticket {classId}` → a ticket whose claims carry the class (members only). Ticket claims are `[playerId, expiry, id, name, classId]`; a room admits only its own class id, open play only `0`.
+- Game server: `GET /class/:id` → `{state: 'waiting'|'live', port?, players?, maxPlayers?, mapId?}` (public). `POST /internal/class/:id` (secret) with `{action: start|stop|refresh|end_round|next_round|kick|rename, …}` → `{ok, status}` or `{ok:false, reason: unknown_class|not_live|archived}`.
+- Admin API: `/api/classes` (CRUD, `/code`, `/lock`, `/questions`, `/roster`, `/results`, `/live`, `/live/start|stop|end-round|next-round|kick|rename`).
+- Closing codes: 4004 already in this match, 4005 sign-in/ticket refused, 4006 removed by the teacher.

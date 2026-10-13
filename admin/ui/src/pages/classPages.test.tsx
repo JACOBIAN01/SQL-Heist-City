@@ -50,6 +50,43 @@ function api(user: typeof teacher | typeof admin = teacher) {
       body: { links: [{ questionId: 1, usage: 'heal', slug: 'a', title: 'Question a', tier: 1 }] },
     }),
     'PUT /classes/7/questions': (b) => ({ body: b }),
+    'GET /classes/7/live': () => ({ body: { status: { state: 'waiting' }, connected: true } }),
+    'POST /classes/7/live/start': () => ({
+      body: { status: { state: 'live', players: 0, maxPlayers: 100 } },
+    }),
+    'POST /classes/7/live/kick': () => ({ body: { status: { state: 'live' } } }),
+    'POST /classes/7/lock': () => ({ body: { class: { ...record, locked: true } } }),
+    'GET /classes/7/results': () => ({
+      body: {
+        rounds: [
+          {
+            id: 3,
+            number: 2,
+            startedAt: '',
+            endedAt: '2026-03-01T10:15:00Z',
+            players: 2,
+            winner: { name: 'Ana', banked: 9000 },
+          },
+        ],
+      },
+    }),
+    'GET /classes/7/results/3': () => ({
+      body: {
+        round: {
+          id: 3,
+          number: 2,
+          startedAt: '',
+          endedAt: '',
+          players: 2,
+          winner: null,
+          awards: [],
+        },
+        standings: [
+          { rank: 1, name: 'Ana', banked: 9000, kills: 4, deaths: 1 },
+          { rank: 2, name: 'Ben', banked: 3000, kills: 1, deaths: 2 },
+        ],
+      },
+    }),
     'GET /classes/7/roster': () => ({
       body: {
         roster: [
@@ -129,6 +166,38 @@ describe('ClassEditorPage', () => {
     await user.type(screen.getByLabelText('Filter questions'), 'b');
     expect(screen.queryByLabelText('a heal')).toBeNull();
     expect(screen.getByLabelText('b heal')).toBeTruthy();
+  });
+
+  it('starts the match on the teacher’s word, and can lock the room', async () => {
+    const calls = api();
+    renderEditor();
+    const user = userEvent.setup();
+    expect(await screen.findByText('NOT STARTED')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Start the match' }));
+    await user.click(screen.getByRole('button', { name: 'Lock the room to new students' }));
+    expect(calls.some((c) => c.method === 'POST' && c.path === '/classes/7/live/start')).toBe(true);
+    expect(calls.find((c) => c.path === '/classes/7/lock')?.body).toEqual({ locked: true });
+  });
+
+  it('removes a student from the room after confirming', async () => {
+    const calls = api();
+    vi.stubGlobal('confirm', () => true);
+    renderEditor();
+    const user = userEvent.setup();
+    await screen.findByText('Ana');
+    await user.click(screen.getByRole('button', { name: 'Remove' }));
+    expect(calls.find((c) => c.path === '/classes/7/live/kick')?.body).toEqual({ playerId: 3 });
+  });
+
+  it('lists finished rounds and opens one to show its table', async () => {
+    api();
+    renderEditor();
+    const user = userEvent.setup();
+    expect(await screen.findByText(/Won by Ana/)).toBeTruthy();
+    await user.click(screen.getByText('Round 2'));
+    const table = await screen.findByRole('table', { name: 'Round results' });
+    expect(within(table).getByText('Ben')).toBeTruthy();
+    expect(within(table).getByText('$9,000')).toBeTruthy();
   });
 
   it('shows who joined, without emails for a teacher', async () => {
