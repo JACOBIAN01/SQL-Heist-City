@@ -2,9 +2,7 @@ import { PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
 import {
   DEFAULT_AUDIO_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
-  DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
-  DEFAULT_VEHICLE_SETTINGS,
   hourAt,
   SIM_DT,
   TEST_MAP,
@@ -33,6 +31,7 @@ import { PredictedPlayer } from './game/PredictedPlayer';
 import { GameClient } from './net/GameClient';
 import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
 import { InputBatcher } from './net/InputBatcher';
+import { LiveWorld } from './net/liveWorld';
 import { chooseGameUrl, tutorialUrl } from './net/lobby';
 import { buildTaskOptions } from './heist/taskOptions';
 import { Hotkeys } from './input/Hotkeys';
@@ -296,7 +295,8 @@ const createRig: CharacterFactory = assets
       );
 const remotes = new RemotePlayers(scene, createRig);
 // Cars: the server owns them; this draws them, and predicts the one you drive.
-const vehicles = new RemoteVehicles(scene, DEFAULT_VEHICLE_SETTINGS);
+const liveWorld = new LiveWorld();
+const vehicles = new RemoteVehicles(scene, liveWorld.vehicles);
 player.cars = vehicles.footprints();
 let myCar: PredictedVehicle | undefined;
 let carAssets: CarAssets | undefined;
@@ -354,7 +354,7 @@ for (const gesture of ['pointerdown', 'keydown'] as const)
 const audio = new GameAudio({
   out: sound,
   settings: DEFAULT_AUDIO_SETTINGS,
-  vehicles: DEFAULT_VEHICLE_SETTINGS,
+  vehicles: liveWorld.vehicles,
   map: MAP,
   myId: () => client.playerId,
   positionOf: (id) => remotes.positionOf(id),
@@ -436,6 +436,7 @@ client.subscribe({
       ownedWeapons = message.owned;
       hud.setArms(message.owned, message.current);
     } else if (message.t === 'weapons') weaponTable.set(message.weapons);
+    else if (message.t === 'world') liveWorld.apply(message);
     else if (message.t === 'feed') {
       const line = feedText(message.item, client.playerId);
       hud.addEvent(line.text, line.tone);
@@ -559,7 +560,7 @@ function syncOwnCar(id: number, ackSeq: number): void {
       id,
       model,
       collisionMap,
-      DEFAULT_VEHICLE_SETTINGS.kinds[server.kind],
+      liveWorld.vehicles.kinds[server.kind],
       server,
     );
     chaseYaw = server.yaw;
@@ -727,7 +728,7 @@ renderer.setAnimationLoop((now) => {
   // Time of day from the match clock, so every player shares one sky (?hour=22 pins it).
   const hour =
     fixedHour ??
-    hourAt(serverClock.ready ? serverClock.serverTimeAt(now) : 0, DEFAULT_ATMOSPHERE_SETTINGS);
+    hourAt(serverClock.ready ? serverClock.serverTimeAt(now) : 0, liveWorld.atmosphere);
   if (Math.abs(hour - lighting.state.hour) > SKY_STEP_HOURS) {
     lighting.apply(skyAt(hour));
     postFx.setNight(lighting.state.night);

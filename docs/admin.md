@@ -44,7 +44,7 @@ POST /questions/:id/duplicate | /enable | /disable
 GET  /questions/:id/versions   POST /questions/:id/rollback/:v
 POST /questions/:id/preview
 POST /questions/import   GET /questions/export
-GET/PUT /config/reward-map | /config/settings | /config/combat | /config/tutorial (the tutorial's fixed heal/gun/vault questions; each slug must exist)
+GET/PUT /config/reward-map | /config/settings | /config/combat | /config/tutorial (the tutorial's fixed heal/gun/vault questions; each slug must exist) | /config/heist | /config/vehicles | /config/atmosphere | /config/city (12.4: a partial change merged field by field into the stored values, validated whole, audited)
 GET/POST/PUT /pools     GET/POST/PUT/DELETE /users (admin)
 GET  /analytics/questions   GET /audit
 ```
@@ -56,3 +56,9 @@ GET  /analytics/questions   GET /audit
 
 ## Seed bootstrap
 `npm run db:seed` creates the first admin from env (`ADMIN_EMAIL`, `ADMIN_PASSWORD`) and imports the 150 seed questions through the same import path teachers use.
+
+## Gameplay settings reach a running match (12.4)
+The Settings page has a card for heist rules, vehicles, day and night, and the city, drawn from whatever numbers the server sends (a new setting appears with no UI change; only edited fields are sent).
+- **Heist, vehicles, day and night:** every match re-reads them when a new round starts and tells its clients (`world` message), so the cars a client predicts with are the server's. The heist numbers are rewritten in place in the running match, including locks per vault and banking time.
+- **City:** the generation settings travel in the map id (`city:autumn~blocks=6~banks=4`), so a client builds exactly the server's city. A city cannot change under a running match: a new one applies to matches created afterwards (a server restart for the single in-process match).
+- **Tutorial** questions were already editable (Tutorial card).

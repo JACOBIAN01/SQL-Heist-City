@@ -3,8 +3,12 @@ import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   DEFAULT_CHALLENGE_SETTINGS,
+  DEFAULT_ATMOSPHERE_SETTINGS,
+  DEFAULT_CITY_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
+  DEFAULT_HEIST_SETTINGS,
   DEFAULT_REWARD_TIERS,
+  DEFAULT_VEHICLE_SETTINGS,
   DEFAULT_TUTORIAL_SETTINGS,
 } from '@heist/shared';
 import { admin, fakeApi, renderWithProviders, teacher } from '../testing/render';
@@ -40,6 +44,27 @@ function api(user: typeof admin | typeof teacher) {
       },
     }),
     'PUT /config/tutorial': (b) => ({ body: b }),
+    'GET /config/heist': () => ({
+      body: { heist: { current: DEFAULT_HEIST_SETTINGS, defaults: DEFAULT_HEIST_SETTINGS } },
+    }),
+    'GET /config/vehicles': () => ({
+      body: {
+        vehicles: { current: DEFAULT_VEHICLE_SETTINGS, defaults: DEFAULT_VEHICLE_SETTINGS },
+      },
+    }),
+    'GET /config/atmosphere': () => ({
+      body: {
+        atmosphere: {
+          current: DEFAULT_ATMOSPHERE_SETTINGS,
+          defaults: DEFAULT_ATMOSPHERE_SETTINGS,
+        },
+      },
+    }),
+    'GET /config/city': () => ({
+      body: { city: { current: DEFAULT_CITY_SETTINGS, defaults: DEFAULT_CITY_SETTINGS } },
+    }),
+    'PUT /config/vehicles': (b) => ({ body: b }),
+    'PUT /config/city': (b) => ({ body: b }),
     'GET /questions': () => ({
       body: {
         questions: [...Object.values(DEFAULT_TUTORIAL_SETTINGS.questions), 't1-light-loot'].map(
@@ -118,6 +143,32 @@ describe('SettingsPage', () => {
     expect(put?.body).toEqual({
       tutorial: { questions: { ...DEFAULT_TUTORIAL_SETTINGS.questions, gun: 't1-light-loot' } },
     });
+  });
+
+  it('admins retune one car and send only what changed', async () => {
+    const calls = api(admin);
+    renderWithProviders(<SettingsPage />);
+    const user = userEvent.setup();
+    const top = await screen.findByLabelText('vehicles kinds.sedan.maxSpeed');
+    await user.clear(top);
+    await user.type(top, '31');
+    await user.click(screen.getByRole('button', { name: 'Save vehicles' }));
+    await screen.findByText('Saved ✓');
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/config/vehicles');
+    expect(put?.body).toEqual({ vehicles: { kinds: { sedan: { maxSpeed: 31 } } } });
+  });
+
+  it('admins change the city seed (text) and nothing else is sent', async () => {
+    const calls = api(admin);
+    renderWithProviders(<SettingsPage />);
+    const user = userEvent.setup();
+    const seed = await screen.findByLabelText('city seed');
+    await user.clear(seed);
+    await user.type(seed, 'autumn');
+    await user.click(screen.getByRole('button', { name: 'Save city' }));
+    await screen.findByText('Saved ✓');
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/config/city');
+    expect(put?.body).toEqual({ city: { seed: 'autumn' } });
   });
 
   it('teachers see values read-only', async () => {

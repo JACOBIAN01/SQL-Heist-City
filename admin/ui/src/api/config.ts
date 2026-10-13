@@ -97,3 +97,26 @@ export function useSaveTutorialSettings() {
     onSuccess: () => client.invalidateQueries({ queryKey: ['config'] }),
   });
 }
+
+export type SectionName = 'heist' | 'vehicles' | 'atmosphere' | 'city';
+export type SectionData = { current: Record<string, unknown>; defaults: Record<string, unknown> };
+
+/** Heist rules, cars, time of day or the city: plain numbers, edited by one generic card. */
+export function useSection(name: SectionName) {
+  return useQuery({
+    queryKey: ['config', name],
+    queryFn: async () => (await api<Record<SectionName, SectionData>>(`/config/${name}`))[name],
+  });
+}
+
+export function useSaveSection(name: SectionName) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (changes: Record<string, unknown>) =>
+      api<Record<string, unknown>>(`/config/${name}`, {
+        method: 'PUT',
+        body: { [name]: changes },
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['config'] }),
+  });
+}

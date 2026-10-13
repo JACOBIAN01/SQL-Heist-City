@@ -19,6 +19,7 @@ import {
 import { useQuestions } from '../api/questions';
 import { useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { SectionCard } from './SectionCard';
 
 type NumericKey = Exclude<keyof ChallengeSettings, 'hintCostMode'>;
 
@@ -58,6 +59,30 @@ export function SettingsPage() {
       </div>
       <GunsCard editable={isAdmin} />
       <TutorialCard editable={isAdmin} />
+      <SectionCard
+        name="heist"
+        title="Heist rules"
+        note="Locks, loot, bounties, round length, banking and carrying. Applies in every match from its next round."
+        editable={isAdmin}
+      />
+      <SectionCard
+        name="vehicles"
+        title="Vehicles"
+        note="Car speed, handling and mass, and how hard a car hits a person. Applies from the next round; players get the new numbers at once."
+        editable={isAdmin}
+      />
+      <SectionCard
+        name="atmosphere"
+        title="Day and night"
+        note="How long a day lasts and the hour a match starts. Applies from the next round."
+        editable={isAdmin}
+      />
+      <SectionCard
+        name="city"
+        title="City"
+        note="How the city is generated. A new city appears in matches created after the change; running matches keep theirs."
+        editable={isAdmin}
+      />
     </div>
   );
 }
