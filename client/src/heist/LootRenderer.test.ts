@@ -37,4 +37,18 @@ describe('LootRenderer', () => {
     loot.update(0.5);
     expect(small?.position.y).not.toBe(before);
   });
+
+  it('draws loose office cash as a still pile of notes, left off the minimap', () => {
+    const scene = new Scene();
+    const loot = new LootRenderer(scene);
+    loot.apply([bag(1), { ...bag(2, 1_000), loose: true as const }], []);
+    const pile = scene.children[1];
+    expect(pile?.name).toBe('cash-stack');
+    expect(pile?.scale.x).toBe(1);
+    loot.update(0);
+    const before = pile?.position.y;
+    loot.update(0.5);
+    expect(pile?.position.y).toBe(before);
+    expect([...loot.positions()].map((p) => p.id)).toEqual([1]);
+  });
 });

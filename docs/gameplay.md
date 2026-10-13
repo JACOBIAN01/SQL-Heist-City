@@ -19,6 +19,15 @@ An empty city, 100 students, 5 banks. The only way to do anything is to out-thin
 
 Lobby → offices (loose cash, minor loot) → vault floor. Stairs and elevators (loud, chokepoint).
 
+## Loose office cash (12.1)
+Every other desk in a bank's offices has a small pile of cash on it, laid out again at the start of every round.
+- **Amount:** per pile, by the bank's tier (`looseCashByTier`, default $1,000 at Corner Savings up to $4,000 at Federal Vault).
+- **Picking it up:** walk over it, exactly like a bag. It is carried, dropped on death and banked like any other cash.
+- **No lock guards it**, so it is the first money a player without a gun can find. Next to a vault it is small change.
+- It never holds a round open: the early end ("every vault open and its loot gone") waits only for vault bags and dropped bags.
+- **Drawing:** a few banded bundles lying still on the desk; it is not marked on the minimap.
+- **Where:** `cashOnDesks` in `shared/src/world/bank/dressing.ts` derives the piles from each layout's desks, so moving a desk moves its cash.
+
 ## Vault
 N locks (default 3); lock *k* tier = min(5, bankTier + k − 1). Solved locks **persist** through death/disconnect. Final lock → door opens → loot bags spawn, anyone can grab. Opening a lock triggers an alarm radius + minimap marker (ambush bait).
 

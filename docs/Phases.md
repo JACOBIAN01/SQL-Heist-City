@@ -277,7 +277,7 @@ Items left over from Phases 7–9 (audit con 19).
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 12.1 | Office loose cash: small cash piles on bank office storeys, picked up with F, respawned each round, amounts in settings | piles spawn, can be carried and banked, and their amounts are admin-editable | ⬜ |
+| 12.1 | Office loose cash: small cash piles on bank office desks, picked up by walking over them like a bag, laid out again each round, amounts in settings | piles spawn, can be carried and banked, and their amounts are admin-editable | ✅ a pile on every other desk (`cashOnDesks`), `looseCashByTier` $1k–$4k a pile, never holds a round open, drawn as banded notes and left off the minimap (gameplay.md "Loose office cash") |
 | 12.2 | Full-screen map (M): the whole city, banks with lock progress, safehouses, hospital, bounties, your position | opens and closes without pausing the world; tested on every map | ⬜ |
 | 12.3 | Cars hurt people: run-over damage from speed and car mass, the kill credited to the driver, no damage below a speed floor | a test shows a fast car kills and a slow nudge does not; the numbers are settings | ⬜ |
 | 12.4 | Admin editing for the city, day/night, vehicle, heist and tutorial settings (cards on the Settings page) | each settings key is editable, validated and hot-reloaded into a running match | ⬜ |

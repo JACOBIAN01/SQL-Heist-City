@@ -127,8 +127,8 @@ export function cashOnDesks(furniture: readonly FurnitureSpec[], every = 2): Cas
       const piece = FURNITURE_PIECES[f.piece as keyof typeof FURNITURE_PIECES];
       const scale = f.scale ?? 1;
       const width = (piece.max[0] - piece.min[0]) * scale;
-      // A quarter of the desk to the piece's +x, a little to its front, turned like the desk.
-      const lx = width * 0.25;
+      // A little to the piece's +x (clear of the monitor and the lamp), a little to its front.
+      const lx = width * 0.15;
       const lz = 0.12;
       const yaw = FACING_YAW[f.facing ?? '+z'];
       return {
