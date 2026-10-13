@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { rewardMapUpdateSchema } from '@heist/shared';
 import { requireLogin, requireRole, requireUser } from '../auth/middleware';
 import { parse } from '../http/errors';
-import type { SettingsService } from './SettingsService';
+import { SECTION_NAMES, type SectionName, type SettingsService } from './SettingsService';
 
 /** Anyone logged in can read; only admins change gameplay numbers. */
 export function configRoutes(settings: SettingsService): Router {
@@ -37,6 +37,19 @@ export function configRoutes(settings: SettingsService): Router {
     const body = (req.body ?? {}) as { tutorial?: unknown };
     res.json({ tutorial: settings.updateTutorialSettings(body.tutorial ?? {}, requireUser(res)) });
   });
+
+  // Heist rules, cars, time of day and the city: plain numbers, one generic pair of routes each.
+  for (const name of SECTION_NAMES) {
+    router.get(`/config/${name}`, (_req, res) => {
+      res.json({ [name]: settings.section(name as SectionName) });
+    });
+    router.put(`/config/${name}`, requireRole('admin'), (req, res) => {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      res.json({
+        [name]: settings.updateSection(name as SectionName, body[name] ?? {}, requireUser(res)),
+      });
+    });
+  }
 
   router.get('/config/reward-map', (_req, res) => {
     res.json({ rewards: settings.rewardMap() });

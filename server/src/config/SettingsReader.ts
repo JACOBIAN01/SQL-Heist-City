@@ -4,7 +4,17 @@ import {
   DEFAULT_COMBAT_SETTINGS,
   combatSettingsSchema,
   type CombatSettings,
+  DEFAULT_ATMOSPHERE_SETTINGS,
+  DEFAULT_CITY_SETTINGS,
   DEFAULT_HEIST_SETTINGS,
+  DEFAULT_VEHICLE_SETTINGS,
+  atmosphereSettingsSchema,
+  citySettingsSchema,
+  vehicleSettingsSchema,
+  type AtmosphereSettings,
+  type CitySettings,
+  type VehicleSettings,
+  type WorldSettings,
   DEFAULT_REWARD_TIERS,
   challengeSettingsSchema,
   heistSettingsSchema,
@@ -24,6 +34,12 @@ export interface SettingsReader {
   heistSettings(): HeistSettings;
   /** Guns and damage rules; stored guns override the defaults one by one. */
   combatSettings(): CombatSettings;
+  /** Cars: speeds, handling, mass and run-over damage. */
+  vehicleSettings(): VehicleSettings;
+  /** Time of day. */
+  atmosphereSettings(): AtmosphereSettings;
+  /** How the city is generated; read when a match is created. */
+  citySettings(): CitySettings;
   /** The tutorial: room limits and the fixed question of each task. */
   tutorialSettings(): TutorialSettings;
   /** Tier range for a reward key, or undefined if the reward is unknown. */
@@ -38,7 +54,22 @@ export class StaticSettings implements SettingsReader {
     private readonly heist: HeistSettings = DEFAULT_HEIST_SETTINGS,
     private readonly combat: CombatSettings = DEFAULT_COMBAT_SETTINGS,
     private readonly tutorial: TutorialSettings = DEFAULT_TUTORIAL_SETTINGS,
+    private readonly vehicles: VehicleSettings = DEFAULT_VEHICLE_SETTINGS,
+    private readonly atmosphere: AtmosphereSettings = DEFAULT_ATMOSPHERE_SETTINGS,
+    private readonly city: CitySettings = DEFAULT_CITY_SETTINGS,
   ) {}
+
+  vehicleSettings(): VehicleSettings {
+    return this.vehicles;
+  }
+
+  atmosphereSettings(): AtmosphereSettings {
+    return this.atmosphere;
+  }
+
+  citySettings(): CitySettings {
+    return this.city;
+  }
 
   tutorialSettings(): TutorialSettings {
     return this.tutorial;
@@ -65,6 +96,18 @@ export const CHALLENGE_SETTINGS_KEY = 'challenges';
 export const HEIST_SETTINGS_KEY = 'heist';
 export const COMBAT_SETTINGS_KEY = 'combat';
 export const TUTORIAL_SETTINGS_KEY = 'tutorial';
+export const VEHICLE_SETTINGS_KEY = 'vehicles';
+export const ATMOSPHERE_SETTINGS_KEY = 'atmosphere';
+export const CITY_SETTINGS_KEY = 'city';
+
+/** What a match re-reads each round. */
+export function worldSettingsFrom(reader: SettingsReader): WorldSettings {
+  return {
+    heist: reader.heistSettings(),
+    vehicles: reader.vehicleSettings(),
+    atmosphere: reader.atmosphereSettings(),
+  };
+}
 
 /**
  * Stored combat settings over the defaults. Guns merge one by one, so an
@@ -123,6 +166,35 @@ export class SqliteSettingsReader implements SettingsReader {
     if (!row) return DEFAULT_TUTORIAL_SETTINGS;
     const parsed = tutorialSettingsSchema.safeParse(safeJson(row.value_json));
     return parsed.success ? parsed.data : DEFAULT_TUTORIAL_SETTINGS;
+  }
+
+  vehicleSettings(): VehicleSettings {
+    return this.stored(VEHICLE_SETTINGS_KEY, vehicleSettingsSchema, DEFAULT_VEHICLE_SETTINGS);
+  }
+
+  atmosphereSettings(): AtmosphereSettings {
+    return this.stored(
+      ATMOSPHERE_SETTINGS_KEY,
+      atmosphereSettingsSchema,
+      DEFAULT_ATMOSPHERE_SETTINGS,
+    );
+  }
+
+  citySettings(): CitySettings {
+    return this.stored(CITY_SETTINGS_KEY, citySettingsSchema, DEFAULT_CITY_SETTINGS);
+  }
+
+  /** A stored section, or its defaults when missing or no longer valid. */
+  private stored<T>(
+    key: string,
+    schema: { safeParse(v: unknown): { success: true; data: T } | { success: false } },
+    fallback: T,
+  ): T {
+    const row = this.db.prepare('SELECT value_json FROM settings WHERE key = ?').get(key) as
+      { value_json: string } | undefined;
+    if (!row) return fallback;
+    const parsed = schema.safeParse(safeJson(row.value_json));
+    return parsed.success ? parsed.data : fallback;
   }
 
   rewardTiers(rewardKey: string): TierRange | undefined {

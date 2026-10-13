@@ -39,6 +39,8 @@ import type { MatchApi } from './MatchApi';
  */
 export class HeistController implements ArmsControl {
   readonly interactions: InteractionService;
+  /** The heist numbers in force; rewritten in place at each new round. */
+  readonly settings: HeistSettings;
   readonly vaults: VaultRegistry;
 
   readonly tasks = new TaskRules();
@@ -56,16 +58,19 @@ export class HeistController implements ArmsControl {
 
   constructor(
     private readonly match: MatchApi,
-    readonly settings: HeistSettings = DEFAULT_HEIST_SETTINGS,
+    initial: HeistSettings = DEFAULT_HEIST_SETTINGS,
     private readonly challenges?: ChallengeGateway,
     private readonly now: () => number = Date.now,
     private readonly taskOptions?: (rewardKey: string) => IssueOptions | undefined,
   ) {
+    // Our own copy: `refreshSettings` rewrites it in place, and every rule holding it sees the change.
+    this.settings = { ...initial };
+    const settings = this.settings;
     this.vaults = new VaultRegistry(match.map, settings.locksPerVault);
     new FeedReporter(match, this.events);
     this.bounties = new BountyBoard(match, settings, this.events);
     this.awards = new RoundAwards(this.events);
-    this.banking = new BankingService(match, settings.bankingSeconds, {
+    this.banking = new BankingService(match, () => this.settings.bankingSeconds, {
       complete: (player) => {
         const amount = player.cash;
         player.banked += amount;
@@ -103,6 +108,15 @@ export class HeistController implements ArmsControl {
     }
   }
 
+  /**
+   * Takes the admin's current heist numbers (between rounds). The settings
+   * object is rewritten in place because the rules hold a reference to it.
+   */
+  refreshSettings(next: HeistSettings): void {
+    Object.assign(this.settings, next);
+    this.vaults.setLockCount(next.locksPerVault);
+  }
+
   /** Loose cash on the offices' desks (12.1): laid out again every round, by the bank's tier. */
   private layLooseCash(): void {
     const piles = (this.match.map.cashSpots ?? []).flatMap((c) => {
@@ -124,6 +138,7 @@ export class HeistController implements ArmsControl {
 
   /** A new round: vaults shut, bags gone, scores and players reset. */
   private resetWorld(): void {
+    this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
     this.awards.reset();
@@ -144,6 +159,7 @@ export class HeistController implements ArmsControl {
   /** A player just joined: tell them the guns' numbers and where every vault stands. */
   onJoin(player: Player): void {
     this.match.sendJson(player, { t: 'weapons', weapons: this.match.weapons });
+    this.match.sendWorld(player);
     this.match.sendJson(player, { t: 'vaults', vaults: this.vaults.views() });
     this.match.sendJson(player, { t: 'loot', add: this.loot.all(), remove: [] });
     this.sendPurse(player);

@@ -6,7 +6,7 @@ import { createBody, stepBody } from '../../sim/movement';
 import { BANK_LAYOUTS, bankFootprint } from '../bank/banks';
 import { anchorInReach, type GameMap, type MapBox } from '../map';
 import { mapById } from '../maps';
-import { cityMapById, isCityMapId } from './cityMaps';
+import { cityMapById, cityMapIdFor, isCityMapId } from './cityMaps';
 import { compileCity, KERB_HEIGHT } from './compileCity';
 import { generateCity } from './generateCity';
 
@@ -196,5 +196,23 @@ describe('compileCity', () => {
   it('stays a few hundred colliders, cheap for the collision grid', () => {
     // Bank furniture adds a few dozen solid boxes (Phase 11); the grid still answers from cells, not the total.
     expect(map.boxes.length).toBeLessThan(1500);
+  });
+});
+
+describe('city ids carry the generation settings', () => {
+  it('round-trips changed settings through the id', () => {
+    const settings = citySettingsSchema.parse({ seed: 'autumn', blocks: 6, banks: 4 });
+    const id = cityMapIdFor(settings);
+    expect(id).toBe('city:autumn~blocks=6~banks=4');
+    expect(isCityMapId(id)).toBe(true);
+    const built = cityMapById(id);
+    expect(built?.id).toBe(id);
+    expect(built?.vaults?.length).toBe(4);
+  });
+
+  it('keeps the plain id for default settings, and refuses unknown or invalid ones', () => {
+    expect(cityMapIdFor(citySettingsSchema.parse({}))).toBe('city');
+    expect(cityMapById('city~nope=3')).toBeUndefined();
+    expect(cityMapById('city~blocks=99')).toBeUndefined();
   });
 });

@@ -28,7 +28,7 @@ export class Vehicle {
     readonly id: number,
     readonly kind: VehicleKind,
     readonly variant: number,
-    readonly spec: VehicleSpec,
+    public spec: VehicleSpec,
     readonly home: ParkedCar,
   ) {
     this.state = createVehicle(home.x, home.z, home.yaw);
@@ -72,7 +72,7 @@ export class VehicleFleet {
 
   constructor(
     map: GameMap,
-    private readonly settings: VehicleSettings,
+    private settings: VehicleSettings,
   ) {
     (map.parkedCars ?? []).forEach((home, i) => {
       const id = i + 1;
@@ -90,6 +90,12 @@ export class VehicleFleet {
 
   all(): IterableIterator<Vehicle> {
     return this.cars.values();
+  }
+
+  /** New car numbers (admin edit); cars keep their place, so call it between rounds. */
+  apply(settings: VehicleSettings): void {
+    this.settings = settings;
+    for (const car of this.cars.values()) car.spec = settings.kinds[car.kind];
   }
 
   get enterRange(): number {

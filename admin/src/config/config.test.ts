@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_CHALLENGE_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
+  DEFAULT_HEIST_SETTINGS,
+  DEFAULT_VEHICLE_SETTINGS,
   type CombatSettings,
+  type VehicleSettings,
   type RewardTierEntry,
 } from '@heist/shared';
 import { DEFAULT_TUTORIAL_SETTINGS } from '@heist/shared';
@@ -160,5 +163,66 @@ describe('tutorial API', () => {
     h.client.clearCookie();
     await h.loginAs('t@school.test', 'teacher');
     expect((await put({ seed: 'x' })).status).toBe(403);
+  });
+});
+
+describe('heist, vehicle, atmosphere and city settings API (12.4)', () => {
+  it('merges a nested change, keeps the rest, and the game reader sees it', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    const got = await h.client.get<{ vehicles: { current: unknown; defaults: unknown } }>(
+      '/api/config/vehicles',
+    );
+    expect(got.body.vehicles.current).toEqual(DEFAULT_VEHICLE_SETTINGS);
+    const res = await h.client.put<{ vehicles: VehicleSettings }>('/api/config/vehicles', {
+      vehicles: { kinds: { sedan: { maxSpeed: 31 } }, runOver: { minSpeed: 8 } },
+    });
+    expect(res.body.vehicles.kinds.sedan.maxSpeed).toBe(31);
+    expect(res.body.vehicles.kinds.sedan.accel).toBe(DEFAULT_VEHICLE_SETTINGS.kinds.sedan.accel);
+    expect(res.body.vehicles.kinds.suv).toEqual(DEFAULT_VEHICLE_SETTINGS.kinds.suv);
+    const seen = new SqliteSettingsReader(h.db).vehicleSettings();
+    expect(seen.kinds.sedan.maxSpeed).toBe(31);
+    expect(seen.runOver.minSpeed).toBe(8);
+  });
+
+  it('edits each section and refuses invalid values', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    await h.client.put('/api/config/heist', {
+      heist: { killBonus: 55, looseCashByTier: { '1': 9 } },
+    });
+    const heist = new SqliteSettingsReader(h.db).heistSettings();
+    expect(heist.killBonus).toBe(55);
+    expect(heist.looseCashByTier['1']).toBe(9);
+    expect(heist.looseCashByTier['5']).toBe(DEFAULT_HEIST_SETTINGS.looseCashByTier['5']);
+    await h.client.put('/api/config/atmosphere', { atmosphere: { dayMinutes: 12 } });
+    expect(new SqliteSettingsReader(h.db).atmosphereSettings().dayMinutes).toBe(12);
+    await h.client.put('/api/config/city', { city: { blocks: 6, seed: 'autumn' } });
+    expect(new SqliteSettingsReader(h.db).citySettings()).toMatchObject({
+      blocks: 6,
+      seed: 'autumn',
+    });
+    for (const [name, bad] of [
+      ['heist', { killBonus: -1 }],
+      ['vehicles', { runOver: { minSpeed: -3 } }],
+      ['atmosphere', { startHour: 30 }],
+      ['city', { blocks: 99 }],
+    ] as const) {
+      expect((await h.client.put(`/api/config/${name}`, { [name]: bad })).status).toBe(400);
+    }
+  });
+
+  it('lets teachers read but not write, and audits every change', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    await h.client.put('/api/config/atmosphere', { atmosphere: { startHour: 7 } });
+    const audit = await h.client.get<{ entries: { entity: string; entityId: string }[] }>(
+      '/api/audit',
+    );
+    expect(audit.body.entries[0]).toMatchObject({ entity: 'settings', entityId: 'atmosphere' });
+    h.client.clearCookie();
+    await h.loginAs('t@school.test', 'teacher');
+    expect((await h.client.get('/api/config/city')).status).toBe(200);
+    expect((await h.client.put('/api/config/city', { city: { blocks: 5 } })).status).toBe(403);
   });
 });

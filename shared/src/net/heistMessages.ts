@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import type { AwardId } from '../config/awards';
+import type { AtmosphereSettings } from '../config/atmosphere';
 import type { WeaponSpec } from '../config/combat';
+import type { VehicleSettings } from '../config/vehicles';
 import { challengeClientMessageSchema, type ChallengeServerMessage } from './challengeMessages';
 
 /**
@@ -272,7 +274,15 @@ export interface VehicleReply {
   readonly reason?: VehicleDenial;
 }
 
+/** The numbers clients simulate and draw with (cars, time of day), sent on join and at each new round. */
+export interface WorldMessage {
+  readonly t: 'world';
+  readonly vehicles: VehicleSettings;
+  readonly atmosphere: AtmosphereSettings;
+}
+
 export type HeistServerMessage =
+  | WorldMessage
   | InteractReply
   | VehicleReply
   | VaultsMessage

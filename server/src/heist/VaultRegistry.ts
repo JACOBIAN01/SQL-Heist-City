@@ -9,6 +9,10 @@ export class VaultRegistry {
     for (const spec of map.vaults ?? []) this.byId.set(spec.id, new Vault(spec, lockCount));
   }
 
+  setLockCount(count: number): void {
+    for (const v of this.byId.values()) v.setLockCount(count);
+  }
+
   get(id: string): Vault | undefined {
     return this.byId.get(id);
   }

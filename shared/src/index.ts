@@ -40,6 +40,7 @@ export * from './config/movement';
 export * from './sim/input';
 export * from './sim/movement';
 export * from './config/vehicles';
+export * from './config/world';
 export * from './sim/vehicle';
 export * from './world/raycast';
 export * from './net/gameMessages';

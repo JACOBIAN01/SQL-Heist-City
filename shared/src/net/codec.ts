@@ -266,7 +266,7 @@ export function decodeServerMessage(bytes: Uint8Array, snapshots?: SnapshotDecod
       const playerId = r.u16();
       const tick = r.u32();
       const tickRate = r.u8();
-      const mapId = r.string(64);
+      const mapId = r.string(200);
       r.end();
       return { t: 'welcome', playerId, tick, tickRate, mapId };
     }

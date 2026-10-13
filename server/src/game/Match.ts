@@ -2,6 +2,7 @@ import {
   Button,
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
+  DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_VEHICLE_SETTINGS,
   colliderGridFor,
   controlsOf,
@@ -45,6 +46,9 @@ import {
   type VehicleReply,
   type VehicleSettings,
   type VehicleWire,
+  type AtmosphereSettings,
+  type WorldMessage,
+  type WorldSettings,
 } from '@heist/shared';
 import { RunOverRule } from './RunOverRule';
 import { VehicleFleet, type Vehicle } from './VehicleFleet';
@@ -79,6 +83,9 @@ export interface MatchDeps {
   readonly combatSource?: () => CombatSettings;
   readonly heist?: HeistSettings;
   readonly vehicles?: VehicleSettings;
+  readonly atmosphere?: AtmosphereSettings;
+  /** Where to read heist, car and time-of-day settings again at each new round (admin edits); none keeps the fixed ones. */
+  readonly worldSource?: () => WorldSettings;
   /** SQL tasks; without it every task request is answered "unavailable". */
   readonly challenges?: ChallengeGateway;
   /** How this match wants each task issued (the tutorial fixes the questions); none: the normal way. */
@@ -114,6 +121,8 @@ export class Match implements MatchApi {
   /** Every car in the match; the server drives them (docs/gameplay.md "Vehicles"). */
   readonly vehicles: VehicleFleet;
   private readonly runOver: RunOverRule;
+  private vehicleSettings: VehicleSettings;
+  private atmosphere: AtmosphereSettings;
   private readonly vehicleScratch: VehicleWire[] = [];
   private readonly vehicleRemoved: number[] = [];
   private readonly inRange = new Set<number>();
@@ -183,6 +192,8 @@ export class Match implements MatchApi {
     this.spawnPolicy = deps.spawnPolicy ?? new FarthestSpawnPolicy();
     this.now = deps.now ?? Date.now;
     const vehicleSettings = deps.vehicles ?? DEFAULT_VEHICLE_SETTINGS;
+    this.vehicleSettings = vehicleSettings;
+    this.atmosphere = deps.atmosphere ?? DEFAULT_ATMOSPHERE_SETTINGS;
     this.vehicles = new VehicleFleet(deps.map, vehicleSettings);
     this.runOver = new RunOverRule(
       vehicleSettings.runOver,
@@ -229,6 +240,26 @@ export class Match implements MatchApi {
    * every client. The lag-compensation window stays as the match started
    * (it sized the position history).
    */
+  refreshWorld(): void {
+    const next = this.deps.worldSource?.();
+    if (!next) return;
+    this.heist.refreshSettings(next.heist);
+    this.vehicleSettings = next.vehicles;
+    this.atmosphere = next.atmosphere;
+    this.vehicles.apply(next.vehicles);
+    this.runOver.configure(next.vehicles.runOver);
+    this.broadcastJson(this.worldMessage());
+  }
+
+  /** The car and sky numbers, to one player (on join). */
+  sendWorld(player: Player): void {
+    this.sendJson(player, this.worldMessage());
+  }
+
+  private worldMessage(): WorldMessage {
+    return { t: 'world', vehicles: this.vehicleSettings, atmosphere: this.atmosphere };
+  }
+
   refreshCombat(): void {
     const next = this.deps.combatSource?.();
     if (!next) return;

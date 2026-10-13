@@ -12,8 +12,17 @@ export class Vault {
 
   constructor(
     readonly spec: MapVault,
-    readonly lockCount: number,
+    private locks: number,
   ) {}
+
+  get lockCount(): number {
+    return this.locks;
+  }
+
+  /** Locks per vault for the next round on (admin edits apply between rounds). */
+  setLockCount(count: number): void {
+    this.locks = count;
+  }
 
   get locksOpen(): number {
     return this.opened;

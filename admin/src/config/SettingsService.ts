@@ -10,16 +10,29 @@ import {
   type ChallengeSettings,
   type RewardMapUpdate,
   type RewardTierEntry,
+  DEFAULT_ATMOSPHERE_SETTINGS,
+  DEFAULT_CITY_SETTINGS,
+  DEFAULT_HEIST_SETTINGS,
+  DEFAULT_VEHICLE_SETTINGS,
+  atmosphereSettingsSchema,
+  citySettingsSchema,
+  heistSettingsSchema,
+  vehicleSettingsSchema,
   DEFAULT_TUTORIAL_SETTINGS,
   tutorialSettingsSchema,
   type TutorialSettings,
 } from '@heist/shared';
 import {
+  ATMOSPHERE_SETTINGS_KEY,
+  CITY_SETTINGS_KEY,
+  HEIST_SETTINGS_KEY,
+  VEHICLE_SETTINGS_KEY,
   CHALLENGE_SETTINGS_KEY,
   COMBAT_SETTINGS_KEY,
   SqliteSettingsReader,
   TUTORIAL_SETTINGS_KEY,
 } from '@heist/server/config/SettingsReader';
+import type { ZodType } from 'zod';
 import { HttpError } from '../http/errors';
 import type { AdminEventBus } from '../events/AdminEvents';
 
@@ -159,6 +172,47 @@ export class SettingsService {
     return parsed.data;
   }
 
+  /** The editable sections that are plain numbers: key → what the admin may change. */
+  section(name: SectionName): { current: object; defaults: object } {
+    const spec = SECTIONS[name];
+    return { current: spec.read(this.reader), defaults: spec.defaults };
+  }
+
+  /**
+   * Merges a partial change into the section (nested objects field by field,
+   * so retuning one car or one bank's loot keeps the rest) and validates the
+   * whole. Cars, heist rules and the sky reach running matches at their next
+   * round; a new city only applies to matches created afterwards.
+   */
+  updateSection(name: SectionName, changes: unknown, actor: AdminUser): object {
+    const spec = SECTIONS[name];
+    if (typeof changes !== 'object' || changes === null || Array.isArray(changes))
+      throw new HttpError(400, 'validation_failed', `${name} settings must be an object`);
+    const before = spec.read(this.reader);
+    const parsed = spec.schema.safeParse(mergeDeep(before, changes));
+    if (!parsed.success) {
+      throw new HttpError(
+        400,
+        'validation_failed',
+        'Some settings are invalid',
+        parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      );
+    }
+    this.db
+      .prepare(
+        'INSERT INTO settings (key, value_json) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value_json = excluded.value_json',
+      )
+      .run(spec.key, JSON.stringify(parsed.data));
+    this.events.publish({
+      type: 'settings_changed',
+      key: spec.key,
+      actor: { id: actor.id, email: actor.email },
+      before,
+      after: parsed.data,
+    });
+    return parsed.data as object;
+  }
+
   rewardMap(): RewardTierEntry[] {
     const overrides = new Set(
       (this.db.prepare('SELECT reward_key FROM reward_map').all() as { reward_key: string }[]).map(
@@ -210,4 +264,54 @@ export class SettingsService {
     });
     return after;
   }
+}
+
+export type SectionName = 'heist' | 'vehicles' | 'atmosphere' | 'city';
+export const SECTION_NAMES: readonly SectionName[] = ['heist', 'vehicles', 'atmosphere', 'city'];
+
+interface SectionSpec {
+  readonly key: string;
+  readonly schema: ZodType;
+  readonly defaults: object;
+  readonly read: (reader: SqliteSettingsReader) => object;
+}
+
+// Pattern: Registry — Why: a new editable settings section is one entry here (key, schema, defaults,
+// reader), not another copy of the validate-store-publish code.
+const SECTIONS: Readonly<Record<SectionName, SectionSpec>> = {
+  heist: {
+    key: HEIST_SETTINGS_KEY,
+    schema: heistSettingsSchema,
+    defaults: DEFAULT_HEIST_SETTINGS,
+    read: (r) => r.heistSettings(),
+  },
+  vehicles: {
+    key: VEHICLE_SETTINGS_KEY,
+    schema: vehicleSettingsSchema,
+    defaults: DEFAULT_VEHICLE_SETTINGS,
+    read: (r) => r.vehicleSettings(),
+  },
+  atmosphere: {
+    key: ATMOSPHERE_SETTINGS_KEY,
+    schema: atmosphereSettingsSchema,
+    defaults: DEFAULT_ATMOSPHERE_SETTINGS,
+    read: (r) => r.atmosphereSettings(),
+  },
+  city: {
+    key: CITY_SETTINGS_KEY,
+    schema: citySettingsSchema,
+    defaults: DEFAULT_CITY_SETTINGS,
+    read: (r) => r.citySettings(),
+  },
+};
+
+const isPlain = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/** `changes` laid over `base`, nested plain objects merged key by key. */
+function mergeDeep(base: unknown, changes: unknown): unknown {
+  if (!isPlain(base) || !isPlain(changes)) return changes;
+  const out: Record<string, unknown> = { ...base };
+  for (const [k, v] of Object.entries(changes)) out[k] = k in base ? mergeDeep(base[k], v) : v;
+  return out;
 }

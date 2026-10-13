@@ -1,11 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
-import type { CombatSettings, HeistSettings, TutorialSettings } from '@heist/shared';
+import type {
+  CitySettings,
+  CombatSettings,
+  HeistSettings,
+  TutorialSettings,
+  WorldSettings,
+} from '@heist/shared';
 import { ChallengeMessageHandler } from './challenges/ChallengeMessageHandler';
 import { ChallengeService, type ChallengeLogger } from './challenges/ChallengeService';
 import { QuestionSelector } from './challenges/QuestionSelector';
 import { CachedSettingsReader } from './config/CachedSettingsReader';
-import { SqliteSettingsReader } from './config/SettingsReader';
+import { SqliteSettingsReader, worldSettingsFrom } from './config/SettingsReader';
 import { CachedQuestionReader } from './questions/CachedQuestionReader';
 import { SqliteQuestionRepository } from './questions/SqliteQuestionRepository';
 import { Grader } from './sql/Grader';
@@ -20,6 +26,10 @@ export interface ChallengeStack {
   heistSettings(): HeistSettings;
   /** Guns as the admin has set them (read when a match starts and at each new round). */
   combatSettings(): CombatSettings;
+  /** Heist rules, cars and time of day, read again at each new round. */
+  worldSettings(): WorldSettings;
+  /** City generation settings, read when a match is created. */
+  citySettings(): CitySettings;
   /** The tutorial as the admin has set it (read for every new tutorial room). */
   tutorialSettings(): TutorialSettings;
   /** Drop cached questions and settings (admin edited something). */
@@ -61,6 +71,8 @@ export function buildChallengeStack(
     heistSettings: () => settings.heistSettings(),
     combatSettings: () => settings.combatSettings(),
     tutorialSettings: () => settings.tutorialSettings(),
+    worldSettings: () => worldSettingsFrom(settings),
+    citySettings: () => settings.citySettings(),
     invalidate: () => {
       questions.invalidate();
       settings.invalidate();

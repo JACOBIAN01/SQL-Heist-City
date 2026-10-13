@@ -6,6 +6,7 @@ import {
   type GameMap,
   type HeistSettings,
   type MatchSettings,
+  type WorldSettings,
 } from '@heist/shared';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import { GameLoop } from './GameLoop';
@@ -41,6 +42,8 @@ export interface GameOptions {
   /** Read at the start and again at each new round, so admin edits to guns apply next round. */
   readonly combat?: () => CombatSettings;
   readonly challenges?: ChallengeGateway;
+  /** Heist, car and sky settings, read at the start and again at each new round (admin edits apply then). */
+  readonly world?: () => WorldSettings;
 }
 
 /** Wires one match to the HTTP server and starts ticking. Composition only, no rules. */
@@ -53,6 +56,7 @@ export function startGame(
   const match = new Match({
     map,
     settings,
+    ...(options.world ? worldDeps(options.world) : {}),
     ...(options.heist ? { heist: options.heist } : {}),
     ...(options.combat ? { combat: options.combat(), combatSource: options.combat } : {}),
     ...(options.challenges ? { challenges: options.challenges } : {}),
@@ -92,5 +96,16 @@ export function startGame(
       clearInterval(sampler);
       await socket.close();
     },
+  };
+}
+
+/** The first read of the world settings, plus the source for later rounds. */
+function worldDeps(world: () => WorldSettings) {
+  const first = world();
+  return {
+    heist: first.heist,
+    vehicles: first.vehicles,
+    atmosphere: first.atmosphere,
+    worldSource: world,
   };
 }

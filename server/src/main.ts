@@ -3,9 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { attachChallengeSocket } from './challenges/ChallengeSocket';
 import { buildChallengeStack, type ChallengeStack } from './composition';
 import { openDatabase } from './db/database';
-import { DEFAULT_MATCH_SETTINGS } from '@heist/shared';
+import { DEFAULT_MATCH_SETTINGS, cityMapIdFor } from '@heist/shared';
 import { MatchPool } from './game/MatchPool';
-import { mapByName, parseMapName } from './game/maps';
+import { mapByName, parseMapName, type MapName } from './game/maps';
 import { startGame, type RunningGame } from './game/startGame';
 import { createHttpServer } from './http/httpServer';
 import { attachTutorialSocket } from './tutorial/TutorialRooms';
@@ -27,7 +27,11 @@ if (existsSync(dbPath)) {
 
 // The HTTP server is created first (the game attaches to it), so metrics look the game up lazily.
 // MATCH_MAP=city (default)|city:<seed>|heist|sandbox|bench. Load tests: MATCH_MAX_PLAYERS=200, MATCH_DUMMIES=0, MATCH_MAP=bench (640 m).
-const mapName = parseMapName(process.env.MATCH_MAP);
+// Without MATCH_MAP the city is whatever the admin's city settings describe (read once: a city cannot change under a running match).
+const mapName: MapName =
+  !process.env.MATCH_MAP && challenges
+    ? (cityMapIdFor(challenges.citySettings()) as MapName)
+    : parseMapName(process.env.MATCH_MAP);
 const matchSettings = {
   ...DEFAULT_MATCH_SETTINGS,
   maxPlayers: Number(process.env.MATCH_MAX_PLAYERS ?? DEFAULT_MATCH_SETTINGS.maxPlayers),
@@ -82,6 +86,7 @@ if (workers > 0) {
       ? {
           heist: challenges.heistSettings(),
           combat: () => challenges.combatSettings(),
+          world: () => challenges.worldSettings(),
           challenges: challenges.handler,
         }
       : {}),

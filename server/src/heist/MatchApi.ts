@@ -23,6 +23,10 @@ export interface MatchApi {
   readonly weapons: Readonly<Record<string, WeaponSpec>>;
   /** Re-reads combat settings the admin changed and tells every client (between rounds). */
   refreshCombat(): void;
+  /** Re-reads heist, car and time-of-day settings the admin changed and tells every client (between rounds). */
+  refreshWorld(): void;
+  /** Sends one player the car and time-of-day numbers (on join). */
+  sendWorld(player: Player): void;
   readonly map: GameMap;
   getPlayer(id: number): Player | undefined;
   playerList(): Iterable<Player>;

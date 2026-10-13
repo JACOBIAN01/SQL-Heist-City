@@ -31,6 +31,9 @@ describe('CachedSettingsReader', () => {
       heistSettings: () => (calls++, inner.heistSettings()),
       combatSettings: () => (calls++, inner.combatSettings()),
       tutorialSettings: () => (calls++, inner.tutorialSettings()),
+      vehicleSettings: () => (calls++, inner.vehicleSettings()),
+      atmosphereSettings: () => (calls++, inner.atmosphereSettings()),
+      citySettings: () => (calls++, inner.citySettings()),
       rewardTiers: (k: string) => (calls++, inner.rewardTiers(k)),
     };
     const cached = new CachedSettingsReader(counting);

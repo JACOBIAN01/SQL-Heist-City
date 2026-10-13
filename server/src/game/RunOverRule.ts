@@ -36,7 +36,7 @@ export class RunOverRule {
   private readonly nextHit = new Map<number, number>();
 
   constructor(
-    private readonly rule: RunOverSettings,
+    private rule: RunOverSettings,
     private readonly tickRate: number,
     private readonly bodyRadius: number,
     private readonly aboveCars: number,
@@ -52,6 +52,10 @@ export class RunOverRule {
     if (gap > this.bodyRadius + this.rule.reach) return 0;
     this.nextHit.set(person.id, tick + Math.ceil(this.rule.hitCooldownSec * this.tickRate));
     return damage;
+  }
+
+  configure(rule: RunOverSettings): void {
+    this.rule = rule;
   }
 
   forget(personId: number): void {

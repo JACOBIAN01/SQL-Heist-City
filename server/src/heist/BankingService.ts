@@ -20,12 +20,15 @@ export interface BankingHooks {
  */
 export class BankingService {
   private readonly channels = new Map<Player, Channel>();
+  private readonly secondsOf: () => number;
 
   constructor(
     private readonly match: MatchApi,
-    private readonly seconds: number,
+    seconds: number | (() => number),
     private readonly hooks: BankingHooks,
-  ) {}
+  ) {
+    this.secondsOf = typeof seconds === 'function' ? seconds : () => seconds;
+  }
 
   /** Whether this player is mid-banking (for tests and the HUD). */
   isBanking(player: Player): boolean {
@@ -35,10 +38,11 @@ export class BankingService {
   start(player: Player, anchor: MapAnchor): number {
     this.channels.set(player, {
       anchor,
-      endTick: this.match.tick + Math.ceil(this.seconds * this.match.tickRate),
+      endTick: this.match.tick + Math.ceil(this.secondsOf() * this.match.tickRate),
     });
-    this.match.sendJson(player, { t: 'banking', status: 'started', seconds: this.seconds });
-    return this.seconds;
+    const seconds = this.secondsOf();
+    this.match.sendJson(player, { t: 'banking', status: 'started', seconds });
+    return seconds;
   }
 
   cancel(player: Player, reason: BankingCancel): void {
