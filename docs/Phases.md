@@ -34,7 +34,7 @@
 | 14 | Classroom mode | ✅ |
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
 | 16 | Teaching loop | ✅ |
-| 17 | Question types and content (filling R, C, B, E) | 🟨 17.1–17.12 done |
+| 17 | Question types and content (filling R, C, B, E) | 🟨 17.1–17.13 done |
 | 18 | Security hardening | ⬜ |
 | 19 | Scale proof | ⬜ |
 | 20 | Operations and deployment | ⬜ |
@@ -376,7 +376,7 @@ Today every question is Solve. This phase adds the question types that measure R
 | 17.10 | **B** Open brief: the student sets the goal and the done-condition, writes the queries and states how they know it worked; between rounds (heist planning) | briefs submitted from the game | ✅ `brief:plan` from the round-results card (signed-in players), 8 brief questions in kinds-briefs.json, stored in `brief_submissions`; `taskKinds` keeps briefs out of in-round tasks |
 | 17.11 | Rubric review queue in the admin for Build (and free-text Evaluate): rubrics per brief, batch marking, marks flow into profiles | a teacher marks 30 briefs and profiles update | ✅ admin "Briefs to mark": per-criterion marks, Save and next, re-marks; marks go into the profile and are audited (a teacher marking 30 is covered by the same flow, tested on 2) |
 | 17.12 | Structural variants: table and column renames, story-theme swaps (designed in questions.md) | one question renders under two themes with the same grading | ✅ `themes` on a question; 46 bank questions render as a casino too, same grading (QA runs 100 seeds across both) |
-| 17.13 | Coverage: new content until every tier has every RCSBE dimension and every Bloom level | the coverage report shows no empty cell | ⬜ |
+| 17.13 | Coverage: new content until every tier has every RCSBE dimension and every Bloom level | the coverage report shows no empty cell | ✅ 10 questions in kinds-coverage.json; the QA gate prints the tier grid and fails on an empty cell (none left: 268 questions) |
 | 17.14 | Dialect packs: PostgreSQL and MySQL notes and per-dialect cheat-sheets; quirks flagged per question | a class can pick a dialect pack; the pop-up shows its notes | ⬜ |
 
 ---
