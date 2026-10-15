@@ -620,3 +620,17 @@
   margin: 4px 0 8px 18px;
   padding: 0;
 }
+
+/* Dialect notes (Phase 17.14). */
+.sqlp-dialect,
+.sqlp-dialect-sheet {
+  margin: 8px 0;
+}
+.sqlp-dialect-entry {
+  border-left: 2px solid rgba(255, 255, 255, 0.15);
+  padding-left: 8px;
+  margin: 6px 0;
+}
+.sqlp-dialect-entry[data-here='true'] {
+  border-left-color: var(--sqlp-accent);
+}

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { PublicChallenge } from '@heist/shared';
+import { sampleChallenge } from '../../testing/FakeChallengeApi';
 import { ProblemPane } from './ProblemPane';
 
 const challenge: PublicChallenge = {
@@ -140,5 +141,50 @@ describe('ProblemPane', () => {
     expect(hints).toEqual(['Hint 1 · −5% of your cashUse `WHERE`', 'Hint 2 · −$250Compare salary']);
     pane.show(challenge);
     expect(host.querySelectorAll('.sqlp-hint')).toHaveLength(0);
+  });
+});
+
+describe('ProblemPane: dialect notes (17.14)', () => {
+  it("shows the class's dialect notes, this question's first and open, the rest as a cheat-sheet", () => {
+    const host = document.createElement('div');
+    new ProblemPane(host).show(
+      sampleChallenge({
+        dialect: {
+          name: 'PostgreSQL',
+          intro: 'The game runs SQLite.',
+          entries: [
+            {
+              quirk: 'like-case',
+              note: 'LIKE cares about case.',
+              sqlite: 'LIKE',
+              dialect: 'ILIKE',
+              here: true,
+            },
+            {
+              quirk: 'dates',
+              note: 'Dates differ.',
+              sqlite: 'strftime',
+              dialect: 'EXTRACT',
+              here: false,
+            },
+          ],
+        },
+      }),
+    );
+    const notes = host.querySelector('.sqlp-dialect') as HTMLDetailsElement;
+    expect(notes.open).toBe(true);
+    expect(notes.querySelector('summary')?.textContent).toBe(
+      'PostgreSQL notes (1 for this question)',
+    );
+    expect(notes.textContent).toContain('ILIKE');
+    expect((host.querySelector('.sqlp-dialect-sheet') as HTMLElement).textContent).toContain(
+      'EXTRACT',
+    );
+  });
+
+  it('shows nothing for a class on SQLite', () => {
+    const host = document.createElement('div');
+    new ProblemPane(host).show(sampleChallenge());
+    expect(host.querySelector('.sqlp-dialect')).toBeNull();
   });
 });

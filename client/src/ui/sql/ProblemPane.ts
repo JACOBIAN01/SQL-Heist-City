@@ -34,6 +34,7 @@ export class ProblemPane {
       h('h2', { class: 'sqlp-h2', text: challenge.tables.length === 1 ? 'Table' : 'Tables' }),
       ...challenge.tables.map(tableCard),
       ...expectedOutput(challenge),
+      ...(challenge.dialect ? [dialectNotes(challenge.dialect)] : []),
       h(
         'details',
         { class: 'sqlp-schema' },
@@ -183,5 +184,42 @@ function workedExample(example: WorkedExampleView): HTMLElement {
         : dataTable(output.columns, output.rows),
       more > 0 ? h('p', { class: 'sqlp-muted', text: `…and ${more} more rows` }) : null,
     ),
+  );
+}
+
+/**
+ * The class's dialect notes: what this question's SQL looks like in the dialect the class uses
+ * (the game itself runs SQLite). Entries this question touches come first and open; the rest of
+ * the pack is the cheat-sheet.
+ */
+function dialectNotes(d: NonNullable<PublicChallenge['dialect']>): HTMLElement {
+  const entry = (e: (typeof d.entries)[number]) =>
+    h(
+      'div',
+      { class: 'sqlp-dialect-entry', attrs: { 'data-here': String(e.here) } },
+      h('p', { class: 'sqlp-line', text: e.note }),
+      h('div', { class: 'sqlp-example-label', text: 'SQLite (here)' }),
+      h('pre', { class: 'sqlp-task-sql', text: e.sqlite }),
+      h('div', { class: 'sqlp-example-label', text: d.name }),
+      h('pre', { class: 'sqlp-task-sql', text: e.dialect }),
+    );
+  const here = d.entries.filter((e) => e.here);
+  const rest = d.entries.filter((e) => !e.here);
+  return h(
+    'details',
+    { class: 'sqlp-dialect', attrs: here.length > 0 ? { open: '' } : {} },
+    h('summary', {
+      text: `${d.name} notes${here.length ? ` (${here.length} for this question)` : ''}`,
+    }),
+    h('p', { class: 'sqlp-muted', text: d.intro }),
+    ...here.map(entry),
+    rest.length > 0
+      ? h(
+          'details',
+          { class: 'sqlp-dialect-sheet' },
+          h('summary', { text: `${d.name} cheat-sheet` }),
+          ...rest.map(entry),
+        )
+      : null,
   );
 }
