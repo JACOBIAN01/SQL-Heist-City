@@ -594,6 +594,55 @@ def defend(slug, tier, topic, title, constraint, queries, pick, reasons, right_r
                      part('Why?', reasons, right_reason, weight=2)],
                     show_sql=sql, pass_share=0.6, shuffle=True))
 
+# --- 17.13 Coverage: fill the tier × RCSBE / Bloom cells that were empty --------------------------
+
+coverage = [
+    # Tier 1 × Evaluate
+    defend('e-defend-named-columns', 1, ['select'], 'Only What the Report Needs',
+           'A weekly report needs each owner and balance. The table will get more columns next term.',
+           ['SELECT * FROM accounts;', 'SELECT owner, balance FROM accounts;'], 1,
+           ['B names exactly what the report needs, so it stays the same when columns are added',
+            '`*` is not allowed in reports', 'A returns fewer rows than B', 'B is the only one that runs'], 0),
+    defend('e-defend-let-sql-count', 1, ['group-by', 'count'], 'Count per Branch',
+           'The crew needs how many accounts each branch has, one line per branch.',
+           ['SELECT branch FROM accounts ORDER BY branch;  -- then count the lines by hand',
+            'SELECT branch, COUNT(*) FROM accounts GROUP BY branch;'], 1,
+           ['GROUP BY makes one row per branch and the database does the counting, so nothing is miscounted',
+            'ORDER BY cannot be used on text', 'A returns more columns', 'COUNT(*) only works with WHERE'], 0),
+    # Tier 4 × Recall
+    q('r-fill-partition', 4, ['window', 'running-total'], 'Totals per Department', 'R', 'remember',
+      'Fill the blank so each department gets its own running total.', EMP,
+      fill('SELECT name, SUM(salary) OVER (___ BY dept ORDER BY id) AS running FROM employees;', ['PARTITION'])),
+    q('r-fill-frame', 4, ['window', 'range', 'running-total'], 'From the Start to Here', 'R', 'remember',
+      'Fill the blanks: the frame runs from the first row up to the current one.', BANK,
+      fill('SELECT id, SUM(amount) OVER (ORDER BY at, id ROWS BETWEEN ___ PRECEDING AND ___ ROW) FROM transactions;',
+           ['UNBOUNDED'], ['CURRENT'])),
+    # Tier 5 × Recall
+    q('r-fill-recursive', 5, ['recursive-cte'], 'Down the Chain', 'R', 'remember',
+      'Fill the blanks to walk down the management chain from the people with no manager.', EMP,
+      fill('WITH ___ chain(id) AS (SELECT id FROM employees WHERE manager_id IS NULL ___ SELECT e.id FROM employees e JOIN chain c ON e.manager_id = c.id) SELECT COUNT(*) FROM chain;',
+           ['RECURSIVE'], ['UNION ALL', 'UNION'])),
+    q('r-choice-recursion-stop', 5, ['recursive-cte'], 'When It Stops', 'R', 'remember',
+      'Quick check.', EMP,
+      choice([part('When does a recursive CTE stop?',
+                   ['When its recursive part returns no new rows', 'After exactly 100 steps',
+                    'When it reaches LIMIT', 'When the first row repeats'], 0)])),
+    # Tier 4 × Comprehend (understand)
+    predict('c-predict-running-sum', 4, ['window', 'running-total'], 'Running Pay',
+            "SELECT name, SUM(salary) OVER (ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS run FROM staff WHERE dept = 'Vault';",
+            'What is `run` for Fay?', ['16500', '5200', '11300', '15600'], 0),
+    predict('c-predict-lag', 4, ['lag', 'window'], 'The Row Before',
+            'SELECT name, LAG(salary) OVER (ORDER BY id) AS prev FROM staff;',
+            'What is `prev` for Ana, and for Cy?', ['NULL, 3100', '0, 3100', '3100, 5200', 'NULL, 5200'], 0),
+    # Tier 5 × Comprehend (understand)
+    predict('c-predict-recursive', 5, ['recursive-cte'], 'Doubling',
+            'WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x * 2 FROM n WHERE x < 20) SELECT MAX(x), COUNT(*) FROM n;',
+            'What does it return?', ['32, 6', '16, 5', '20, 5', '32, 5'], 0),
+    predict('c-predict-ntile', 5, ['ntile', 'window'], 'Four Buckets',
+            'SELECT name, NTILE(4) OVER (ORDER BY salary DESC, name) AS q FROM staff;',
+            'Which bucket are Fay and Eli in?', ['2, 4', '1, 4', '2, 3', '3, 4'], 0),
+]
+
 # The first part's options ("Query A", "Query B") must keep their order; reasons are shuffled.
 defends = [
     defend('e-defend-not-exists', 4, ['not-exists', 'not-in', 'null'], 'Missing Owners',
@@ -695,7 +744,7 @@ defends = [
 # shuffle covers every part, so turn it off and shuffle the reasons here instead.
 import random
 
-for d in defends:
+for d in defends + [c for c in coverage if c['rcsbe'] == 'E']:
     d['task']['shuffle'] = False
     reasons = d['task']['parts'][1]
     rnd = random.Random(d['slug'])
@@ -707,7 +756,7 @@ for d in defends:
 
 # Recall/predict/error/plan options were written right-answer-first; the per-player shuffle
 # hides that in the game, but the stored order should not give it away in the admin either.
-for group in (recall, predicts, errors, plans):
+for group in (recall, predicts, errors, plans, [c for c in coverage if c['rcsbe'] != 'E']):
     for question in group:
         task = question['task']
         if task['kind'] != 'choice':
@@ -767,7 +816,7 @@ CASINO = {
     },
 }
 
-for group in (recall, fixes, fasters, writes, defends):
+for group in (recall, fixes, fasters, writes, defends, coverage):
     for question in group:
         if question['data_gen'] is BANK_DATA:
             question['themes'] = [CASINO]
@@ -782,6 +831,7 @@ FILES = {
     'kinds-write.json': writes,
     'kinds-defend.json': defends,
     'kinds-briefs.json': briefs,
+    'kinds-coverage.json': coverage,
 }
 
 for name, questions in FILES.items():

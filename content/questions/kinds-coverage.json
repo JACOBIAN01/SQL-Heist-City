@@ -1,0 +1,914 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "e-defend-named-columns",
+      "tier": 1,
+      "topic": ["select"],
+      "title": "Only What the Report Needs",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **A weekly report needs each owner and balance. The table will get more columns next term.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "B names exactly what the report needs, so it stays the same when columns are added"
+              },
+              {
+                "id": "b",
+                "text_md": "B is the only one that runs"
+              },
+              {
+                "id": "c",
+                "text_md": "A returns fewer rows than B"
+              },
+              {
+                "id": "d",
+                "text_md": "`*` is not allowed in reports"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT * FROM accounts;\n\n-- Query B\nSELECT owner, balance FROM accounts;"
+      },
+      "reference_sql": "",
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "e-defend-let-sql-count",
+      "tier": 1,
+      "topic": ["group-by", "count"],
+      "title": "Count per Branch",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **The crew needs how many accounts each branch has, one line per branch.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "ORDER BY cannot be used on text"
+              },
+              {
+                "id": "b",
+                "text_md": "A returns more columns"
+              },
+              {
+                "id": "c",
+                "text_md": "COUNT(*) only works with WHERE"
+              },
+              {
+                "id": "d",
+                "text_md": "GROUP BY makes one row per branch and the database does the counting, so nothing is miscounted"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT branch FROM accounts ORDER BY branch;  -- then count the lines by hand\n\n-- Query B\nSELECT branch, COUNT(*) FROM accounts GROUP BY branch;"
+      },
+      "reference_sql": "",
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "r-fill-partition",
+      "tier": 4,
+      "topic": ["window", "running-total"],
+      "title": "Totals per Department",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blank so each department gets its own running total.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT name, SUM(salary) OVER (___ BY dept ORDER BY id) AS running FROM employees;",
+        "blanks": [
+          {
+            "accept": ["PARTITION"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-frame",
+      "tier": 4,
+      "topic": ["window", "range", "running-total"],
+      "title": "From the Start to Here",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blanks: the frame runs from the first row up to the current one.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT id, SUM(amount) OVER (ORDER BY at, id ROWS BETWEEN ___ PRECEDING AND ___ ROW) FROM transactions;",
+        "blanks": [
+          {
+            "accept": ["UNBOUNDED"]
+          },
+          {
+            "accept": ["CURRENT"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "r-fill-recursive",
+      "tier": 5,
+      "topic": ["recursive-cte"],
+      "title": "Down the Chain",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blanks to walk down the management chain from the people with no manager.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "WITH ___ chain(id) AS (SELECT id FROM employees WHERE manager_id IS NULL ___ SELECT e.id FROM employees e JOIN chain c ON e.manager_id = c.id) SELECT COUNT(*) FROM chain;",
+        "blanks": [
+          {
+            "accept": ["RECURSIVE"]
+          },
+          {
+            "accept": ["UNION ALL", "UNION"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-choice-recursion-stop",
+      "tier": 5,
+      "topic": ["recursive-cte"],
+      "title": "When It Stops",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Quick check.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "When does a recursive CTE stop?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "When it reaches LIMIT"
+              },
+              {
+                "id": "b",
+                "text_md": "When its recursive part returns no new rows"
+              },
+              {
+                "id": "c",
+                "text_md": "When the first row repeats"
+              },
+              {
+                "id": "d",
+                "text_md": "After exactly 100 steps"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-predict-running-sum",
+      "tier": 4,
+      "topic": ["window", "running-total"],
+      "title": "Running Pay",
+      "rcsbe": "C",
+      "bloom": "understand",
+      "story_md": "Read the query and the tables. Without running anything, what does it return?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is `run` for Fay?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "11300"
+              },
+              {
+                "id": "b",
+                "text_md": "5200"
+              },
+              {
+                "id": "c",
+                "text_md": "15600"
+              },
+              {
+                "id": "d",
+                "text_md": "16500"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query",
+        "show_sql": "SELECT name, SUM(salary) OVER (ORDER BY id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS run FROM staff WHERE dept = 'Vault';"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-predict-lag",
+      "tier": 4,
+      "topic": ["lag", "window"],
+      "title": "The Row Before",
+      "rcsbe": "C",
+      "bloom": "understand",
+      "story_md": "Read the query and the tables. Without running anything, what does it return?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is `prev` for Ana, and for Cy?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "NULL, 5200"
+              },
+              {
+                "id": "b",
+                "text_md": "3100, 5200"
+              },
+              {
+                "id": "c",
+                "text_md": "NULL, 3100"
+              },
+              {
+                "id": "d",
+                "text_md": "0, 3100"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query",
+        "show_sql": "SELECT name, LAG(salary) OVER (ORDER BY id) AS prev FROM staff;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-predict-recursive",
+      "tier": 5,
+      "topic": ["recursive-cte"],
+      "title": "Doubling",
+      "rcsbe": "C",
+      "bloom": "understand",
+      "story_md": "Read the query and the tables. Without running anything, what does it return?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What does it return?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "20, 5"
+              },
+              {
+                "id": "b",
+                "text_md": "32, 5"
+              },
+              {
+                "id": "c",
+                "text_md": "32, 6"
+              },
+              {
+                "id": "d",
+                "text_md": "16, 5"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query",
+        "show_sql": "WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x * 2 FROM n WHERE x < 20) SELECT MAX(x), COUNT(*) FROM n;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-predict-ntile",
+      "tier": 5,
+      "topic": ["ntile", "window"],
+      "title": "Four Buckets",
+      "rcsbe": "C",
+      "bloom": "understand",
+      "story_md": "Read the query and the tables. Without running anything, what does it return?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which bucket are Fay and Eli in?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "3, 4"
+              },
+              {
+                "id": "b",
+                "text_md": "2, 3"
+              },
+              {
+                "id": "c",
+                "text_md": "1, 4"
+              },
+              {
+                "id": "d",
+                "text_md": "2, 4"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query",
+        "show_sql": "SELECT name, NTILE(4) OVER (ORDER BY salary DESC, name) AS q FROM staff;"
+      },
+      "reference_sql": "",
+      "hints": []
+    }
+  ]
+}
