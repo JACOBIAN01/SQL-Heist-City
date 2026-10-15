@@ -343,6 +343,36 @@
       "title": "Graphs in SQL",
       "nudge": "Store edges as pairs and walk them with a recursive CTE.",
       "body_md": "Start from the root nodes, then join the CTE to the edge table to reach the next nodes, UNION ALL, stop when no new nodes appear. Track the path to avoid loops."
+    },
+    {
+      "topic": "index",
+      "title": "Indexes: find rows without reading them all",
+      "nudge": "Filter or join on the column itself, so its index can jump to the rows.",
+      "body_md": "An index keeps a column sorted, so `WHERE owner = 'Ana'` can **SEARCH** instead of **SCAN** every row. It only helps when the query compares the column itself: `lower(owner) = 'ana'`, `balance + 0 > 5`, `strftime('%Y', at) = '2024'` all hide the column. Rewrite as `owner = 'Ana'`, `balance > 5`, `at BETWEEN '2024-01-01' AND '2024-12-31'`. `EXPLAIN QUERY PLAN` shows which one you get."
+    },
+    {
+      "topic": "insert",
+      "title": "INSERT: add rows",
+      "nudge": "Name the columns, then give the values in the same order.",
+      "body_md": "`INSERT INTO accounts (id, owner, balance) VALUES (1000, 'Ana', 0);` adds one row. Several rows: `VALUES (...), (...)`. Copy rows from a query: `INSERT INTO vip SELECT id, owner FROM accounts WHERE balance > 10000;`."
+    },
+    {
+      "topic": "update",
+      "title": "UPDATE: change rows",
+      "nudge": "SET the new value, and use WHERE so only the right rows change.",
+      "body_md": "`UPDATE accounts SET balance = balance + 100 WHERE branch = 'North';` changes only North accounts. **Without WHERE every row changes.** Different changes for different rows: `SET balance = CASE WHEN balance < 1000 THEN balance + 100 ELSE balance END`."
+    },
+    {
+      "topic": "delete",
+      "title": "DELETE: remove rows",
+      "nudge": "DELETE FROM the table WHERE the rows to remove; run the WHERE as a SELECT first.",
+      "body_md": "`DELETE FROM transactions WHERE amount = 0;` removes those rows. Check what you will remove first with `SELECT * FROM transactions WHERE amount = 0;`. A subquery works too: `WHERE id NOT IN (SELECT account_id FROM transactions)`."
+    },
+    {
+      "topic": "create-table",
+      "title": "CREATE TABLE: a new table",
+      "nudge": "List each column with its type, or build the table from a query with AS SELECT.",
+      "body_md": "`CREATE TABLE totals (branch TEXT, total INTEGER);` makes an empty table to INSERT into. `CREATE TABLE vip AS SELECT id, owner FROM accounts WHERE balance > 10000;` makes it and fills it in one step."
     }
   ]
 }
