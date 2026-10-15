@@ -42,6 +42,8 @@ export const heistSettingsSchema = z.object({
   overtimeSeconds: z.number().min(0).default(60),
   /** Pause between the end of a round and the next one starting. */
   intermissionSeconds: z.number().min(0).default(20),
+  /** Offer signed-in players a planning brief (an open Build task) once a round ends. */
+  planningBriefs: z.boolean().default(true),
   /** Seconds between scoreboard updates. */
   scoreboardEverySec: z.number().positive().default(3),
   /** Seconds a player must stay at a safehouse, unhurt, to bank what they carry. */

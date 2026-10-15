@@ -1,4 +1,4 @@
-import { MAX_TIER, MIN_TIER, type Rng, type TierRange } from '@heist/shared';
+import { MAX_TIER, MIN_TIER, type Rng, type TaskKind, type TierRange } from '@heist/shared';
 import type { QuestionReader, StoredQuestion } from '../questions/QuestionRepository';
 
 /**
@@ -33,8 +33,10 @@ export class QuestionSelector {
     focus?: ReadonlySet<string>,
     /** Only these topics (the practice drill's chosen topic); nothing else is ever drawn. */
     only?: ReadonlySet<string>,
+    /** Only these kinds of task (an open brief never comes up at a vault lock). */
+    kinds?: ReadonlySet<TaskKind>,
   ): StoredQuestion | undefined {
-    let candidates = this.candidates(tiers, allowed);
+    let candidates = this.candidates(tiers, allowed, kinds);
     if (only && only.size > 0)
       candidates = candidates.filter((q) => q.template.topic.some((t) => only.has(t)));
     if (focus && focus.size > 0) {
@@ -74,7 +76,11 @@ export class QuestionSelector {
     }
   }
 
-  private candidates(tiers: TierRange, allowed?: ReadonlySet<number>): StoredQuestion[] {
+  private candidates(
+    tiers: TierRange,
+    allowed?: ReadonlySet<number>,
+    kinds?: ReadonlySet<TaskKind>,
+  ): StoredQuestion[] {
     if (allowed && allowed.size === 0) return [];
     for (let widen = 0; widen <= MAX_TIER - MIN_TIER; widen++) {
       const found = this.questions
@@ -83,7 +89,8 @@ export class QuestionSelector {
           tierMin: Math.max(MIN_TIER, tiers.min - widen),
           tierMax: Math.min(MAX_TIER, tiers.max + widen),
         })
-        .filter((q) => !allowed || allowed.has(q.id));
+        .filter((q) => !allowed || allowed.has(q.id))
+        .filter((q) => !kinds || kinds.has(q.template.task.kind));
       if (found.length > 0) return found;
     }
     return [];

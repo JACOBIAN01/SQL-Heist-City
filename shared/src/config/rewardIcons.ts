@@ -12,6 +12,7 @@ export const REWARD_ICON_IDS = [
   'heal-medium',
   'heal-small',
   'lock',
+  'plan',
   'pistol',
   'rifle',
   'shotgun',
@@ -32,6 +33,7 @@ export const REWARD_ICON_KEYS = [
   'gun:shotgun',
   'gun:rifle',
   'gun:sniper',
+  'brief:plan',
   'vault',
 ] as const;
 
@@ -55,6 +57,7 @@ export const DEFAULT_REWARD_ICONS: RewardIcons = {
   'gun:shotgun': 'shotgun',
   'gun:rifle': 'rifle',
   'gun:sniper': 'sniper',
+  'brief:plan': 'plan',
   vault: 'vault',
 };
 

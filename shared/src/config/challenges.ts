@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import { MAX_TIER, MIN_TIER } from '../questions/template';
+import { TASK_KINDS, type TaskKind } from '../questions/taskTypes';
+
+/** Every kind but the open brief: what an in-round task may ask by default. */
+const IN_ROUND_KINDS: TaskKind[] = TASK_KINDS.filter((k) => k !== 'brief');
 
 /**
  * Challenge rules. These are only defaults: every value can be overridden
@@ -37,7 +41,20 @@ export const challengeSettingsSchema = z.object({
   exampleTries: z.number().int().min(0).max(10).default(3),
   /** Rows of each example table and of its output shown to the student. */
   exampleShownRows: z.number().int().min(1).max(50).default(10),
+  /**
+   * Which kinds of task each reward family may ask ("heal", "gun", "vault", "brief"…); `*`
+   * covers families not listed. Open briefs are only for planning between rounds by default.
+   */
+  taskKinds: z
+    .record(z.string(), z.array(z.enum(TASK_KINDS)).min(1))
+    .default({ '*': IN_ROUND_KINDS, brief: ['brief'] }),
 });
+
+/** The task kinds a reward may ask, from the settings. */
+export function kindsFor(settings: ChallengeSettings, rewardKey: string): ReadonlySet<TaskKind> {
+  const family = rewardKey.split(':')[0] ?? rewardKey;
+  return new Set(settings.taskKinds[family] ?? settings.taskKinds['*'] ?? IN_ROUND_KINDS);
+}
 
 export type ChallengeSettings = z.infer<typeof challengeSettingsSchema>;
 export const DEFAULT_CHALLENGE_SETTINGS: ChallengeSettings = challengeSettingsSchema.parse({});
@@ -62,6 +79,8 @@ export const DEFAULT_REWARD_TIERS: Readonly<Record<string, TierRange>> = {
   'gun:shotgun': { min: 3, max: 3 },
   'gun:rifle': { min: 4, max: 4 },
   'gun:sniper': { min: 5, max: 5 },
+  /** Planning the next heist between rounds: an open brief (Phase 17.10). */
+  'brief:plan': { min: 1, max: 5 },
 };
 
 /** Vault lock k (1-based) of a bank of tier t asks a question of tier min(5, t + k − 1). */

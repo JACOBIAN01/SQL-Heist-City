@@ -64,10 +64,19 @@ export interface ItemRecord {
    * student after it ends; never saved to the database and never sent during the round.
    */
   readonly review?: ItemReview;
+  /** An open brief that was handed in: what a teacher marks (17.11). */
+  readonly brief?: BriefAnswer;
   /** Share of the marks the answer earned, for tasks marked in parts (multiple choice). 1 when absent and solved. */
   readonly share?: number;
   /** Set when the question was part of a class's pre or post assessment: it then counts in that scope only. */
   readonly assessment?: 'pre' | 'post';
+}
+
+export interface BriefAnswer {
+  readonly text: string;
+  readonly sql: string;
+  /** The rubric of the question version it answered. */
+  readonly rubric: readonly { readonly criterion: string; readonly marks: number }[];
 }
 
 export interface ItemReview {

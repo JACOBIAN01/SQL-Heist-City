@@ -48,8 +48,8 @@ function setup(over: Record<string, unknown>) {
     now: () => (clock += 10_000),
     attempts: { event: () => {}, item: (i) => items.push(i) },
   });
-  const issue = async () => {
-    const r = await service.issue({ player: 'p', rewardKey: 'heal:small' });
+  const issue = async (rewardKey = 'heal:small') => {
+    const r = await service.issue({ player: 'p', rewardKey });
     if (!r.ok) throw new Error(r.reason);
     return r.challenge;
   };
@@ -227,7 +227,7 @@ describe('task kinds', () => {
       reference_sql: '',
       task: { kind: 'brief', rubric: [{ criterion: 'States a goal', marks: 2 }] },
     });
-    const c = await t.issue();
+    const c = await t.issue('brief:plan');
     expect((await t.service.submit('p', c.id, '', { text: 'short' })).status).toBe('wrong');
     expect(
       (
@@ -241,5 +241,67 @@ describe('task kinds', () => {
       addItem(emptyTotals(), t.items.at(-1) as ItemRecord, DEFAULT_ANALYTICS_SETTINGS).rcsbe.B
         .available,
     ).toBe(0);
+  });
+
+  it('briefs only come up for planning, and planning only asks briefs', async () => {
+    const repo = new InMemoryQuestionRepository();
+    repo.create(
+      questionTemplateSchema.parse({
+        ...sampleQuestion,
+        ...fixed,
+        reference_sql: 'SELECT id FROM accounts',
+      }),
+      null,
+    );
+    repo.create(
+      questionTemplateSchema.parse({
+        ...sampleQuestion,
+        ...fixed,
+        slug: 'plan',
+        rcsbe: 'B',
+        bloom: 'create',
+        reference_sql: '',
+        task: {
+          kind: 'brief',
+          rubric: [
+            { criterion: 'Goal', marks: 2 },
+            { criterion: 'Check', marks: 3 },
+          ],
+        },
+      }),
+      null,
+    );
+    const items: ItemRecord[] = [];
+    let clock = 0;
+    const service = new ChallengeService({
+      matchSeed: 'm',
+      selector: new QuestionSelector(repo),
+      variants: new VariantBuilder(builtInDatasets),
+      grader: new Grader(new InProcessSandboxRunner()),
+      settings: new StaticSettings(),
+      now: () => (clock += 10_000),
+      attempts: { event: () => {}, item: (i) => items.push(i) },
+    });
+    for (let n = 0; n < 6; n++) {
+      const r = await service.issue({ player: 'p', rewardKey: 'heal:small' });
+      expect(r.ok ? r.challenge.task : 'none').toBeUndefined();
+    }
+    const plan = await service.issue({ player: 'p', rewardKey: 'brief:plan' });
+    if (!plan.ok) throw new Error(plan.reason);
+    expect(plan.challenge.task?.kind).toBe('brief');
+    await service.run('p', plan.challenge.id, 'SELECT COUNT(*) FROM accounts');
+    const text = 'Goal: count accounts. Done when the number matches the table.';
+    expect(
+      (await service.submit('p', plan.challenge.id, 'SELECT COUNT(*) FROM accounts', { text }))
+        .status,
+    ).toBe('received');
+    expect(items.at(-1)?.brief).toEqual({
+      text,
+      sql: 'SELECT COUNT(*) FROM accounts',
+      rubric: [
+        { criterion: 'Goal', marks: 2 },
+        { criterion: 'Check', marks: 3 },
+      ],
+    });
   });
 });

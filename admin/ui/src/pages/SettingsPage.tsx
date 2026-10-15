@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import type {
-  ChallengeSettings,
-  CombatSettings,
-  RewardTierEntry,
-  TutorialSettings,
-  WeaponSpec,
+import {
+  TASK_KINDS,
+  type ChallengeSettings,
+  type CombatSettings,
+  type RewardTierEntry,
+  type TaskKind,
+  type TutorialSettings,
+  type WeaponSpec,
 } from '@heist/shared';
 import {
   useChallengeSettings,
@@ -24,7 +26,7 @@ import { RewardIconsCard } from './RewardIconsCard';
 import { REWARD_LABELS } from './rewardLabels';
 import { SectionCard } from './SectionCard';
 
-type NumericKey = Exclude<keyof ChallengeSettings, 'hintCostMode'>;
+type NumericKey = Exclude<keyof ChallengeSettings, 'hintCostMode' | 'taskKinds'>;
 
 const FIELDS: { key: NumericKey; label: string; unit: string }[] = [
   { key: 'lockoutSec', label: 'Lockout after a wrong answer', unit: 's' },
@@ -234,6 +236,11 @@ function ChallengeSettingsCard({ editable }: { editable: boolean }) {
           <span className="muted">default {defaults.hintCostMode}</span>
         )}
       </label>
+      <TaskKindsTable
+        editable={editable}
+        value={form.taskKinds}
+        onChange={(taskKinds) => setForm({ ...form, taskKinds })}
+      />
       <ErrorMessage error={save.error} />
       {editable && (
         <div className="row">
@@ -385,5 +392,59 @@ function TutorialCard({ editable }: { editable: boolean }) {
         </div>
       )}
     </div>
+  );
+}
+
+/** Which kinds of task each reward family may ask; `*` is every family not listed. */
+function TaskKindsTable({
+  editable,
+  value,
+  onChange,
+}: {
+  editable: boolean;
+  value: ChallengeSettings['taskKinds'];
+  onChange: (next: ChallengeSettings['taskKinds']) => void;
+}) {
+  const toggle = (family: string, kind: TaskKind) => {
+    const now = new Set(value[family] ?? []);
+    if (now.has(kind)) now.delete(kind);
+    else now.add(kind);
+    // A family needs at least one kind.
+    if (now.size > 0) onChange({ ...value, [family]: TASK_KINDS.filter((k) => now.has(k)) });
+  };
+  return (
+    <fieldset>
+      <legend>Kinds of task per reward (* = any other reward)</legend>
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Reward</th>
+            {TASK_KINDS.map((k) => (
+              <th key={k}>{k}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Object.keys(value).map((family) => (
+            <tr key={family}>
+              <td>
+                <code>{family}</code>
+              </td>
+              {TASK_KINDS.map((k) => (
+                <td key={k}>
+                  <input
+                    type="checkbox"
+                    aria-label={`${family}: ${k}`}
+                    disabled={!editable}
+                    checked={value[family]?.includes(k) ?? false}
+                    onChange={() => toggle(family, k)}
+                  />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </fieldset>
   );
 }

@@ -14,6 +14,7 @@ import {
   type SkillAdjust,
   type TierRange,
   shiftTiers,
+  kindsFor,
   type WorkedExampleView,
   type TaskAnswer,
   marksFor,
@@ -123,6 +124,8 @@ interface ActiveChallenge {
   submits: number;
   wrongSubmits: number;
   lastSql: string | undefined;
+  /** The handed-in write-up of an open brief. */
+  briefText: string | undefined;
   finished: boolean;
 }
 
@@ -194,6 +197,7 @@ export class ChallengeService {
           request.allowedQuestions,
           this.focusFor(request, seed),
           request.onlyTopics?.length ? new Set(request.onlyTopics) : undefined,
+          kindsFor(settings, request.rewardKey),
         );
       if (!question) return { ok: false, reason: 'no_questions' };
 
@@ -256,6 +260,7 @@ export class ChallengeService {
         submits: 0,
         wrongSubmits: 0,
         lastSql: undefined,
+        briefText: undefined,
         finished: false,
       };
       this.byPlayer.set(request.player, challenge);
@@ -340,6 +345,7 @@ export class ChallengeService {
         this.byPlayer.delete(player);
         return { status: 'answered', feedback: grade.feedback, share: grade.share };
       case 'received':
+        challenge.briefText = answer?.text ?? '';
         challenge.solved = true;
         challenge.submits++;
         this.note(challenge, 'submit_correct', { brief: true });
@@ -474,6 +480,15 @@ export class ChallengeService {
         topics: challenge.tags.topics,
         outcome,
         ...(share === undefined || share === 1 ? {} : { share }),
+        ...(outcome === 'submitted' && challenge.task.ctx.template.task.kind === 'brief'
+          ? {
+              brief: {
+                text: challenge.briefText ?? '',
+                sql: challenge.lastSql ?? '',
+                rubric: challenge.task.ctx.template.task.rubric,
+              },
+            }
+          : {}),
         runs: challenge.runs,
         submits: challenge.submits,
         wrongSubmits: challenge.wrongSubmits,
