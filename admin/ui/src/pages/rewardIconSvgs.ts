@@ -5,6 +5,7 @@ import healFull from '../../../../client/src/ui/icons/svg/heal-full.svg?raw';
 import healMedium from '../../../../client/src/ui/icons/svg/heal-medium.svg?raw';
 import healSmall from '../../../../client/src/ui/icons/svg/heal-small.svg?raw';
 import lock from '../../../../client/src/ui/icons/svg/lock.svg?raw';
+import plan from '../../../../client/src/ui/icons/svg/plan.svg?raw';
 import pistol from '../../../../client/src/ui/icons/svg/pistol.svg?raw';
 import rifle from '../../../../client/src/ui/icons/svg/rifle.svg?raw';
 import shotgun from '../../../../client/src/ui/icons/svg/shotgun.svg?raw';
@@ -17,6 +18,7 @@ export const ICON_SVGS: Readonly<Record<string, string>> = {
   ammo,
   cash,
   lock,
+  plan,
   pistol,
   rifle,
   shotgun,

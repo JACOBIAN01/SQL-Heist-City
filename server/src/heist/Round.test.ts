@@ -113,6 +113,21 @@ describe('the round', () => {
     });
   });
 
+  it('keeps planning briefs open between rounds while other tasks are frozen', () => {
+    const { match, join, wait } = setup();
+    const b = join('B');
+    b.player.accountId = 7;
+    const ask = (ref: number, rewardKey: string) => {
+      b.connection.clear();
+      match.receiveJson(b.player.id, JSON.stringify({ t: 'challenge_request', ref, rewardKey }));
+      return b.connection.jsonOf('challenge')[0]?.result;
+    };
+    wait(12.5);
+    expect(ask(1, 'heal:small')).toMatchObject({ reason: 'not_allowed' });
+    // Past the round gate (this test match has no question bank, so it stops there).
+    expect(ask(2, 'brief:plan')).not.toMatchObject({ reason: 'not_allowed' });
+  });
+
   it('starts a fresh round after the intermission: scores, vaults, bags and players reset', () => {
     const { match, join, wait } = setup();
     const a = join('A');

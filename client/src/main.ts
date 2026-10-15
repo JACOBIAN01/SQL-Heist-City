@@ -477,6 +477,17 @@ client.subscribe({
       if (!tutorial) roundUi.onRound(message, performance.now());
       // The round-end card: this round over everything so far, until the next round begins.
       profileCard.hidden = message.phase !== 'ended' || !latestProfile?.round;
+      // Between rounds a signed-in player can plan the next heist (an open brief a teacher marks).
+      if (message.phase === 'ended' && ticket && !tutorial)
+        scoreboard.setAction('Plan the next heist ✎', () => {
+          pointer.release();
+          void sqlTasks.start({
+            key: 'brief:plan',
+            label: rewardLabel('brief:plan'),
+            group: 'Plan',
+          });
+        });
+      else scoreboard.setAction(null);
     } else if (message.t === 'scores') roundUi.onScores(message);
     else if (message.t === 'standing') roundUi.onStanding(message);
     else if (message.t === 'arms') {

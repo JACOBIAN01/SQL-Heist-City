@@ -57,6 +57,20 @@ describe('ScoreboardView', () => {
     expect(results.textContent).toContain('Nobody banked any cash');
   });
 
+  it('offers the planning brief under the results, and removes it', () => {
+    const el = host();
+    const view = new ScoreboardView(el);
+    let clicked = 0;
+    view.showResults(null, []);
+    view.setAction('Plan the next heist ✎', () => clicked++);
+    const button = el.querySelector('.hud-results button') as HTMLButtonElement;
+    expect(button.textContent).toBe('Plan the next heist ✎');
+    button.click();
+    expect(clicked).toBe(1);
+    view.setAction(null);
+    expect(el.querySelector('.hud-results button')).toBeNull();
+  });
+
   it('shows each award with its winner and number, and marks yours', () => {
     const el = host();
     const view = new ScoreboardView(el, () => 2);

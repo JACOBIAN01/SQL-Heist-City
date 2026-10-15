@@ -89,6 +89,7 @@ export class ScoreboardView implements RoundView {
   private readonly results: HTMLElement;
   private readonly resultsBody: HTMLElement;
   private readonly nextIn: HTMLElement;
+  private readonly action: HTMLElement;
   private top: readonly StandingView[] = [];
 
   constructor(
@@ -109,11 +110,13 @@ export class ScoreboardView implements RoundView {
     this.board.hidden = true;
     this.resultsBody = h('div');
     this.nextIn = h('div', { class: 'hud-next' });
+    this.action = h('div', { class: 'hud-results-action' });
     this.results = h(
       'div',
       { class: 'hud-results' },
       h('h1', { text: 'ROUND OVER' }),
       this.resultsBody,
+      this.action,
       this.nextIn,
     );
     this.results.hidden = true;
@@ -158,6 +161,25 @@ export class ScoreboardView implements RoundView {
       table(standings, this.myId()),
     );
     this.results.hidden = false;
+  }
+
+  /**
+   * A button under the results (planning the next heist), or none. The card is otherwise
+   * click-through; only this button takes the pointer.
+   */
+  setAction(label: string | null, onClick?: () => void): void {
+    this.action.replaceChildren(
+      ...(label === null
+        ? []
+        : [
+            h('button', {
+              class: 'hud-action-btn',
+              text: label,
+              attrs: { type: 'button' },
+              on: { click: () => onClick?.() },
+            }),
+          ]),
+    );
   }
 
   setNextIn(seconds: number): void {

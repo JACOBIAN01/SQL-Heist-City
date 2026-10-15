@@ -12,6 +12,7 @@ import smg from './svg/smg.svg?raw';
 import sniper from './svg/sniper.svg?raw';
 import vault from './svg/vault.svg?raw';
 import lock from './svg/lock.svg?raw';
+import plan from './svg/plan.svg?raw';
 
 /**
  * Icons are from game-icons.net (CC BY 3.0; credits in docs/credits.md), bundled
@@ -23,6 +24,7 @@ const LIBRARY: Readonly<Record<string, string>> = {
   ammo,
   cash,
   lock,
+  plan,
   pistol,
   rifle,
   shotgun,

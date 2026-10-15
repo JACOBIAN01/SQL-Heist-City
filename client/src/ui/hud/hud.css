@@ -467,3 +467,18 @@
 .hud-fullmap-legend b {
   color: #ffd34d;
 }
+
+.hud-results-action {
+  text-align: center;
+  margin-top: 10px;
+}
+.hud-action-btn {
+  pointer-events: auto;
+  font: inherit;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid #d4a017;
+  background: #d4a01733;
+  color: inherit;
+  cursor: pointer;
+}

@@ -11,6 +11,8 @@ import type { Player } from '../game/Player';
  */
 export interface TaskRule {
   handles(rewardKey: string): boolean;
+  /** May be started after the round has ended (planning the next one). */
+  readonly betweenRounds?: boolean;
   /** A reason the player may not start this task now, or undefined if they may. */
   check(player: Player, rewardKey: string, target: string | undefined): RejectReason | undefined;
   /** The server graded the answer correct: apply the reward. `target` is what the task was issued for. */

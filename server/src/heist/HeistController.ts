@@ -26,6 +26,7 @@ import { InteractionService } from './InteractionService';
 import { RoundController } from './RoundController';
 import { SafehouseHandler } from './SafehouseHandler';
 import { TaskRules } from './TaskRule';
+import { PlanningRule } from './PlanningRule';
 import { VaultConsoleHandler } from './VaultConsoleHandler';
 import type { Vault } from './Vault';
 import { VaultLockRule } from './VaultLockRule';
@@ -98,7 +99,8 @@ export class HeistController implements ArmsControl {
     this.tasks
       .add(new HealRule(match, settings))
       .add(new GunRule(match, this))
-      .add(new AmmoRule(match, this));
+      .add(new AmmoRule(match, this))
+      .add(new PlanningRule(settings, () => this.roundOver));
     this.refreshDoors();
     if ((match.map.vaults?.length ?? 0) > 0) {
       this.round = new RoundController(match, settings, {
@@ -360,7 +362,11 @@ export class HeistController implements ArmsControl {
    */
   private onChallenge(player: Player, message: JsonClientMessage, raw: unknown): void {
     if (message.t === 'interact' || message.t === 'equip') return;
-    if (this.roundOver && message.t === 'challenge_request')
+    if (
+      this.roundOver &&
+      message.t === 'challenge_request' &&
+      !this.tasks.find(message.rewardKey)?.betweenRounds
+    )
       return this.reply(player, this.refuse(message.ref, 'not_allowed'));
     if (!this.challenges) {
       if (message.t === 'challenge_request')

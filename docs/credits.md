@@ -1,7 +1,7 @@
 # Credits
 
 ## Icons
-Weapon, heal, ammo, vault and cash icons come from [game-icons.net](https://game-icons.net), licensed [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Modified: background removed, fill set to `currentColor` so the game can tint them.
+Weapon, heal, ammo, vault and cash icons come from [game-icons.net](https://game-icons.net), licensed [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Modified: background removed, fill set to `currentColor` so the game can tint them. The planning (clipboard) icon `plan.svg` is drawn for this project (no licence needed).
 
 | Icon | Author | Original |
 |---|---|---|

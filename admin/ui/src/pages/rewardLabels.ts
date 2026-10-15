@@ -9,6 +9,7 @@ export const REWARD_LABELS: Record<string, string> = {
   'gun:shotgun': 'Shotgun',
   'gun:rifle': 'Rifle',
   'gun:sniper': 'Sniper',
+  'brief:plan': 'Planning brief (between rounds)',
   vault: 'Vault locks',
 };
 

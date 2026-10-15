@@ -12,6 +12,7 @@ const LABELS: Readonly<Record<string, string>> = {
   'gun:shotgun': 'Shotgun',
   'gun:rifle': 'Rifle',
   'gun:sniper': 'Sniper',
+  'brief:plan': 'Plan the next heist',
 };
 
 /** Remaining time as m:ss (rounded up, never negative). */
