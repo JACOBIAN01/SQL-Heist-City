@@ -1,6 +1,7 @@
 import { PROTOCOL_VERSION } from '@heist/shared';
 import type { AddressInfo } from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
+import { OriginPolicy } from '../net/OriginPolicy';
 import { createHttpServer } from './httpServer';
 
 describe('game server HTTP', () => {
@@ -38,17 +39,26 @@ describe('game server HTTP', () => {
     expect((await get('/metrics')).status).toBe(404);
   });
 
-  it('serves the lobby (readable from another origin) only when configured', async () => {
+  it("serves the lobby to the game's own pages only, and only when configured", async () => {
     const withLobby = createHttpServer({
       now: () => 0,
       startedAt: 0,
       lobby: () => ({ matches: [{ id: 1, port: 9001 }], open: { id: 1, port: 9001 } }),
+      origins: new OriginPolicy(['https://heist.school.test'], false),
     });
     await new Promise<void>((done) => withLobby.listen(0, done));
     const { port } = withLobby.address() as AddressInfo;
-    const res = await fetch(`http://127.0.0.1:${port}/lobby`);
-    expect(res.headers.get('access-control-allow-origin')).toBe('*');
+    const from = (origin?: string) =>
+      fetch(`http://127.0.0.1:${port}/lobby`, origin ? { headers: { origin } } : {});
+    const res = await from('https://heist.school.test');
+    expect(res.headers.get('access-control-allow-origin')).toBe('https://heist.school.test');
     expect(await res.json()).toMatchObject({ open: { port: 9001 } });
+    // Another site is refused; a tool with no Origin (bots, load tests) is not a browser page.
+    const other = await from('https://evil.test');
+    expect(other.status).toBe(403);
+    expect(other.headers.get('access-control-allow-origin')).toBeNull();
+    expect((await from('http://localhost:5173')).status).toBe(403);
+    expect((await from()).status).toBe(200);
     await new Promise<void>((done) => withLobby.close(() => done()));
     expect((await get('/lobby')).status).toBe(404);
   });

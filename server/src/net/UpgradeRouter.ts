@@ -1,6 +1,7 @@
 import type { IncomingMessage, Server } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { WebSocketServer } from 'ws';
+import { OriginPolicy } from './OriginPolicy';
 
 /**
  * Sends each WebSocket upgrade to the endpoint registered for its path.
@@ -10,8 +11,17 @@ import type { WebSocketServer } from 'ws';
 export class UpgradeRouter {
   private readonly routes = new Map<string, WebSocketServer>();
 
-  constructor(http: Server) {
+  constructor(
+    http: Server,
+    /** Which pages may connect; replaceable for tests. */
+    public origins: OriginPolicy = OriginPolicy.fromEnv(process.env),
+  ) {
     http.on('upgrade', (request: IncomingMessage, socket: Duplex, head: Buffer) => {
+      if (!this.origins.allows(request.headers.origin, request.headers.host)) {
+        socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+        socket.destroy();
+        return;
+      }
       const path = new URL(request.url ?? '/', 'http://localhost').pathname;
       const target = this.routes.get(path);
       if (!target) {
