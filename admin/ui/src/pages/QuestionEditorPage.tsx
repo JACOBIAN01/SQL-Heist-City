@@ -333,6 +333,20 @@ export function QuestionEditorPage() {
                 minLines={6}
               />
             </div>
+            <div className="stack">
+              <strong>Story themes</strong>
+              <p className="muted">
+                Each player gets the plain question or one of these: tables, columns and words
+                renamed, the same grading. {'[]'} for none.
+              </p>
+              <CodeEditor
+                label="themes JSON"
+                language="json"
+                value={draft.themes}
+                onChange={(v) => set('themes', v)}
+                minLines={4}
+              />
+            </div>
           </div>
         </div>
       )}

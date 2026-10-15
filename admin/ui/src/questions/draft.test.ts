@@ -35,4 +35,15 @@ describe('draft', () => {
   it('starter template is valid', () => {
     expect(questionTemplateSchema.safeParse(STARTER_TEMPLATE).success).toBe(true);
   });
+
+  it('keeps the task and the story themes through an edit', () => {
+    const themed = {
+      ...sampleQuestion,
+      task: { kind: 'fix' as const, broken_sql: 'SELEC 1' },
+      themes: [{ name: 'casino', tables: { employees: 'croupiers' } }],
+    };
+    const result = fromDraft(toDraft(themed));
+    expect(result.ok && result.template.task).toEqual(themed.task);
+    expect(result.ok && result.template.themes).toEqual(themed.themes);
+  });
 });
