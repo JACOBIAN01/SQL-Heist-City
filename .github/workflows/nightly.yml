@@ -1,0 +1,21 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  sql-fuzz:
+    # Hostile and oversized queries against the real sandbox (Phase 18.4); fails on any escape,
+    # crash or hang. The seed is the date, so a failure can be replayed exactly.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run fuzz:sql -w @heist/server -- --iterations 10000 --seed "nightly-$(date -u +%F)"

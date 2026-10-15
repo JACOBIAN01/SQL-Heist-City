@@ -9,6 +9,7 @@
     "start": "tsx src/main.ts",
     "bot": "tsx src/tools/walkBot.ts",
     "load:bots": "tsx src/tools/loadBots.ts",
+    "fuzz:sql": "tsx src/tools/fuzzSql.ts",
     "db:migrate": "tsx src/tools/migratePg.ts",
     "db:import-sqlite": "tsx src/tools/importSqlite.ts"
   },
