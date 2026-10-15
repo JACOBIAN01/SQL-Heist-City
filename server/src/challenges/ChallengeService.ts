@@ -15,6 +15,7 @@ import {
   type TierRange,
   shiftTiers,
   type WorkedExampleView,
+  type TaskAnswer,
   marksFor,
 } from '@heist/shared';
 import type { AttemptEventKind, AttemptSink, AttemptWho } from '../analytics/AttemptSink';
@@ -22,10 +23,11 @@ import type { ConceptReader } from '../concepts/ConceptStore';
 import type { SettingsReader } from '../config/SettingsReader';
 import type { Grader } from '../sql/Grader';
 import { ReferenceQueryError } from '../sql/Grader';
-import type { QueryResult } from '../sql/SqlSandbox';
 import type { Variant, VariantBuilder } from '../variants/VariantBuilder';
 import type { QuestionSelector } from './QuestionSelector';
 import { ExampleBuilder, type WorkedExample } from './ExampleBuilder';
+import type { PreparedTask, TaskContext, TaskHandler } from './tasks/TaskHandler';
+import { taskHandler } from './tasks/handlers';
 
 /** How a match may want a task issued (the tutorial: always the same question, solution free). */
 export interface IssueOptions {
@@ -85,7 +87,12 @@ interface ActiveChallenge {
   readonly questionId: number;
   readonly questionVersion: number;
   readonly variant: Variant;
-  readonly expected: QueryResult;
+  /** The kind of task and what it worked out at issue (the right rows, the shown result…). */
+  readonly task: {
+    readonly handler: TaskHandler;
+    readonly ctx: TaskContext;
+    readonly prepared: PreparedTask;
+  };
   /** The worked example shown with the task (separate data; safe to show). */
   readonly example: WorkedExample | undefined;
   readonly expiresAt: number;
@@ -191,9 +198,11 @@ export class ChallengeService {
       if (!question) return { ok: false, reason: 'no_questions' };
 
       const variant = this.deps.variants.build(question.template, seed);
-      let expected: QueryResult;
+      const handler = taskHandler(question.template.task.kind);
+      const ctx: TaskContext = { template: question.template, variant, grader: this.deps.grader };
+      let prepared: PreparedTask;
       try {
-        expected = await this.deps.grader.expectedResult(variant);
+        prepared = await handler.prepare(ctx);
       } catch (err) {
         if (!(err instanceof ReferenceQueryError)) throw err;
         this.deps.logger?.warn('skipping broken question', {
@@ -204,10 +213,12 @@ export class ChallengeService {
         continue;
       }
 
-      const example = await this.examples.build(question.template, seed, {
-        rows: settings.exampleRows,
-        tries: settings.exampleTries,
-      });
+      const example = prepared.hasExample
+        ? await this.examples.build(question.template, seed, {
+            rows: settings.exampleRows,
+            tries: settings.exampleTries,
+          })
+        : undefined;
       const challenge: ActiveChallenge = {
         id: this.newId(),
         player: request.player,
@@ -216,7 +227,7 @@ export class ChallengeService {
         questionId: question.id,
         questionVersion: question.version,
         variant,
-        expected,
+        task: { handler, ctx, prepared },
         example,
         expiresAt: now + settings.ttlSec * (skill?.ttlScale ?? 1) * 1000,
         // The ladder: free steps from the topic's concept card first, then the question's own paid hints
@@ -262,6 +273,7 @@ export class ChallengeService {
     const found = this.find(player, challengeId);
     if ('reason' in found) return { ok: false, reason: found.reason };
     const challenge = found.challenge;
+    if (!challenge.task.prepared.canRun) return { ok: false, reason: 'not_allowed' };
     const { runCooldownMs } = this.deps.settings.challengeSettings();
     const now = this.now();
     if (now - challenge.lastRunAt < runCooldownMs) {
@@ -281,7 +293,12 @@ export class ChallengeService {
   }
 
   /** Graded attempt. Wrong answers lock the challenge for `lockoutSec`. */
-  async submit(player: string, challengeId: string, sql: string): Promise<SubmitResult> {
+  async submit(
+    player: string,
+    challengeId: string,
+    sql: string,
+    answer?: TaskAnswer,
+  ): Promise<SubmitResult> {
     const found = this.find(player, challengeId);
     if ('reason' in found) return { status: 'rejected', reason: found.reason };
     const challenge = found.challenge;
@@ -297,9 +314,10 @@ export class ChallengeService {
       };
     }
     challenge.lastSubmitAt = now;
-    challenge.lastSql = sql;
+    if (sql) challenge.lastSql = sql;
 
-    const grade = await this.deps.grader.grade(challenge.variant, challenge.expected, sql);
+    const { handler, ctx, prepared } = challenge.task;
+    const grade = await handler.grade(ctx, prepared, { sql, ...(answer ? { answer } : {}) });
     // The challenge may have been replaced or solved while grading ran.
     if (this.byPlayer.get(player) !== challenge || challenge.solved) {
       return { status: 'rejected', reason: challenge.solved ? 'already_solved' : 'not_found' };
@@ -309,14 +327,32 @@ export class ChallengeService {
         challenge.solved = true;
         challenge.submits++;
         this.note(challenge, 'submit_correct');
-        this.finish(challenge, 'solved');
+        this.finish(challenge, 'solved', grade.share);
         this.byPlayer.delete(player);
         return { status: 'correct', rewardKey: challenge.rewardKey, target: challenge.target };
+      case 'answered':
+        // One go: the question is over, with the share of the marks it earned and no reward.
+        challenge.solved = true;
+        challenge.submits++;
+        challenge.wrongSubmits++;
+        this.note(challenge, 'submit_wrong', { share: grade.share });
+        this.finish(challenge, 'answered', grade.share);
+        this.byPlayer.delete(player);
+        return { status: 'answered', feedback: grade.feedback, share: grade.share };
+      case 'received':
+        challenge.solved = true;
+        challenge.submits++;
+        this.note(challenge, 'submit_correct', { brief: true });
+        this.finish(challenge, 'submitted');
+        this.byPlayer.delete(player);
+        return { status: 'received' };
       case 'wrong':
       case 'error':
         challenge.submits++;
         challenge.wrongSubmits++;
         this.note(challenge, grade.status === 'wrong' ? 'submit_wrong' : 'submit_error');
+        // A brief handed in too short is sent back without a lockout (nothing was graded).
+        if (prepared.oneGo) return { status: 'wrong', feedback: grade.feedback, lockedUntil: now };
         challenge.lockedUntil = this.now() + settings.lockoutSec * 1000;
         this.note(challenge, 'lockout', { seconds: settings.lockoutSec });
         return { status: 'wrong', feedback: grade.feedback, lockedUntil: challenge.lockedUntil };
@@ -407,11 +443,11 @@ export class ChallengeService {
   }
 
   /** A question ended, one way or another: the record is complete, report it once. */
-  private finish(challenge: ActiveChallenge, outcome: ItemOutcome): void {
+  private finish(challenge: ActiveChallenge, outcome: ItemOutcome, share?: number): void {
     if (challenge.finished) return;
     challenge.finished = true;
     const at = this.now();
-    if (outcome !== 'solved') {
+    if (outcome !== 'solved' && outcome !== 'answered' && outcome !== 'submitted') {
       const kind: Record<string, AttemptEventKind> = {
         abandoned: 'abandon',
         expired: 'expire',
@@ -437,6 +473,7 @@ export class ChallengeService {
         marks: challenge.tags.marks,
         topics: challenge.tags.topics,
         outcome,
+        ...(share === undefined || share === 1 ? {} : { share }),
         runs: challenge.runs,
         submits: challenge.submits,
         wrongSubmits: challenge.wrongSubmits,
@@ -501,7 +538,8 @@ function toPublic(c: ActiveChallenge, sampleRows: number, shownRows: number): Pu
     ...(c.example ? { example: toExampleView(c.example, shownRows) } : {}),
     columnsMatter: c.variant.compare.names,
     orderMatters: c.variant.orderMatters,
-    ...(c.revealSolution ? { solution: c.variant.referenceSql } : {}),
+    ...(c.revealSolution && c.variant.referenceSql ? { solution: c.variant.referenceSql } : {}),
+    ...(c.task.prepared.public.kind === 'write' ? {} : { task: c.task.prepared.public }),
     hintCosts: c.hints.map((h) => h.cost),
     hintCostMode: c.hintCostMode,
     expiresAt: c.expiresAt,

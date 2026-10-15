@@ -81,7 +81,7 @@ export class ChallengeMessageHandler {
           t: 'challenge_result',
           ref: msg.ref,
           now: this.now(),
-          result: await this.service.submit(player, msg.challengeId, msg.sql),
+          result: await this.service.submit(player, msg.challengeId, msg.sql, msg.answer),
         };
       case 'challenge_hint':
         return {

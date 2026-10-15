@@ -2,7 +2,9 @@ import { adviceFor } from './errorAdvice';
 import type { Mismatch } from './ResultComparator';
 import type { SandboxErrorCode } from './SqlSandbox';
 
-export type FeedbackCode = Mismatch['kind'] | SandboxErrorCode | 'timeout';
+/** Task-specific codes: `too_slow` (faster), `partial` (choice, fill), `too_short` (brief). */
+export type FeedbackCode =
+  Mismatch['kind'] | SandboxErrorCode | 'timeout' | 'too_slow' | 'partial' | 'too_short';
 
 export interface Feedback {
   readonly code: FeedbackCode;
