@@ -105,3 +105,24 @@ All players within range of each other, with constant fighting: 100 bots ≈ 7.3
 | KB/s per client | 40.8 | 2.2 |
 | tick mean | 1.15 ms | 0.5 ms |
 | garbage per tick | 1.7 MB | ~0.2 MB |
+
+## Phase 19.1 — re-run on the current code (local only)
+Same laptop and method as 6.9, after Phases 7–18 (city, heists, cars, classes, analytics, anti-cheat audits). The cloud run that 19.1 asks for needs machines from the owner (inputs-needed #15); these local numbers stand in until then.
+
+### Real server, socket bots on the same machine (`MATCH_MAP=bench`, read mid-run from `/metrics`)
+| players | tick p50 | p95 | p99 | KB/s per client | snapshots/s per client | client RTT p95 |
+|---|---|---|---|---|---|---|
+| **100** | **1.3 ms** | **1.6** | **5.8** | **2.3** | 20 | 1.5 ms |
+| 200 | 3.9 ms | 6.2–23 | 7.7–71 | 3.5 | 20 | 4.1 ms |
+
+### In-process (no sockets)
+| players | tick mean | p50 | p95 | p99 | KB/s per client | garbage KB/tick |
+|---|---|---|---|---|---|---|
+| 100 | 1.0–1.5 ms | 0.9–1.4 | 1.4–2.2 | 2.1–3.1 | 2.3 | ~410 |
+| 200 | 2.9–4.9 ms | 2.8–4.1 | 3.6–8.6 | 4.7–22 | 4.0 | ~1100 |
+
+- **100 players meets the target with room:** p99 5.8 ms against 15 ms, 2.3 KB/s per client against 4.
+- **200 players:** the typical tick is ~4 ms, but on a shared laptop the tail swings from 5 to 70 ms between runs. A/B runs of the code before Phase 18 swing the same way (anti-cheat audits add no measurable cost and no garbage), so the tail is the machine and garbage collection, not a regression.
+- **Garbage per tick has doubled since 6.9** (~200 → ~410 KB at 100 players) as heists, cars and the city were added; at 200 players GC lands in ~10% of ticks. Worth an allocation pass before 200-player classes are offered; tracked for 19.4.
+- A clean answer for 200 needs bots on a separate machine (19.1 on cloud hardware).
+
