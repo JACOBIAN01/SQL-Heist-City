@@ -4,6 +4,7 @@ import type { Match } from '../game/Match';
 import { FanOutSink, type AttemptSink } from './AttemptSink';
 import { PgAttemptStore, PgProfileStore } from './AttemptStore';
 import { BatchingRecorder, ProfileAggregator } from './ProfileAggregator';
+import { BriefSink, PgBriefStore } from './BriefStore';
 
 /**
  * The learning record for one process: saves every attempt in batches and
@@ -33,7 +34,10 @@ export class AnalyticsKit {
       (err) => this.log('could not update a profile', err),
       async (accountId) => (await attempts.itemsOf(accountId)).slice(-300),
     );
-    this.sink = new FanOutSink([this.recorder, this.aggregator]);
+    const briefs = new BriefSink(new PgBriefStore(db), (err) =>
+      this.log('could not save a brief', err),
+    );
+    this.sink = new FanOutSink([this.recorder, this.aggregator, briefs]);
   }
 
   /** Send profiles to this match's students, and give each one theirs on joining. */

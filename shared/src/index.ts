@@ -58,6 +58,7 @@ export * from './world/SpatialGrid';
 export * from './net/snapshotCodec';
 export * from './classes/class';
 export * from './analytics/items';
+export * from './analytics/briefs';
 export * from './analytics/profile';
 export * from './analytics/radar';
 export * from './analytics/profileRadar';

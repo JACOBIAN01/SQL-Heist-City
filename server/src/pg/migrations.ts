@@ -277,4 +277,30 @@ export const pgMigrations: readonly string[] = [
   ALTER TABLE profile_totals ADD CONSTRAINT profile_totals_scope_check
     CHECK (scope IN ('all', 'class', 'round', 'pre', 'post'));
   `,
+  // 8 — open briefs handed in between rounds, and their marking (Phase 17.10–17.11)
+  `
+  CREATE TABLE brief_submissions (
+    challenge_id     TEXT        PRIMARY KEY,
+    player_id        BIGINT      REFERENCES players (id) ON DELETE CASCADE,
+    class_id         BIGINT      REFERENCES classes (id) ON DELETE SET NULL,
+    round            INTEGER,
+    question_id      BIGINT      NOT NULL,
+    question_version INTEGER     NOT NULL,
+    title            TEXT        NOT NULL,
+    story            TEXT        NOT NULL,
+    rcsbe            TEXT        NOT NULL,
+    bloom            TEXT        NOT NULL,
+    item_marks       NUMERIC     NOT NULL,
+    topics           JSONB       NOT NULL DEFAULT '[]',
+    rubric           JSONB       NOT NULL,
+    text             TEXT        NOT NULL,
+    sql              TEXT        NOT NULL,
+    submitted_at     TIMESTAMPTZ NOT NULL,
+    marks            JSONB,
+    feedback         TEXT,
+    marked_by        TEXT,
+    marked_at        TIMESTAMPTZ
+  );
+  CREATE INDEX brief_submissions_queue ON brief_submissions (class_id, marked_at, submitted_at);
+  `,
 ];

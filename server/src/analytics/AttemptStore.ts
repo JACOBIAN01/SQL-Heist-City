@@ -37,6 +37,8 @@ export interface AttemptStore {
   eventsOf(accountId: number): Promise<AttemptEvent[]>;
   /** Deletes raw events and finished items older than the given times (ms since epoch); returns how many of each. */
   prune(before: { events?: number; items?: number }): Promise<{ events: number; items: number }>;
+  /** Sets a finished item's score after the fact (a teacher marked an open brief). */
+  rescore(challengeId: string, score: ItemScore): Promise<void>;
   /** Question ids a student has already finished in a class's assessment (one go per question). */
   assessed(accountId: number, classId: number, which: 'pre' | 'post'): Promise<Set<number>>;
 }
@@ -98,6 +100,11 @@ export class InMemoryAttemptStore implements AttemptStore {
 
   async eventsOf(accountId: number) {
     return this.events.filter((e) => e.who.accountId === accountId);
+  }
+
+  async rescore(challengeId: string, score: ItemScore) {
+    const i = this.items.findIndex((x) => x.challengeId === challengeId);
+    if (i >= 0) this.items[i] = { ...(this.items[i] as StoredItem), ...score };
   }
 
   async assessed(accountId: number, classId: number, which: 'pre' | 'post') {
@@ -424,6 +431,13 @@ export class PgAttemptStore implements AttemptStore {
       [classId],
     );
     return rows.map(toItem);
+  }
+
+  async rescore(challengeId: string, score: ItemScore) {
+    await this.db.query(
+      'UPDATE attempt_items SET counted = $2, available = $3, earned = $4 WHERE challenge_id = $1',
+      [challengeId, score.counted, score.available, score.earned],
+    );
   }
 
   async assessed(accountId: number, classId: number, which: 'pre' | 'post') {
