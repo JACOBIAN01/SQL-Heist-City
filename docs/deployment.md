@@ -7,6 +7,8 @@
 ## Config (env)
 `PORT`, `DB_PATH`, `INTERNAL_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` (first run), `SESSION_SECRET`, `MAX_PLAYERS`, `LOG_LEVEL`.
 
+`GAME_ORIGINS` (game server and admin): the comma-separated origins the game page is served from, e.g. `https://heist.school.org`. The game server refuses WebSocket upgrades and lobby/class-status reads whose `Origin` is not listed (or the server's own); in development any localhost page is allowed. Requests without an `Origin` (bots, load tests) are not browser pages and are let through.
+
 ## Sizing guide (to be measured in Phase 6/10)
 - 100 players/match ≈ 1 core for match worker + grader pool cores; expect ~400 KB/s outbound per match.
 - Scale out by running more game-server processes; lobby assigns matches.

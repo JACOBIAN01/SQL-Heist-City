@@ -35,7 +35,7 @@
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
 | 16 | Teaching loop | ✅ |
 | 17 | Question types and content (filling R, C, B, E) | ✅ |
-| 18 | Security hardening | ⬜ |
+| 18 | Security hardening | 🟨 18.1 done |
 | 19 | Scale proof | ⬜ |
 | 20 | Operations and deployment | ⬜ |
 | 21 | Privacy and compliance | ⬜ |
@@ -385,7 +385,7 @@ Audit con 9 plus the old "rate limits" and "anti-cheat" todo items.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 18.1 | Socket origin allow-list; lobby CORS limited to the game's own origins | requests from another origin are refused | ⬜ |
+| 18.1 | Socket origin allow-list; lobby CORS limited to the game's own origins | requests from another origin are refused | ✅ `OriginPolicy` (`GAME_ORIGINS`, own origin, localhost in dev) on every socket upgrade and on the lobby and class-status reads; CORS echoes the allowed origin, never `*` |
 | 18.2 | Rate limits on every message and route (game, challenge, lobby, admin, auth), with tests | each limit has a test that exceeds it | ⬜ |
 | 18.3 | Anti-cheat: line-of-sight checks on hits, a speed envelope, fire-rate audit, impossible-action logging | cheat tests fail as expected; anomalies are logged | ⬜ |
 | 18.4 | SQL sandbox fuzzing (hostile and oversized queries, resource bombs) in CI | the fuzzer runs nightly with no escapes | ⬜ |
