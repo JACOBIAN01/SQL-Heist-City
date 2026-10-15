@@ -77,4 +77,36 @@ describe('ContentValidator', () => {
       'c.json:null:not a question list',
     ]);
   });
+
+  it('checks task kinds: a fix whose broken query already works is flagged; choice needs no rows', async () => {
+    const fix = {
+      ...sampleQuestion,
+      slug: 'fix-noop',
+      task: { kind: 'fix', broken_sql: sampleQuestion.reference_sql },
+    };
+    const choice = {
+      ...sampleQuestion,
+      slug: 'choice-ok',
+      rcsbe: 'R',
+      bloom: 'remember',
+      reference_sql: '',
+      task: {
+        kind: 'choice',
+        parts: [
+          {
+            prompt_md: 'Which keyword filters rows?',
+            options: [
+              { id: 'a', text_md: 'WHERE' },
+              { id: 'b', text_md: 'ORDER BY' },
+            ],
+            correct: ['a'],
+          },
+        ],
+      },
+    };
+    const report = await validator.validate([{ name: 'k.json', data: [fix, choice] }]);
+    expect(report.problems.map((p) => `${p.slug}: ${p.message}`)).toEqual([
+      expect.stringMatching(/^fix-noop: 10\/10 seeds fail .*the given broken query already passes/),
+    ]);
+  });
 });

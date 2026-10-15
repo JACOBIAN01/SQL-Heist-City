@@ -9,6 +9,8 @@ import { ExampleBuilder } from '@heist/server/challenges/ExampleBuilder';
 import type { Grader } from '@heist/server/sql/Grader';
 import { ReferenceQueryError } from '@heist/server/sql/Grader';
 import type { VariantBuilder } from '@heist/server/variants/VariantBuilder';
+import { taskHandler } from '@heist/server/challenges/tasks/handlers';
+import type { PreparedTask, TaskContext } from '@heist/server/challenges/tasks/TaskHandler';
 
 export const DEFAULT_PREVIEW_SEEDS = ['preview-1', 'preview-2', 'preview-3'];
 /** Reference queries slower than this are flagged (docs/questions.md). */
@@ -75,9 +77,11 @@ export class QuestionTester {
       referenceSql: variant.referenceSql,
       tables: [...variant.tables].map(([name, t]) => ({ name, columns: t.columns, rows: t.rows })),
     };
-    let expected;
+    const handler = taskHandler(template.task.kind);
+    const ctx: TaskContext = { template, variant, grader: this.grader };
+    let prepared: PreparedTask;
     try {
-      expected = await this.grader.expectedResult(variant);
+      prepared = await handler.prepare(ctx);
     } catch (err) {
       const message =
         err instanceof ReferenceQueryError ? err.message : `unexpected: ${(err as Error).message}`;
@@ -90,23 +94,45 @@ export class QuestionTester {
     }
     const runtimeMs = this.now() - started;
     const issues: PreviewIssue[] = runtimeMs > SLOW_MS ? ['slow'] : [];
-    const example = withExample ? await this.example(template, seed) : undefined;
+    const given = await this.givenQueryPasses(ctx, prepared);
+    if (given) return { ...base, runtimeMs, issues: ['error'], error: given };
+    const example =
+      withExample && prepared.hasExample ? await this.example(template, seed) : undefined;
+    const expected = prepared.expected;
     const preview: SeedPreview = {
       ...base,
-      expected: { columns: expected.columns, rows: expected.rows },
+      ...(expected ? { expected: { columns: expected.columns, rows: expected.rows } } : {}),
       ...(example ? { example } : {}),
       runtimeMs,
       issues,
     };
     if (studentSql === undefined) return preview;
-    const grade = await this.grader.grade(variant, expected, studentSql);
+    const grade = await handler.grade(ctx, prepared, { sql: studentSql });
     return {
       ...preview,
       student: {
-        status: grade.status,
+        status:
+          grade.status === 'correct'
+            ? 'correct'
+            : grade.status === 'unavailable'
+              ? 'unavailable'
+              : grade.status === 'error'
+                ? 'error'
+                : 'wrong',
         ...('feedback' in grade ? { feedback: grade.feedback } : {}),
       },
     };
+  }
+
+  /** A fix or faster task whose given query already passes asks nothing: say so. */
+  private async givenQueryPasses(ctx: TaskContext, prepared: PreparedTask): Promise<string | null> {
+    const p = prepared.public;
+    const given = p.kind === 'fix' ? p.brokenSql : p.kind === 'faster' ? p.slowSql : null;
+    if (given === null) return null;
+    const grade = await taskHandler(p.kind).grade(ctx, prepared, { sql: given });
+    return grade.status === 'correct'
+      ? `the given ${p.kind === 'fix' ? 'broken' : 'slow'} query already passes`
+      : null;
   }
 
   private async example(template: QuestionTemplate, seed: string): Promise<SeedPreview['example']> {
