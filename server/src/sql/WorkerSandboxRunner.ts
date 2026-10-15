@@ -1,3 +1,4 @@
+import { fork } from 'node:child_process';
 import { availableParallelism } from 'node:os';
 import { Worker } from 'node:worker_threads';
 import type { JobOutcome, SandboxJob, SandboxRunner } from './SandboxRunner';
@@ -7,6 +8,21 @@ export interface WorkerSandboxRunnerOptions {
   size?: number;
   /** Wall-clock budget per job; the worker is killed after this. Default 2000 ms. */
   timeoutMs?: number;
+  /**
+   * `process` (default): each slot is a child process, killed outright on a timeout. `thread`:
+   * a worker thread, cheaper to start, but a thread stuck inside SQLite cannot be stopped (it
+   * keeps a CPU busy and the process cannot exit), so it is for trusted SQL only (Phase 18.4).
+   */
+  isolation?: 'process' | 'thread';
+}
+
+/** One place a job runs: a thread or a child process. */
+interface Isolate {
+  post(message: { id: number; job: SandboxJob }): void;
+  onMessage(listener: (msg: { id: number; outcome: JobOutcome }) => void): void;
+  onFail(listener: (message: string) => void): void;
+  /** Stops it now and forgets its listeners. */
+  kill(): Promise<void>;
 }
 
 interface Task {
@@ -16,7 +32,7 @@ interface Task {
 }
 
 interface Slot {
-  worker: Worker;
+  worker: Isolate;
   task: Task | null;
   timer: NodeJS.Timeout | null;
 }
@@ -29,6 +45,10 @@ const workerUrl = new URL(
   import.meta.url,
 );
 const workerExecArgv = fromSource ? ['--import', 'tsx'] : [];
+const processUrl = new URL(
+  fromSource ? './sandbox.process.ts' : './sandbox.process.js',
+  import.meta.url,
+);
 
 // Pattern: Object Pool — Why: starting a worker costs ~tens of ms; reusing a
 // fixed set keeps grading latency low and caps concurrency, while a runaway
@@ -37,11 +57,13 @@ export class WorkerSandboxRunner implements SandboxRunner {
   private readonly slots: Slot[] = [];
   private readonly queue: Task[] = [];
   private readonly timeoutMs: number;
+  private readonly isolation: 'process' | 'thread';
   private nextId = 1;
   private closed = false;
 
   constructor(options: WorkerSandboxRunnerOptions = {}) {
     this.timeoutMs = options.timeoutMs ?? 2_000;
+    this.isolation = options.isolation ?? 'process';
     const size = options.size ?? Math.max(1, availableParallelism() - 1);
     for (let i = 0; i < size; i++) this.slots.push(this.spawn());
   }
@@ -65,31 +87,28 @@ export class WorkerSandboxRunner implements SandboxRunner {
     await Promise.all(
       this.slots.map((slot) => {
         this.settle(slot, closedOutcome);
-        slot.worker.removeAllListeners();
-        return slot.worker.terminate();
+        return slot.worker.kill();
       }),
     );
   }
 
   private spawn(): Slot {
-    const slot: Slot = { worker: createWorker(), task: null, timer: null };
+    const slot: Slot = { worker: this.createIsolate(), task: null, timer: null };
     this.listen(slot);
     return slot;
   }
 
   private listen(slot: Slot): void {
     const worker = slot.worker;
-    worker.on('message', (msg: { id: number; outcome: JobOutcome }) => {
+    worker.onMessage((msg) => {
       if (slot.worker === worker && slot.task?.id === msg.id) {
         this.settle(slot, msg.outcome);
         this.dispatch();
       }
     });
-    const fail = (message: string) => {
+    worker.onFail((message) => {
       if (slot.worker === worker) this.replace(slot, { ok: false, code: 'crashed', message });
-    };
-    worker.on('error', (err) => fail(err.message));
-    worker.on('exit', () => fail('worker exited'));
+    });
   }
 
   private dispatch(): void {
@@ -105,7 +124,7 @@ export class WorkerSandboxRunner implements SandboxRunner {
           message: `query took longer than ${this.timeoutMs} ms`,
         });
       }, this.timeoutMs);
-      slot.worker.postMessage({ id: task.id, job: task.job });
+      slot.worker.post({ id: task.id, job: task.job });
     }
   }
 
@@ -121,13 +140,62 @@ export class WorkerSandboxRunner implements SandboxRunner {
   private replace(slot: Slot, outcome: JobOutcome): void {
     this.settle(slot, outcome);
     const old = slot.worker;
-    old.removeAllListeners();
-    void old.terminate();
+    void old.kill();
     if (this.closed) return;
-    slot.worker = createWorker();
+    slot.worker = this.createIsolate();
     this.listen(slot);
     this.dispatch();
   }
+
+  private createIsolate(): Isolate {
+    return this.isolation === 'process' ? createProcess() : threadIsolate(createWorker());
+  }
+}
+
+function createProcess(): Isolate {
+  const child = fork(processUrl, [], {
+    execArgv: [...workerExecArgv, '--max-old-space-size=64', '--stack-size=4000'],
+    // Structured clone, so the tables (a Map) cross as they are.
+    serialization: 'advanced',
+    stdio: ['ignore', 'ignore', 'inherit', 'ipc'],
+  });
+  // Idle sandboxes must not keep the process alive.
+  child.unref();
+  child.channel?.unref();
+  return {
+    post: (message) => {
+      child.channel?.ref();
+      child.send(message);
+    },
+    onMessage: (listener) =>
+      child.on('message', (msg) => {
+        child.channel?.unref();
+        listener(msg as { id: number; outcome: JobOutcome });
+      }),
+    onFail: (listener) => {
+      child.on('error', (err) => listener(err.message));
+      child.on('exit', () => listener('sandbox process exited'));
+    },
+    kill: async () => {
+      child.removeAllListeners();
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    },
+  };
+}
+
+function threadIsolate(worker: Worker): Isolate {
+  return {
+    post: (message) => worker.postMessage(message),
+    onMessage: (listener) => worker.on('message', listener),
+    onFail: (listener) => {
+      worker.on('error', (err) => listener(err.message));
+      worker.on('exit', () => listener('worker exited'));
+    },
+    kill: async () => {
+      worker.removeAllListeners();
+      await worker.terminate();
+    },
+  };
 }
 
 function createWorker(): Worker {
