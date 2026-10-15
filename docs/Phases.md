@@ -33,7 +33,7 @@
 | 13 | Identity and persistence (Google sign-in, PostgreSQL) | ✅ |
 | 14 | Classroom mode | ✅ |
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
-| 16 | Teaching loop | ⬜ |
+| 16 | Teaching loop | 🟨 |
 | 17 | Question types and content (filling R, C, B, E) | ⬜ |
 | 18 | Security hardening | ⬜ |
 | 19 | Scale proof | ⬜ |
@@ -342,21 +342,21 @@ Fixes audit con 4. Every question carries one RCSBE tag, one Bloom level and a w
 | 15.18 | Privacy of profiles: students see only their own; teachers only their classes; never on leaderboards | access tests pass | ✅ a student's profile goes only to their own player; teachers see only their classes (others get 403/404); never on leaderboards |
 
 ---
-## Phase 16 — Teaching loop  ⬜
+## Phase 16 — Teaching loop  🟨
 Fixes audit cons 5 and 6: the game teaches as well as tests, and weaker students are never locked out. Combat stays as it is: help comes through hints, review and difficulty, never through protection from being shot.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 16.1 | Concept cards: one short explainer per topic (all topics across tiers 1–5), admin-editable | every topic has a card; cards are editable and versioned | ⬜ |
-| 16.2 | Post-round review: every question you saw, your last query, the model answer (after the round only) and the concept card | the review shows for every player; nothing leaks during the round | ⬜ |
-| 16.3 | Escalating hints: a free nudge, then the concept card, then paid hints (costs in settings) | hint ladder tested; costs are settings | ⬜ |
-| 16.4 | Syntax-error explainer: SQLite errors turned into plain-language advice | the common errors (unknown column, missing GROUP BY, ambiguous column…) are explained | ⬜ |
-| 16.5 | Editor autocomplete from the challenge schema (tables, columns, keywords) | autocomplete offers only this challenge's names | ⬜ |
-| 16.6 | Tables sidebar that stays open while fighting (minimised pop-up keeps the schema in view) | schema visible with the pop-up minimised | ⬜ |
-| 16.7 | Skill-scaled difficulty: each student's question tier follows their mastery, with rewards and times scaled, so every student can earn a gun and crack some lock | a beginner can complete each reward type; a test covers the scaling | ⬜ |
-| 16.8 | Spaced repetition: weak topics come back in later rounds and daily contracts | resurfacing schedule tested against replayed data | ⬜ |
-| 16.9 | Practice mode: a separate solo SQL drill outside matches (no combat, no clock); matches themselves are unchanged | a student can practise any topic alone | ⬜ |
-| 16.10 | Pre/post assessment: a short test before and after a unit; the gain shown per RCSBE dimension and Bloom level | the teacher can run both and see the gain on the radars | ⬜ |
+| 16.1 | Concept cards: one short explainer per topic (all topics across tiers 1–5), admin-editable | every topic has a card; cards are editable and versioned | ✅ 57 cards (one per topic used by any question) in `content/concepts/cards.json`, seeded by `db:seed`; Concepts page in the admin; every edit is a new version; `questions:validate` fails on a topic with no card |
+| 16.2 | Post-round review: every question you saw, your last query, the model answer (after the round only) and the concept card | the review shows for every player; nothing leaks during the round | ✅ `ReviewKeeper` keeps each player's questions in memory and sends a `review` (their last query, the model answer, concept cards) only when the round ends; V opens it in game |
+| 16.3 | Escalating hints: a free nudge, then the concept card, then paid hints (costs in settings) | hint ladder tested; costs are settings | ✅ free nudge → free concept card → the question's paid hints (`freeHintSteps` setting); only paid steps count against the profile |
+| 16.4 | Syntax-error explainer: SQLite errors turned into plain-language advice | the common errors (unknown column, missing GROUP BY, ambiguous column…) are explained | ✅ `adviceFor`: 17 SQLite errors in plain words, checked against the real engine's messages; shown as a Tip under the error |
+| 16.5 | Editor autocomplete from the challenge schema (tables, columns, keywords) | autocomplete offers only this challenge's names | ✅ keywords plus this question's tables and columns (bare and `table.column`), replaced on every new question |
+| 16.6 | Tables sidebar that stays open while fighting (minimised pop-up keeps the schema in view) | schema visible with the pop-up minimised | ✅ the minimised bar lists every table with its columns |
+| 16.7 | Skill-scaled difficulty: each student's question tier follows their mastery, with rewards and times scaled, so every student can earn a gun and crack some lock | a beginner can complete each reward type; a test covers the scaling | ✅ from the live profile: below 50% one tier easier, more time, smaller heals; below 25% two tiers; never for the tutorial; settings |
+| 16.8 | Spaced repetition: weak topics come back in later rounds and daily contracts | resurfacing schedule tested against replayed data | ✅ the student's weakest topics (from stored items, updated live) are drawn from with a set chance (35%); daily contracts come with 26.5 |
+| 16.9 | Practice mode: a separate solo SQL drill outside matches (no combat, no clock); matches themselves are unchanged | a student can practise any topic alone | ✅ menu → Practice SQL: pick a topic and tier, answer questions one after another (`/ws/practice`); no match, no rewards; counts toward the profile |
+| 16.10 | Pre/post assessment: a short test before and after a unit; the gain shown per RCSBE dimension and Bloom level | the teacher can run both and see the gain on the radars | 🟨 in progress |
 
 ---
 ## Phase 17 — Question types and content (filling R, C, B and E)  ⬜
