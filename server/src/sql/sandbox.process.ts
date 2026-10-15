@@ -5,5 +5,7 @@ import { executeJob, type SandboxJob } from './SandboxRunner';
 process.on('message', (message: { id: number; job: SandboxJob }) => {
   process.send?.({ id: message.id, outcome: executeJob(message.job) });
 });
+// Loaded and listening: the parent starts a job's clock only from here.
+process.send?.({ ready: true });
 // The parent went away: nothing more to do.
 process.on('disconnect', () => process.exit(0));

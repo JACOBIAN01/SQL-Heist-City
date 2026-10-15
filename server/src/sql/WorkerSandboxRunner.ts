@@ -20,6 +20,8 @@ export interface WorkerSandboxRunnerOptions {
 interface Isolate {
   post(message: { id: number; job: SandboxJob }): void;
   onMessage(listener: (msg: { id: number; outcome: JobOutcome }) => void): void;
+  /** Called once it can take a job (a process has loaded its code). */
+  onReady(listener: () => void): void;
   onFail(listener: (message: string) => void): void;
   /** Stops it now and forgets its listeners. */
   kill(): Promise<void>;
@@ -35,6 +37,8 @@ interface Slot {
   worker: Isolate;
   task: Task | null;
   timer: NodeJS.Timeout | null;
+  /** Jobs go only to ready slots, so start-up time never counts against a job's time limit. */
+  ready: boolean;
 }
 
 // Running from TypeScript source (dev/tests) the worker needs the tsx loader;
@@ -93,13 +97,18 @@ export class WorkerSandboxRunner implements SandboxRunner {
   }
 
   private spawn(): Slot {
-    const slot: Slot = { worker: this.createIsolate(), task: null, timer: null };
+    const slot: Slot = { worker: this.createIsolate(), task: null, timer: null, ready: false };
     this.listen(slot);
     return slot;
   }
 
   private listen(slot: Slot): void {
     const worker = slot.worker;
+    worker.onReady(() => {
+      if (slot.worker !== worker) return;
+      slot.ready = true;
+      this.dispatch();
+    });
     worker.onMessage((msg) => {
       if (slot.worker === worker && slot.task?.id === msg.id) {
         this.settle(slot, msg.outcome);
@@ -114,7 +123,7 @@ export class WorkerSandboxRunner implements SandboxRunner {
   private dispatch(): void {
     if (this.closed) return;
     for (const slot of this.slots) {
-      if (slot.task || this.queue.length === 0) continue;
+      if (!slot.ready || slot.task || this.queue.length === 0) continue;
       const task = this.queue.shift() as Task;
       slot.task = task;
       slot.timer = setTimeout(() => {
@@ -143,6 +152,7 @@ export class WorkerSandboxRunner implements SandboxRunner {
     void old.kill();
     if (this.closed) return;
     slot.worker = this.createIsolate();
+    slot.ready = false;
     this.listen(slot);
     this.dispatch();
   }
@@ -168,9 +178,14 @@ function createProcess(): Isolate {
       child.send(message);
     },
     onMessage: (listener) =>
-      child.on('message', (msg) => {
+      child.on('message', (msg: { id: number; outcome: JobOutcome } | { ready: true }) => {
+        if ('ready' in msg) return;
         child.channel?.unref();
-        listener(msg as { id: number; outcome: JobOutcome });
+        listener(msg);
+      }),
+    onReady: (listener) =>
+      child.on('message', (msg: object) => {
+        if ('ready' in msg) listener();
       }),
     onFail: (listener) => {
       child.on('error', (err) => listener(err.message));
@@ -187,6 +202,8 @@ function threadIsolate(worker: Worker): Isolate {
   return {
     post: (message) => worker.postMessage(message),
     onMessage: (listener) => worker.on('message', listener),
+    // A thread queues messages until its code has loaded.
+    onReady: (listener) => queueMicrotask(listener),
     onFail: (listener) => {
       worker.on('error', (err) => listener(err.message));
       worker.on('exit', () => listener('worker exited'));
