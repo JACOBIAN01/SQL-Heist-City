@@ -1,4 +1,11 @@
-import { SeededRng, type QuestionTemplate, type Rng } from '@heist/shared';
+import {
+  SeededRng,
+  themeSql,
+  themeStory,
+  type QuestionTemplate,
+  type Rng,
+  type Theme,
+} from '@heist/shared';
 import type { DatasetRegistry } from './datasets';
 import { generateTables, type GeneratedTables } from './dataGenerators';
 import { resolveParams, type ResolvedParams } from './params';
@@ -21,6 +28,8 @@ export interface Variant {
   readonly orderMatters: boolean;
   readonly compare: { readonly names: boolean; readonly case: boolean };
   readonly allowEmpty: boolean;
+  /** The story theme this player got (tables, columns and words renamed), or null for the plain one. */
+  readonly theme: Theme | null;
 }
 
 // Pattern: Builder — Why: a variant is assembled in steps (params → rendered
@@ -62,20 +71,37 @@ export class VariantBuilder {
     maxRows: number,
   ): Variant {
     const params = resolveParams(template.params, rng.fork('params'), this.datasets);
-    const tables = generateTables(template.data_gen, dataRng, this.datasets, maxRows);
+    const generated = generateTables(template.data_gen, dataRng, this.datasets, maxRows);
+    // Its own stream, so adding themes to a question never changes its params or data.
+    const theme =
+      template.themes.length === 0
+        ? null
+        : new SeededRng(`${seed}/theme`).pick([null, ...template.themes]);
     return {
       slug: template.slug,
       seed,
       tier: template.tier,
-      title: template.title,
-      story: renderTemplate(template.story_md, params),
-      schemaSql: template.schema_sql,
-      tables,
+      title: theme?.title ?? template.title,
+      story: themeStory(renderTemplate(template.story_md, params), theme),
+      schemaSql: themeSql(template.schema_sql, theme),
+      tables: themeTables(generated, theme),
       params,
-      referenceSql: renderTemplate(template.reference_sql, params),
+      referenceSql: themeSql(renderTemplate(template.reference_sql, params), theme),
       orderMatters: template.order_matters,
       compare: template.compare,
       allowEmpty: template.allow_empty,
+      theme,
     };
   }
+}
+
+/** The generated tables under the theme's table and column names (data unchanged). */
+function themeTables(tables: GeneratedTables, theme: Theme | null): GeneratedTables {
+  if (!theme) return tables;
+  return new Map(
+    [...tables].map(([name, table]) => [
+      theme.tables[name] ?? name,
+      { ...table, columns: table.columns.map((c) => theme.columns[c] ?? c) },
+    ]),
+  );
 }

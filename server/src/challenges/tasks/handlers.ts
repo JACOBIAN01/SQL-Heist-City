@@ -1,4 +1,11 @@
-import { SeededRng, normaliseBlank, type QuestionTask, type TaskKind } from '@heist/shared';
+import {
+  SeededRng,
+  normaliseBlank,
+  themeSql,
+  themeText,
+  type QuestionTask,
+  type TaskKind,
+} from '@heist/shared';
 import { ReferenceQueryError } from '../../sql/Grader';
 import { renderTemplate } from '../../variants/render';
 import type { PreparedTask, Submission, TaskContext, TaskGrade, TaskHandler } from './TaskHandler';
@@ -10,7 +17,12 @@ const expectedOf = (p: PreparedTask) => {
   return p.expected;
 };
 const taskOf = <K extends TaskKind>(ctx: TaskContext) => ctx.template.task as Task<K>;
-const render = (ctx: TaskContext, text: string) => renderTemplate(text, ctx.variant.params);
+/** SQL the task shows or runs, under the player's theme. */
+const render = (ctx: TaskContext, text: string) =>
+  themeSql(renderTemplate(text, ctx.variant.params), ctx.variant.theme);
+/** Prose (prompts, options), under the player's theme. */
+const prose = (ctx: TaskContext, text: string) =>
+  themeText(renderTemplate(text, ctx.variant.params), ctx.variant.theme);
 
 /** Write a query: today's kind (Solve). */
 class WriteTask implements TaskHandler {
@@ -156,10 +168,10 @@ class ChoiceTask implements TaskHandler {
         ...(shownSql ? { shownSql } : {}),
         ...(shown ? { shown } : {}),
         parts: t.parts.map((p, i) => ({
-          prompt: render(ctx, p.prompt_md),
+          prompt: prose(ctx, p.prompt_md),
           options: optionsSeen(ctx, i).map((o, n) => ({
             id: String(n + 1),
-            text: render(ctx, o.text_md),
+            text: prose(ctx, o.text_md),
           })),
           multi: p.multi,
         })),

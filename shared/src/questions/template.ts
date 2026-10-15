@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { bloomSchema, marksSchema, rcsbeSchema } from './analytics';
 import { SQL_TASKS, taskSchema } from './taskTypes';
+import { themeSchema } from './themes';
 
 /**
  * Question template: the import/export + storage format for one SQL question.
@@ -146,6 +147,8 @@ export const questionTemplateSchema = z
       .default({ names: false, case: true }),
     allow_empty: z.boolean().default(false),
     hints: z.array(hintSchema).default([]),
+    /** Story themes: each player gets the plain question or one of these (seeded). */
+    themes: z.array(themeSchema).max(5).default([]),
     enabled: z.boolean().default(true),
   })
   .superRefine((q, ctx) => {
@@ -188,6 +191,31 @@ export const questionTemplateSchema = z
           message: `the query has ${holes} blank(s) (___) but ${q.task.blanks.length} answer list(s)`,
         });
     }
+    const tables = new Set(Object.keys(q.data_gen));
+    const columns = new Set(Object.values(q.data_gen).flatMap((t) => Object.keys(t.columns)));
+    q.themes.forEach((theme, i) => {
+      for (const t of Object.keys(theme.tables))
+        if (!tables.has(t))
+          ctx.addIssue({
+            code: 'custom',
+            path: ['themes', i, 'tables'],
+            message: `no table "${t}"`,
+          });
+      for (const c of Object.keys(theme.columns))
+        if (!columns.has(c))
+          ctx.addIssue({
+            code: 'custom',
+            path: ['themes', i, 'columns'],
+            message: `no column "${c}"`,
+          });
+      for (const to of [...Object.values(theme.tables), ...Object.values(theme.columns)])
+        if ((tables.has(to) || columns.has(to)) && !(to in theme.tables) && !(to in theme.columns))
+          ctx.addIssue({
+            code: 'custom',
+            path: ['themes', i],
+            message: `"${to}" is already a name in this question`,
+          });
+    });
     if (q.task.kind === 'brief' && q.rcsbe !== 'B')
       ctx.addIssue({
         code: 'custom',
