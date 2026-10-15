@@ -73,6 +73,8 @@ export const CLOSE_ROUND = 4003;
 export const CLOSE_DUPLICATE = 4004;
 export const CLOSE_SIGN_IN = 4005;
 export const CLOSE_KICKED = 4006;
+/** Too many messages on a challenge, practice or assessment socket. */
+export const CLOSE_RATE_LIMITED = 4008;
 
 /** The snapshot scratch objects are written in place, so they are not readonly here. */
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };

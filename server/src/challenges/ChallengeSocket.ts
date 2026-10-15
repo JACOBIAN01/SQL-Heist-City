@@ -1,5 +1,7 @@
 import type { Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
+import type { BucketLimit } from '@heist/shared';
+import { messageLimit } from '../net/messageLimit';
 import { upgradeRouterFor } from '../net/UpgradeRouter';
 import type { ChallengeMessageHandler } from './ChallengeMessageHandler';
 
@@ -9,6 +11,8 @@ export interface ChallengeSocketOptions {
   /** Largest message accepted, in bytes. Queries are short; this stops abuse early. */
   readonly maxPayload?: number;
   readonly now?: () => number;
+  /** Messages per connection (default: RATE_LIMITS). */
+  readonly messageLimit?: BucketLimit;
 }
 
 export interface ChallengeSocket {
@@ -35,8 +39,10 @@ export function attachChallengeSocket(
 
   wss.on('connection', (socket: WebSocket) => {
     const player = `guest-${nextPlayer++}`;
+    const allowed = messageLimit(socket, options.messageLimit, now);
 
     socket.on('message', (data, isBinary) => {
+      if (!allowed()) return;
       void (async () => {
         let raw: unknown;
         try {

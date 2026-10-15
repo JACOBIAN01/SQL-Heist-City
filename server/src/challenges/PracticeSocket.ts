@@ -1,6 +1,8 @@
 import type { Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { GameAuth } from '../game/GameAuth';
+import type { BucketLimit } from '@heist/shared';
+import { messageLimit } from '../net/messageLimit';
 import { upgradeRouterFor } from '../net/UpgradeRouter';
 import type { ChallengeMessageHandler } from './ChallengeMessageHandler';
 
@@ -20,6 +22,8 @@ export interface PracticeOptions {
   /** The topics a student can choose from. */
   readonly topics: () => readonly PracticeTopic[];
   readonly now?: () => number;
+  /** Messages per connection (default: RATE_LIMITS). */
+  readonly messageLimit?: BucketLimit;
 }
 
 export interface PracticeSocket {
@@ -65,7 +69,10 @@ export function attachPracticeSocket(
       if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(message));
     };
 
+    const allowed = messageLimit(socket, options.messageLimit, now);
+
     socket.on('message', (data, isBinary) => {
+      if (!allowed()) return;
       void (async () => {
         let raw: { t?: unknown; topic?: unknown } & Record<string, unknown>;
         try {

@@ -1,6 +1,9 @@
 import type { IncomingMessage, Server } from 'node:http';
 import type { Duplex } from 'node:stream';
 import type { WebSocketServer } from 'ws';
+import { rateLimitsFrom } from '@heist/shared';
+import { clientAddress } from './clientAddress';
+import { KeyedLimiter } from './KeyedLimiter';
 import { OriginPolicy } from './OriginPolicy';
 
 /**
@@ -15,10 +18,19 @@ export class UpgradeRouter {
     http: Server,
     /** Which pages may connect; replaceable for tests. */
     public origins: OriginPolicy = OriginPolicy.fromEnv(process.env),
+    /** New connections per client address (Phase 18.2); replaceable for tests. */
+    public connections: KeyedLimiter = new KeyedLimiter(
+      rateLimitsFrom(process.env.RATE_LIMITS).connectionsPerIp,
+    ),
   ) {
     http.on('upgrade', (request: IncomingMessage, socket: Duplex, head: Buffer) => {
       if (!this.origins.allows(request.headers.origin, request.headers.host)) {
         socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
+        socket.destroy();
+        return;
+      }
+      if (!this.connections.take(clientAddress(request))) {
+        socket.write('HTTP/1.1 429 Too Many Requests\r\nConnection: close\r\n\r\n');
         socket.destroy();
         return;
       }

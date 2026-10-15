@@ -1,6 +1,9 @@
 import { timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { PROTOCOL_VERSION } from '@heist/shared';
+import { rateLimitsFrom } from '@heist/shared';
+import { clientAddress } from '../net/clientAddress';
+import { KeyedLimiter } from '../net/KeyedLimiter';
 import { OriginPolicy } from '../net/OriginPolicy';
 
 export const INTERNAL_SECRET_HEADER = 'x-internal-secret';
@@ -24,6 +27,8 @@ export interface HttpServerDeps {
   onReload?: () => void | Promise<void>;
   /** Which pages may read the lobby and class status (default: from the environment). */
   origins?: OriginPolicy;
+  /** Requests per client address (default: from RATE_LIMITS). */
+  limiter?: KeyedLimiter;
 }
 
 // SOLID: D (Dependency Inversion) — Why: the server takes its clock and
@@ -47,7 +52,14 @@ export function createHttpServer(deps: HttpServerDeps): Server {
     }
     return true;
   };
+  const limiter =
+    deps.limiter ?? new KeyedLimiter(rateLimitsFrom(process.env.RATE_LIMITS).gameHttpPerIp);
   return createServer((req: IncomingMessage, res: ServerResponse) => {
+    if (!limiter.take(clientAddress(req))) {
+      res.setHeader('retry-after', '5');
+      sendJson(res, 429, { error: { code: 'rate_limited', message: 'Too many requests' } });
+      return;
+    }
     if (req.method === 'GET' && req.url === '/health') {
       sendJson(res, 200, {
         status: 'ok',

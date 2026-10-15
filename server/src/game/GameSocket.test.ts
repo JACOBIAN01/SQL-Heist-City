@@ -129,6 +129,15 @@ describe('GameSocket', () => {
     expect(await early.closed).toBe(1008);
   });
 
+  it('drops a client that floods messages past its rate (18.2)', async () => {
+    const c = await connect();
+    c.join();
+    await c.waitFor((m) => m.t === 'welcome');
+    // 120 a second is the default; a burst of 400 pings is over it.
+    for (let i = 0; i < 400; i++) c.ws.send(encodeClientMessage({ t: 'ping', clientTime: i }));
+    expect(await c.closed).toBe(1008);
+  });
+
   it('drops a client that never joins', async () => {
     const c = await connect();
     expect(await c.closed).toBe(1008);

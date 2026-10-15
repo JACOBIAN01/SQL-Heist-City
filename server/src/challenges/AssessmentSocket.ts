@@ -2,6 +2,8 @@ import type { Server } from 'node:http';
 import { WebSocketServer, type WebSocket } from 'ws';
 import type { AssessmentKind, AssessmentStore } from '../classes/AssessmentStore';
 import type { GameAuth } from '../game/GameAuth';
+import type { BucketLimit } from '@heist/shared';
+import { messageLimit } from '../net/messageLimit';
 import { upgradeRouterFor } from '../net/UpgradeRouter';
 import type { ChallengeMessageHandler } from './ChallengeMessageHandler';
 
@@ -18,6 +20,8 @@ export interface AssessmentOptions {
     kind: AssessmentKind,
   ) => Promise<Set<number>>;
   readonly now?: () => number;
+  /** Messages per connection (default: RATE_LIMITS). */
+  readonly messageLimit?: BucketLimit;
 }
 
 export interface AssessmentSocket {
@@ -70,7 +74,10 @@ export function attachAssessmentSocket(
         if (socket.readyState === socket.OPEN) socket.send(JSON.stringify(m));
       };
 
+      const allowed = messageLimit(socket, options.messageLimit, now);
+
       socket.on('message', (data, isBinary) => {
+        if (!allowed()) return;
         void (async () => {
           let raw: Record<string, unknown>;
           try {
