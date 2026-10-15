@@ -1,0 +1,1198 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "c-plan-scan",
+      "tier": 3,
+      "topic": ["index"],
+      "title": "Every Row",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What does `SCAN accounts` mean?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Only one row is read"
+              },
+              {
+                "id": "b",
+                "text_md": "SQLite uses an index on owner"
+              },
+              {
+                "id": "c",
+                "text_md": "The query fails"
+              },
+              {
+                "id": "d",
+                "text_md": "SQLite reads every row of accounts"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "What would make it faster?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "An index on `accounts(balance)`"
+              },
+              {
+                "id": "b",
+                "text_md": "Selecting fewer columns"
+              },
+              {
+                "id": "c",
+                "text_md": "An index on `accounts(owner)`"
+              },
+              {
+                "id": "d",
+                "text_md": "Adding LIMIT 1000"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT * FROM accounts WHERE owner = 'Ana';"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-plan-search-index",
+      "tier": 3,
+      "topic": ["index", "where"],
+      "title": "Index Used",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Does this plan use an index, and on what?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Yes, on owner"
+              },
+              {
+                "id": "b",
+                "text_md": "Yes, the primary key"
+              },
+              {
+                "id": "c",
+                "text_md": "No, it reads every row"
+              },
+              {
+                "id": "d",
+                "text_md": "Yes, `accounts_branch` on branch"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT * FROM accounts WHERE branch = 'North';"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-plan-temp-btree-order",
+      "tier": 3,
+      "topic": ["order-by", "index"],
+      "title": "The Extra Step",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is `USE TEMP B-TREE FOR ORDER BY`?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "A join with another table"
+              },
+              {
+                "id": "b",
+                "text_md": "An extra sorting step, because no index gives rows in that order"
+              },
+              {
+                "id": "c",
+                "text_md": "An error in the plan"
+              },
+              {
+                "id": "d",
+                "text_md": "A permanent index SQLite created"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT owner, opened FROM accounts ORDER BY opened;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-plan-automatic-index",
+      "tier": 4,
+      "topic": ["index", "self-join"],
+      "title": "Built on the Fly",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What does `AUTOMATIC` mean in this plan?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "The query uses the primary key"
+              },
+              {
+                "id": "b",
+                "text_md": "SQLite builds a temporary index just for this query, because none exists"
+              },
+              {
+                "id": "c",
+                "text_md": "Rows are read in random order"
+              },
+              {
+                "id": "d",
+                "text_md": "The join is cached from before"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Which permanent index would help?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "`accounts(owner)`"
+              },
+              {
+                "id": "b",
+                "text_md": "`accounts(balance)`"
+              },
+              {
+                "id": "c",
+                "text_md": "`transactions(account_id)`"
+              },
+              {
+                "id": "d",
+                "text_md": "`accounts(branch)`"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT a.id, b.id FROM accounts a JOIN accounts b ON b.owner = a.owner AND b.id <> a.id;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-plan-primary-key",
+      "tier": 3,
+      "topic": ["index"],
+      "title": "Straight to the Row",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Roughly how many rows does SQLite look at?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "All of them"
+              },
+              {
+                "id": "b",
+                "text_md": "One: it jumps to the row by its key"
+              },
+              {
+                "id": "c",
+                "text_md": "None"
+              },
+              {
+                "id": "d",
+                "text_md": "Half of them"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT * FROM accounts WHERE id = 42;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-plan-group-temp",
+      "tier": 4,
+      "topic": ["group-by", "index"],
+      "title": "Grouping Cost",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What does the plan tell you?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Only one row per group is read"
+              },
+              {
+                "id": "b",
+                "text_md": "Rows are read in full and sorted into groups with a temporary B-tree"
+              },
+              {
+                "id": "c",
+                "text_md": "The GROUP BY is ignored"
+              },
+              {
+                "id": "d",
+                "text_md": "An index on opened is used to group"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT opened, COUNT(*) FROM accounts GROUP BY opened;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-plan-correlated",
+      "tier": 4,
+      "topic": ["correlated-subquery", "index"],
+      "title": "Once per Row",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What does `CORRELATED SCALAR SUBQUERY` mean?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "It is a syntax error"
+              },
+              {
+                "id": "b",
+                "text_md": "The two tables are merged first"
+              },
+              {
+                "id": "c",
+                "text_md": "The subquery runs again for each account row"
+              },
+              {
+                "id": "d",
+                "text_md": "The subquery runs once in total"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why is it still fast enough here?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "SQLite caches the whole table"
+              },
+              {
+                "id": "b",
+                "text_md": "COUNT(*) is free"
+              },
+              {
+                "id": "c",
+                "text_md": "The accounts table is empty"
+              },
+              {
+                "id": "d",
+                "text_md": "Each run is a SEARCH using the index on account_id"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT owner, (SELECT COUNT(*) FROM transactions t WHERE t.account_id = a.id) AS n FROM accounts a;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-plan-function-on-column",
+      "tier": 4,
+      "topic": ["index", "string"],
+      "title": "Index Ignored",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "There is an index on owner. Why does the plan still SCAN?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "The table is too small"
+              },
+              {
+                "id": "b",
+                "text_md": "Indexes never work with text"
+              },
+              {
+                "id": "c",
+                "text_md": "The index stores owner, not lower(owner): a function on the column hides it"
+              },
+              {
+                "id": "d",
+                "text_md": "lower() is not allowed in WHERE"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT * FROM accounts WHERE lower(owner) = 'ana';"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-plan-covering",
+      "tier": 4,
+      "topic": ["index"],
+      "title": "Never Touches the Table",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What does `COVERING INDEX` mean?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Every column the query needs is in the index, so table rows are never read"
+              },
+              {
+                "id": "b",
+                "text_md": "The index is rebuilt"
+              },
+              {
+                "id": "c",
+                "text_md": "The index covers every table"
+              },
+              {
+                "id": "d",
+                "text_md": "The table is locked"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT branch FROM accounts WHERE branch = 'East';"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-plan-range",
+      "tier": 3,
+      "topic": ["index", "between"],
+      "title": "A Range Search",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "This is how SQLite plans to run the query (`EXPLAIN QUERY PLAN`). Read the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What does `(balance>?)` tell you?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "The index on balance is used to start at 15000 and read upwards"
+              },
+              {
+                "id": "b",
+                "text_md": "balance must be unique"
+              },
+              {
+                "id": "c",
+                "text_md": "Every balance is compared one by one"
+              },
+              {
+                "id": "d",
+                "text_md": "The query has a parameter error"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "plan",
+        "show_sql": "SELECT owner FROM accounts WHERE balance > 15000;"
+      },
+      "reference_sql": "",
+      "hints": []
+    }
+  ]
+}
