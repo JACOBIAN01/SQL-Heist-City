@@ -1,3 +1,4 @@
+import { BriefsPage } from './pages/BriefsPage';
 import { Navigate, Route, Routes } from 'react-router';
 import { useMe } from './auth/useMe';
 import { ErrorMessage } from './components/ErrorMessage';
@@ -33,6 +34,7 @@ export function App() {
         <Route path="classes/:id" element={<ClassEditorPage />} />
         <Route path="classes/:id/learning" element={<ClassLearningPage />} />
         <Route path="classes/:id/students/:playerId" element={<StudentPage />} />
+        <Route path="briefs" element={<BriefsPage />} />
         <Route path="concepts" element={<ConceptsPage />} />
         <Route path="pools" element={<PoolsPage />} />
         <Route path="import-export" element={<ImportExportPage />} />

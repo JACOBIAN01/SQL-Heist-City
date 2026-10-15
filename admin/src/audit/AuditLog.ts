@@ -207,6 +207,14 @@ function toRecord(event: AdminEvent): AuditRecord {
         entityId: event.topic,
         detail: { version: event.version },
       };
+    case 'brief_marked':
+      return {
+        ...actor,
+        action: 'mark',
+        entity: 'brief',
+        entityId: event.briefId,
+        detail: event.detail,
+      };
     case 'class_changed':
       return {
         ...actor,

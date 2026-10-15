@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { AxisScore, ProfileScopeView, RcsbeDimension, ShapeRow } from '@heist/shared';
+import type {
+  AxisScore,
+  BriefMark,
+  BriefView,
+  ProfileScopeView,
+  RcsbeDimension,
+  ShapeRow,
+} from '@heist/shared';
 import { api } from './client';
 
 export interface StudentRow {
@@ -139,5 +146,27 @@ export function useGain(classId: number) {
   return useQuery({
     queryKey: ['class', classId, 'gain'],
     queryFn: () => api<GainView>(`/classes/${classId}/gain`),
+  });
+}
+
+export type BriefStatus = 'unmarked' | 'marked' | 'all';
+
+/** The marking queue: open briefs from the teacher's classes (all classes for an admin). */
+export function useBriefs(status: BriefStatus) {
+  return useQuery({
+    queryKey: ['briefs', status],
+    queryFn: () => api<{ briefs: BriefView[] }>(`/briefs?status=${status}`),
+  });
+}
+
+export function useMarkBrief() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, mark }: { id: string; mark: BriefMark }) =>
+      api<{ brief: BriefView }>(`/briefs/${encodeURIComponent(id)}/mark`, {
+        method: 'POST',
+        body: mark,
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['briefs'] }),
   });
 }

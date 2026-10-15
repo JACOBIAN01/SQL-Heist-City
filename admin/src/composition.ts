@@ -22,6 +22,7 @@ import { PersonalDataRegistry, accountSource } from '@heist/server/players/Perso
 import { HttpGameControl, type GameControl } from './classes/GameControl';
 import { conceptRoutes } from './concepts';
 import { analyticsRoutes } from './analytics/routes';
+import { briefRoutes } from './analytics/briefs';
 import { classRoutes } from './classes/classRoutes';
 import { playerStaffRoutes } from './players/staffRoutes';
 import {
@@ -125,6 +126,12 @@ export function buildAdmin(
       }),
       erase: async (p) => stores.audit.scrubDetail('player', String(p.id)),
     })
+    .register({
+      name: 'briefs',
+      export: async (p) => stores.briefs.ofPlayer(p.id),
+      // PostgreSQL removes a player's briefs with the account (ON DELETE CASCADE).
+      erase: async () => {},
+    })
     // The account goes last: a failure above leaves an account that can try again.
     .register(accountSource(stores.players, playerSessions));
   const gameControl =
@@ -175,6 +182,14 @@ export function buildAdmin(
         events,
         settings: async () =>
           settingsParsers.analyticsFrom(await stores.settings.get(ANALYTICS_SETTINGS_KEY)),
+      }),
+      briefRoutes({
+        briefs: stores.briefs,
+        classes: stores.classes,
+        attempts: stores.attempts,
+        profiles: stores.profiles,
+        events,
+        now,
       }),
       classRoutes({
         classes: stores.classes,

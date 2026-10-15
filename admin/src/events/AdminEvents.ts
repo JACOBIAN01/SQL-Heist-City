@@ -61,6 +61,13 @@ export interface ConceptChanged {
   readonly actor: { readonly id: number; readonly email: string };
 }
 
+export interface BriefMarked {
+  readonly type: 'brief_marked';
+  readonly briefId: string;
+  readonly actor: { readonly id: number; readonly email: string };
+  readonly detail: Record<string, unknown>;
+}
+
 export type AdminEvent =
   | QuestionChanged
   | SettingsChanged
@@ -68,7 +75,8 @@ export type AdminEvent =
   | PoolChanged
   | PlayerChanged
   | ClassChanged
-  | ConceptChanged;
+  | ConceptChanged
+  | BriefMarked;
 export type AdminEventListener = (event: AdminEvent) => void;
 
 // Pattern: Observer — Why: audit logging and game-server reload both react to

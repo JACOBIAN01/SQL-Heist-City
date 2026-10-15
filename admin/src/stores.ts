@@ -50,6 +50,11 @@ import {
   type PoolRepository,
 } from './pools/PoolRepository';
 
+import {
+  InMemoryBriefStore,
+  PgBriefStore,
+  type BriefStore,
+} from '@heist/server/analytics/BriefStore';
 /**
  * Everything the admin persists, behind async interfaces.
  *
@@ -74,6 +79,8 @@ export interface AdminStores {
   readonly assessments: AssessmentStore;
   readonly attempts: AttemptStore;
   readonly profiles: ProfileStore;
+  /** Open briefs handed in from the game, and their marks. */
+  readonly briefs: BriefStore;
   playerSessions(ttlMs: number, now: () => number): PlayerSessions;
   sessions(ttlMs: number, now: () => number): SessionStore;
 }
@@ -92,6 +99,7 @@ export function sqliteStores(db: DatabaseSync): AdminStores {
     assessments: new InMemoryAssessmentStore(),
     attempts: new InMemoryAttemptStore(),
     profiles: new InMemoryProfileStore(),
+    briefs: new InMemoryBriefStore(),
     classes: new InMemoryClassRepository(
       undefined,
       () => new Set(questionRepo.list().map((q) => q.id)),
@@ -115,6 +123,7 @@ export function pgStores(db: PgDatabase): AdminStores {
     assessments: new PgAssessmentStore(db),
     attempts: new PgAttemptStore(db),
     profiles: new PgProfileStore(db),
+    briefs: new PgBriefStore(db),
     playerSessions: (ttl, now) => new PgPlayerSessions(db, ttl, now),
     sessions: (ttl, now) => new PgSessionStore(db, ttl, now),
   };

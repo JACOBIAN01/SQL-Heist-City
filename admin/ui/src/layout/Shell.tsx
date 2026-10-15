@@ -21,6 +21,7 @@ export function Shell({ user }: { user: AdminUser }) {
         <span className="brand">SQL Heist City · Admin</span>
         <nav>
           <NavLink to="/classes">Classes</NavLink>
+          <NavLink to="/briefs">Briefs to mark</NavLink>
           <NavLink to="/questions">Questions</NavLink>
           <NavLink to="/pools">Pools</NavLink>
           <NavLink to="/concepts">Concepts</NavLink>
