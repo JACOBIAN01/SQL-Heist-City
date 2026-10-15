@@ -1,0 +1,894 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "s-write-insert",
+      "tier": 1,
+      "topic": ["insert"],
+      "title": "Open an Account",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Open a new account: id **1000**, owner **{owner}**, branch **{branch}**, balance **0**, opened **2026-01-01**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "owner": {
+          "kind": "pick",
+          "from": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay", "Gus", "Hal", "Ida", "Jo", "Kai", "Lu"]
+        },
+        "branch": {
+          "kind": "pick",
+          "from": ["North", "South", "East", "West", "Harbor"]
+        }
+      },
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT id, owner, branch, balance FROM accounts"
+      },
+      "reference_sql": "INSERT INTO accounts (id, owner, branch, balance, opened) VALUES (1000, {owner|sql}, {branch|sql}, 0, '2026-01-01');",
+      "hints": []
+    },
+    {
+      "slug": "s-write-update-branch",
+      "tier": 1,
+      "topic": ["update", "where"],
+      "title": "Branch Bonus",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Add **{amount}** to the balance of every account at **{branch}**. Leave the others alone.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "amount": {
+          "kind": "int",
+          "min": 100,
+          "max": 900,
+          "step": 50
+        },
+        "branch": {
+          "kind": "pick",
+          "from": ["North", "South", "East", "West", "Harbor"]
+        }
+      },
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT id, owner, branch, balance FROM accounts"
+      },
+      "reference_sql": "UPDATE accounts SET balance = balance + {amount} WHERE branch = {branch|sql};",
+      "hints": []
+    },
+    {
+      "slug": "s-write-delete",
+      "tier": 1,
+      "topic": ["delete", "where"],
+      "title": "Shred the Small Ones",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Delete every transaction with an amount between **-{amount}** and **{amount}** (inclusive).",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "amount": {
+          "kind": "int",
+          "min": 100,
+          "max": 900,
+          "step": 50
+        }
+      },
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT id FROM transactions"
+      },
+      "reference_sql": "DELETE FROM transactions WHERE amount BETWEEN -{amount} AND {amount};",
+      "hints": []
+    },
+    {
+      "slug": "s-write-update-subquery",
+      "tier": 2,
+      "topic": ["update", "subquery"],
+      "title": "Mark the Silent",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Set the balance to **0** for every account that has **no transactions** at all.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT id, owner, branch, balance FROM accounts"
+      },
+      "reference_sql": "UPDATE accounts SET balance = 0 WHERE id NOT IN (SELECT account_id FROM transactions);",
+      "hints": []
+    },
+    {
+      "slug": "s-write-create-as",
+      "tier": 2,
+      "topic": ["create-table"],
+      "title": "A VIP List",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Create a table **vip** with the **id** and **owner** of every account with a balance over **{min_balance}**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "min_balance": {
+          "kind": "int",
+          "min": 4000,
+          "max": 12000,
+          "step": 500
+        }
+      },
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT id, owner FROM vip"
+      },
+      "reference_sql": "CREATE TABLE vip AS SELECT id, owner FROM accounts WHERE balance > {min_balance};",
+      "hints": []
+    },
+    {
+      "slug": "s-write-transfer",
+      "tier": 2,
+      "topic": ["update"],
+      "title": "Move the Money",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Move **{amount}** from account **1** to account **2**: account 1 loses it, account 2 gains it.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "amount": {
+          "kind": "int",
+          "min": 100,
+          "max": 900,
+          "step": 50
+        }
+      },
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT id, owner, branch, balance FROM accounts"
+      },
+      "reference_sql": "UPDATE accounts SET balance = balance - {amount} WHERE id = 1; UPDATE accounts SET balance = balance + {amount} WHERE id = 2;",
+      "hints": [
+        {
+          "text": "Two UPDATE statements, one per account.",
+          "cost": 0.05
+        }
+      ]
+    },
+    {
+      "slug": "s-write-insert-many",
+      "tier": 2,
+      "topic": ["insert"],
+      "title": "Log Three Deposits",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Record three deposits of **{amount}** each on **2026-01-02** for accounts **1**, **2** and **3** (ids 9001, 9002, 9003).",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "amount": {
+          "kind": "int",
+          "min": 100,
+          "max": 900,
+          "step": 50
+        }
+      },
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT id, account_id, amount, at FROM transactions"
+      },
+      "reference_sql": "INSERT INTO transactions (id, account_id, amount, at) VALUES (9001, 1, {amount}, '2026-01-02'), (9002, 2, {amount}, '2026-01-02'), (9003, 3, {amount}, '2026-01-02');",
+      "hints": []
+    },
+    {
+      "slug": "s-write-update-case",
+      "tier": 3,
+      "topic": ["update", "case"],
+      "title": "Fees and Gifts",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "In one go: accounts under **1000** get **+100**; accounts over **15000** pay a fee of **50**. Others stay the same.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT id, owner, branch, balance FROM accounts"
+      },
+      "reference_sql": "UPDATE accounts SET balance = CASE WHEN balance < 1000 THEN balance + 100 WHEN balance > 15000 THEN balance - 50 ELSE balance END;",
+      "hints": []
+    },
+    {
+      "slug": "s-write-delete-subquery",
+      "tier": 3,
+      "topic": ["delete", "subquery"],
+      "title": "Close Empty Accounts",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Delete the accounts at **{branch}** that have **no transactions**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "branch": {
+          "kind": "pick",
+          "from": ["North", "South", "East", "West", "Harbor"]
+        }
+      },
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT id, owner, branch, balance FROM accounts"
+      },
+      "reference_sql": "DELETE FROM accounts WHERE branch = {branch|sql} AND id NOT IN (SELECT account_id FROM transactions);",
+      "hints": []
+    },
+    {
+      "slug": "s-write-create-insert",
+      "tier": 3,
+      "topic": ["create-table", "insert", "group-by"],
+      "title": "Branch Totals Table",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Create a table **branch_totals (branch, total)** and fill it with each branch and the sum of its balances.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "write_db",
+        "check_sql": "SELECT branch, total FROM branch_totals"
+      },
+      "reference_sql": "CREATE TABLE branch_totals (branch TEXT, total INTEGER); INSERT INTO branch_totals SELECT branch, SUM(balance) FROM accounts GROUP BY branch;",
+      "hints": []
+    }
+  ]
+}
