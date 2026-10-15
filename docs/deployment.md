@@ -20,3 +20,20 @@ Health `/health`, metrics `/metrics`, nightly SQLite backup (admin question data
 
 ## Release checklist
 Tests green · budgets met · `questions:validate` green · migrations applied · backup taken.
+
+## Secrets (Phase 18.5)
+No secret lives in the repository. `scripts/check-secrets.mjs` runs first in `npm run ci` and fails on private keys, cloud and OAuth keys, tokens, database URLs with passwords, tracked `.env` files and random-looking values assigned to `*SECRET*`/`*PASSWORD*`/`*TOKEN*` names in code. CI also runs `npm audit --audit-level=high`: a known high or critical advisory blocks the merge.
+
+Secrets come from the environment (or the host's secret store injecting it):
+
+| Secret | Used by | Make it with |
+|---|---|---|
+| `TICKET_SECRET` | game server (required in production), admin (player sign-in) — the same value on both | `openssl rand -base64 32` |
+| `INTERNAL_SECRET` | admin → game server calls — the same value on both | `openssl rand -base64 32` |
+| `COOKIE_SECRET` | admin player-session cookies (defaults to `TICKET_SECRET`; set its own in production) | `openssl rand -base64 32` |
+| `GOOGLE_CLIENT_SECRET` | admin Google sign-in | Google Cloud console |
+| `DATABASE_URL` | both (PostgreSQL, with its password) | your database host |
+| `ADMIN_PASSWORD` | admin, first start only, to create the first admin | a password manager |
+
+In production (`NODE_ENV=production`) both services refuse to start if a required secret is missing, if one is shorter than 32 characters or a development placeholder, or if two are the same. Rotate by setting the new value on both services and restarting them together; tickets last 60 s and admin sessions 12 h, so a rotation signs people out at most once.
+

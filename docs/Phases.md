@@ -35,7 +35,7 @@
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
 | 16 | Teaching loop | ✅ |
 | 17 | Question types and content (filling R, C, B, E) | ✅ |
-| 18 | Security hardening | 🟨 18.1–18.4 done |
+| 18 | Security hardening | 🟨 18.1–18.5 done |
 | 19 | Scale proof | ⬜ |
 | 20 | Operations and deployment | ⬜ |
 | 21 | Privacy and compliance | ⬜ |
@@ -389,7 +389,7 @@ Audit con 9 plus the old "rate limits" and "anti-cheat" todo items.
 | 18.2 | Rate limits on every message and route (game, challenge, lobby, admin, auth), with tests | each limit has a test that exceeds it | ✅ limits on sockets (connections per address, messages per connection), game HTTP, admin API and sign-in routes, plus the existing per-player ones; `RATE_LIMITS` overrides; every limit has an exceeding test (table in backend.md) |
 | 18.3 | Anti-cheat: line-of-sight checks on hits, a speed envelope, fire-rate audit, impossible-action logging | cheat tests fail as expected; anomalies are logged | ✅ LOS re-check on every hit, speed envelope, per-gun fire-rate audit, lag-claim / input-flood / impossible-action / malformed logging via `AnomalyLog` (counts in /metrics); cheat tests in AntiCheat.test.ts |
 | 18.4 | SQL sandbox fuzzing (hostile and oversized queries, resource bombs) in CI | the fuzzer runs nightly with no escapes | ✅ seeded fuzzer (6 families) in CI and nightly (10 000 cases); it found that a thread stuck in SQLite could not be stopped, so the sandbox now runs in killable child processes; 3 000 local cases, no escapes |
-| 18.5 | Secrets management and a dependency audit in CI | no secret in the repo; audit failures block a merge | ⬜ |
+| 18.5 | Secrets management and a dependency audit in CI | no secret in the repo; audit failures block a merge | ✅ secret scan first in `npm run ci` (811 files, clean); `npm audit --audit-level=high` in the CI workflow (2 critical dev-tool advisories fixed); production refuses missing, short, placeholder or shared secrets |
 | 18.6 | External penetration test and fixes | report received and every high or critical finding fixed | ⬜ |
 
 ---
