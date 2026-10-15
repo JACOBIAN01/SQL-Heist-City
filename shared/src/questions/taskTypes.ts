@@ -66,6 +66,8 @@ export const taskSchema = z.discriminatedUnion('kind', [
     parts: z.array(choicePartSchema).min(1).max(5),
     /** Share of the weight needed for the reward (the profile still gets the partial marks). */
     pass_share: z.number().min(0).max(1).default(1),
+    /** Show the options in a different order for each player (off for "all of the above"). */
+    shuffle: z.boolean().default(true),
   }),
   /** R: fill the blanks (`___`) in a query; each blank accepts any of its answers, ignoring case and spaces. */
   z.object({

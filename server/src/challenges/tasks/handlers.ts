@@ -1,4 +1,4 @@
-import { normaliseBlank, type QuestionTask, type TaskKind } from '@heist/shared';
+import { SeededRng, normaliseBlank, type QuestionTask, type TaskKind } from '@heist/shared';
 import { ReferenceQueryError } from '../../sql/Grader';
 import { renderTemplate } from '../../variants/render';
 import type { PreparedTask, Submission, TaskContext, TaskGrade, TaskHandler } from './TaskHandler';
@@ -106,6 +106,18 @@ class WriteDbTask implements TaskHandler {
   }
 }
 
+/**
+ * The options of part `i` in the order this player sees them. The client gets positional ids
+ * ("1", "2"…), so neither the order nor the author's ids tell two players which one is right.
+ */
+function optionsSeen(ctx: TaskContext, i: number) {
+  const t = taskOf<'choice'>(ctx);
+  const part = t.parts[i] as Task<'choice'>['parts'][number];
+  return t.shuffle
+    ? new SeededRng(`${ctx.variant.seed}/options/${i}`).shuffle(part.options)
+    : [...part.options];
+}
+
 /** Pick the right options (Recall, Comprehend or Evaluate); one go, marks by part. */
 class ChoiceTask implements TaskHandler {
   readonly kind: TaskKind = 'choice';
@@ -143,9 +155,12 @@ class ChoiceTask implements TaskHandler {
         kind: 'choice',
         ...(shownSql ? { shownSql } : {}),
         ...(shown ? { shown } : {}),
-        parts: t.parts.map((p) => ({
+        parts: t.parts.map((p, i) => ({
           prompt: render(ctx, p.prompt_md),
-          options: p.options.map((o) => ({ id: o.id, text: render(ctx, o.text_md) })),
+          options: optionsSeen(ctx, i).map((o, n) => ({
+            id: String(n + 1),
+            text: render(ctx, o.text_md),
+          })),
           multi: p.multi,
         })),
       },
@@ -163,7 +178,8 @@ class ChoiceTask implements TaskHandler {
     let right = 0;
     t.parts.forEach((part, i) => {
       total += part.weight;
-      const mine = new Set(picked[i] ?? []);
+      const seen = optionsSeen(ctx, i);
+      const mine = new Set((picked[i] ?? []).map((n) => seen[Number(n) - 1]?.id ?? '?'));
       const correct = new Set(part.correct);
       const exact = mine.size === correct.size && [...mine].every((c) => correct.has(c));
       if (exact) {

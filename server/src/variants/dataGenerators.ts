@@ -91,6 +91,10 @@ const builders: { [K in ColumnSpec['kind']]: BuilderFor<K> } = {
     return { next: () => (values.length === 0 ? null : rng.pick(values)) };
   },
   const: (spec) => ({ next: () => spec.value }),
+  list: (spec) => {
+    let index = 0;
+    return { next: () => spec.values[index++ % spec.values.length] as SqlValue };
+  },
   // Hierarchies (org charts, chains of command): each row's parent is an
   // earlier row's id, so the result is always a forest — perfect for
   // recursive CTE questions.

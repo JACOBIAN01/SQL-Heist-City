@@ -145,6 +145,7 @@ describe('task kinds', () => {
         },
       ],
       pass_share: 0.75,
+      shuffle: false,
     },
   } as const;
 
@@ -155,17 +156,37 @@ describe('task kinds', () => {
     expect(JSON.stringify(c)).not.toContain('correct');
     expect((await t.service.run('p', c.id, 'SELECT 1')).ok).toBe(false);
     // Reasons right, count wrong: 3 of 4 weight → passes, with share 0.75 on the record.
-    const pass = await t.service.submit('p', c.id, '', { choices: [['b'], ['x']] });
+    const pass = await t.service.submit('p', c.id, '', { choices: [['2'], ['1']] });
     expect(pass.status).toBe('correct');
     expect(t.items.at(-1)).toMatchObject({ outcome: 'solved', share: 0.75 });
     c = await t.issue();
-    const fail = await t.service.submit('p', c.id, '', { choices: [['a'], ['y']] });
+    const fail = await t.service.submit('p', c.id, '', { choices: [['1'], ['2']] });
     expect(fail).toMatchObject({ status: 'answered', share: 0.25 });
     expect(t.items.at(-1)).toMatchObject({ outcome: 'answered', share: 0.25 });
     // One go: the question is gone.
-    expect((await t.service.submit('p', c.id, '', { choices: [['a'], ['x']] })).status).toBe(
+    expect((await t.service.submit('p', c.id, '', { choices: [['1'], ['1']] })).status).toBe(
       'rejected',
     );
+  });
+
+  it('choice: each player sees the options in their own order, under positional ids', async () => {
+    const t = setup({ ...choice, task: { ...choice.task, shuffle: true } });
+    const orders = new Set<string>();
+    for (let n = 0; n < 8; n++) {
+      const c = await t.issue();
+      const task = c.task as Extract<typeof c.task, { kind: 'choice' }>;
+      expect(task.parts[0]?.options.map((o) => o.id)).toEqual(['1', '2']);
+      orders.add(task.parts.map((p) => p.options.map((o) => o.text).join()).join('|'));
+      // Whatever the order, picking the right texts is right.
+      const pick = (part: number, text: string) => [
+        task.parts[part]?.options.find((o) => o.text === text)?.id ?? '',
+      ];
+      const r = await t.service.submit('p', c.id, '', {
+        choices: [pick(0, '20'), pick(1, 'one per row')],
+      });
+      expect(r.status).toBe('correct');
+    }
+    expect(orders.size).toBeGreaterThan(1);
   });
 
   it('fill: blanks ignore case and spaces', async () => {

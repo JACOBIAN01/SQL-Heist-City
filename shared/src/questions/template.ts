@@ -67,6 +67,15 @@ export const columnSpecSchema = z.discriminatedUnion('kind', [
     null_rate: nullRate,
   }),
   z.object({ kind: z.literal('const'), value: z.union([z.string(), z.number(), z.null()]) }),
+  /**
+   * These values in this order (row i gets values[i], repeating). With a fixed row count it gives
+   * tables every player sees the same, for tasks whose answer must not depend on the data
+   * (predict the output, explain the error).
+   */
+  z.object({
+    kind: z.literal('list'),
+    values: z.array(z.union([z.string(), z.number(), z.null()])).min(1),
+  }),
   z.object({
     kind: z.literal('tree_parent'),
     /** Id of the table's first row (match the serial column's start). */

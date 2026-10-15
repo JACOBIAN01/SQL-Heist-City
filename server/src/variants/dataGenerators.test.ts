@@ -69,6 +69,12 @@ describe('generateTables', () => {
       expect(parentIds.has(v)).toBe(true);
   });
 
+  it('list gives the same table on every seed', () => {
+    const spec = { t: { rows: 4, columns: { v: { kind: 'list', values: ['a', 2, null] } } } };
+    expect(column(gen(spec, 'x').get('t'), 'v')).toEqual(['a', 2, null, 'a']);
+    expect(gen(spec, 'x')).toEqual(gen(spec, 'y'));
+  });
+
   it('applies null_rate roughly as configured', () => {
     const t = gen({
       t: { rows: 1000, columns: { x: { kind: 'int', min: 1, max: 9, null_rate: 0.3 } } },
