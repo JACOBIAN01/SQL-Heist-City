@@ -11,10 +11,16 @@ export type ItemOutcome =
   | 'switched'
   | 'died'
   /** They disconnected. */
-  | 'left';
+  | 'left'
+  /** A one-go task (multiple choice) was answered, not fully right: it earns its share of the marks. */
+  | 'answered'
+  /** An open brief was handed in; it counts once a teacher marks it. */
+  | 'submitted';
 
 export const ITEM_OUTCOMES: readonly ItemOutcome[] = [
   'solved',
+  'answered',
+  'submitted',
   'abandoned',
   'expired',
   'switched',
@@ -58,6 +64,8 @@ export interface ItemRecord {
    * student after it ends; never saved to the database and never sent during the round.
    */
   readonly review?: ItemReview;
+  /** Share of the marks the answer earned, for tasks marked in parts (multiple choice). 1 when absent and solved. */
+  readonly share?: number;
   /** Set when the question was part of a class's pre or post assessment: it then counts in that scope only. */
   readonly assessment?: 'pre' | 'post';
 }
@@ -88,10 +96,24 @@ const NOT_COUNTED: ItemScore = { counted: false, available: 0, earned: 0 };
  */
 export function scoreItem(item: ItemRecord, settings: AnalyticsSettings): ItemScore {
   if (item.tutorial) return NOT_COUNTED;
+  // A brief counts when a teacher marks it (the marks arrive then, not now).
+  if (item.outcome === 'submitted') return NOT_COUNTED;
+  if (item.outcome === 'answered') {
+    const kept = Math.max(settings.minEarnedShare, 1 - settings.hintPenalty * item.hintsPaid);
+    return {
+      counted: true,
+      available: item.marks,
+      earned: round2(item.marks * (item.share ?? 0) * (item.share ? kept : 1)),
+    };
+  }
   const worked = item.runs + item.submits > 0;
   if (item.outcome === 'solved') {
     const kept = Math.max(settings.minEarnedShare, 1 - settings.hintPenalty * item.hintsPaid);
-    return { counted: true, available: item.marks, earned: round2(item.marks * kept) };
+    return {
+      counted: true,
+      available: item.marks,
+      earned: round2(item.marks * (item.share ?? 1) * kept),
+    };
   }
   if (item.outcome === 'died') {
     // Death before any graded attempt shows nothing; after one, it is a worked failure.

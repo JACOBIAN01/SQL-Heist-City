@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { bloomSchema, marksSchema, rcsbeSchema } from './analytics';
+import { SQL_TASKS, taskSchema } from './taskTypes';
 
 /**
  * Question template: the import/export + storage format for one SQL question.
@@ -126,7 +127,10 @@ export const questionTemplateSchema = z
     schema_sql: z.string().min(1),
     data_gen: z.record(identifier, tableSpecSchema),
     params: z.record(identifier, paramSpecSchema).default({}),
-    reference_sql: z.string().min(1),
+    /** What the task asks (default: write a query). */
+    task: taskSchema.default({ kind: 'write' }),
+    /** The answer query (SQL-graded tasks); for write_db the reference statements. */
+    reference_sql: z.string().default(''),
     order_matters: z.boolean().default(false),
     compare: z
       .object({ names: z.boolean().default(false), case: z.boolean().default(true) })
@@ -136,6 +140,51 @@ export const questionTemplateSchema = z
     enabled: z.boolean().default(true),
   })
   .superRefine((q, ctx) => {
+    if (SQL_TASKS.has(q.task.kind) && q.reference_sql.trim() === '')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['reference_sql'],
+        message: 'this kind of task needs a reference_sql',
+      });
+    if (q.task.kind === 'choice') {
+      q.task.parts.forEach((part, i) => {
+        const ids = new Set(part.options.map((o) => o.id));
+        if (ids.size !== part.options.length)
+          ctx.addIssue({
+            code: 'custom',
+            path: ['task', 'parts', i, 'options'],
+            message: 'option ids must be unique',
+          });
+        for (const c of part.correct)
+          if (!ids.has(c))
+            ctx.addIssue({
+              code: 'custom',
+              path: ['task', 'parts', i, 'correct'],
+              message: `no option "${c}"`,
+            });
+        if (!part.multi && part.correct.length !== 1)
+          ctx.addIssue({
+            code: 'custom',
+            path: ['task', 'parts', i, 'correct'],
+            message: 'a single-answer part has exactly one right option',
+          });
+      });
+    }
+    if (q.task.kind === 'fill') {
+      const holes = (q.task.text_sql.match(/___/g) ?? []).length;
+      if (holes !== q.task.blanks.length)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['task', 'blanks'],
+          message: `the query has ${holes} blank(s) (___) but ${q.task.blanks.length} answer list(s)`,
+        });
+    }
+    if (q.task.kind === 'brief' && q.rcsbe !== 'B')
+      ctx.addIssue({
+        code: 'custom',
+        path: ['rcsbe'],
+        message: 'an open brief measures Build (B)',
+      });
     for (const field of ['story_md', 'reference_sql'] as const) {
       for (const name of placeholderNames(q[field])) {
         if (!(name in q.params)) {

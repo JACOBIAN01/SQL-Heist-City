@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { taskAnswerSchema } from '../questions/taskTypes';
 import type { HintResult, IssueResult, RunResult, SubmitResult } from '../challenges/types';
 
 /**
@@ -21,7 +22,14 @@ export const challengeClientMessageSchema = z.discriminatedUnion('t', [
     target: z.string().max(100).optional(),
   }),
   z.object({ t: z.literal('challenge_run'), ref, challengeId, sql }),
-  z.object({ t: z.literal('challenge_submit'), ref, challengeId, sql }),
+  z.object({
+    t: z.literal('challenge_submit'),
+    ref,
+    challengeId,
+    sql,
+    /** The answer to a non-SQL task (choices, blanks or a brief); `sql` is then empty. */
+    answer: taskAnswerSchema.optional(),
+  }),
   z.object({
     t: z.literal('challenge_hint'),
     ref,

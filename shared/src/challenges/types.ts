@@ -1,3 +1,4 @@
+import type { PublicTask } from '../questions/taskTypes';
 /**
  * What a player's client may see about a challenge. Deliberately has no
  * reference SQL and no expected result (rules.md §2.5); the worked example
@@ -48,6 +49,8 @@ export interface PublicChallenge {
   readonly hintCostMode: 'fraction' | 'absolute';
   /** Epoch ms. */
   readonly expiresAt: number;
+  /** What kind of task this is, and what the pop-up shows for it (absent: write a query). */
+  readonly task?: PublicTask;
 }
 
 export interface ChallengeFeedback {
@@ -92,6 +95,15 @@ export type SubmitResult =
       readonly lockedUntil: number;
     }
   | { readonly status: 'locked'; readonly lockedUntil: number }
+  /** A one-go task answered, not fully right: no reward, and the question is over. */
+  | {
+      readonly status: 'answered';
+      readonly feedback: ChallengeFeedback;
+      /** Share of the marks earned, 0–1. */
+      readonly share: number;
+    }
+  /** An open brief handed in for a teacher to mark. */
+  | { readonly status: 'received' }
   | { readonly status: 'rejected'; readonly reason: RejectReason; readonly retryAt?: number };
 
 /** A hint the server has revealed. */
