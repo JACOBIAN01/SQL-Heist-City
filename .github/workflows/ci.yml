@@ -27,4 +27,6 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # A known high or critical advisory in any dependency blocks the merge (Phase 18.5).
+      - run: npm audit --audit-level=high
       - run: npm run ci
