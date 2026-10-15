@@ -1,3 +1,4 @@
+import type { AnomalyKind } from './AnomalyLog';
 import type { Server } from 'node:http';
 import {
   DEFAULT_MATCH_SETTINGS,
@@ -30,6 +31,8 @@ export interface GameMetrics {
   readonly snapshotsPerSecond: number;
   /** Average bytes sent per player per second. */
   readonly bytesPerPlayerPerSecond: number;
+  /** Anomalies (things honest clients never do) by kind, since the match started. */
+  readonly anomalies: Partial<Record<AnomalyKind, number>>;
 }
 
 export interface RunningGame {
@@ -100,6 +103,7 @@ export function startGame(
       bytesPerSecond: bytes.perSecond,
       snapshotsPerSecond: snapshots.perSecond,
       bytesPerPlayerPerSecond: bytes.perSecond / Math.max(1, match.players.size),
+      anomalies: match.anomalies.counts(),
     }),
     async stop() {
       loop.stop();

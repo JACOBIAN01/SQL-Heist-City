@@ -130,13 +130,15 @@ export class Player {
    * Queues commands, ignoring ones already applied (retransmits) and dropping
    * the oldest when the queue is full so a flood cannot grow memory.
    */
-  enqueue(commands: readonly InputCommand[], limit: number): void {
+  enqueue(commands: readonly InputCommand[], limit: number): number {
     for (const command of commands) {
       const last = this.queue.length > 0 ? this.queue[this.queue.length - 1] : undefined;
       const newest = last ? last.seq : this.lastAppliedSeq;
       if (!seqNewer(command.seq, newest)) continue;
       this.queue.push(command);
     }
-    if (this.queue.length > limit) this.queue.splice(0, this.queue.length - limit);
+    const over = Math.max(0, this.queue.length - limit);
+    if (over > 0) this.queue.splice(0, over);
+    return over;
   }
 }

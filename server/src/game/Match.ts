@@ -12,6 +12,7 @@ import {
   Flag,
   PROTOCOL_VERSION,
   SIM_DT,
+  raycastMap,
   aimDirectionInto,
   aimOriginInto,
   newShotResult,
@@ -64,6 +65,7 @@ import { InterestManager } from './InterestManager';
 import { LagCompensator, type BodyPose } from './LagCompensator';
 import { Player, type PlayerConnection } from './Player';
 import { ShotRng } from './ShotRng';
+import { AnomalyLog, type AnomalyKind } from './AnomalyLog';
 import { FarthestSpawnPolicy, type SpawnPolicy } from './SpawnPolicy';
 
 export const CLOSE_PROTOCOL = 4000;
@@ -109,6 +111,8 @@ export interface MatchDeps {
   readonly spawnPolicy?: SpawnPolicy;
   /** Wall-clock ms (idle timeouts only; the simulation runs on ticks). */
   readonly now?: () => number;
+  /** Where anomalies (things an honest client never does) are written; default: a log line each. */
+  readonly anomalies?: AnomalyLog;
 }
 
 const MAX_ID = 0xffff;
@@ -123,6 +127,12 @@ export class Match implements MatchApi {
   tick = 0;
   /** Everything the server has tried to send, for `/metrics` and the load tests. */
   readonly traffic = { bytes: 0, snapshots: 0, events: 0 };
+  /** Things an honest client never does (Phase 18.3). */
+  readonly anomalies: AnomalyLog;
+  /** Where each player stood when this tick's input began (the speed envelope). */
+  private readonly before = new Map<number, { x: number; z: number }>();
+  /** Shot ticks per player and gun in the last second (the fire-rate audit). */
+  private readonly shotTicks = new Map<string, number[]>();
   private nextId = 1;
   private joinCount = 0;
   private readonly spawnPolicy: SpawnPolicy;
@@ -171,6 +181,7 @@ export class Match implements MatchApi {
   private shotRange = 0;
 
   constructor(private readonly deps: MatchDeps) {
+    this.anomalies = deps.anomalies ?? new AnomalyLog();
     this.collisionMap = deps.map;
     this.respawnMap = deps.map.respawns ? { ...deps.map, spawns: deps.map.respawns } : deps.map;
     this.movement = deps.movement ?? DEFAULT_MOVEMENT_SETTINGS;
@@ -491,6 +502,9 @@ export class Match implements MatchApi {
   leave(id: number): void {
     const leaving = this.players.get(id);
     if (!leaving || !this.players.delete(id)) return;
+    this.before.delete(id);
+    for (const key of this.shotTicks.keys())
+      if (key.startsWith(`${id}:`)) this.shotTicks.delete(key);
     this.releaseVehicle(leaving);
     this.heist.onLeave(leaving);
     for (const l of this.leaveListeners) l(leaving);
@@ -550,7 +564,23 @@ export class Match implements MatchApi {
     const player = this.players.get(id);
     if (!player) return;
     player.lastHeardAt = this.now();
-    player.enqueue(commands, this.deps.settings.inputQueueLimit);
+    const dropped = player.enqueue(commands, this.deps.settings.inputQueueLimit);
+    if (dropped > 0) this.reportAnomaly(player, 'input_flood', { dropped });
+    const claimed = commands.reduce((m, c) => Math.max(m, c.viewLagMs), 0);
+    if (claimed > this.combat.maxLagCompMs + 50)
+      this.reportAnomaly(player, 'lag_claim', { ms: claimed, max: this.combat.maxLagCompMs });
+  }
+
+  /** Notes something an honest client never does (the action itself was already refused or corrected). */
+  reportAnomaly(player: Player, kind: AnomalyKind, detail?: Record<string, unknown>): void {
+    this.anomalies.record({
+      at: this.now(),
+      tick: this.tick,
+      player: player.key,
+      ...(player.accountId === undefined ? {} : { accountId: player.accountId }),
+      kind,
+      ...(detail ? { detail } : {}),
+    });
   }
 
   /** Marks the client as alive without carrying game data (ping, keep-alives). */
@@ -566,7 +596,9 @@ export class Match implements MatchApi {
     this.respawnDue();
     // Positions can change outside movement (respawns, joins): refresh the grid before shots use it.
     for (const p of this.players.values()) this.interest.update(p.id, p.body.x, p.body.z);
+    this.notePositions();
     for (const player of this.players.values()) this.applyInput(player);
+    this.checkSpeeds();
     this.vehicles.coast(this.collisionMap, 1 / this.deps.settings.tickRate);
     this.vehicles.settle();
     // Drivers sit exactly where their (settled) car is.
@@ -578,6 +610,33 @@ export class Match implements MatchApi {
     this.recordHistory();
     this.heist.onTick();
     this.sendSnapshots();
+  }
+
+  private notePositions(): void {
+    for (const p of this.players.values()) {
+      const at = this.before.get(p.id);
+      if (at) {
+        at.x = p.body.x;
+        at.z = p.body.z;
+      } else this.before.set(p.id, { x: p.body.x, z: p.body.z });
+    }
+  }
+
+  /**
+   * The speed envelope: on foot, nobody moves further in one tick than the most commands a tick
+   * applies at sprint speed allow (plus room for being pushed out of a car). Movement is
+   * simulated here, so this should never trip; if it does, a physics bug is being used.
+   */
+  private checkSpeeds(): void {
+    const limit =
+      this.deps.settings.maxCommandsPerTick * SIM_DT * this.movement.sprintSpeed * 1.25 + 1;
+    for (const p of this.players.values()) {
+      const at = this.before.get(p.id);
+      if (!at || !p.alive || p.vehicleId !== 0) continue;
+      const moved = Math.hypot(p.body.x - at.x, p.body.z - at.z);
+      if (moved > limit)
+        this.reportAnomaly(p, 'speed', { metres: Math.round(moved * 100) / 100, limit });
+    }
   }
 
   /** Cars with a driver hurt people on foot they touch; the kill is the driver's (12.3). */
@@ -652,6 +711,7 @@ export class Match implements MatchApi {
       shooter.arsenal.set(shooter.weaponId, rounds - 1);
     }
     shooter.cooldown += 60 / weapon.rpm;
+    this.auditFireRate(shooter, weapon.rpm);
     // A player cannot shoot from behind spawn protection.
     shooter.protectedUntilTick = 0;
 
@@ -698,6 +758,21 @@ export class Match implements MatchApi {
       if (result.hit === 'miss') continue;
       const victim = this.players.get(result.target);
       if (!victim) continue;
+      // Line of sight, checked again on its own: a hit never counts through a wall.
+      const wall = raycastMap(
+        this.collisionMap,
+        origin.x,
+        origin.y,
+        origin.z,
+        dir.x,
+        dir.y,
+        dir.z,
+        result.distance,
+      );
+      if (wall !== undefined && wall < result.distance - 1e-3) {
+        this.reportAnomaly(shooter, 'hit_through_wall', { victim: victim.key });
+        continue;
+      }
       const damage =
         damageAt(weapon, result.distance) *
         (result.hit === 'head' ? this.combat.headshotMultiplier : 1);
@@ -744,6 +819,25 @@ export class Match implements MatchApi {
     }
     this.shotTargetCount = n;
     return targets;
+  }
+
+  /**
+   * The fire-rate audit: shots from one gun in the last second never exceed its rate (the
+   * cooldown already spaces them; this catches anything that would get around it).
+   */
+  private auditFireRate(shooter: Player, rpm: number): void {
+    const key = `${shooter.id}:${shooter.weaponId}`;
+    const window = this.deps.settings.tickRate;
+    const ticks = (this.shotTicks.get(key) ?? []).filter((t) => t > this.tick - window);
+    ticks.push(this.tick);
+    this.shotTicks.set(key, ticks);
+    const allowed = Math.ceil(rpm / 60) + 1;
+    if (ticks.length > allowed)
+      this.reportAnomaly(shooter, 'fire_rate', {
+        shots: ticks.length,
+        allowed,
+        weapon: shooter.weaponId,
+      });
   }
 
   private recordHistory(): void {
