@@ -1,0 +1,854 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "s-fix-quotes",
+      "tier": 1,
+      "topic": ["where", "text"],
+      "title": "Branch Without Quotes",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return the **owner** of every account at the **{branch}** branch. The query below fails: fix it.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "branch": {
+          "kind": "pick",
+          "from": ["North", "South", "East", "West", "Harbor"]
+        }
+      },
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT owner FROM accounts WHERE branch = {branch};"
+      },
+      "reference_sql": "SELECT owner FROM accounts WHERE branch = {branch|sql};",
+      "hints": [
+        {
+          "text": "Text values need single quotes.",
+          "cost": 0.05
+        }
+      ]
+    },
+    {
+      "slug": "s-fix-having",
+      "tier": 2,
+      "topic": ["having", "group-by"],
+      "title": "Busy Accounts",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **account_id** and the number of transactions for accounts with **more than one** transaction.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT account_id, COUNT(*) FROM transactions WHERE COUNT(*) > 1 GROUP BY account_id;"
+      },
+      "reference_sql": "SELECT account_id, COUNT(*) FROM transactions GROUP BY account_id HAVING COUNT(*) > 1;",
+      "hints": [
+        {
+          "text": "Conditions on COUNT() go in HAVING, after GROUP BY.",
+          "cost": 0.05
+        }
+      ]
+    },
+    {
+      "slug": "s-fix-join-key",
+      "tier": 2,
+      "topic": ["join"],
+      "title": "Wrong Match",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return each transaction's **id**, **amount** and the account **owner**. The join pairs the wrong rows.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT t.id, t.amount, a.owner FROM transactions t JOIN accounts a ON a.id = t.id;"
+      },
+      "reference_sql": "SELECT t.id, t.amount, a.owner FROM transactions t JOIN accounts a ON a.id = t.account_id;",
+      "hints": [
+        {
+          "text": "Which column of transactions points at an account?",
+          "cost": 0.05
+        }
+      ]
+    },
+    {
+      "slug": "s-fix-null",
+      "tier": 1,
+      "topic": ["null"],
+      "title": "Who Has No Manager",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return the **name** of every employee without a manager. The query returns nothing: fix it.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT name FROM employees WHERE manager_id = NULL;"
+      },
+      "reference_sql": "SELECT name FROM employees WHERE manager_id IS NULL;",
+      "hints": [
+        {
+          "text": "Nothing is equal to NULL, not even NULL.",
+          "cost": 0.05
+        }
+      ]
+    },
+    {
+      "slug": "s-fix-precedence",
+      "tier": 2,
+      "topic": ["and", "or"],
+      "title": "Rich in Two Branches",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **id** and **owner** of accounts in **North** or **South** with a balance over **{min_balance}**. The query lets poor North accounts through.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "min_balance": {
+          "kind": "int",
+          "min": 10000,
+          "max": 16000,
+          "step": 500
+        }
+      },
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT id, owner FROM accounts WHERE branch = 'North' OR branch = 'South' AND balance > {min_balance};"
+      },
+      "reference_sql": "SELECT id, owner FROM accounts WHERE (branch = 'North' OR branch = 'South') AND balance > {min_balance};",
+      "hints": [
+        {
+          "text": "AND binds tighter than OR.",
+          "cost": 0.05
+        }
+      ],
+      "allow_empty": true
+    },
+    {
+      "slug": "s-fix-int-average",
+      "tier": 2,
+      "topic": ["avg", "aggregate"],
+      "title": "Average Balance per Branch",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return each **branch** and its **average balance**, with decimals. The query rounds down.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT branch, SUM(balance) / COUNT(*) FROM accounts GROUP BY branch;"
+      },
+      "reference_sql": "SELECT branch, AVG(balance) FROM accounts GROUP BY branch;",
+      "hints": [
+        {
+          "text": "Integer divided by integer is an integer in SQLite.",
+          "cost": 0.05
+        }
+      ]
+    },
+    {
+      "slug": "s-fix-left-join-where",
+      "tier": 3,
+      "topic": ["left-join", "count"],
+      "title": "Deposits per Account",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "For **every** account return **id** and how many deposits (amount > 0) it has, including accounts with 0. Some accounts go missing.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT a.id, COUNT(t.id) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id WHERE t.amount > 0 GROUP BY a.id;"
+      },
+      "reference_sql": "SELECT a.id, COUNT(t.id) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id AND t.amount > 0 GROUP BY a.id;",
+      "hints": [
+        {
+          "text": "A WHERE on the right table throws away the rows the LEFT JOIN kept.",
+          "cost": 0.05
+        }
+      ]
+    },
+    {
+      "slug": "s-fix-count-star-left",
+      "tier": 3,
+      "topic": ["left-join", "count"],
+      "title": "Zero Is Not One",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "For every account return **id** and its number of transactions. Accounts with none should show **0**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT a.id, COUNT(*) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id GROUP BY a.id;"
+      },
+      "reference_sql": "SELECT a.id, COUNT(t.id) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id GROUP BY a.id;",
+      "hints": [
+        {
+          "text": "COUNT(*) counts the NULL row a LEFT JOIN adds; count a column of transactions.",
+          "cost": 0.05
+        }
+      ]
+    },
+    {
+      "slug": "s-fix-distinct",
+      "tier": 1,
+      "topic": ["distinct"],
+      "title": "Branch List",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return each **branch** that has an account, **once**.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT branch FROM accounts;"
+      },
+      "reference_sql": "SELECT DISTINCT branch FROM accounts;",
+      "hints": []
+    },
+    {
+      "slug": "s-fix-order-direction",
+      "tier": 1,
+      "topic": ["order-by", "top-n"],
+      "title": "The Three Richest",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **id** and **balance** of the three accounts with the **highest** balance (ties: lowest id first), richest first.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fix",
+        "broken_sql": "SELECT id, balance FROM accounts ORDER BY balance, id LIMIT 3;"
+      },
+      "reference_sql": "SELECT id, balance FROM accounts ORDER BY balance DESC, id LIMIT 3;",
+      "hints": [],
+      "order_matters": true
+    }
+  ]
+}
