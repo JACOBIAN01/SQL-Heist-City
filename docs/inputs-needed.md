@@ -24,7 +24,7 @@ What the phases need that code cannot invent. Work goes ahead without waiting: e
 | 11 | A legal reviewer for the privacy policy, terms and school agreement I draft (COPPA, GDPR, India DPDP) and the school consent wording | 21 |
 | 12 | An IARC account for the content rating (a questionnaire only the publisher can submit) | 21.7 |
 | 13 | 2–3 schools and teachers for the pilot, with their consent forms; real students for usability tests | 23.6, 24 |
-| 14 | An external penetration tester (a vendor or person you trust) | 18.6 |
+| 14 | An external penetration tester (a vendor or person you trust), a staging environment and test accounts. The brief to send them is ready: `docs/pentest-brief.md` (fill in the bracketed items) | 18.6 |
 | 15 | Cloud machines for the 100- and 200-player load test (otherwise only local numbers are recorded) | 19.1 |
 
 ## Needed after launch (phases 26–36)
