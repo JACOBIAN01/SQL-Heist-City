@@ -93,6 +93,35 @@
           "text": "Text values need single quotes.",
           "cost": 0.05
         }
+      ],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
       ]
     },
     {
@@ -181,6 +210,35 @@
           "text": "Conditions on COUNT() go in HAVING, after GROUP BY.",
           "cost": 0.05
         }
+      ],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
       ]
     },
     {
@@ -268,6 +326,35 @@
         {
           "text": "Which column of transactions points at an account?",
           "cost": 0.05
+        }
+      ],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
         }
       ]
     },
@@ -417,7 +504,36 @@
           "cost": 0.05
         }
       ],
-      "allow_empty": true
+      "allow_empty": true,
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-fix-int-average",
@@ -504,6 +620,35 @@
         {
           "text": "Integer divided by integer is an integer in SQLite.",
           "cost": 0.05
+        }
+      ],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
         }
       ]
     },
@@ -593,6 +738,35 @@
           "text": "A WHERE on the right table throws away the rows the LEFT JOIN kept.",
           "cost": 0.05
         }
+      ],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
       ]
     },
     {
@@ -681,6 +855,35 @@
           "text": "COUNT(*) counts the NULL row a LEFT JOIN adds; count a column of transactions.",
           "cost": 0.05
         }
+      ],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
       ]
     },
     {
@@ -764,7 +967,36 @@
         "broken_sql": "SELECT branch FROM accounts;"
       },
       "reference_sql": "SELECT DISTINCT branch FROM accounts;",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-fix-order-direction",
@@ -848,7 +1080,36 @@
       },
       "reference_sql": "SELECT id, balance FROM accounts ORDER BY balance DESC, id LIMIT 3;",
       "hints": [],
-      "order_matters": true
+      "order_matters": true,
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     }
   ]
 }

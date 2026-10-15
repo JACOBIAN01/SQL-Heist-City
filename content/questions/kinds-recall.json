@@ -406,7 +406,36 @@
         ]
       },
       "reference_sql": "",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "r-fill-left-join",
@@ -494,7 +523,36 @@
         ]
       },
       "reference_sql": "",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "r-fill-is-null",
@@ -744,7 +802,36 @@
         ]
       },
       "reference_sql": "",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "r-choice-having",
@@ -1080,7 +1167,36 @@
         "show": "query"
       },
       "reference_sql": "",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "r-choice-union",
@@ -1191,7 +1307,36 @@
         "show": "query"
       },
       "reference_sql": "",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "r-choice-dense-rank",

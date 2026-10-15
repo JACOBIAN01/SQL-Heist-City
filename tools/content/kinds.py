@@ -754,6 +754,24 @@ briefs = [
           'Write the **whole plan** for the next heist: the target branch, the accounts, the timing and the split. Use CTEs so each step can be checked on its own, and end with one query that shows the plan.'),
 ]
 
+# --- 17.12 Story themes: the bank questions also come as a casino --------------------------------
+
+CASINO = {
+    'name': 'casino',
+    'tables': {'accounts': 'players', 'transactions': 'bets'},
+    'columns': {'balance': 'chips', 'branch': 'floor', 'account_id': 'player_id'},
+    'words': {
+        'account': 'player', 'accounts': 'players', 'transaction': 'bet', 'transactions': 'bets',
+        'branch': 'floor', 'branches': 'floors', 'balance': 'chips', 'balances': 'chips',
+        'bank': 'casino', 'deposit': 'win', 'deposits': 'wins', 'withdrawal': 'loss', 'withdrawals': 'losses',
+    },
+}
+
+for group in (recall, fixes, fasters, writes, defends):
+    for question in group:
+        if question['data_gen'] is BANK_DATA:
+            question['themes'] = [CASINO]
+
 FILES = {
     'kinds-recall.json': recall,
     'kinds-predict.json': predicts,

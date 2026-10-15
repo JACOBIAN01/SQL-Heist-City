@@ -92,7 +92,36 @@
         "check_sql": "SELECT id, owner, branch, balance FROM accounts"
       },
       "reference_sql": "INSERT INTO accounts (id, owner, branch, balance, opened) VALUES (1000, {owner|sql}, {branch|sql}, 0, '2026-01-01');",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-write-update-branch",
@@ -186,7 +215,36 @@
         "check_sql": "SELECT id, owner, branch, balance FROM accounts"
       },
       "reference_sql": "UPDATE accounts SET balance = balance + {amount} WHERE branch = {branch|sql};",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-write-delete",
@@ -276,7 +334,36 @@
         "check_sql": "SELECT id FROM transactions"
       },
       "reference_sql": "DELETE FROM transactions WHERE amount BETWEEN -{amount} AND {amount};",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-write-update-subquery",
@@ -359,7 +446,36 @@
         "check_sql": "SELECT id, owner, branch, balance FROM accounts"
       },
       "reference_sql": "UPDATE accounts SET balance = 0 WHERE id NOT IN (SELECT account_id FROM transactions);",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-write-create-as",
@@ -449,7 +565,36 @@
         "check_sql": "SELECT id, owner FROM vip"
       },
       "reference_sql": "CREATE TABLE vip AS SELECT id, owner FROM accounts WHERE balance > {min_balance};",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-write-transfer",
@@ -544,6 +689,35 @@
           "text": "Two UPDATE statements, one per account.",
           "cost": 0.05
         }
+      ],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
       ]
     },
     {
@@ -634,7 +808,36 @@
         "check_sql": "SELECT id, account_id, amount, at FROM transactions"
       },
       "reference_sql": "INSERT INTO transactions (id, account_id, amount, at) VALUES (9001, 1, {amount}, '2026-01-02'), (9002, 2, {amount}, '2026-01-02'), (9003, 3, {amount}, '2026-01-02');",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-write-update-case",
@@ -717,7 +920,36 @@
         "check_sql": "SELECT id, owner, branch, balance FROM accounts"
       },
       "reference_sql": "UPDATE accounts SET balance = CASE WHEN balance < 1000 THEN balance + 100 WHEN balance > 15000 THEN balance - 50 ELSE balance END;",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-write-delete-subquery",
@@ -805,7 +1037,36 @@
         "check_sql": "SELECT id, owner, branch, balance FROM accounts"
       },
       "reference_sql": "DELETE FROM accounts WHERE branch = {branch|sql} AND id NOT IN (SELECT account_id FROM transactions);",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-write-create-insert",
@@ -888,7 +1149,36 @@
         "check_sql": "SELECT branch, total FROM branch_totals"
       },
       "reference_sql": "CREATE TABLE branch_totals (branch TEXT, total INTEGER); INSERT INTO branch_totals SELECT branch, SUM(balance) FROM accounts GROUP BY branch;",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     }
   ]
 }

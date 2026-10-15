@@ -95,7 +95,36 @@
           "cost": 0.05
         }
       ],
-      "allow_empty": true
+      "allow_empty": true,
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-faster-arithmetic",
@@ -186,7 +215,36 @@
         "max_scans": 0
       },
       "reference_sql": "SELECT id FROM accounts WHERE balance > {min_balance};",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-faster-year",
@@ -280,6 +338,35 @@
           "text": "Compare `at` itself with the year's first and last day.",
           "cost": 0.05
         }
+      ],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
       ]
     },
     {
@@ -369,7 +456,36 @@
         "max_scans": 0
       },
       "reference_sql": "SELECT owner FROM accounts WHERE branch = {branch|sql};",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-faster-coalesce",
@@ -458,7 +574,36 @@
         "max_scans": 0
       },
       "reference_sql": "SELECT id FROM accounts WHERE branch = {branch|sql};",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-faster-month",
@@ -585,7 +730,36 @@
       },
       "reference_sql": "SELECT id, amount FROM transactions WHERE at BETWEEN '{month}-01' AND '{month}-31';",
       "hints": [],
-      "allow_empty": true
+      "allow_empty": true,
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-faster-rowid",
@@ -675,7 +849,36 @@
         "max_scans": 0
       },
       "reference_sql": "SELECT id, owner, balance FROM accounts WHERE id = {acc} + 1;",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-faster-max",
@@ -766,7 +969,36 @@
         "max_scans": 0
       },
       "reference_sql": "SELECT MAX(balance) FROM accounts WHERE balance <= {cap};",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-faster-correlated",
@@ -850,7 +1082,36 @@
         "max_scans": 1
       },
       "reference_sql": "SELECT a.id, (SELECT COUNT(*) FROM transactions t WHERE t.account_id = a.id) FROM accounts a;",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     },
     {
       "slug": "s-faster-join",
@@ -939,7 +1200,36 @@
         "max_scans": 0
       },
       "reference_sql": "SELECT t.id, t.amount FROM transactions t JOIN accounts a ON a.id = t.account_id WHERE a.branch = {branch|sql};",
-      "hints": []
+      "hints": [],
+      "themes": [
+        {
+          "name": "casino",
+          "tables": {
+            "accounts": "players",
+            "transactions": "bets"
+          },
+          "columns": {
+            "balance": "chips",
+            "branch": "floor",
+            "account_id": "player_id"
+          },
+          "words": {
+            "account": "player",
+            "accounts": "players",
+            "transaction": "bet",
+            "transactions": "bets",
+            "branch": "floor",
+            "branches": "floors",
+            "balance": "chips",
+            "balances": "chips",
+            "bank": "casino",
+            "deposit": "win",
+            "deposits": "wins",
+            "withdrawal": "loss",
+            "withdrawals": "losses"
+          }
+        }
+      ]
     }
   ]
 }
