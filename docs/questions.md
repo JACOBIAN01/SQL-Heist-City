@@ -33,7 +33,7 @@ All questions are **data** (DB rows, editable in admin). This doc defines format
 Seed = hash(matchSeed, playerId, rewardType, attemptCounter).
 1. Params resolved from seed (`pick`, `int`, `date`, `bool`).
 2. Table data generated from seed via `DataGenerator`s (`serial`, `pick`, `int`, `real`, `date`, `text_pattern`, `fk`, `weighted`) — a Factory keyed by `kind` (Open/Closed: new generator = new class).
-3. Optional structural variants: table/column renames, story theme swap.
+3. Optional structural variants (Phase 17.12): a question's `themes` list (`name`, optional `title`, `tables` and `columns` rename maps, `words` for prose). Each player gets the plain question or one theme, from its own seed stream (`<seed>/theme`), so adding a theme never changes params or data. Renames apply to the schema, generated tables, reference and every task SQL (whole words, never inside '…' literals); `words` swap in the story, prompts and options (capitals kept), and names in `code` spans and **bold** are renamed like SQL. The template refuses renames of names that do not exist or that clash. The bank-based task-kind questions all have a `casino` theme (accounts → players, transactions → bets, balance → chips, branch → floor).
 4. Reference SQL on generated data = expected result; a copied query returns different rows → fails.
 5. Selector never repeats a question for the same player+reward until the pool is exhausted.
 6. Guards at save and in `questions:validate`: ≥1 row (unless allowed), ≤ row cap, at most 5% of player pairs (seed pairs) share the same answer, measured on 100 seeds, runtime <200 ms.
