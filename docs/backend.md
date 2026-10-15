@@ -102,6 +102,23 @@ Defaults in `shared/config/defaults.ts`; DB `settings` override; hot-reloaded on
 ## Observability
 `/metrics` (tick ms p50/p95/p99, players, bytes/s, grader queue depth, grading ms); structured logs (pino); never log reference SQL at info.
 
+## Rate limits (Phase 18.2)
+Defaults in `shared/src/config/rateLimits.ts`; operators override with `RATE_LIMITS` (JSON merged over the defaults, on both the game server and the admin). Per-address limits are sized for a whole class behind one school address; tighter limits are per account or per connection. Behind a proxy set `TRUST_PROXY=1` so the first `X-Forwarded-For` address counts (otherwise the header is ignored).
+
+| What | Limit (default) | Over it |
+|---|---|---|
+| New sockets per address (all `/ws/*`) | burst 400, 1200/min | 429 on the upgrade |
+| Game socket messages per connection | 120/s | closed (1008) |
+| Challenge, practice, assessment socket messages per connection | burst 20, 240/min | closed (4008) |
+| Challenge request / Run / Submit per player | 3 s / 1.5 s / 2 s gaps, lockout after a wrong answer | `rate_limited` / `locked` |
+| Game server HTTP (lobby, class status, health, metrics) per address | burst 400, 2400/min | 429 |
+| Admin API per address | burst 120, 600/min | 429 |
+| Sign-in routes (staff login, Google sign-in, tickets, class join) per address | burst 400, 1200/min | 429 |
+| Failed staff logins per account | 5 per 15 min | 429 |
+| Class-code guesses per player | 8, then 8/min | 429 |
+
+Every row has a test that goes over it.
+
 ## Anti-cheat basics
 Validate speed/teleport, fire rate, ammo, line of sight, challenge binding. Client trust = none.
 
