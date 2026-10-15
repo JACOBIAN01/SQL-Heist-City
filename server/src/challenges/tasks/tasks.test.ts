@@ -319,4 +319,44 @@ describe('task kinds', () => {
     });
     expect(plain.ok && plain.challenge.dialect).toBeUndefined();
   });
+
+  it('one grading job in flight per player: a flood is turned away, others are not slowed (19.3)', async () => {
+    const slowRunner = new InProcessSandboxRunner();
+    const delayed = {
+      run: async (j: Parameters<typeof slowRunner.run>[0]) => {
+        await new Promise((r) => setTimeout(r, 50));
+        return slowRunner.run(j);
+      },
+      close: async () => {},
+    };
+    const repo = new InMemoryQuestionRepository();
+    repo.create(
+      questionTemplateSchema.parse({
+        ...sampleQuestion,
+        ...fixed,
+        reference_sql: 'SELECT id FROM accounts',
+      }),
+      null,
+    );
+    let clock = 0;
+    const service = new ChallengeService({
+      matchSeed: 'm',
+      selector: new QuestionSelector(repo),
+      variants: new VariantBuilder(builtInDatasets),
+      grader: new Grader(delayed),
+      settings: new StaticSettings(),
+      now: () => (clock += 10_000),
+    });
+    const mine = await service.issue({ player: 'flood', rewardKey: 'heal:small' });
+    const theirs = await service.issue({ player: 'calm', rewardKey: 'heal:small' });
+    if (!mine.ok || !theirs.ok) throw new Error('issue failed');
+    const [run, submit, other] = await Promise.all([
+      service.run('flood', mine.challenge.id, 'SELECT 1'),
+      service.submit('flood', mine.challenge.id, 'SELECT id FROM accounts'),
+      service.submit('calm', theirs.challenge.id, 'SELECT id FROM accounts'),
+    ]);
+    expect(run.ok).toBe(true);
+    expect(submit).toMatchObject({ status: 'rejected', reason: 'rate_limited' });
+    expect(other.status).toBe('correct');
+  });
 });

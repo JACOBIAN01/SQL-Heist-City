@@ -135,6 +135,9 @@ interface ActiveChallenge {
   finished: boolean;
 }
 
+/** When to try again while your previous Run or Submit is still being graded. */
+const BUSY_RETRY_MS = 500;
+
 /** Questions to try when a reference query turns out broken for a seed. */
 const MAX_ISSUE_ATTEMPTS = 3;
 
@@ -148,6 +151,11 @@ export class ChallengeService {
   /** Per player + reward attempt counter → part of the seed, so retries get new variants. */
   private readonly attempts = new Map<string, number>();
   private readonly lastRequestAt = new Map<string, number>();
+  /**
+   * Players with a Run or Submit being graded now: one job in flight each, so a flooding client
+   * can hold at most one sandbox slot and never starve the class (Phase 19.3).
+   */
+  private readonly grading = new Set<string>();
   private readonly now: () => number;
   private readonly newId: () => string;
   private readonly examples: ExampleBuilder;
@@ -291,10 +299,18 @@ export class ChallengeService {
     if (now - challenge.lastRunAt < runCooldownMs) {
       return { ok: false, reason: 'rate_limited', retryAt: challenge.lastRunAt + runCooldownMs };
     }
+    if (this.grading.has(player))
+      return { ok: false, reason: 'rate_limited', retryAt: now + BUSY_RETRY_MS };
     challenge.lastRunAt = now;
     challenge.lastSql = sql;
 
-    const preview = await this.deps.grader.preview(challenge.variant, sql);
+    this.grading.add(player);
+    let preview;
+    try {
+      preview = await this.deps.grader.preview(challenge.variant, sql);
+    } finally {
+      this.grading.delete(player);
+    }
     if (preview.status !== 'unavailable') {
       challenge.runs++;
       this.note(challenge, 'run', { ok: preview.status === 'ok' });
@@ -325,11 +341,19 @@ export class ChallengeService {
         retryAt: challenge.lastSubmitAt + settings.submitCooldownMs,
       };
     }
+    if (this.grading.has(player))
+      return { status: 'rejected', reason: 'rate_limited', retryAt: now + BUSY_RETRY_MS };
     challenge.lastSubmitAt = now;
     if (sql) challenge.lastSql = sql;
 
     const { handler, ctx, prepared } = challenge.task;
-    const grade = await handler.grade(ctx, prepared, { sql, ...(answer ? { answer } : {}) });
+    this.grading.add(player);
+    let grade;
+    try {
+      grade = await handler.grade(ctx, prepared, { sql, ...(answer ? { answer } : {}) });
+    } finally {
+      this.grading.delete(player);
+    }
     // The challenge may have been replaced or solved while grading ran.
     if (this.byPlayer.get(player) !== challenge || challenge.solved) {
       return { status: 'rejected', reason: challenge.solved ? 'already_solved' : 'not_found' };
