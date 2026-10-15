@@ -1,3 +1,4 @@
+import { assertSecrets } from '@heist/server/config/secrets';
 import { rateLimitsFrom } from '@heist/shared';
 import { fileURLToPath } from 'node:url';
 import { openStores } from './openStores';
@@ -16,6 +17,11 @@ const opened = await openStores(dbPath);
 
 // Google sign-in for players. Off until GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set (docs/identity.md).
 const production = process.env.NODE_ENV === 'production';
+// Player sign-in is optional, so its secrets are checked only when set.
+assertSecrets(process.env, {
+  required: [],
+  optional: ['TICKET_SECRET', 'COOKIE_SECRET', 'INTERNAL_SECRET'],
+});
 const ticketSecret = process.env.TICKET_SECRET ?? (production ? undefined : 'dev-ticket-secret');
 const googleConfigured = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 const devLogin = process.env.DEV_LOGIN === '1' && !production;

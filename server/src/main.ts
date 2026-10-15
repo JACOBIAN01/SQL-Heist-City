@@ -1,3 +1,4 @@
+import { assertSecrets } from './config/secrets';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { attachAssessmentSocket } from './challenges/AssessmentSocket';
@@ -88,6 +89,7 @@ const production = process.env.NODE_ENV === 'production';
 const ticketSecret = process.env.TICKET_SECRET ?? (production ? undefined : 'dev-ticket-secret');
 const requireTicket = production || process.env.REQUIRE_TICKET === '1';
 if (production && !ticketSecret) throw new Error('TICKET_SECRET is required in production');
+assertSecrets(process.env, { required: ['TICKET_SECRET'], optional: ['INTERNAL_SECRET'] });
 const auth = ticketSecret ? ticketAuth(ticketSecret, requireTicket) : undefined;
 // Class rooms (one match per class, in its own thread) exist when PostgreSQL holds the classes.
 const classResults = pg ? new PgClassResults(pg) : undefined;
