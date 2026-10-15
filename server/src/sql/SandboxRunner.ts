@@ -4,6 +4,11 @@ import { SandboxError, SqlSandbox } from './SqlSandbox';
 export interface SandboxQuery {
   readonly sql: string;
   readonly maxRows?: number;
+  /**
+   * `query` (default) runs a read-only query; `plan` returns its plan lines as one column;
+   * `write` runs a write task's statements (the job's database is then writable until the next query).
+   */
+  readonly mode?: 'query' | 'plan' | 'write';
 }
 
 /** One unit of work: build the DB once, run several queries (e.g. student + reference). */
@@ -37,7 +42,9 @@ export interface SandboxRunner {
 export function executeJob(job: SandboxJob): JobOutcome {
   let sandbox: SqlSandbox;
   try {
-    sandbox = SqlSandbox.create(job.data);
+    sandbox = SqlSandbox.create(job.data, {
+      writable: job.queries.some((q) => q.mode === 'write'),
+    });
   } catch (err) {
     return { ok: false, code: 'setup', message: (err as Error).message };
   }
@@ -46,6 +53,20 @@ export function executeJob(job: SandboxJob): JobOutcome {
       ok: true,
       outcomes: job.queries.map((q): QueryOutcome => {
         try {
+          if (q.mode === 'write') {
+            sandbox.write(q.sql);
+            return { ok: true, result: { columns: [], rows: [], truncated: false } };
+          }
+          sandbox.lockReadOnly();
+          if (q.mode === 'plan')
+            return {
+              ok: true,
+              result: {
+                columns: ['detail'],
+                rows: sandbox.plan(q.sql).map((d) => [d]),
+                truncated: false,
+              },
+            };
           return { ok: true, result: sandbox.query(q.sql, q.maxRows) };
         } catch (err) {
           if (err instanceof SandboxError)

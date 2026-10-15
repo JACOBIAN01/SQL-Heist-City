@@ -1,6 +1,6 @@
 import { DatabaseSync, constants } from 'node:sqlite';
 import type { GeneratedTables, SqlValue } from '../variants/dataGenerators';
-import { checkSingleQuery } from './statement';
+import { checkSingleQuery, checkWriteStatements } from './statement';
 
 export interface QueryResult {
   readonly columns: readonly string[];
@@ -45,8 +45,11 @@ const DENIED_FUNCTIONS = new Set(['load_extension', 'fts3_tokenizer', 'readfile'
 export class SqlSandbox {
   private constructor(private readonly db: DatabaseSync) {}
 
-  /** Builds a fresh in-memory database for one challenge. */
-  static create(data: SandboxData): SqlSandbox {
+  /**
+   * Builds a fresh in-memory database for one challenge. `writable` (write tasks only) lets the
+   * student change the tables first; `lockReadOnly` then closes it again for the checks.
+   */
+  static create(data: SandboxData, options: { writable?: boolean } = {}): SqlSandbox {
     const db = new DatabaseSync(':memory:', {
       defensive: true,
       allowExtension: false,
@@ -60,9 +63,48 @@ export class SqlSandbox {
     });
     db.exec(data.schemaSql);
     loadTables(db, data.tables);
-    db.exec('PRAGMA query_only = 1');
-    db.setAuthorizer(authorize);
-    return new SqlSandbox(db);
+    const sandbox = new SqlSandbox(db);
+    if (options.writable) db.setAuthorizer(authorizeWrite);
+    else sandbox.lockReadOnly();
+    return sandbox;
+  }
+
+  /** From now on only reads (the checks of a write task). */
+  lockReadOnly(): void {
+    this.db.setAuthorizer(null);
+    this.db.exec('PRAGMA query_only = 1');
+    this.db.setAuthorizer(authorize);
+  }
+
+  /** Runs a write task's statements (Phase 17.8). Throws SandboxError on anything not allowed. */
+  write(sql: string): void {
+    const check = checkWriteStatements(sql);
+    if (!check.ok)
+      throw new SandboxError(
+        check.reason,
+        check.reason === 'not_a_query'
+          ? 'Only INSERT, UPDATE, DELETE and CREATE statements are allowed here.'
+          : check.reason === 'multiple_statements'
+            ? 'Too many statements (at most 10).'
+            : PRECHECK_MESSAGES[check.reason],
+      );
+    try {
+      for (const statement of check.statements) this.db.exec(statement);
+    } catch (err) {
+      throw toSandboxError(err);
+    }
+  }
+
+  /** The plan of a read-only query, one line per step (EXPLAIN QUERY PLAN). */
+  plan(sql: string): string[] {
+    const check = checkSingleQuery(sql);
+    if (!check.ok) throw new SandboxError(check.reason, PRECHECK_MESSAGES[check.reason]);
+    try {
+      const rows = this.db.prepare(`EXPLAIN QUERY PLAN ${check.sql}`).all() as { detail: string }[];
+      return rows.map((r) => r.detail);
+    } catch (err) {
+      throw toSandboxError(err);
+    }
   }
 
   /** Runs one untrusted read-only query. Throws SandboxError on anything else. */
@@ -129,6 +171,24 @@ function authorize(action: number, arg1: string | null, arg2: string | null): nu
         : constants.SQLITE_OK;
     default:
       return constants.SQLITE_DENY;
+  }
+}
+
+/**
+ * Authorizer for a write task: reads, plus changing and creating ordinary tables and indexes.
+ * Still no ATTACH, PRAGMA, DROP of the question's tables, transactions or dangerous functions.
+ */
+function authorizeWrite(action: number, arg1: string | null, arg2: string | null): number {
+  switch (action) {
+    case constants.SQLITE_INSERT:
+    case constants.SQLITE_UPDATE:
+    case constants.SQLITE_DELETE:
+    case constants.SQLITE_CREATE_TABLE:
+    case constants.SQLITE_CREATE_INDEX:
+      // Creating a table writes the schema table; direct writes to it are still refused by defensive mode.
+      return constants.SQLITE_OK;
+    default:
+      return authorize(action, arg1, arg2);
   }
 }
 

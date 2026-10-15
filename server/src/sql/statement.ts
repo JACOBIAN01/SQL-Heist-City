@@ -10,6 +10,29 @@ export type StatementCheck =
 
 const ALLOWED_FIRST_KEYWORDS = new Set(['SELECT', 'WITH']);
 
+/** First keywords a write task may start a statement with. */
+const WRITE_KEYWORDS = new Set(['INSERT', 'UPDATE', 'DELETE', 'CREATE', 'REPLACE', 'WITH']);
+
+/**
+ * Checks a write task's statements (Phase 17.8): a few INSERT/UPDATE/DELETE/CREATE statements.
+ * The authorizer still decides what each may touch.
+ */
+export function checkWriteStatements(
+  input: string,
+  maxStatements = 10,
+):
+  | { ok: true; statements: string[] }
+  | { ok: false; reason: 'unterminated' | 'empty' | 'multiple_statements' | 'not_a_query' } {
+  const scan = scanStatements(input);
+  if (scan === 'unterminated') return { ok: false, reason: 'unterminated' };
+  const statements = scan.filter((s) => s.hasCode);
+  if (statements.length === 0) return { ok: false, reason: 'empty' };
+  if (statements.length > maxStatements) return { ok: false, reason: 'multiple_statements' };
+  if (statements.some((s) => !WRITE_KEYWORDS.has(s.firstWord.toUpperCase())))
+    return { ok: false, reason: 'not_a_query' };
+  return { ok: true, statements: statements.map((s) => s.text.trim()) };
+}
+
 export function checkSingleQuery(input: string): StatementCheck {
   const scan = scanStatements(input);
   if (scan === 'unterminated') return { ok: false, reason: 'unterminated' };
