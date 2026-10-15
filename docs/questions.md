@@ -93,3 +93,5 @@ JSON → admin import `--dry-run` → fix → `npm run questions:validate` → t
 
 ## Dialect
 SQLite 3.4x (CTEs, recursive CTEs, window functions). Stories note quirks (e.g. `strftime`); admin shows a dialect cheat-sheet.
+
+**Dialect packs (Phase 17.14).** Grading always runs SQLite, but a class can say which dialect its students learn (class setting `dialect`: `sqlite`, `postgres` or `mysql`). A pack (settings section `dialects`, edited under Settings → Dialect packs) has a short intro and one entry per quirk: `integer-division`, `string-concat`, `limit-offset`, `dates`, `like-case`, `bare-columns`, `nulls-order`, `upsert`, `types`, `autoincrement`, `boolean`, `quoting` — each a note plus the SQLite and the dialect form. A question's quirks are its own `quirks` list plus what `detectQuirks` finds in its reference and task SQL. When a class is not on SQLite, the pop-up shows "<Dialect> notes": the entries this question touches first (open), and the rest of the pack as the cheat-sheet.

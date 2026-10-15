@@ -34,7 +34,7 @@
 | 14 | Classroom mode | ✅ |
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
 | 16 | Teaching loop | ✅ |
-| 17 | Question types and content (filling R, C, B, E) | 🟨 17.1–17.13 done |
+| 17 | Question types and content (filling R, C, B, E) | ✅ |
 | 18 | Security hardening | ⬜ |
 | 19 | Scale proof | ⬜ |
 | 20 | Operations and deployment | ⬜ |
@@ -359,7 +359,7 @@ Fixes audit cons 5 and 6: the game teaches as well as tests, and weaker students
 | 16.10 | Pre/post assessment: a short test before and after a unit; the gain shown per RCSBE dimension and Bloom level | the teacher can run both and see the gain on the radars | ✅ the class editor sets a pre- and post-test from the class's questions (no hints, one go each, same questions for all); students take them from the waiting room; answers count in their own scope; the Learning page's Gain tab shows class radars and each student's change per dimension |
 
 ---
-## Phase 17 — Question types and content (filling R, C, B and E)  ⬜
+## Phase 17 — Question types and content (filling R, C, B and E)  ✅
 Today every question is Solve. This phase adds the question types that measure Recall, Comprehend, Build and Evaluate (docs/RCBSE.md §10). It also covers every Bloom level, the backlog's structural variants and dialect packs (audit con 20).
 
 | # | Subphase | Done when | Status |
@@ -377,7 +377,7 @@ Today every question is Solve. This phase adds the question types that measure R
 | 17.11 | Rubric review queue in the admin for Build (and free-text Evaluate): rubrics per brief, batch marking, marks flow into profiles | a teacher marks 30 briefs and profiles update | ✅ admin "Briefs to mark": per-criterion marks, Save and next, re-marks; marks go into the profile and are audited (a teacher marking 30 is covered by the same flow, tested on 2) |
 | 17.12 | Structural variants: table and column renames, story-theme swaps (designed in questions.md) | one question renders under two themes with the same grading | ✅ `themes` on a question; 46 bank questions render as a casino too, same grading (QA runs 100 seeds across both) |
 | 17.13 | Coverage: new content until every tier has every RCSBE dimension and every Bloom level | the coverage report shows no empty cell | ✅ 10 questions in kinds-coverage.json; the QA gate prints the tier grid and fails on an empty cell (none left: 268 questions) |
-| 17.14 | Dialect packs: PostgreSQL and MySQL notes and per-dialect cheat-sheets; quirks flagged per question | a class can pick a dialect pack; the pop-up shows its notes | ⬜ |
+| 17.14 | Dialect packs: PostgreSQL and MySQL notes and per-dialect cheat-sheets; quirks flagged per question | a class can pick a dialect pack; the pop-up shows its notes | ✅ PostgreSQL and MySQL packs (12 quirks each, editable in Settings); class setting `dialect`; quirks found in each question's SQL; notes and cheat-sheet in the pop-up |
 
 ---
 ## Phase 18 — Security hardening  ⬜
