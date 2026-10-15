@@ -37,3 +37,22 @@ Secrets come from the environment (or the host's secret store injecting it):
 
 In production (`NODE_ENV=production`) both services refuse to start if a required secret is missing, if one is shorter than 32 characters or a development placeholder, or if two are the same. Rotate by setting the new value on both services and restarting them together; tickets last 60 s and admin sessions 12 h, so a rotation signs people out at most once.
 
+## Sizing: classes per server (Phase 19.4)
+Each class room is one match on its own thread; student SQL runs in a shared pool of sandbox processes (one per core minus one, plus two spares). Measured with `npm run capacity -w @heist/server -- --matches 1,2,4,7 --players 100` (matches ticking back to back on a laptop, so the CPU figures are an upper bound), and the socket test of 19.1 (sending adds about a third):
+
+| | one 100-player class | why it matters |
+|---|---|---|
+| Game CPU | 20–50 ms per second (2–5% of a core; the higher figure when 7 busy matches share the CPU) | the tick must stay under 15 ms |
+| Memory | ~70 MB per class room, plus ~45 MB per sandbox process and ~200 MB for the server itself | |
+| Grading | a few ms per Run or Submit; runaways are capped by the two-lane scheduler (19.3) | needs its own cores |
+
+Rule of thumb: half the cores for the game, half for grading; **4 classes of 100 per game core**. A 200-player class costs about three 100-player classes.
+
+| Machine | Classes of 100 at once | Memory to give it |
+|---|---|---|
+| 2 vCPU, 2 GB | 4 | ~1 GB used |
+| 4 vCPU, 4 GB | 8 | ~1.5 GB used |
+| 8 vCPU, 8 GB | 16 | ~2.5 GB used |
+
+Watch `/metrics` (tick p99, `anomalies`) and add a server before tick p99 passes 15 ms. These are laptop numbers; the cloud run of 19.1 should confirm them.
+
