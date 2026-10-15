@@ -1,0 +1,1422 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "r-fill-where",
+      "tier": 1,
+      "topic": ["where"],
+      "title": "Filter the Rows",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blank so the query returns only employees earning more than 5000.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT name FROM employees ___ salary > 5000;",
+        "blanks": [
+          {
+            "accept": ["WHERE"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-group-by",
+      "tier": 1,
+      "topic": ["group-by"],
+      "title": "One Row per Department",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blank so the query counts employees in each department.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT dept, COUNT(*) FROM employees ___ dept;",
+        "blanks": [
+          {
+            "accept": ["GROUP BY"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-having",
+      "tier": 2,
+      "topic": ["having"],
+      "title": "Only Big Departments",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blank so only departments with more than 3 employees are returned.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT dept, COUNT(*) FROM employees GROUP BY dept ___ COUNT(*) > 3;",
+        "blanks": [
+          {
+            "accept": ["HAVING"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-order-by",
+      "tier": 1,
+      "topic": ["order-by"],
+      "title": "Richest First",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blanks so the best paid employees come first.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT name, salary FROM employees ___ salary ___;",
+        "blanks": [
+          {
+            "accept": ["ORDER BY"]
+          },
+          {
+            "accept": ["DESC"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-distinct",
+      "tier": 1,
+      "topic": ["distinct"],
+      "title": "Each Department Once",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blank so each department appears only once.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT ___ dept FROM employees;",
+        "blanks": [
+          {
+            "accept": ["DISTINCT"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-limit",
+      "tier": 1,
+      "topic": ["limit", "top-n"],
+      "title": "Top Five",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blank so only the five best paid employees are returned.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT name FROM employees ORDER BY salary DESC ___ 5;",
+        "blanks": [
+          {
+            "accept": ["LIMIT"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-join",
+      "tier": 2,
+      "topic": ["join"],
+      "title": "Owners and Their Money Moves",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blanks to pair every transaction with its account.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT a.owner, t.amount FROM accounts a ___ transactions t ___ t.account_id = a.id;",
+        "blanks": [
+          {
+            "accept": ["JOIN", "INNER JOIN"]
+          },
+          {
+            "accept": ["ON"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-left-join",
+      "tier": 2,
+      "topic": ["left-join"],
+      "title": "Keep Quiet Accounts",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blank so accounts **without** transactions are kept too (with NULL amounts).",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT a.owner, t.amount FROM accounts a ___ transactions t ON t.account_id = a.id;",
+        "blanks": [
+          {
+            "accept": ["LEFT JOIN", "LEFT OUTER JOIN"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-is-null",
+      "tier": 1,
+      "topic": ["null"],
+      "title": "No Manager",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blank to find employees with no manager (an empty `manager_id`).",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT name FROM employees WHERE manager_id ___;",
+        "blanks": [
+          {
+            "accept": ["IS NULL"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-like",
+      "tier": 1,
+      "topic": ["like"],
+      "title": "Names Starting with A",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blank so the query finds names starting with A.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT name FROM employees WHERE name ___ 'A%';",
+        "blanks": [
+          {
+            "accept": ["LIKE"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-case",
+      "tier": 2,
+      "topic": ["case"],
+      "title": "Label the Pay",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blanks to label each salary as high or normal.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "SELECT name, ___ WHEN salary > 6000 THEN 'high' ELSE 'normal' ___ AS band FROM employees;",
+        "blanks": [
+          {
+            "accept": ["CASE"]
+          },
+          {
+            "accept": ["END"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-fill-with",
+      "tier": 3,
+      "topic": ["cte"],
+      "title": "Name the Subquery",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Fill the blanks to define a named subquery (a CTE) and use it.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "fill",
+        "text_sql": "___ big ___ (SELECT * FROM accounts WHERE balance > 10000) SELECT COUNT(*) FROM big;",
+        "blanks": [
+          {
+            "accept": ["WITH"]
+          },
+          {
+            "accept": ["AS"]
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-choice-having",
+      "tier": 1,
+      "topic": ["having", "where"],
+      "title": "Filter After Grouping",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Quick check.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which clause keeps or drops **groups** after `GROUP BY`?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "`HAVING`"
+              },
+              {
+                "id": "b",
+                "text_md": "`WHERE`"
+              },
+              {
+                "id": "c",
+                "text_md": "`ORDER BY`"
+              },
+              {
+                "id": "d",
+                "text_md": "`LIMIT`"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-choice-count-star",
+      "tier": 1,
+      "topic": ["count", "null"],
+      "title": "Counting Rows",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Quick check.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which one counts **every** row, even rows where `manager_id` is NULL?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "`COUNT(*)`"
+              },
+              {
+                "id": "b",
+                "text_md": "`COUNT(DISTINCT manager_id)`"
+              },
+              {
+                "id": "c",
+                "text_md": "`COUNT(manager_id)`"
+              },
+              {
+                "id": "d",
+                "text_md": "`SUM(manager_id)`"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-choice-clause-order",
+      "tier": 1,
+      "topic": ["select", "group-by"],
+      "title": "Clause Order",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Quick check.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "In which order are these clauses written?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "SELECT, WHERE, FROM, GROUP BY, ORDER BY, HAVING"
+              },
+              {
+                "id": "b",
+                "text_md": "SELECT, FROM, GROUP BY, WHERE, ORDER BY, HAVING"
+              },
+              {
+                "id": "c",
+                "text_md": "SELECT, FROM, WHERE, GROUP BY, HAVING, ORDER BY"
+              },
+              {
+                "id": "d",
+                "text_md": "FROM, SELECT, WHERE, HAVING, GROUP BY, ORDER BY"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-choice-left-join",
+      "tier": 1,
+      "topic": ["left-join", "join"],
+      "title": "Which Join Keeps Them",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Quick check.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which join keeps every account, even those with no transactions?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "`accounts JOIN transactions`"
+              },
+              {
+                "id": "b",
+                "text_md": "`accounts LEFT JOIN transactions`"
+              },
+              {
+                "id": "c",
+                "text_md": "`accounts INNER JOIN transactions`"
+              },
+              {
+                "id": "d",
+                "text_md": "`transactions LEFT JOIN accounts`"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-choice-union",
+      "tier": 2,
+      "topic": ["union"],
+      "title": "Duplicates Out",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Quick check.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which one combines two results **and removes duplicate rows**?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "`INTERSECT ALL`"
+              },
+              {
+                "id": "b",
+                "text_md": "`UNION ALL`"
+              },
+              {
+                "id": "c",
+                "text_md": "`UNION`"
+              },
+              {
+                "id": "d",
+                "text_md": "`JOIN`"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-choice-dense-rank",
+      "tier": 3,
+      "topic": ["dense-rank", "rank", "row-number"],
+      "title": "Ties Without Gaps",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Quick check.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which window function gives tied rows the same number and leaves **no gaps** (1, 1, 2)?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "`NTILE(2)`"
+              },
+              {
+                "id": "b",
+                "text_md": "`ROW_NUMBER()`"
+              },
+              {
+                "id": "c",
+                "text_md": "`DENSE_RANK()`"
+              },
+              {
+                "id": "d",
+                "text_md": "`RANK()`"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-choice-null-equals",
+      "tier": 2,
+      "topic": ["null"],
+      "title": "Equal to Nothing",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Quick check.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is `manager_id = NULL` for every row?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "TRUE when manager_id is empty"
+              },
+              {
+                "id": "b",
+                "text_md": "FALSE for every row, so NOT keeps them all"
+              },
+              {
+                "id": "c",
+                "text_md": "NULL (unknown), so `WHERE` keeps no rows"
+              },
+              {
+                "id": "d",
+                "text_md": "An error"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "r-choice-alias",
+      "tier": 1,
+      "topic": ["select"],
+      "title": "Rename a Column",
+      "rcsbe": "R",
+      "bloom": "remember",
+      "story_md": "Quick check.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which keyword gives an output column a new name?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "`AS`"
+              },
+              {
+                "id": "b",
+                "text_md": "`IN`"
+              },
+              {
+                "id": "c",
+                "text_md": "`IS`"
+              },
+              {
+                "id": "d",
+                "text_md": "`ON`"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "query"
+      },
+      "reference_sql": "",
+      "hints": []
+    }
+  ]
+}
