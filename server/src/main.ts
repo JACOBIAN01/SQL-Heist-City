@@ -1,5 +1,7 @@
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { attachAssessmentSocket } from './challenges/AssessmentSocket';
+import { PgAssessmentStore } from './classes/AssessmentStore';
 import { attachPracticeSocket } from './challenges/PracticeSocket';
 import { attachChallengeSocket } from './challenges/ChallengeSocket';
 import { buildChallengeStack, type ChallengeStack } from './composition';
@@ -122,6 +124,16 @@ const server = createHttpServer({
 });
 if (challenges) {
   attachChallengeSocket(server, challenges.handler);
+  // Pre/post assessments of a class (Phase 16.10): needs PostgreSQL (classes, rosters, answers).
+  if (pg) {
+    const attemptsStore = new PgAttemptStore(pg);
+    attachAssessmentSocket(server, challenges.handler, {
+      assessments: new PgAssessmentStore(pg),
+      slugOf: (id) => challenges.slugOf(id),
+      answered: (account, classId, kind) => attemptsStore.assessed(account, classId, kind),
+      ...(auth ? { auth } : {}),
+    });
+  }
   // The solo drill: practise a topic with no match (Phase 16.9).
   attachPracticeSocket(server, challenges.handler, {
     topics: () => challenges.practiceTopics(),

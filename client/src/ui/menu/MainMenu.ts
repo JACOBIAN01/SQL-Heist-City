@@ -13,6 +13,8 @@ export interface MenuOptions {
   readonly returnTo: string;
   /** Where a class's room stands (not started, or live). */
   readonly roomStatus?: (classId: number) => Promise<RoomStatus>;
+  /** Take the class's pre- or post-test (Phase 16.10). */
+  readonly goAssess?: (classId: number, kind: 'pre' | 'post') => void;
   /** Enter a class's live room. */
   readonly goClass?: (classId: number) => void;
   /** Milliseconds between looks at the room while waiting (default 2000). */
@@ -145,6 +147,15 @@ export class MainMenu {
         { class: 'menu-card' },
         h('h1', { text: className }),
         status,
+        ...(this.options.goAssess
+          ? (['pre', 'post'] as const).map((kind) =>
+              h('button', {
+                text: kind === 'pre' ? 'Take the pre-test' : 'Take the post-test',
+                attrs: { title: 'Only when your teacher has opened it' },
+                on: { click: () => this.options.goAssess?.(classId, kind) },
+              }),
+            )
+          : []),
         h('button', {
           class: 'menu-quiet',
           text: 'Leave',

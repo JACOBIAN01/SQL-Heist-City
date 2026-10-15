@@ -41,6 +41,8 @@ export interface ChallengeStack {
   citySettings(): CitySettings;
   /** The tutorial as the admin has set it (read for every new tutorial room). */
   tutorialSettings(): TutorialSettings;
+  /** A question's slug by id (assessments list questions by id). */
+  slugOf(questionId: number): string | undefined;
   /** Topics a student can drill on their own (Phase 16.9). */
   practiceTopics(): PracticeTopic[];
   /** Drop cached questions and settings (admin edited something). */
@@ -92,6 +94,7 @@ export function buildChallengeStack(
     combatSettings: () => settings.combatSettings(),
     tutorialSettings: () => settings.tutorialSettings(),
     practiceTopics: () => practiceTopicsOf(questions, concepts),
+    slugOf: (id) => questions.getById(id)?.slug,
     analyticsSettings: () => settings.analyticsSettings(),
     worldSettings: () => worldSettingsFrom(settings),
     citySettings: () => settings.citySettings(),

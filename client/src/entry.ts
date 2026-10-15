@@ -9,9 +9,12 @@ import { MainMenu } from './ui/menu/MainMenu';
  */
 const params = new URLSearchParams(location.search);
 const wantsPractice = params.has('practice');
+const wantsAssessment = params.has('assess');
 const onlyAnError = [...params.keys()].every((k) => k === 'signin_error');
 
-if (wantsPractice) {
+if (wantsAssessment) {
+  await import('./assess');
+} else if (wantsPractice) {
   await import('./practice');
 } else if (onlyAnError) {
   const account = new HttpAccountApi(accountBase(location.hostname, params.get('account')));
@@ -23,6 +26,9 @@ if (wantsPractice) {
     },
     navigate: (url) => location.assign(url),
     roomStatus: (classId) => roomStatus(location.hostname, params.get('server') ?? '8080', classId),
+    goAssess: (classId, kind) => {
+      location.search = `?assess=${classId}&kind=${kind}`;
+    },
     goClass: (classId) => {
       location.search = `?class=${classId}`;
     },

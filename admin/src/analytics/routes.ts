@@ -25,12 +25,15 @@ import {
   weakestFirst,
   weakestTopics,
 } from '@heist/server/analytics/reports';
+import type { AssessmentStore } from '@heist/server/classes/AssessmentStore';
 import type { ClassRepository } from '@heist/server/classes/ClassRepository';
 import type { PlayerRepository } from '@heist/server/players/PlayerRepository';
 import type { QuestionStore } from '@heist/server/questions/QuestionStore';
 import { requireLogin, requireUser } from '../auth/middleware';
 import { canManage } from '../classes/classRoutes';
-import { forbidden, notFound } from '../http/errors';
+import { forbidden, notFound, parse, HttpError } from '../http/errors';
+import type { AdminEventBus } from '../events/AdminEvents';
+import { z } from 'zod';
 import { idParam } from '../http/params';
 
 export interface AnalyticsDeps {
@@ -40,6 +43,8 @@ export interface AnalyticsDeps {
   readonly attempts: AttemptStore;
   readonly profiles: ProfileStore;
   readonly settings: () => Promise<AnalyticsSettings>;
+  readonly assessments: AssessmentStore;
+  readonly events: AdminEventBus;
 }
 
 const viewsOf = (totals: ProfileTotals, settings: AnalyticsSettings) => scopeView(totals, settings);
@@ -142,6 +147,98 @@ export function analyticsRoutes(deps: AnalyticsDeps): Router {
       weakestTopics: weakestTopics(mastery),
       remediation: remediation(axisScores(totals, 'rcsbe', settings)) ?? null,
       items: items.length,
+    });
+  });
+
+  // --- pre/post assessments (16.10) ---
+  const kindParam = (raw: unknown): 'pre' | 'post' => {
+    if (raw === 'pre' || raw === 'post') return raw;
+    throw notFound('Assessment');
+  };
+
+  router.get('/classes/:id/assessments', async (req, res) => {
+    const record = await load(res, idParam(req.params.id));
+    res.json({
+      pre: (await deps.assessments.get(record.id, 'pre')) ?? null,
+      post: (await deps.assessments.get(record.id, 'post')) ?? null,
+    });
+  });
+
+  router.put('/classes/:id/assessments/:kind', async (req, res) => {
+    const record = await load(res, idParam(req.params.id));
+    const kind = kindParam(req.params.kind);
+    const body = parse(
+      z.object({ questionIds: z.array(z.number().int().positive()).max(60), open: z.boolean() }),
+      req.body,
+    );
+    const known = new Set((await deps.questions.list()).map((q) => q.id));
+    const missing = body.questionIds.filter((id) => !known.has(id));
+    if (missing.length) throw new HttpError(400, 'unknown_questions', 'Unknown questions', missing);
+    const saved = await deps.assessments.save(
+      record.id,
+      kind,
+      [...new Set(body.questionIds)],
+      body.open,
+    );
+    const actor = requireUser(res);
+    deps.events.publish({
+      type: 'class_changed',
+      action: 'update',
+      classId: record.id,
+      actor: { id: actor.id, email: actor.email },
+      detail: { assessment: kind, questions: saved.questionIds.length, open: saved.open },
+    });
+    res.json({ assessment: saved });
+  });
+
+  /** Pre against post, per student and for the class: what the unit changed, by dimension. */
+  router.get('/classes/:id/gain', async (req, res) => {
+    const record = await load(res, idParam(req.params.id));
+    const settings = await deps.settings();
+    const pre = new Map(
+      (await deps.profiles.loadClass(record.id, 'pre')).map((p) => [p.accountId, p.totals]),
+    );
+    const post = new Map(
+      (await deps.profiles.loadClass(record.id, 'post')).map((p) => [p.accountId, p.totals]),
+    );
+    const ids = [...new Set([...pre.keys(), ...post.keys()])];
+    const empty = poolTotals([]);
+    const gainOf = (a: readonly AxisScore[], b: readonly AxisScore[]) =>
+      a.map((s, i) => {
+        const after = b[i];
+        return {
+          dimension: s.dimension,
+          pre: s.score,
+          post: after?.score ?? null,
+          gain:
+            s.score === null || after?.score === null || after === undefined
+              ? null
+              : Math.round((after.score as number) - s.score),
+        };
+      });
+    const students = await Promise.all(
+      ids.map(async (id) => {
+        const p = await deps.players.findById(id);
+        const a = axisScores(pre.get(id) ?? empty, 'rcsbe', settings);
+        const b = axisScores(post.get(id) ?? empty, 'rcsbe', settings);
+        return { playerId: id, name: p?.displayName ?? '(deleted)', rcsbe: gainOf(a, b) };
+      }),
+    );
+    const classPre = poolTotals([...pre.values()]);
+    const classPost = poolTotals([...post.values()]);
+    res.json({
+      class: {
+        rcsbe: gainOf(
+          axisScores(classPre, 'rcsbe', settings),
+          axisScores(classPost, 'rcsbe', settings),
+        ),
+        bloom: gainOf(
+          axisScores(classPre, 'bloom', settings),
+          axisScores(classPost, 'bloom', settings),
+        ),
+      },
+      students: students.sort((x, y) => x.name.localeCompare(y.name)),
+      taken: { pre: pre.size, post: post.size },
     });
   });
 

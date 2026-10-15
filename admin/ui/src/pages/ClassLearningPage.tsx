@@ -9,11 +9,17 @@ import {
   type ProfileScopeView,
   type RcsbeDimension,
 } from '@heist/shared';
-import { useClassAnalytics, useItemAnalysis, type Spread } from '../api/analytics';
+import {
+  useClassAnalytics,
+  useGain,
+  useItemAnalysis,
+  type GainRow,
+  type Spread,
+} from '../api/analytics';
 import { Radar } from '../components/Radar';
 import { ErrorMessage } from '../components/ErrorMessage';
 
-const TABS = ['Profile', 'Students', 'Spread', 'Paper', 'Questions'] as const;
+const TABS = ['Profile', 'Students', 'Spread', 'Paper', 'Questions', 'Gain'] as const;
 type Tab = (typeof TABS)[number];
 
 const FLAG_TEXT: Record<string, string> = {
@@ -136,6 +142,7 @@ export function ClassLearningPage() {
         </div>
       )}
       {tab === 'Questions' && <Questions classId={id} />}
+      {tab === 'Gain' && <Gain classId={id} />}
     </div>
   );
 }
@@ -295,6 +302,75 @@ function Questions({ classId }: { classId: number }) {
         </table>
       </div>
       <a href={`/api/classes/${classId}/export.csv?kind=items`}>Download (CSV)</a>
+    </div>
+  );
+}
+
+/** Pre-test against post-test, for the class and each student (Phase 16.10). */
+function Gain({ classId }: { classId: number }) {
+  const gain = useGain(classId);
+  if (gain.isPending) return <p className="muted">Loading…</p>;
+  if (gain.isError) return <ErrorMessage error={gain.error} />;
+  const g = gain.data;
+  const pct = (v: number | null) => (v === null ? '–' : `${Math.round(v)}%`);
+  const signed = (v: number | null) => (v === null ? '–' : `${v > 0 ? '+' : ''}${v}`);
+  const values = (rows: GainRow[], key: 'pre' | 'post') => rows.map((r) => r[key]);
+  return (
+    <div className="stack">
+      <p className="muted">
+        {g.taken.pre} took the pre-test and {g.taken.post} the post-test. Axes with too few answers
+        show no score.
+      </p>
+      <div className="grid-2">
+        {(['rcsbe', 'bloom'] as const).map((lens) => (
+          <div key={lens} className="card stack">
+            <h2>{lens === 'rcsbe' ? 'RCSBE: before and after' : 'Bloom: before and after'}</h2>
+            <Radar
+              title={lens === 'rcsbe' ? 'RCSBE gain' : 'Bloom gain'}
+              axes={lensAxes(lens)}
+              layers={[
+                { id: 'Post-test', kind: 'fill', values: values(g.class[lens], 'post') },
+                {
+                  id: 'Pre-test',
+                  kind: 'outline',
+                  dashed: true,
+                  values: values(g.class[lens], 'pre'),
+                },
+              ]}
+            />
+            <p className="muted">Filled: post-test. Dashed: pre-test.</p>
+          </div>
+        ))}
+      </div>
+      <div className="card">
+        <h2>Students</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              {g.class.rcsbe.map((d) => (
+                <th key={d.dimension}>{d.dimension}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {g.students.map((s) => (
+              <tr key={s.playerId}>
+                <td>{s.name}</td>
+                {s.rcsbe.map((d) => (
+                  <td
+                    key={d.dimension}
+                    className="num"
+                    title={`pre ${pct(d.pre)}, post ${pct(d.post)}`}
+                  >
+                    {signed(d.gain)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

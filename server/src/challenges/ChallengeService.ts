@@ -35,6 +35,8 @@ export interface IssueOptions {
   readonly revealSolution?: boolean;
   /** Whose attempt this is, for the learning record. */
   readonly who?: AttemptWho;
+  /** No hints at all (an assessment measures what the student knows unaided). */
+  readonly noHints?: boolean;
   /** Only questions on these topics (the practice drill); none available means no question. */
   readonly onlyTopics?: readonly string[];
   /** Topics this student is weakest at: some questions are drawn from them (spaced repetition). */
@@ -219,11 +221,9 @@ export class ChallengeService {
         expiresAt: now + settings.ttlSec * (skill?.ttlScale ?? 1) * 1000,
         // The ladder: free steps from the topic's concept card first, then the question's own paid hints
         // (the tutorial's are all free).
-        hints: this.ladder(
-          question.template,
-          settings.freeHintSteps,
-          request.revealSolution === true,
-        ),
+        hints: request.noHints
+          ? []
+          : this.ladder(question.template, settings.freeHintSteps, request.revealSolution === true),
         hintCostMode: settings.hintCostMode,
         revealSolution: request.revealSolution ?? false,
         hintsRevealed: 0,
@@ -427,6 +427,7 @@ export class ChallengeService {
         ...(challenge.who.accountId === undefined ? {} : { accountId: challenge.who.accountId }),
         ...(challenge.who.classId === undefined ? {} : { classId: challenge.who.classId }),
         ...(challenge.who.round === undefined ? {} : { round: challenge.who.round }),
+        ...(challenge.who.assessment === undefined ? {} : { assessment: challenge.who.assessment }),
         questionId: challenge.questionId,
         questionVersion: challenge.questionVersion,
         rewardKey: challenge.rewardKey,

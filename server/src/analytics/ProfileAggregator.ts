@@ -113,6 +113,16 @@ export class ProfileAggregator implements AttemptSink {
   ): Promise<void> {
     const live = await this.ensure(accountId, who.classId, who.round);
     const delta = addItem(emptyTotals(), item, settings);
+    if (who.assessment !== undefined) {
+      // An assessment answer counts in its own scope only, so the gain between pre and post is clean.
+      if (who.classId !== undefined)
+        await this.store.add(
+          accountId,
+          [{ kind: 'assess', classId: who.classId, which: who.assessment }],
+          delta,
+        );
+      return;
+    }
     live.all = mergeTotals(live.all, delta);
     const score = scoreItem(item, settings);
     for (const topic of item.topics) {

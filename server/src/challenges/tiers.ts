@@ -10,11 +10,14 @@ const VAULT_KEY = /^vault:bank-([1-5]):lock-([1-9])$/;
  */
 /** `practice:<tier>` — the solo drill: any tier 1–5, chosen by the student. */
 const PRACTICE_KEY = /^practice:([1-5])$/;
+/** `assess:<n>` — question n of a class assessment; the question is fixed, so any tier. */
+const ASSESS_KEY = /^assess:\d+$/;
 
 export function tiersForReward(rewardKey: string, settings: SettingsReader): TierRange | undefined {
   const vault = VAULT_KEY.exec(rewardKey);
   const practice = PRACTICE_KEY.exec(rewardKey);
   if (practice) return { min: Number(practice[1]), max: Number(practice[1]) };
+  if (ASSESS_KEY.test(rewardKey)) return { min: 1, max: 5 };
   if (vault) return vaultLockTier(Number(vault[1]), Number(vault[2]));
   return settings.rewardTiers(rewardKey);
 }

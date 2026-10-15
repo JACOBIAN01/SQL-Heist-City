@@ -165,3 +165,12 @@ A teacher makes a **class** in the admin: a name, a six-character **join code**,
 **Closed banks.** A bank the teacher did not open stays on the map marked CLOSED. Its vault cannot be worked, it has no loose cash, and the round does not wait for it.
 
 **During a match** the teacher can end the round, start the next now, stop the room, remove or rename a student, lock the room to newcomers, and edit the class (the new question set and open banks apply at once, round length at the next round). When a round ends its standings and awards are saved and can be reviewed later.
+
+## Teaching loop (Phase 16)
+- **Hints climb a ladder:** a free one-line nudge, then the topic's concept card (free), then the question's own paid hints. Only paid steps lower the marks a question earns.
+- **Errors in plain words:** a SQLite error comes with a tip on what it usually means.
+- **While you fight:** the minimised pop-up keeps the question's tables in view; the editor autocompletes this question's tables and columns only.
+- **After the round:** press V for the review: every question you met, your last query, the model answer and the concept cards. Nothing of it is sent during the round.
+- **Fair difficulty:** a student whose profile is weak gets easier questions, more time and smaller heals (settings); the weakest topics come back now and then (spaced repetition).
+- **Practice:** a solo drill from the menu, by topic and tier, with no match and no rewards; it counts toward the profile.
+- **Pre/post tests:** a teacher sets a short fixed test before and after a unit; the gain per dimension shows on the class's Learning page.

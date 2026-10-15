@@ -36,22 +36,19 @@ const address = async () => {
 };
 
 /** Ask the server for something outside the challenge protocol (the topic list, the chosen topic). */
-function control<T>(message: object, expect: string): Promise<T> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const socket = new WebSocket(await address());
-      socket.addEventListener('open', () => socket.send(JSON.stringify(message)));
-      socket.addEventListener('message', (e) => {
-        const m = JSON.parse(String(e.data)) as { t: string };
-        if (m.t === expect) {
-          resolve(m as T);
-          socket.close();
-        }
-      });
-      socket.addEventListener('error', () => reject(new Error('could not reach the game server')));
-    } catch (err) {
-      reject(err instanceof Error ? err : new Error(String(err)));
-    }
+async function control<T>(message: object, expect: string): Promise<T> {
+  const url = await address();
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(url);
+    socket.addEventListener('open', () => socket.send(JSON.stringify(message)));
+    socket.addEventListener('message', (e) => {
+      const m = JSON.parse(String(e.data)) as { t: string };
+      if (m.t === expect) {
+        resolve(m as T);
+        socket.close();
+      }
+    });
+    socket.addEventListener('error', () => reject(new Error('could not reach the game server')));
   });
 }
 

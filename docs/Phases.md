@@ -33,7 +33,7 @@
 | 13 | Identity and persistence (Google sign-in, PostgreSQL) | ✅ |
 | 14 | Classroom mode | ✅ |
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
-| 16 | Teaching loop | 🟨 |
+| 16 | Teaching loop | ✅ |
 | 17 | Question types and content (filling R, C, B, E) | ⬜ |
 | 18 | Security hardening | ⬜ |
 | 19 | Scale proof | ⬜ |
@@ -342,7 +342,7 @@ Fixes audit con 4. Every question carries one RCSBE tag, one Bloom level and a w
 | 15.18 | Privacy of profiles: students see only their own; teachers only their classes; never on leaderboards | access tests pass | ✅ a student's profile goes only to their own player; teachers see only their classes (others get 403/404); never on leaderboards |
 
 ---
-## Phase 16 — Teaching loop  🟨
+## Phase 16 — Teaching loop  ✅
 Fixes audit cons 5 and 6: the game teaches as well as tests, and weaker students are never locked out. Combat stays as it is: help comes through hints, review and difficulty, never through protection from being shot.
 
 | # | Subphase | Done when | Status |
@@ -356,7 +356,7 @@ Fixes audit cons 5 and 6: the game teaches as well as tests, and weaker students
 | 16.7 | Skill-scaled difficulty: each student's question tier follows their mastery, with rewards and times scaled, so every student can earn a gun and crack some lock | a beginner can complete each reward type; a test covers the scaling | ✅ from the live profile: below 50% one tier easier, more time, smaller heals; below 25% two tiers; never for the tutorial; settings |
 | 16.8 | Spaced repetition: weak topics come back in later rounds and daily contracts | resurfacing schedule tested against replayed data | ✅ the student's weakest topics (from stored items, updated live) are drawn from with a set chance (35%); daily contracts come with 26.5 |
 | 16.9 | Practice mode: a separate solo SQL drill outside matches (no combat, no clock); matches themselves are unchanged | a student can practise any topic alone | ✅ menu → Practice SQL: pick a topic and tier, answer questions one after another (`/ws/practice`); no match, no rewards; counts toward the profile |
-| 16.10 | Pre/post assessment: a short test before and after a unit; the gain shown per RCSBE dimension and Bloom level | the teacher can run both and see the gain on the radars | 🟨 in progress |
+| 16.10 | Pre/post assessment: a short test before and after a unit; the gain shown per RCSBE dimension and Bloom level | the teacher can run both and see the gain on the radars | ✅ the class editor sets a pre- and post-test from the class's questions (no hints, one go each, same questions for all); students take them from the waiting room; answers count in their own scope; the Learning page's Gain tab shows class radars and each student's change per dimension |
 
 ---
 ## Phase 17 — Question types and content (filling R, C, B and E)  ⬜

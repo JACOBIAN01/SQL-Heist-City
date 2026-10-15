@@ -204,3 +204,81 @@ describe('class analytics API (15.11–15.16, 15.18)', () => {
     ).toEqual([]);
   });
 });
+
+describe('pre/post assessments and the gain (16.10)', () => {
+  it("a teacher sets up a pre and a post test and sees each student's gain by dimension", async () => {
+    const { h, cls, ana, ben, q } = await setup();
+    expect(
+      (await h.client.get<{ pre: unknown; post: unknown }>(`/api/classes/${cls}/assessments`)).body,
+    ).toEqual({ pre: null, post: null });
+    const pre = await h.client.put<{ assessment: { questionIds: number[]; open: boolean } }>(
+      `/api/classes/${cls}/assessments/pre`,
+      { questionIds: [q, q], open: true },
+    );
+    expect(pre.body.assessment).toMatchObject({ questionIds: [q], open: true });
+    expect(
+      (await h.client.put(`/api/classes/${cls}/assessments/mid`, { questionIds: [q], open: true }))
+        .status,
+    ).toBe(404);
+    expect(
+      (
+        await h.client.put(`/api/classes/${cls}/assessments/post`, {
+          questionIds: [9999],
+          open: true,
+        })
+      ).status,
+    ).toBe(400);
+
+    // Ana: 0% on Solve before, 100% after. Ben only took the pre-test.
+    const take = async (account: number, which: 'pre' | 'post', solved: boolean) => {
+      let t = emptyTotals();
+      for (let i = 0; i < 3; i++)
+        t = addItem(
+          t,
+          item({ assessment: which, ...(solved ? {} : { outcome: 'expired', submits: 1 }) }),
+          S,
+        );
+      await h.stores.profiles.add(account, [{ kind: 'assess', classId: cls, which }], t);
+    };
+    await take(ana, 'pre', false);
+    await take(ana, 'post', true);
+    await take(ben, 'pre', true);
+    const gain = await h.client.get<{
+      class: {
+        rcsbe: {
+          dimension: string;
+          pre: number | null;
+          post: number | null;
+          gain: number | null;
+        }[];
+      };
+      students: {
+        name: string;
+        rcsbe: { dimension: string; gain: number | null; pre: number | null }[];
+      }[];
+      taken: { pre: number; post: number };
+    }>(`/api/classes/${cls}/gain`);
+    expect(gain.body.taken).toEqual({ pre: 2, post: 1 });
+    const anaS = gain.body.students
+      .find((s) => s.name === 'Ana')
+      ?.rcsbe.find((d) => d.dimension === 'S');
+    expect(anaS).toMatchObject({ pre: 0, post: 100, gain: 100 });
+    const benS = gain.body.students
+      .find((s) => s.name === 'Ben')
+      ?.rcsbe.find((d) => d.dimension === 'S');
+    expect(benS).toMatchObject({ pre: 100, gain: null }); // no post yet
+    expect(gain.body.class.rcsbe.find((d) => d.dimension === 'S')).toMatchObject({
+      pre: 50,
+      post: 100,
+      gain: 50,
+    });
+  });
+
+  it("keeps assessments to the class's own teacher", async () => {
+    const { h, cls } = await setup();
+    h.client.clearCookie();
+    await h.loginAs('other@school.test', 'teacher');
+    expect((await h.client.get(`/api/classes/${cls}/assessments`)).status).toBe(403);
+    expect((await h.client.get(`/api/classes/${cls}/gain`)).status).toBe(403);
+  });
+});

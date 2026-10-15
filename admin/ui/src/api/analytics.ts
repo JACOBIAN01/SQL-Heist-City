@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AxisScore, ProfileScopeView, RcsbeDimension, ShapeRow } from '@heist/shared';
 import { api } from './client';
 
@@ -82,5 +82,62 @@ export function useItemAnalysis(classId: number) {
   return useQuery({
     queryKey: ['class', classId, 'items'],
     queryFn: async () => (await api<{ items: ItemRow[] }>(`/classes/${classId}/items`)).items,
+  });
+}
+
+export interface AssessmentView {
+  id: number;
+  classId: number;
+  kind: 'pre' | 'post';
+  questionIds: number[];
+  open: boolean;
+}
+
+export function useAssessments(classId: number) {
+  return useQuery({
+    queryKey: ['class', classId, 'assessments'],
+    queryFn: () =>
+      api<{ pre: AssessmentView | null; post: AssessmentView | null }>(
+        `/classes/${classId}/assessments`,
+      ),
+  });
+}
+
+export function useSaveAssessment(classId: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      kind,
+      ...body
+    }: {
+      kind: 'pre' | 'post';
+      questionIds: number[];
+      open: boolean;
+    }) =>
+      api<{ assessment: AssessmentView }>(`/classes/${classId}/assessments/${kind}`, {
+        method: 'PUT',
+        body,
+      }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['class', classId, 'assessments'] }),
+  });
+}
+
+export interface GainRow {
+  dimension: string;
+  pre: number | null;
+  post: number | null;
+  gain: number | null;
+}
+
+export interface GainView {
+  class: { rcsbe: GainRow[]; bloom: GainRow[] };
+  students: { playerId: number; name: string; rcsbe: GainRow[] }[];
+  taken: { pre: number; post: number };
+}
+
+export function useGain(classId: number) {
+  return useQuery({
+    queryKey: ['class', classId, 'gain'],
+    queryFn: () => api<GainView>(`/classes/${classId}/gain`),
   });
 }

@@ -200,6 +200,21 @@ describe('joining a class from the menu', () => {
     expect(roomStatus).toHaveBeenCalledTimes(3);
   });
 
+  it('offers the pre- and post-test from the waiting room', async () => {
+    const goAssess = vi.fn();
+    const { m } = menu(
+      { state: 'signed_in', player: ana },
+      { roomStatus: async () => ({ state: 'waiting' as const }), goAssess, pollMs: 50 },
+    );
+    await m.show();
+    type(m, 'GOOD22');
+    press(m, 'Join class');
+    await new Promise((r) => setTimeout(r, 0));
+    press(m, 'Take the post-test');
+    expect(goAssess).toHaveBeenCalledWith(5, 'post');
+    press(m, 'Leave');
+  });
+
   it('lets the student leave the waiting room, and stops looking', async () => {
     const roomStatus = vi.fn(async () => ({ state: 'waiting' as const }));
     const { m } = menu({ state: 'signed_in', player: ana }, { roomStatus, pollMs: 5 });

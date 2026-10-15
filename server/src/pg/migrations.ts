@@ -258,4 +258,23 @@ export const pgMigrations: readonly string[] = [
     PRIMARY KEY (topic, version)
   );
   `,
+  // 7 — pre/post assessments of a class (Phase 16.10)
+  `
+  CREATE TABLE assessments (
+    id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    class_id     BIGINT      NOT NULL REFERENCES classes (id) ON DELETE CASCADE,
+    kind         TEXT        NOT NULL CHECK (kind IN ('pre', 'post')),
+    question_ids JSONB       NOT NULL DEFAULT '[]',
+    open         BOOLEAN     NOT NULL DEFAULT false,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (class_id, kind)
+  );
+
+  ALTER TABLE attempt_items ADD COLUMN assessment TEXT CHECK (assessment IN ('pre', 'post'));
+  CREATE INDEX attempt_items_assessment ON attempt_items (class_id, assessment) WHERE assessment IS NOT NULL;
+
+  ALTER TABLE profile_totals DROP CONSTRAINT profile_totals_scope_check;
+  ALTER TABLE profile_totals ADD CONSTRAINT profile_totals_scope_check
+    CHECK (scope IN ('all', 'class', 'round', 'pre', 'post'));
+  `,
 ];

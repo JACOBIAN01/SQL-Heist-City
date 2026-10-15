@@ -318,6 +318,29 @@ describe('skill source (16.7)', () => {
   });
 });
 
+describe('assessment answers (16.10)', () => {
+  it("count only in the class's pre or post scope: not in the live profile, the class or the round", async () => {
+    const profiles = new InMemoryProfileStore();
+    const sent: ProfileMessage[] = [];
+    const agg = new ProfileAggregator(
+      profiles,
+      () => S,
+      (_a, m) => sent.push(m),
+      quiet,
+    );
+    agg.item(item({ assessment: 'pre' }), { accountId: 1, classId: 9, assessment: 'pre' });
+    await agg.settled();
+    expect(sent).toEqual([]);
+    expect(
+      (await profiles.load(1, { kind: 'assess', classId: 9, which: 'pre' })).rcsbe.S.items,
+    ).toBe(1);
+    expect((await profiles.load(1, { kind: 'all' })).rcsbe.S.items).toBe(0);
+    expect((await profiles.load(1, { kind: 'class', classId: 9 })).rcsbe.S.items).toBe(0);
+    expect((await profiles.loadClass(9, 'pre')).map((r) => r.accountId)).toEqual([1]);
+    expect(await profiles.loadClass(9, 'post')).toEqual([]);
+  });
+});
+
 describe('weak topics come back (16.8)', () => {
   it('names the weakest topics with enough evidence from the stored history, and learns as the student plays', async () => {
     const history = [

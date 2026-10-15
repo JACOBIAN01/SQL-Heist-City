@@ -7,6 +7,8 @@ export interface AttemptWho {
   readonly accountId?: number;
   readonly classId?: number;
   readonly round?: number;
+  /** The class's pre/post assessment this attempt belongs to. */
+  readonly assessment?: 'pre' | 'post';
 }
 
 /** The fine-grained things that happen to an issued question (docs/RCBSE.md §8). */

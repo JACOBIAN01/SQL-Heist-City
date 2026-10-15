@@ -58,6 +58,8 @@ export interface ItemRecord {
    * student after it ends; never saved to the database and never sent during the round.
    */
   readonly review?: ItemReview;
+  /** Set when the question was part of a class's pre or post assessment: it then counts in that scope only. */
+  readonly assessment?: 'pre' | 'post';
 }
 
 export interface ItemReview {

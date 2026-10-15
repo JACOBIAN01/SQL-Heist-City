@@ -171,6 +171,8 @@ export function buildAdmin(
         players: stores.players,
         attempts: stores.attempts,
         profiles: stores.profiles,
+        assessments: stores.assessments,
+        events,
         settings: async () =>
           settingsParsers.analyticsFrom(await stores.settings.get(ANALYTICS_SETTINGS_KEY)),
       }),

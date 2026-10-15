@@ -151,6 +151,32 @@ function api(user: typeof teacher | typeof admin = teacher) {
   return fakeApi({
     'GET /auth/me': () => ({ body: { user } }),
     'GET /classes/7/analytics': () => ({ body: analytics }),
+    'GET /classes/7/gain': () => ({
+      body: {
+        taken: { pre: 2, post: 1 },
+        class: {
+          rcsbe: ['R', 'C', 'S', 'B', 'E'].map((d) => ({
+            dimension: d,
+            pre: d === 'S' ? 50 : null,
+            post: d === 'S' ? 100 : null,
+            gain: d === 'S' ? 50 : null,
+          })),
+          bloom: [],
+        },
+        students: [
+          {
+            playerId: 1,
+            name: 'Ana',
+            rcsbe: ['R', 'C', 'S', 'B', 'E'].map((d) => ({
+              dimension: d,
+              pre: null,
+              post: null,
+              gain: d === 'S' ? 100 : null,
+            })),
+          },
+        ],
+      },
+    }),
     'GET /classes/7/items': () => ({
       body: {
         items: [
@@ -235,6 +261,16 @@ describe('ClassLearningPage', () => {
     expect(await screen.findByText('Hard one')).toBeTruthy();
     expect(screen.getByText('Very few solve it')).toBeTruthy();
     expect(screen.getByText('10%')).toBeTruthy();
+  });
+
+  it('shows the gain from pre-test to post-test', async () => {
+    api();
+    renderLearning();
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('tab', { name: 'Gain' }));
+    expect(await screen.findByText(/2 took the pre-test and 1 the post-test/)).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'RCSBE gain' })).toBeTruthy();
+    expect(screen.getByText('+100')).toBeTruthy();
   });
 
   it('offers the spreadsheet', async () => {

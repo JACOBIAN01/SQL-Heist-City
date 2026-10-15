@@ -87,6 +87,10 @@ function api(user: typeof teacher | typeof admin = teacher) {
         ],
       },
     }),
+    'GET /classes/7/assessments': () => ({ body: { pre: null, post: null } }),
+    'PUT /classes/7/assessments/pre': (b) => ({
+      body: { assessment: { id: 1, classId: 7, kind: 'pre', ...(b as object) } },
+    }),
     'GET /classes/7/roster': () => ({
       body: {
         roster: [
@@ -198,6 +202,17 @@ describe('ClassEditorPage', () => {
     const table = await screen.findByRole('table', { name: 'Round results' });
     expect(within(table).getByText('Ben')).toBeTruthy();
     expect(within(table).getByText('$9,000')).toBeTruthy();
+  });
+
+  it("sets up a pre-test from the class's questions and opens it", async () => {
+    const calls = api();
+    renderEditor();
+    const user = userEvent.setup();
+    await user.click(await screen.findByLabelText('pre a'));
+    await user.click(screen.getByLabelText('pre open'));
+    await user.click(screen.getByRole('button', { name: 'Save pre-test' }));
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/classes/7/assessments/pre');
+    expect(put?.body).toEqual({ questionIds: [1], open: true });
   });
 
   it('shows who joined, without emails for a teacher', async () => {

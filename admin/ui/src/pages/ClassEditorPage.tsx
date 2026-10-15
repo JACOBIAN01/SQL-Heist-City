@@ -20,6 +20,7 @@ import {
   useUpdateClass,
 } from '../api/classes';
 import { useQuestions } from '../api/questions';
+import { useAssessments, useSaveAssessment } from '../api/analytics';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { useMe } from '../auth/useMe';
 
@@ -150,6 +151,7 @@ function ClassEditor({ record }: { record: ClassRecord }) {
 
       <LiveRoom record={record} />
       <QuestionRelease classId={record.id} />
+      <Assessments classId={record.id} />
       <Rounds classId={record.id} />
       <Roster classId={record.id} />
     </div>
@@ -426,6 +428,84 @@ function Rounds({ classId }: { classId: number }) {
           </tbody>
         </table>
       )}
+    </div>
+  );
+}
+
+/** A short fixed test before (pre) and after (post) a unit: the gain shows on the Learning page. */
+function Assessments({ classId }: { classId: number }) {
+  const released = useClassQuestions(classId);
+  const current = useAssessments(classId);
+  const save = useSaveAssessment(classId);
+  const [picked, setPicked] = useState<Record<'pre' | 'post', Set<number>>>({
+    pre: new Set(),
+    post: new Set(),
+  });
+  const [open, setOpen] = useState<Record<'pre' | 'post', boolean>>({ pre: false, post: false });
+  useEffect(() => {
+    if (!current.data) return;
+    setPicked({
+      pre: new Set(current.data.pre?.questionIds ?? []),
+      post: new Set(current.data.post?.questionIds ?? []),
+    });
+    setOpen({ pre: current.data.pre?.open ?? false, post: current.data.post?.open ?? false });
+  }, [current.data]);
+  const questions = [...new Map((released.data ?? []).map((l) => [l.questionId, l])).values()];
+  const toggle = (kind: 'pre' | 'post', id: number) => {
+    const next = new Set(picked[kind]);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setPicked({ ...picked, [kind]: next });
+  };
+  return (
+    <div className="card stack">
+      <h2>Pre-test and post-test</h2>
+      <p className="muted">
+        A short test before and after a unit: the same questions for everyone, no hints, one go at
+        each. The Learning page shows the gain. Choose from this class&apos;s released questions.
+      </p>
+      {questions.length === 0 && (
+        <p className="muted">Release some questions to the class first.</p>
+      )}
+      {(['pre', 'post'] as const).map((kind) => (
+        <fieldset key={kind}>
+          <legend>{kind === 'pre' ? 'Pre-test' : 'Post-test'}</legend>
+          {questions.map((q) => (
+            <label key={q.questionId} className="check">
+              <input
+                type="checkbox"
+                aria-label={`${kind} ${q.slug ?? q.questionId}`}
+                checked={picked[kind].has(q.questionId)}
+                onChange={() => toggle(kind, q.questionId)}
+              />
+              T{q.tier} · {q.title}
+            </label>
+          ))}
+          <div className="row">
+            <label className="check">
+              <input
+                type="checkbox"
+                aria-label={`${kind} open`}
+                checked={open[kind]}
+                onChange={(e) => setOpen({ ...open, [kind]: e.target.checked })}
+              />
+              Open to students
+            </label>
+            <span className="spacer" />
+            <button
+              className="primary"
+              disabled={save.isPending}
+              onClick={() =>
+                save.mutate({ kind, questionIds: [...picked[kind]], open: open[kind] })
+              }
+            >
+              Save {kind === 'pre' ? 'pre-test' : 'post-test'}
+            </button>
+          </div>
+        </fieldset>
+      ))}
+      <ErrorMessage error={save.error ?? current.error} />
+      {save.isSuccess && <span className="notice">Saved ✓</span>}
     </div>
   );
 }
