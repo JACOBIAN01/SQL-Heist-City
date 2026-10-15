@@ -23,7 +23,8 @@ Express (REST API; serves the built React UI as static files), `node:sqlite` (sh
 9. **Audit log** — who changed what, when.
 10. **Analytics** — solve rate, median time, wrong-answer rate per question. *(Deferred: needs the game to record attempts — Phase 7+.)*
 11. **Light / dark theme** — one icon toggle (top bar and login page); follows the OS until clicked, then remembered per browser. SQL/JSON editor colours follow the theme.
-12. **Hot reload** — after save, calls game server `POST /internal/reload` (shared secret); active challenges keep their original version.
+12. **Briefs to mark** (Phase 17.11) — the queue of open briefs handed in from the game, from the teacher's own classes (admins: all). Each shows the student's write-up, queries and the rubric; the teacher scores each criterion (0 to its marks) and adds optional feedback; **Save and next** moves to the next one. The first mark adds the brief to the student's profile as one Build item (its weight available, weight × share of the rubric earned); a re-mark moves only the earned marks. `GET /api/briefs?status=&classId=`, `GET /api/briefs/:id`, `POST /api/briefs/:id/mark {marks[], feedback?}`; every mark is audited.
+13. **Hot reload** — after save, calls game server `POST /internal/reload` (shared secret); active challenges keep their original version.
 
 ## Patterns used (why / how)
 | Pattern | Why |

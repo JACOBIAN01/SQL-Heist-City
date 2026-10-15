@@ -252,6 +252,8 @@ Build and Evaluate cost the most to mark (the source's "assessment at scale" con
 
 A class's target profile tells the teacher how much B and E they are signing up to mark.
 
+**Built (17.1–17.11):** every type above is a task kind (docs/questions.md "Task kinds"). Briefs are stored in `brief_submissions` when handed in and count only once marked: earned = weight × (rubric marks given ÷ rubric total), added to the all, class and round scopes; the item's row in `attempt_items` is rescored to match.
+
 ---
 
 ## 11. Decisions on the open questions

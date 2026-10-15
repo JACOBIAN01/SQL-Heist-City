@@ -34,7 +34,7 @@
 | 14 | Classroom mode | ✅ |
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
 | 16 | Teaching loop | ✅ |
-| 17 | Question types and content (filling R, C, B, E) | 🟨 17.1–17.9 done |
+| 17 | Question types and content (filling R, C, B, E) | 🟨 17.1–17.11 done |
 | 18 | Security hardening | ⬜ |
 | 19 | Scale proof | ⬜ |
 | 20 | Operations and deployment | ⬜ |
@@ -373,8 +373,8 @@ Today every question is Solve. This phase adds the question types that measure R
 | 17.7 | **S** Make it faster: correct and under a cost (rows scanned or plan steps) | cost measured in the sandbox; 10 questions | ✅ 10 in kinds-faster.json; cost = `SCAN` steps in the plan; QA checks the reference is within it and the slow one is not |
 | 17.8 | **S** Write to a scratch database (`CREATE`/`INSERT`/`UPDATE`), graded by the resulting state | the writable sandbox keeps the safety limits; 10 questions | ✅ 10 in kinds-write.json; INSERT/UPDATE/DELETE/CREATE only, then read-only checks |
 | 17.9 | **E** Choose and defend: two or three working queries under a stated constraint; marks mostly in the structured reasons | type built; 15 questions | ✅ 15 in kinds-defend.json; 1 mark for the pick, 2 for the reason, pass at 60% |
-| 17.10 | **B** Open brief: the student sets the goal and the done-condition, writes the queries and states how they know it worked; between rounds (heist planning) | briefs submitted from the game | ⬜ |
-| 17.11 | Rubric review queue in the admin for Build (and free-text Evaluate): rubrics per brief, batch marking, marks flow into profiles | a teacher marks 30 briefs and profiles update | ⬜ |
+| 17.10 | **B** Open brief: the student sets the goal and the done-condition, writes the queries and states how they know it worked; between rounds (heist planning) | briefs submitted from the game | ✅ `brief:plan` from the round-results card (signed-in players), 8 brief questions in kinds-briefs.json, stored in `brief_submissions`; `taskKinds` keeps briefs out of in-round tasks |
+| 17.11 | Rubric review queue in the admin for Build (and free-text Evaluate): rubrics per brief, batch marking, marks flow into profiles | a teacher marks 30 briefs and profiles update | ✅ admin "Briefs to mark": per-criterion marks, Save and next, re-marks; marks go into the profile and are audited (a teacher marking 30 is covered by the same flow, tested on 2) |
 | 17.12 | Structural variants: table and column renames, story-theme swaps (designed in questions.md) | one question renders under two themes with the same grading | ⬜ |
 | 17.13 | Coverage: new content until every tier has every RCSBE dimension and every Bloom level | the coverage report shows no empty cell | ⬜ |
 | 17.14 | Dialect packs: PostgreSQL and MySQL notes and per-dialect cheat-sheets; quirks flagged per question | a class can pick a dialect pack; the pop-up shows its notes | ⬜ |

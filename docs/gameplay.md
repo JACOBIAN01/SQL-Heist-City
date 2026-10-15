@@ -174,3 +174,6 @@ A teacher makes a **class** in the admin: a name, a six-character **join code**,
 - **Fair difficulty:** a student whose profile is weak gets easier questions, more time and smaller heals (settings); the weakest topics come back now and then (spaced repetition).
 - **Practice:** a solo drill from the menu, by topic and tier, with no match and no rewards; it counts toward the profile.
 - **Pre/post tests:** a teacher sets a short fixed test before and after a unit; the gain per dimension shows on the class's Learning page.
+
+## Planning the next heist (Phase 17.10)
+When a round ends, a signed-in player sees **Plan the next heist** on the results card. It opens an open brief (`brief:plan`): the player writes a goal, when they are done and how they know it worked, and puts their queries in the editor (Run works as usual). It gives nothing in the game; a teacher marks it later against its rubric and the marks count as Build. The task stays open into the next round until its time runs out. `planningBriefs` (heist settings) turns it off; `taskKinds` (challenge settings) keeps briefs out of every in-round task and keeps planning to briefs only.
