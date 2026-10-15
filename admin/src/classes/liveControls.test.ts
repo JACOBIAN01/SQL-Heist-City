@@ -137,7 +137,7 @@ describe('HttpGameControl against the game server’s own HTTP routes', () => {
         },
       },
     });
-    await new Promise<void>((r) => (http as Server).listen(0, r));
+    await new Promise<void>((r) => (http as Server).listen(0, '127.0.0.1', r));
     return { url: `http://127.0.0.1:${((http as Server).address() as AddressInfo).port}`, seen };
   }
 
@@ -156,7 +156,7 @@ describe('HttpGameControl against the game server’s own HTTP routes', () => {
       reason: 'game_server_error',
     });
     const dead = createServer();
-    await new Promise<void>((r) => dead.listen(0, r));
+    await new Promise<void>((r) => dead.listen(0, '127.0.0.1', r));
     const deadUrl = `http://127.0.0.1:${(dead.address() as AddressInfo).port}`;
     await new Promise((r) => dead.close(r));
     expect(await new HttpGameControl(deadUrl, 's').command(1, { action: 'start' })).toEqual({

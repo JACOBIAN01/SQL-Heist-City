@@ -41,7 +41,7 @@ async function start(required = false) {
     topics: () => stack.practiceTopics(),
     auth: ticketAuth(SECRET, required),
   });
-  await new Promise<void>((done) => http?.listen(0, done));
+  await new Promise<void>((done) => http?.listen(0, '127.0.0.1', done));
   return { port: (http.address() as AddressInfo).port, sink };
 }
 

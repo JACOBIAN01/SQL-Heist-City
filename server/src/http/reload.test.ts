@@ -7,7 +7,7 @@ afterEach(() => close?.());
 
 async function start(deps: Partial<HttpServerDeps>) {
   const server = createHttpServer({ now: () => 0, startedAt: 0, ...deps });
-  await new Promise<void>((done) => server.listen(0, done));
+  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
   close = () => new Promise((done) => server.close(() => done()));
   const { port } = server.address() as AddressInfo;
   return (secret?: string) =>

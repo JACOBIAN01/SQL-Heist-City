@@ -177,7 +177,7 @@ describe('tutorial socket', () => {
       ...deps(),
       settings: () => ({ ...DEFAULT_TUTORIAL_SETTINGS, maxRooms }),
     });
-    await new Promise<void>((resolve) => http?.listen(0, resolve));
+    await new Promise<void>((resolve) => http?.listen(0, '127.0.0.1', resolve));
     return `ws://localhost:${(http.address() as AddressInfo).port}/ws/tutorial`;
   }
 

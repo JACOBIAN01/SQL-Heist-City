@@ -29,7 +29,7 @@ async function start() {
   });
   http = createServer();
   socket = attachChallengeSocket(http, stack.handler, { maxPayload: 2_000 });
-  await new Promise<void>((done) => http?.listen(0, done));
+  await new Promise<void>((done) => http?.listen(0, '127.0.0.1', done));
   return `ws://127.0.0.1:${(http.address() as AddressInfo).port}/ws/challenge`;
 }
 

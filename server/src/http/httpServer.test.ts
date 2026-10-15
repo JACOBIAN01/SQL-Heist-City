@@ -10,7 +10,7 @@ describe('game server HTTP', () => {
   afterEach(() => new Promise<void>((done) => server.close(() => done())));
 
   async function get(path: string): Promise<Response> {
-    await new Promise<void>((done) => server.listen(0, done));
+    await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
     const { port } = server.address() as AddressInfo;
     return fetch(`http://127.0.0.1:${port}${path}`);
   }
@@ -31,7 +31,7 @@ describe('game server HTTP', () => {
       startedAt: 0,
       metrics: () => ({ players: 3, tickMs: { p95: 1.5 } }),
     });
-    await new Promise<void>((done) => withMetrics.listen(0, done));
+    await new Promise<void>((done) => withMetrics.listen(0, '127.0.0.1', done));
     const { port } = withMetrics.address() as AddressInfo;
     const res = await fetch(`http://127.0.0.1:${port}/metrics`);
     expect(await res.json()).toEqual({ players: 3, tickMs: { p95: 1.5 } });
@@ -46,7 +46,7 @@ describe('game server HTTP', () => {
       lobby: () => ({ matches: [{ id: 1, port: 9001 }], open: { id: 1, port: 9001 } }),
       origins: new OriginPolicy(['https://heist.school.test'], false),
     });
-    await new Promise<void>((done) => withLobby.listen(0, done));
+    await new Promise<void>((done) => withLobby.listen(0, '127.0.0.1', done));
     const { port } = withLobby.address() as AddressInfo;
     const from = (origin?: string) =>
       fetch(`http://127.0.0.1:${port}/lobby`, origin ? { headers: { origin } } : {});

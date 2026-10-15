@@ -27,7 +27,7 @@ beforeEach(async () => {
   http = createServer();
   match = new Match({ map: TEST_MAP, settings: DEFAULT_MATCH_SETTINGS });
   socket = attachGameSocket(http, match, { joinTimeoutMs: 200 });
-  await new Promise<void>((resolve) => http.listen(0, resolve));
+  await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', resolve));
   url = `ws://localhost:${(http.address() as AddressInfo).port}/ws/game`;
 });
 afterEach(async () => {

@@ -39,7 +39,7 @@ describe('UpgradeRouter origin check', () => {
       ws.close();
     });
     router.route('/ws/test', wss);
-    await new Promise<void>((done) => http.listen(0, done));
+    await new Promise<void>((done) => http.listen(0, '127.0.0.1', done));
     const { port } = http.address() as AddressInfo;
     const open = (origin: string) =>
       new Promise<string>((resolve) => {

@@ -10,7 +10,8 @@ export interface TestResponse<T = unknown> {
 
 /** Starts an app on a random port and returns a tiny request helper that keeps cookies. */
 export async function startTestServer(app: Express) {
-  const server: Server = app.listen(0);
+  // Loopback only: on all interfaces another local process could hold 127.0.0.1 on the same port.
+  const server: Server = app.listen(0, '127.0.0.1');
   await new Promise<void>((done) => server.once('listening', done));
   const { port } = server.address() as AddressInfo;
   let cookie = '';

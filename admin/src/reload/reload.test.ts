@@ -23,7 +23,7 @@ describe('admin → game hot reload', () => {
       internalSecret: secret,
       onReload: () => gameSide.reader?.invalidate(),
     });
-    await new Promise<void>((done) => game.listen(0, done));
+    await new Promise<void>((done) => game.listen(0, '127.0.0.1', done));
     cleanups.push(() => new Promise((done) => game.close(() => done())));
     const url = `http://127.0.0.1:${(game.address() as AddressInfo).port}`;
 

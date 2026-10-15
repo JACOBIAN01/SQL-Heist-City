@@ -88,7 +88,7 @@ describe('runSocketBots', () => {
       settings: { ...DEFAULT_MATCH_SETTINGS, sandboxDummies: 0 },
     });
     socket = attachGameSocket(http, match);
-    await new Promise<void>((resolve) => http.listen(0, resolve));
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', resolve));
     const timer = setInterval(() => match.step(), 50);
     const url = `ws://localhost:${(http.address() as AddressInfo).port}/ws/game`;
     const r = await runSocketBots({ url, players: 4, seconds: 1.5, rampMs: 200 });

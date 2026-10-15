@@ -18,7 +18,7 @@ afterEach(async () => {
 });
 const listen = async (s: Server) => {
   servers.push(s);
-  await new Promise<void>((done) => s.listen(0, done));
+  await new Promise<void>((done) => s.listen(0, '127.0.0.1', done));
   return (s.address() as AddressInfo).port;
 };
 const stubHandler = {

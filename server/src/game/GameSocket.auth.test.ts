@@ -27,7 +27,7 @@ async function boot(required: boolean, classId?: number) {
     auth: ticketAuth(SECRET, required),
     ...(classId === undefined ? {} : { classId }),
   });
-  await new Promise<void>((r) => http.listen(0, r));
+  await new Promise<void>((r) => http.listen(0, '127.0.0.1', r));
   const url = `ws://localhost:${(http.address() as AddressInfo).port}/ws/game`;
   return { match, url };
 }

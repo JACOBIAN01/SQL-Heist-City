@@ -47,7 +47,7 @@ async function start(isOpen = true) {
     answered: async () => new Set(answered),
     auth: ticketAuth(SECRET, true),
   });
-  await new Promise<void>((done) => http?.listen(0, done));
+  await new Promise<void>((done) => http?.listen(0, '127.0.0.1', done));
   return { port: (http.address() as AddressInfo).port, sink, answered, q1: q1.id, q2: q2.id };
 }
 

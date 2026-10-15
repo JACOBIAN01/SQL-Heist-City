@@ -28,7 +28,7 @@ describe('UpgradeRouter', () => {
       wss.on('connection', (ws) => ws.send(name));
       router.route(`/ws/${name}`, wss);
     }
-    await new Promise<void>((resolve) => http.listen(0, resolve));
+    await new Promise<void>((resolve) => http.listen(0, '127.0.0.1', resolve));
     const { port } = http.address() as AddressInfo;
     expect(await open(port, '/ws/a')).toBe('a');
     expect(await open(port, '/ws/b')).toBe('b');
