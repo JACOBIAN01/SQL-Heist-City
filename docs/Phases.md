@@ -34,7 +34,7 @@
 | 14 | Classroom mode | ✅ |
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
 | 16 | Teaching loop | ✅ |
-| 17 | Question types and content (filling R, C, B, E) | ⬜ |
+| 17 | Question types and content (filling R, C, B, E) | 🟨 17.1 done |
 | 18 | Security hardening | ⬜ |
 | 19 | Scale proof | ⬜ |
 | 20 | Operations and deployment | ⬜ |
@@ -364,7 +364,7 @@ Today every question is Solve. This phase adds the question types that measure R
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 17.1 | Question-type framework: a question declares its type; the grader, pop-up, admin editor and validator handle each | adding a type needs no change outside its own module | ⬜ |
+| 17.1 | Question-type framework: a question declares its type; the grader, pop-up, admin editor and validator handle each | adding a type needs no change outside its own module | ✅ seven kinds (write, fix, faster, write_db, choice, fill, brief): server handlers, sandbox plan/write modes, pop-up views, editor field, QA gate |
 | 17.2 | **R** Quick recall: fill the missing keyword or clause; short multiple choice (fits ammo refills) | type built; 20 questions | ⬜ |
 | 17.3 | **C** Predict the output: given a query and tables, pick or build the result | type built; 15 questions | ⬜ |
 | 17.4 | **C** Explain the error: given a failing query and its error, pick the cause | type built; 10 questions | ⬜ |

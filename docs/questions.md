@@ -44,6 +44,24 @@ Every issued task also carries a worked example, LeetCode style: the player's ow
 - Why it is safe: grading runs on the real data, so writing the example's rows out as literals is graded wrong (a test checks this).
 - Built by `ExampleBuilder` (server) for the game, the admin preview ("Players' worked example") and the QA gate. `questions:validate` fails a question if any of its first 10 seeds gets no example with rows; all 150 pass.
 
+## Task kinds (Phase 17.1)
+A question's `task` says what the student does (default `{"kind": "write"}`). Each kind is one server handler (`server/src/challenges/tasks/handlers.ts`, Strategy) and one pop-up view (`client/src/ui/sql/TaskView.ts`); the QA gate and admin preview run the same handler.
+
+| kind | RCSBE | Student does | Graded by | Fields |
+|---|---|---|---|---|
+| `write` | S | writes a SELECT | rows vs reference | — |
+| `fix` | S | repairs a given query (pre-filled in the editor) | rows vs reference | `broken_sql` |
+| `faster` | S | rewrites a slow query | rows, then at most `max_scans` `SCAN` lines in `EXPLAIN QUERY PLAN` | `slow_sql`, `max_scans` |
+| `write_db` | S | INSERT / UPDATE / DELETE / CREATE TABLE·INDEX | `check_sql` run after their statements vs after the reference's | `check_sql` |
+| `choice` | R, C, E | picks options (one go); a query, its result, error or plan can be shown | exact set per part, weighted; reward at `pass_share`, the profile gets the share | `show_sql`, `show`, `parts[]`, `pass_share` |
+| `fill` | R | fills `___` blanks (one go) | each blank against `accept[]`, ignoring case and spaces | `text_sql`, `blanks[]` |
+| `brief` | B | writes goal, done-condition and queries | handed in; a teacher marks it against `rubric[]` (17.11) | `rubric[]` |
+
+- `reference_sql` is required for SQL kinds and empty for the others. Choice/fill/brief have no worked example; choice/fill have no Run button.
+- Write tasks run in a writable sandbox (`mode: 'write'`): only the listed statements are allowed (no ATTACH, PRAGMA, triggers, transactions, schema-table writes); the check query then runs read-only.
+- One-go answers end the question: `answered` (part marks, no reward) or `submitted` (brief, counted once marked). The right options and accepted blanks never reach the client.
+- The QA gate fails a `fix`/`faster` question whose given query already passes.
+
 ## Tiers
 | Tier | Level | Topics |
 |---|---|---|
