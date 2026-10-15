@@ -1,0 +1,1832 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "e-defend-not-exists",
+      "tier": 4,
+      "topic": ["not-exists", "not-in", "null"],
+      "title": "Missing Owners",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Find staff with no box. `boxes.owner_id` can be NULL.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);\nCREATE TABLE boxes (id INTEGER PRIMARY KEY, owner_id INTEGER, size TEXT);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        },
+        "boxes": {
+          "rows": 4,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4]
+            },
+            "owner_id": {
+              "kind": "list",
+              "values": [1, 1, 3, 9]
+            },
+            "size": {
+              "kind": "list",
+              "values": ["S", "L", "M", "S"]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "NOT IN cannot use a subquery"
+              },
+              {
+                "id": "b",
+                "text_md": "NOT EXISTS is always faster"
+              },
+              {
+                "id": "c",
+                "text_md": "If the subquery returns a NULL, NOT IN is never true, so A returns nothing"
+              },
+              {
+                "id": "d",
+                "text_md": "A returns duplicates"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT name FROM staff WHERE id NOT IN (SELECT owner_id FROM boxes);\n\n-- Query B\nSELECT name FROM staff s WHERE NOT EXISTS (SELECT 1 FROM boxes b WHERE b.owner_id = s.id);"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-count-column",
+      "tier": 3,
+      "topic": ["left-join", "count"],
+      "title": "Zero Means Zero",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Every account must show its transaction count, 0 when it has none.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "B is faster because it reads fewer columns"
+              },
+              {
+                "id": "b",
+                "text_md": "COUNT(*) is not allowed with GROUP BY"
+              },
+              {
+                "id": "c",
+                "text_md": "COUNT(t.id) skips the NULL row the LEFT JOIN adds; COUNT(*) counts it as 1"
+              },
+              {
+                "id": "d",
+                "text_md": "A drops accounts without transactions"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT a.id, COUNT(*) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id GROUP BY a.id;\n\n-- Query B\nSELECT a.id, COUNT(t.id) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id GROUP BY a.id;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-window-total",
+      "tier": 4,
+      "topic": ["window", "group-by"],
+      "title": "Row and Total",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Each transaction must be listed with its account's total next to it.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "GROUP BY cannot SUM negative amounts"
+              },
+              {
+                "id": "b",
+                "text_md": "A window keeps every row and adds the group total; GROUP BY collapses rows to one per account"
+              },
+              {
+                "id": "c",
+                "text_md": "Windows are always faster than GROUP BY"
+              },
+              {
+                "id": "d",
+                "text_md": "A sorts the rows differently"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT account_id, SUM(amount) FROM transactions GROUP BY account_id;\n\n-- Query B\nSELECT id, account_id, amount, SUM(amount) OVER (PARTITION BY account_id) AS total FROM transactions;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-union-all",
+      "tier": 3,
+      "topic": ["union"],
+      "title": "Every Movement",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Every deposit and every withdrawal must be listed, even two that look identical.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "UNION cannot combine one table with itself"
+              },
+              {
+                "id": "b",
+                "text_md": "UNION removes identical rows (and sorts to find them); UNION ALL keeps them all"
+              },
+              {
+                "id": "c",
+                "text_md": "UNION ALL removes NULLs"
+              },
+              {
+                "id": "d",
+                "text_md": "A returns more rows than B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT account_id, amount FROM transactions WHERE amount > 0 UNION SELECT account_id, amount FROM transactions WHERE amount < 0;\n\n-- Query B\nSELECT account_id, amount FROM transactions WHERE amount > 0 UNION ALL SELECT account_id, amount FROM transactions WHERE amount < 0;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-row-number",
+      "tier": 4,
+      "topic": ["row-number", "rank", "top-n"],
+      "title": "Exactly One Each",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Exactly one top earner per department is needed, even when two earn the same.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "RANK skips departments with ties"
+              },
+              {
+                "id": "b",
+                "text_md": "ROW_NUMBER is the only function allowed in a subquery"
+              },
+              {
+                "id": "c",
+                "text_md": "RANK gives tied rows the same number, so A can return two people per department"
+              },
+              {
+                "id": "d",
+                "text_md": "A is wrong because it has no tie-break, so it errors"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT * FROM (SELECT name, dept, RANK() OVER (PARTITION BY dept ORDER BY salary DESC) AS r FROM employees) WHERE r = 1;\n\n-- Query B\nSELECT * FROM (SELECT name, dept, ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary DESC, id) AS r FROM employees) WHERE r = 1;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-sargable-date",
+      "tier": 4,
+      "topic": ["index", "dates"],
+      "title": "A Huge Table",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **The transactions table has 50 million rows and an index on `at`. You need March 2025.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "A cannot run on large tables"
+              },
+              {
+                "id": "b",
+                "text_md": "B returns more rows"
+              },
+              {
+                "id": "c",
+                "text_md": "B compares the column itself, so the index on at can jump to March; A must compute strftime for every row"
+              },
+              {
+                "id": "d",
+                "text_md": "strftime returns wrong months"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT * FROM transactions WHERE strftime('%Y-%m', at) = '2025-03';\n\n-- Query B\nSELECT * FROM transactions WHERE at >= '2025-03-01' AND at < '2025-04-01';"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-cte",
+      "tier": 3,
+      "topic": ["cte", "subquery"],
+      "title": "Said Twice",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **The same \"big accounts\" subquery is needed twice, and a teammate must be able to check it.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "A returns a different count"
+              },
+              {
+                "id": "b",
+                "text_md": "The CTE defines the rule once, so it cannot drift between the two copies and is easier to read"
+              },
+              {
+                "id": "c",
+                "text_md": "CTEs are the only way to use AVG"
+              },
+              {
+                "id": "d",
+                "text_md": "Subqueries cannot be nested twice"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT COUNT(*), (SELECT AVG(balance) FROM (SELECT * FROM accounts WHERE balance > 10000)) FROM (SELECT * FROM accounts WHERE balance > 10000);\n\n-- Query B\nWITH big AS (SELECT * FROM accounts WHERE balance > 10000) SELECT COUNT(*), (SELECT AVG(balance) FROM big) FROM big;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-where-not-having",
+      "tier": 3,
+      "topic": ["where", "having", "group-by"],
+      "title": "Deposits Only",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Sum only the deposits (amount > 0) of each account.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "HAVING is slower but gives the same answer"
+              },
+              {
+                "id": "b",
+                "text_md": "WHERE drops withdrawals before summing; HAVING only drops whole accounts after summing everything"
+              },
+              {
+                "id": "c",
+                "text_md": "B counts deposits twice"
+              },
+              {
+                "id": "d",
+                "text_md": "WHERE cannot be used with GROUP BY"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT account_id, SUM(amount) FROM transactions WHERE amount > 0 GROUP BY account_id;\n\n-- Query B\nSELECT account_id, SUM(amount) FROM transactions GROUP BY account_id HAVING SUM(amount) > 0;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-exists-distinct",
+      "tier": 4,
+      "topic": ["exists", "join", "distinct"],
+      "title": "Who Moved Big Money",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **List each owner with at least one transaction over 2000, once, on a large table.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "EXISTS returns the amounts too"
+              },
+              {
+                "id": "b",
+                "text_md": "A misses owners with one transaction"
+              },
+              {
+                "id": "c",
+                "text_md": "DISTINCT is not allowed with JOIN"
+              },
+              {
+                "id": "d",
+                "text_md": "EXISTS stops at the first match and never makes duplicates; the join makes them and DISTINCT removes them again"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT DISTINCT a.id, a.owner FROM accounts a JOIN transactions t ON t.account_id = a.id WHERE t.amount > 2000;\n\n-- Query B\nSELECT a.id, a.owner FROM accounts a WHERE EXISTS (SELECT 1 FROM transactions t WHERE t.account_id = a.id AND t.amount > 2000);"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-join-vs-correlated",
+      "tier": 4,
+      "topic": ["correlated-subquery", "join", "group-by"],
+      "title": "Totals Without an Index",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **There is no index on `transactions.account_id`, and both tables are large.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Without the index A reads all transactions once per account; B can do the work in one grouped pass"
+              },
+              {
+                "id": "b",
+                "text_md": "Subqueries are not allowed in SELECT"
+              },
+              {
+                "id": "c",
+                "text_md": "A returns wrong totals"
+              },
+              {
+                "id": "d",
+                "text_md": "B drops accounts without transactions"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT a.id, (SELECT SUM(amount) FROM transactions t WHERE t.account_id = a.id) FROM accounts a;\n\n-- Query B\nSELECT a.id, SUM(t.amount) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id GROUP BY a.id;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-order-limit",
+      "tier": 2,
+      "topic": ["limit", "order-by"],
+      "title": "The Five Newest",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Show the five newest transactions.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Without ORDER BY the database may return any five rows; LIMIT alone does not mean newest"
+              },
+              {
+                "id": "b",
+                "text_md": "A returns the oldest five"
+              },
+              {
+                "id": "c",
+                "text_md": "LIMIT needs ORDER BY or it errors"
+              },
+              {
+                "id": "d",
+                "text_md": "B returns more rows"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT * FROM transactions LIMIT 5;\n\n-- Query B\nSELECT * FROM transactions ORDER BY at DESC, id DESC LIMIT 5;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-avg",
+      "tier": 2,
+      "topic": ["avg", "aggregate"],
+      "title": "Fair Average",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **The average balance must keep its decimals.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "B rounds to whole numbers"
+              },
+              {
+                "id": "b",
+                "text_md": "SUM / COUNT of integers is integer division in SQLite, which drops the decimals"
+              },
+              {
+                "id": "c",
+                "text_md": "A counts NULL balances"
+              },
+              {
+                "id": "d",
+                "text_md": "AVG skips zero balances"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT SUM(balance) / COUNT(*) FROM accounts;\n\n-- Query B\nSELECT AVG(balance) FROM accounts;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-coalesce-sum",
+      "tier": 3,
+      "topic": ["coalesce", "left-join", "sum"],
+      "title": "Nothing Is Zero",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Accounts without transactions must show a total of 0, not empty.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "SUM ignores negative numbers"
+              },
+              {
+                "id": "b",
+                "text_md": "SUM over no rows is NULL; COALESCE turns it into 0"
+              },
+              {
+                "id": "c",
+                "text_md": "COALESCE makes the query faster"
+              },
+              {
+                "id": "d",
+                "text_md": "A drops accounts without transactions"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT a.id, SUM(t.amount) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id GROUP BY a.id;\n\n-- Query B\nSELECT a.id, COALESCE(SUM(t.amount), 0) FROM accounts a LEFT JOIN transactions t ON t.account_id = a.id GROUP BY a.id;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-recursive",
+      "tier": 5,
+      "topic": ["recursive-cte", "self-join"],
+      "title": "How Deep Is the Chain",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Find everyone under employee 1, however many levels down the chain goes.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "A counts employee 1 too"
+              },
+              {
+                "id": "b",
+                "text_md": "Self-joins cannot use UNION"
+              },
+              {
+                "id": "c",
+                "text_md": "The self-joins stop at a fixed depth (two levels); the recursive CTE follows the chain until it ends"
+              },
+              {
+                "id": "d",
+                "text_md": "The CTE is faster on every table"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nSELECT e2.name FROM employees e1 JOIN employees e2 ON e2.manager_id = e1.id WHERE e1.id = 1 UNION SELECT e3.name FROM employees e1 JOIN employees e2 ON e2.manager_id = e1.id JOIN employees e3 ON e3.manager_id = e2.id WHERE e1.id = 1;\n\n-- Query B\nWITH RECURSIVE down(id, name) AS (SELECT id, name FROM employees WHERE manager_id = 1 UNION SELECT e.id, e.name FROM employees e JOIN down d ON e.manager_id = d.id) SELECT name FROM down;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "e-defend-money-type",
+      "tier": 3,
+      "topic": ["aggregate"],
+      "title": "Storing Money",
+      "rcsbe": "E",
+      "bloom": "evaluate",
+      "story_md": "Both queries run. **Balances must add up to the exact cent across millions of rows.** Choose one and say why.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "Which query should you use?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Query A"
+              },
+              {
+                "id": "b",
+                "text_md": "Query B"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          },
+          {
+            "prompt_md": "Why?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "SQLite has no REAL type"
+              },
+              {
+                "id": "b",
+                "text_md": "INTEGER columns take less space, which is the only reason"
+              },
+              {
+                "id": "c",
+                "text_md": "REAL is binary floating point: 0.1 cannot be stored exactly, so sums drift; whole cents add up exactly"
+              },
+              {
+                "id": "d",
+                "text_md": "REAL cannot be summed"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 2
+          }
+        ],
+        "pass_share": 0.6,
+        "shuffle": false,
+        "show": "query",
+        "show_sql": "-- Query A\nCREATE TABLE ledger (id INTEGER PRIMARY KEY, amount REAL); -- euros, e.g. 10.10\n\n-- Query B\nCREATE TABLE ledger (id INTEGER PRIMARY KEY, amount_cents INTEGER); -- cents, e.g. 1010"
+      },
+      "reference_sql": "",
+      "hints": []
+    }
+  ]
+}

@@ -14,7 +14,7 @@ let h: Harness | undefined;
 afterEach(() => h?.close());
 
 describe('seed content', () => {
-  it('has 150 questions, 30 per tier, that import cleanly through the admin API', async () => {
+  it('has the 150-question curriculum plus the task-kind sets, all importing cleanly', async () => {
     h = await startAdmin();
     await h.loginAs('a@school.test', 'admin');
     for (const file of files) {
@@ -24,11 +24,16 @@ describe('seed content', () => {
         '/api/questions/import',
         body,
       );
-      expect(res.body.report.counts, file).toMatchObject({ invalid: 0, created: 30 });
+      // tier-N.json: the 30-per-tier curriculum; kinds-*.json: the Phase 17 task-kind sets.
+      expect(res.body.report.counts, file).toMatchObject({
+        invalid: 0,
+        ...(file.startsWith('tier-') ? { created: 30 } : {}),
+      });
     }
     const all = (await h.client.get<{ questions: QuestionSummary[] }>('/api/questions')).body
       .questions;
-    expect(all).toHaveLength(150);
-    for (const tier of [1, 2, 3, 4, 5]) expect(all.filter((q) => q.tier === tier)).toHaveLength(30);
+    expect(all.length).toBeGreaterThanOrEqual(250);
+    for (const tier of [1, 2, 3, 4, 5])
+      expect(all.filter((q) => q.tier === tier).length).toBeGreaterThanOrEqual(30);
   }, 60_000);
 });
