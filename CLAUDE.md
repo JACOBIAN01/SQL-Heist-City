@@ -46,6 +46,7 @@ npm run questions:validate   # QA gate for content files (100 seeds each)
 npm run user:create -w @heist/admin -- --email you@school.test --password '…' [--role admin|teacher]
 npm run bot -w @heist/server -- 3    # dev bots that walk in circles (needs the game server running)
 npm run load:bots -- --players 60,100,200 --seconds 20   # server tick cost per player count (in-process; add --mode socket for real clients)
+npm run fuzz:sql -w @heist/server -- --iterations 3000 --seed x   # SQL sandbox fuzzer (runs nightly with 10 000)
 ```
 - TypeScript is pinned to 6.0.x until typescript-eslint supports 7.
 - Game server env: `PORT` (default 8080), `GAME_ORIGINS` (pages allowed to open sockets and read the lobby; localhost is allowed outside production), `MATCH_WORKERS=N` runs N matches each in its own thread on its own port (clients ask `GET /lobby` where to connect; 0 = one in-process match), `/metrics` serves tick time, players and bandwidth.
