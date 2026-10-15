@@ -51,6 +51,7 @@ interface ClassRow {
   banks_open: number[];
   round_minutes: string | null;
   player_cap: number;
+  dialect: string;
   locked: boolean;
   archived: boolean;
   created_at: Date;
@@ -67,6 +68,7 @@ const fromRow = (r: ClassRow): ClassRecord => ({
   banksOpen: r.banks_open,
   roundMinutes: r.round_minutes === null ? null : Number(r.round_minutes),
   playerCap: r.player_cap,
+  dialect: r.dialect,
   locked: r.locked,
   archived: r.archived,
   createdAt: r.created_at.toISOString(),
@@ -85,8 +87,8 @@ export class PgClassRepository implements ClassRepository {
     for (let i = 0; i < CODE_TRIES; i++) {
       try {
         const row = await this.db.one<ClassRow>(
-          `INSERT INTO classes (code, name, owner_user_id, city_seed, banks_open, round_minutes, player_cap)
-           VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+          `INSERT INTO classes (code, name, owner_user_id, city_seed, banks_open, round_minutes, player_cap, dialect)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
           [
             this.makeCode(),
             input.name,
@@ -95,6 +97,7 @@ export class PgClassRepository implements ClassRepository {
             JSON.stringify(input.banksOpen),
             input.roundMinutes,
             input.playerCap,
+            input.dialect,
           ],
         );
         return fromRow(row as ClassRow);
@@ -144,6 +147,7 @@ export class PgClassRepository implements ClassRepository {
     if (changes.banksOpen !== undefined) set('banks_open', JSON.stringify(changes.banksOpen));
     if (changes.roundMinutes !== undefined) set('round_minutes', changes.roundMinutes);
     if (changes.playerCap !== undefined) set('player_cap', changes.playerCap);
+    if (changes.dialect !== undefined) set('dialect', changes.dialect);
     if (sets.length === 0) return this.get(id);
     args.push(id);
     const row = await this.db.one<ClassRow>(

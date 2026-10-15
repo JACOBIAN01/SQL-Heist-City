@@ -57,6 +57,12 @@ describe('class match config', () => {
     expect(options('mystery:x').allowedQuestions?.size).toBe(0);
   });
 
+  it("passes the class's dialect along, and lets planning briefs draw from every brief", () => {
+    const options = classTaskOptions(config({ dialect: 'postgres' }));
+    expect(options('heal:small').dialect).toBe('postgres');
+    expect(options('brief:plan')).toEqual({ dialect: 'postgres' });
+  });
+
   it('works out which banks are closed', () => {
     expect([...closedTiers([1, 3])].sort()).toEqual([2, 4, 5]);
     expect(closedTiers([1, 2, 3, 4, 5]).size).toBe(0);

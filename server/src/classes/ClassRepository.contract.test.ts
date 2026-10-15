@@ -107,6 +107,7 @@ describe.each(implementations)('classes: %s', (_n, make) => {
       name: '9B SQL',
       citySeed: 'autumn',
       roundMinutes: 12.5,
+      dialect: 'sqlite',
       locked: false,
       archived: false,
     });
@@ -119,8 +120,10 @@ describe.each(implementations)('classes: %s', (_n, make) => {
       banksOpen: [1, 2],
       playerCap: 80,
       roundMinutes: null,
+      dialect: 'postgres',
     });
     expect(u).toMatchObject({
+      dialect: 'postgres',
       name: 'Renamed',
       banksOpen: [1, 2],
       playerCap: 80,

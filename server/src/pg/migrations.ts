@@ -303,4 +303,8 @@ export const pgMigrations: readonly string[] = [
   );
   CREATE INDEX brief_submissions_queue ON brief_submissions (class_id, marked_at, submitted_at);
   `,
+  // 9 — a class's dialect pack (Phase 17.14)
+  `
+  ALTER TABLE classes ADD COLUMN dialect TEXT NOT NULL DEFAULT 'sqlite';
+  `,
 ];

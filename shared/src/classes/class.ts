@@ -27,6 +27,8 @@ const banksField = z
 /** Round length in minutes; none uses the heist setting. */
 const roundField = z.number().positive().max(120).nullable();
 const capField = z.number().int().min(MIN_CLASS_PLAYERS).max(MAX_CLASS_PLAYERS);
+/** The dialect pack whose notes the pop-up shows (the game itself always runs SQLite). */
+const dialectField = z.string().regex(/^[a-z][a-z0-9-]{0,30}$/);
 
 /** What a teacher sets when making a class. */
 export const classInputSchema = z.object({
@@ -35,6 +37,7 @@ export const classInputSchema = z.object({
   banksOpen: banksField.default([1, 2, 3, 4, 5]),
   roundMinutes: roundField.default(null),
   playerCap: capField.default(100),
+  dialect: dialectField.default('sqlite'),
 });
 
 /** An edit: only what is given changes (no defaults, so a rename never resets the banks). */
@@ -44,6 +47,7 @@ export const classUpdateSchema = z.object({
   banksOpen: banksField.optional(),
   roundMinutes: roundField.optional(),
   playerCap: capField.optional(),
+  dialect: dialectField.optional(),
 });
 
 export type ClassInput = z.infer<typeof classInputSchema>;

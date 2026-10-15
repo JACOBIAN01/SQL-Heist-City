@@ -21,6 +21,7 @@ const record: ClassRecord = {
   banksOpen: [1, 2, 3, 4, 5],
   roundMinutes: null,
   playerCap: 100,
+  dialect: 'sqlite',
   locked: false,
   archived: false,
   createdAt: '',
@@ -104,6 +105,14 @@ function api(user: typeof teacher | typeof admin = teacher) {
       },
     }),
     'GET /questions': () => ({ body: { questions: [question(1, 1, 'a'), question(2, 3, 'b')] } }),
+    'GET /config/dialects': () => ({
+      body: {
+        dialects: {
+          current: { packs: { sqlite: { name: 'SQLite' }, postgres: { name: 'PostgreSQL' } } },
+          defaults: {},
+        },
+      },
+    }),
   });
 }
 
@@ -138,6 +147,8 @@ describe('ClassEditorPage', () => {
     expect(await screen.findByText('K7M2QX')).toBeTruthy();
     await user.click(screen.getByLabelText('Bank 4'));
     await user.type(screen.getByLabelText(/Round length/), '8');
+    await screen.findByRole('option', { name: 'PostgreSQL' });
+    await user.selectOptions(screen.getByLabelText(/SQL dialect/), 'postgres');
     await user.click(screen.getByRole('button', { name: 'Save settings' }));
     await screen.findByText('Saved ✓');
     const put = calls.find((c) => c.method === 'PUT' && c.path === '/classes/7');
@@ -146,6 +157,7 @@ describe('ClassEditorPage', () => {
       roundMinutes: 8,
       playerCap: 100,
       citySeed: null,
+      dialect: 'postgres',
     });
   });
 

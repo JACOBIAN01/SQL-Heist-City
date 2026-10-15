@@ -23,6 +23,8 @@ export interface ClassMatchConfig {
   readonly banksOpen: readonly number[];
   /** Released question ids by what they may be used for. */
   readonly questions: Readonly<Record<QuestionUsage, readonly number[]>>;
+  /** The dialect pack whose notes go with each question. */
+  readonly dialect: string;
 }
 
 export function classMatchConfig(
@@ -41,6 +43,7 @@ export function classMatchConfig(
     citySeed: record.citySeed,
     banksOpen: record.banksOpen,
     questions,
+    dialect: record.dialect,
   };
 }
 
@@ -60,6 +63,9 @@ export function classTaskOptions(config: ClassMatchConfig): (rewardKey: string) 
   const none: ReadonlySet<number> = new Set();
   return (rewardKey) => {
     const usage = usageOfReward(rewardKey);
-    return { allowedQuestions: (usage && sets.get(usage)) || none };
+    const dialect = { dialect: config.dialect };
+    // Planning briefs are not released per class (yet): any enabled brief may be asked.
+    if (rewardKey.startsWith('brief:')) return dialect;
+    return { allowedQuestions: (usage && sets.get(usage)) || none, ...dialect };
   };
 }
