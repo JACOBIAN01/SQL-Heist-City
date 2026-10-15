@@ -720,6 +720,40 @@ for group in (recall, predicts, errors, plans):
             p['options'] = [{'id': chr(97 + n), 'text_md': p['options'][i]['text_md']} for n, i in enumerate(order)]
             p['correct'] = [chr(97 + n) for n, i in enumerate(order) if i in right]
 
+# --- 17.10 Open briefs: planning the next heist between rounds -------------------------------
+
+RUBRIC = [
+    {'criterion': 'States a clear goal: what the crew needs to find out', 'marks': 2},
+    {'criterion': 'Says when it is done (a check you could run)', 'marks': 2},
+    {'criterion': 'The queries answer the goal and run', 'marks': 4},
+    {'criterion': 'Shows how they know it worked (a check query or a count that matches)', 'marks': 2},
+]
+
+
+def brief(slug, tier, topic, title, story, base=BANK, rubric=RUBRIC):
+    return q(slug, tier, topic, title, 'B', 'create', story, base, {'kind': 'brief', 'rubric': rubric})
+
+briefs = [
+    brief('b-plan-target-branch', 1, ['group-by', 'aggregate'], 'Pick the Target Branch',
+          'Next round the crew hits **one branch**. Decide which branch is worth it and why, using `accounts`.\n\n'
+          'Write your goal, when you are done, your queries (in the editor) and how you know your answer is right.'),
+    brief('b-plan-quiet-accounts', 2, ['left-join', 'subquery'], 'Accounts Nobody Watches',
+          'Accounts with little activity are less likely to be noticed. Find a way to list the **quietest accounts** and decide how many to target.'),
+    brief('b-plan-cash-timing', 3, ['dates', 'group-by'], 'When Is the Cash In',
+          'Look at `transactions` and decide **which month or weekday** the crew should strike, when deposits are highest. Say what "highest" means for you.'),
+    brief('b-plan-inside-help', 2, ['self-join', 'where'], 'Find the Inside Help',
+          'Using `employees`, find **who would make a good inside contact**: you choose the rule (department, pay, who they report to). Explain the rule and check it.',
+          base=EMP),
+    brief('b-plan-split-loot', 3, ['aggregate', 'case'], 'Split the Loot Fairly',
+          'Propose a **fair split** of the money in the richest accounts between five crew roles. Write queries that compute each share and a check that the shares add up.'),
+    brief('b-plan-risk-score', 4, ['case', 'window'], 'A Risk Score',
+          'Build a **risk score** for each account (for example from balance and number of transactions) and rank the accounts by it. Explain your score and test it on two accounts by hand.'),
+    brief('b-plan-cover-tracks', 4, ['update', 'delete'], 'Cover the Tracks (On Paper)',
+          'Plan which rows would have to change to hide a withdrawal of 5000 from account 1. **Do not change anything:** write the SELECTs that find those rows, and say how you would check nothing else changed.'),
+    brief('b-plan-full-heist', 5, ['cte', 'window', 'join'], 'The Full Plan',
+          'Write the **whole plan** for the next heist: the target branch, the accounts, the timing and the split. Use CTEs so each step can be checked on its own, and end with one query that shows the plan.'),
+]
+
 FILES = {
     'kinds-recall.json': recall,
     'kinds-predict.json': predicts,
@@ -729,6 +763,7 @@ FILES = {
     'kinds-faster.json': fasters,
     'kinds-write.json': writes,
     'kinds-defend.json': defends,
+    'kinds-briefs.json': briefs,
 }
 
 for name, questions in FILES.items():

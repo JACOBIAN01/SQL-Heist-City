@@ -1,0 +1,770 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "b-plan-target-branch",
+      "tier": 1,
+      "topic": ["group-by", "aggregate"],
+      "title": "Pick the Target Branch",
+      "rcsbe": "B",
+      "bloom": "create",
+      "story_md": "Next round the crew hits **one branch**. Decide which branch is worth it and why, using `accounts`.\n\nWrite your goal, when you are done, your queries (in the editor) and how you know your answer is right.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "brief",
+        "rubric": [
+          {
+            "criterion": "States a clear goal: what the crew needs to find out",
+            "marks": 2
+          },
+          {
+            "criterion": "Says when it is done (a check you could run)",
+            "marks": 2
+          },
+          {
+            "criterion": "The queries answer the goal and run",
+            "marks": 4
+          },
+          {
+            "criterion": "Shows how they know it worked (a check query or a count that matches)",
+            "marks": 2
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "b-plan-quiet-accounts",
+      "tier": 2,
+      "topic": ["left-join", "subquery"],
+      "title": "Accounts Nobody Watches",
+      "rcsbe": "B",
+      "bloom": "create",
+      "story_md": "Accounts with little activity are less likely to be noticed. Find a way to list the **quietest accounts** and decide how many to target.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "brief",
+        "rubric": [
+          {
+            "criterion": "States a clear goal: what the crew needs to find out",
+            "marks": 2
+          },
+          {
+            "criterion": "Says when it is done (a check you could run)",
+            "marks": 2
+          },
+          {
+            "criterion": "The queries answer the goal and run",
+            "marks": 4
+          },
+          {
+            "criterion": "Shows how they know it worked (a check query or a count that matches)",
+            "marks": 2
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "b-plan-cash-timing",
+      "tier": 3,
+      "topic": ["dates", "group-by"],
+      "title": "When Is the Cash In",
+      "rcsbe": "B",
+      "bloom": "create",
+      "story_md": "Look at `transactions` and decide **which month or weekday** the crew should strike, when deposits are highest. Say what \"highest\" means for you.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "brief",
+        "rubric": [
+          {
+            "criterion": "States a clear goal: what the crew needs to find out",
+            "marks": 2
+          },
+          {
+            "criterion": "Says when it is done (a check you could run)",
+            "marks": 2
+          },
+          {
+            "criterion": "The queries answer the goal and run",
+            "marks": 4
+          },
+          {
+            "criterion": "Shows how they know it worked (a check query or a count that matches)",
+            "marks": 2
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "b-plan-inside-help",
+      "tier": 2,
+      "topic": ["self-join", "where"],
+      "title": "Find the Inside Help",
+      "rcsbe": "B",
+      "bloom": "create",
+      "story_md": "Using `employees`, find **who would make a good inside contact**: you choose the rule (department, pay, who they report to). Explain the rule and check it.",
+      "schema_sql": "CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, manager_id INTEGER);",
+      "data_gen": {
+        "employees": {
+          "rows": [30, 45],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "name": {
+              "kind": "pick",
+              "from": "first_names"
+            },
+            "dept": {
+              "kind": "pick",
+              "from": "departments"
+            },
+            "salary": {
+              "kind": "int",
+              "min": 2000,
+              "max": 9000,
+              "step": 100
+            },
+            "manager_id": {
+              "kind": "int",
+              "min": 1,
+              "max": 6,
+              "null_rate": 0.25
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "brief",
+        "rubric": [
+          {
+            "criterion": "States a clear goal: what the crew needs to find out",
+            "marks": 2
+          },
+          {
+            "criterion": "Says when it is done (a check you could run)",
+            "marks": 2
+          },
+          {
+            "criterion": "The queries answer the goal and run",
+            "marks": 4
+          },
+          {
+            "criterion": "Shows how they know it worked (a check query or a count that matches)",
+            "marks": 2
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "b-plan-split-loot",
+      "tier": 3,
+      "topic": ["aggregate", "case"],
+      "title": "Split the Loot Fairly",
+      "rcsbe": "B",
+      "bloom": "create",
+      "story_md": "Propose a **fair split** of the money in the richest accounts between five crew roles. Write queries that compute each share and a check that the shares add up.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "brief",
+        "rubric": [
+          {
+            "criterion": "States a clear goal: what the crew needs to find out",
+            "marks": 2
+          },
+          {
+            "criterion": "Says when it is done (a check you could run)",
+            "marks": 2
+          },
+          {
+            "criterion": "The queries answer the goal and run",
+            "marks": 4
+          },
+          {
+            "criterion": "Shows how they know it worked (a check query or a count that matches)",
+            "marks": 2
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "b-plan-risk-score",
+      "tier": 4,
+      "topic": ["case", "window"],
+      "title": "A Risk Score",
+      "rcsbe": "B",
+      "bloom": "create",
+      "story_md": "Build a **risk score** for each account (for example from balance and number of transactions) and rank the accounts by it. Explain your score and test it on two accounts by hand.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "brief",
+        "rubric": [
+          {
+            "criterion": "States a clear goal: what the crew needs to find out",
+            "marks": 2
+          },
+          {
+            "criterion": "Says when it is done (a check you could run)",
+            "marks": 2
+          },
+          {
+            "criterion": "The queries answer the goal and run",
+            "marks": 4
+          },
+          {
+            "criterion": "Shows how they know it worked (a check query or a count that matches)",
+            "marks": 2
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "b-plan-cover-tracks",
+      "tier": 4,
+      "topic": ["update", "delete"],
+      "title": "Cover the Tracks (On Paper)",
+      "rcsbe": "B",
+      "bloom": "create",
+      "story_md": "Plan which rows would have to change to hide a withdrawal of 5000 from account 1. **Do not change anything:** write the SELECTs that find those rows, and say how you would check nothing else changed.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "brief",
+        "rubric": [
+          {
+            "criterion": "States a clear goal: what the crew needs to find out",
+            "marks": 2
+          },
+          {
+            "criterion": "Says when it is done (a check you could run)",
+            "marks": 2
+          },
+          {
+            "criterion": "The queries answer the goal and run",
+            "marks": 4
+          },
+          {
+            "criterion": "Shows how they know it worked (a check query or a count that matches)",
+            "marks": 2
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "b-plan-full-heist",
+      "tier": 5,
+      "topic": ["cte", "window", "join"],
+      "title": "The Full Plan",
+      "rcsbe": "B",
+      "bloom": "create",
+      "story_md": "Write the **whole plan** for the next heist: the target branch, the accounts, the timing and the split. Use CTEs so each step can be checked on its own, and end with one query that shows the plan.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "brief",
+        "rubric": [
+          {
+            "criterion": "States a clear goal: what the crew needs to find out",
+            "marks": 2
+          },
+          {
+            "criterion": "Says when it is done (a check you could run)",
+            "marks": 2
+          },
+          {
+            "criterion": "The queries answer the goal and run",
+            "marks": 4
+          },
+          {
+            "criterion": "Shows how they know it worked (a check query or a count that matches)",
+            "marks": 2
+          }
+        ]
+      },
+      "reference_sql": "",
+      "hints": []
+    }
+  ]
+}
