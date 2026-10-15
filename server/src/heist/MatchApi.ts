@@ -1,3 +1,4 @@
+import type { AnomalyKind } from '../game/AnomalyLog';
 import type { ClassMatchConfig } from '../classes/ClassMatchConfig';
 import type {
   GameMap,
@@ -43,6 +44,8 @@ export interface MatchApi {
   setCollisionMap(map: GameMap): void;
   /** A new round: every player back to full health, empty-handed, alive, at a street spawn, with a clean score. */
   resetPlayersForRound(): void;
+  /** Notes something an honest client never does (already refused); see AnomalyLog. */
+  reportAnomaly(player: Player, kind: AnomalyKind, detail?: Record<string, unknown>): void;
   /** Moves a player instantly (elevators); their velocity is cleared. */
   teleport(player: Player, x: number, y: number, z: number): void;
   /** Get into or out of a car; the match checks range, speed and room to step out. */

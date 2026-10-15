@@ -322,18 +322,31 @@ export class HeistController implements ArmsControl {
       return;
     }
     const parsed = jsonClientMessageSchema.safeParse(raw);
-    if (!parsed.success) return;
+    if (!parsed.success) {
+      this.match.reportAnomaly(player, 'malformed', { t: (raw as { t?: unknown } | null)?.t });
+      return;
+    }
     const message = parsed.data;
     if (message.t === 'interact') {
+      const result = this.roundOver
+        ? ({ action: 'denied', reason: 'round_over' } as const)
+        : player.vehicleId !== 0
+          ? ({ action: 'denied', reason: 'not_available' } as const) // no banking or lifts from a car
+          : this.interactions.use(player, message.anchor);
+      // The client only offers F within reach of a real anchor.
+      if (
+        result.action === 'denied' &&
+        (result.reason === 'too_far' || result.reason === 'unknown_anchor')
+      )
+        this.match.reportAnomaly(player, 'impossible_action', {
+          interact: message.anchor,
+          reason: result.reason,
+        });
       this.match.sendJson(player, {
         t: 'interact_result',
         ref: message.ref,
         anchor: message.anchor,
-        result: this.roundOver
-          ? { action: 'denied', reason: 'round_over' }
-          : player.vehicleId !== 0
-            ? { action: 'denied', reason: 'not_available' } // no banking or lifts from a car
-            : this.interactions.use(player, message.anchor),
+        result,
       });
       return;
     }
@@ -362,6 +375,10 @@ export class HeistController implements ArmsControl {
    */
   private onChallenge(player: Player, message: JsonClientMessage, raw: unknown): void {
     if (message.t === 'interact' || message.t === 'equip') return;
+    if (message.t === 'challenge_request' && !this.tasks.find(message.rewardKey)) {
+      this.match.reportAnomaly(player, 'impossible_action', { task: message.rewardKey });
+      return this.reply(player, this.refuse(message.ref, 'unknown_reward'));
+    }
     if (
       this.roundOver &&
       message.t === 'challenge_request' &&
