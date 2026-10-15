@@ -1,3 +1,4 @@
+import { rateLimitsFrom } from '@heist/shared';
 import { fileURLToPath } from 'node:url';
 import { openStores } from './openStores';
 import { createRemoteJWKSet } from 'jose';
@@ -44,6 +45,7 @@ const admin = buildAdmin(
   opened.stores,
   {
     secureCookies: process.env.NODE_ENV === 'production',
+    rateLimits: rateLimitsFrom(process.env.RATE_LIMITS),
     sessionTtlMs: 12 * 60 * 60 * 1000,
     uiDistDir: fileURLToPath(new URL('../ui/dist', import.meta.url)),
     ...(playerAuth ? { playerAuth } : {}),

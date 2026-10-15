@@ -1,3 +1,5 @@
+import { DEFAULT_RATE_LIMITS, type RateLimits } from '@heist/shared';
+import { KeyedLimiter } from '@heist/server/net/KeyedLimiter';
 import type { Express } from 'express';
 import { AuthService } from './auth/AuthService';
 import { LoginRateLimiter } from './auth/LoginRateLimiter';
@@ -56,6 +58,8 @@ export interface AdminConfig {
   >;
   /** When set, admin changes trigger a cache reload on the game server. */
   readonly gameServer?: { readonly url: string; readonly secret: string };
+  /** Per-address request limits; the defaults when absent. */
+  readonly rateLimits?: RateLimits;
 }
 
 export interface AdminOverrides {
@@ -142,8 +146,13 @@ export function buildAdmin(
   const nameRules = async () =>
     settingsParsers.namesFrom(await stores.settings.get(NAME_RULES_KEY));
 
+  const limits = config.rateLimits ?? DEFAULT_RATE_LIMITS;
   const app = createAdminApp({
     logger,
+    limits: {
+      api: new KeyedLimiter(limits.adminApiPerIp, now),
+      auth: new KeyedLimiter(limits.authPerIp, now),
+    },
     ...(config.playerAuth
       ? {
           root: [

@@ -1,3 +1,4 @@
+import { DEFAULT_RATE_LIMITS } from '@heist/shared';
 import type { Role } from '@heist/shared';
 import { openDatabase } from '@heist/server/db/database';
 import { ScryptPasswordHasher } from '../auth/PasswordHasher';
@@ -18,6 +19,8 @@ export async function startAdmin(
     /** Run on PostgreSQL (a migrated test schema) instead of in-memory SQLite. */
     pg?: PgDatabase;
     playerAuth?: AdminConfig['playerAuth'];
+    /** Request limits; by default high enough that only the limit tests reach them. */
+    rateLimits?: AdminConfig['rateLimits'];
     gameControl?: GameControl;
   } = {},
 ) {
@@ -31,6 +34,11 @@ export async function startAdmin(
       sessionTtlMs: 60 * 60 * 1000,
       ...(options.gameServer ? { gameServer: options.gameServer } : {}),
       ...(options.playerAuth ? { playerAuth: options.playerAuth } : {}),
+      rateLimits: options.rateLimits ?? {
+        ...DEFAULT_RATE_LIMITS,
+        adminApiPerIp: { burst: 100_000, perMinute: 1_000_000 },
+        authPerIp: { burst: 100_000, perMinute: 1_000_000 },
+      },
     },
     { error: (m, meta) => errors.push(`${m} ${JSON.stringify(meta)}`) },
     {

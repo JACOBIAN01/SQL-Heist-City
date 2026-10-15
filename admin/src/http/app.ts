@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import express, { type Express, type RequestHandler, type Router } from 'express';
+import type { KeyedLimiter } from '@heist/server/net/KeyedLimiter';
 import { PROTOCOL_VERSION } from '@heist/shared';
 import { apiNotFound, errorHandler, type ErrorLogger } from './errors';
 
@@ -14,6 +15,8 @@ export interface AdminAppDeps {
   readonly api?: readonly Router[];
   /** Built React UI to serve; skipped when the folder doesn't exist (in dev, Vite serves it). */
   readonly uiDistDir?: string;
+  /** Per-address limits (Phase 18.2): every /api call, and the sign-in routes on top. */
+  readonly limits?: { readonly api: KeyedLimiter; readonly auth: KeyedLimiter };
 }
 
 // SOLID: D (Dependency Inversion) — Why: the app is assembled from injected
@@ -25,6 +28,7 @@ export function createAdminApp(deps: AdminAppDeps): Express {
   app.disable('x-powered-by');
   app.set('trust proxy', 'loopback');
   app.use(express.json({ limit: '5mb' }));
+  if (deps.limits) app.use(limitRequests(deps.limits));
 
   app.get('/health', (_req, res) => {
     res.json({ status: 'ok', service: 'admin', protocolVersion: PROTOCOL_VERSION });
@@ -47,4 +51,23 @@ export function createAdminApp(deps: AdminAppDeps): Express {
 
   app.use(errorHandler(deps.logger));
   return app;
+}
+
+/** Sign-in routes: staff login, Google sign-in and tickets, class join. */
+const AUTH_PATH = /^\/(api\/)?auth(\/|$)/;
+
+function limitRequests(limits: NonNullable<AdminAppDeps['limits']>): RequestHandler {
+  return (req, res, next) => {
+    const who = req.ip ?? 'unknown';
+    const auth = AUTH_PATH.test(req.path);
+    const api = req.path.startsWith('/api/');
+    if ((auth && !limits.auth.take(who)) || (api && !limits.api.take(who))) {
+      res.setHeader('retry-after', '10');
+      res
+        .status(429)
+        .json({ error: { code: 'rate_limited', message: 'Too many requests. Wait a moment.' } });
+      return;
+    }
+    next();
+  };
 }
