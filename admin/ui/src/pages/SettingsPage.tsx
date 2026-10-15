@@ -84,6 +84,12 @@ export function SettingsPage() {
         editable={isAdmin}
       />
       <SectionCard
+        name="dialects"
+        title="Dialect packs"
+        note="How PostgreSQL and MySQL differ from SQLite (the game's engine), one entry per quirk. A class picks a pack; the pop-up shows the entries its question touches and the rest as a cheat-sheet."
+        editable={isAdmin}
+      />
+      <SectionCard
         name="city"
         title="City"
         note="How the city is generated. A new city appears in matches created after the change; running matches keep theirs."

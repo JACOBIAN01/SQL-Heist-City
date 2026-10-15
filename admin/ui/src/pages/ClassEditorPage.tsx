@@ -1,3 +1,4 @@
+import { useSection } from '../api/config';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
@@ -50,6 +51,11 @@ function ClassEditor({ record }: { record: ClassRecord }) {
   const [seed, setSeed] = useState(record.citySeed ?? '');
   const [minutes, setMinutes] = useState(record.roundMinutes?.toString() ?? '');
   const [cap, setCap] = useState(record.playerCap);
+  const [dialect, setDialect] = useState(record.dialect);
+  const packs = useSection('dialects');
+  const packNames = Object.entries(
+    (packs.data?.current.packs ?? {}) as Record<string, { name?: string }>,
+  );
 
   const save = () =>
     update.mutate({
@@ -58,6 +64,7 @@ function ClassEditor({ record }: { record: ClassRecord }) {
       citySeed: seed.trim() === '' ? null : seed.trim(),
       roundMinutes: minutes.trim() === '' ? null : Number(minutes),
       playerCap: cap,
+      dialect,
     });
 
   return (
@@ -115,6 +122,18 @@ function ClassEditor({ record }: { record: ClassRecord }) {
             ))}
           </div>
         </fieldset>
+        <label>
+          SQL dialect the class learns (the game runs SQLite; others get notes in the pop-up)
+          <select value={dialect} onChange={(e) => setDialect(e.target.value)}>
+            {(packNames.length ? packNames : [['sqlite', { name: 'SQLite' }] as const]).map(
+              ([id, pack]) => (
+                <option key={id} value={id}>
+                  {pack.name ?? id}
+                </option>
+              ),
+            )}
+          </select>
+        </label>
         <label>
           City seed (the same seed gives the same city; leave empty for the default)
           <input value={seed} onChange={(e) => setSeed(e.target.value)} maxLength={64} />

@@ -12,6 +12,8 @@ import {
   DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_NAME_RULES,
   DEFAULT_ANALYTICS_SETTINGS,
+  DEFAULT_DIALECT_SETTINGS,
+  dialectSettingsSchema,
   analyticsSettingsSchema,
   nameRulesSchema,
   DEFAULT_REWARD_ICONS,
@@ -32,6 +34,7 @@ import {
   ATMOSPHERE_SETTINGS_KEY,
   CITY_SETTINGS_KEY,
   ANALYTICS_SETTINGS_KEY,
+  DIALECT_SETTINGS_KEY,
   HEIST_SETTINGS_KEY,
   NAME_RULES_KEY,
   REWARD_ICONS_KEY,
@@ -258,7 +261,7 @@ export class SettingsService {
 }
 
 export type SectionName =
-  'heist' | 'vehicles' | 'atmosphere' | 'city' | 'rewardIcons' | 'names' | 'analytics';
+  'heist' | 'vehicles' | 'atmosphere' | 'city' | 'rewardIcons' | 'names' | 'analytics' | 'dialects';
 export const SECTION_NAMES: readonly SectionName[] = [
   'heist',
   'vehicles',
@@ -267,6 +270,7 @@ export const SECTION_NAMES: readonly SectionName[] = [
   'rewardIcons',
   'names',
   'analytics',
+  'dialects',
 ];
 
 interface SectionSpec {
@@ -314,6 +318,12 @@ const SECTIONS: Readonly<Record<SectionName, SectionSpec>> = {
     schema: rewardIconsSchema,
     defaults: DEFAULT_REWARD_ICONS,
     parse: settingsParsers.rewardIconsFrom,
+  },
+  dialects: {
+    key: DIALECT_SETTINGS_KEY,
+    schema: dialectSettingsSchema,
+    defaults: DEFAULT_DIALECT_SETTINGS,
+    parse: settingsParsers.dialectsFrom,
   },
   city: {
     key: CITY_SETTINGS_KEY,
