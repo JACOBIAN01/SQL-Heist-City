@@ -1,0 +1,770 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "c-error-typo-column",
+      "tier": 1,
+      "topic": ["select"],
+      "title": "No Such Column",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "The column name is misspelt: the table has `name`"
+              },
+              {
+                "id": "b",
+                "text_md": "Column names must be in quotes"
+              },
+              {
+                "id": "c",
+                "text_md": "The table `staff` does not exist"
+              },
+              {
+                "id": "d",
+                "text_md": "SELECT needs a WHERE clause"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT nmae FROM staff;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-error-ambiguous",
+      "tier": 2,
+      "topic": ["join"],
+      "title": "Which id?",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);\nCREATE TABLE boxes (id INTEGER PRIMARY KEY, owner_id INTEGER, size TEXT);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        },
+        "boxes": {
+          "rows": 4,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4]
+            },
+            "owner_id": {
+              "kind": "list",
+              "values": [1, 1, 3, 9]
+            },
+            "size": {
+              "kind": "list",
+              "values": ["S", "L", "M", "S"]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Both tables have an `id` column: say which one (`staff.id`)"
+              },
+              {
+                "id": "b",
+                "text_md": "JOIN needs the word INNER"
+              },
+              {
+                "id": "c",
+                "text_md": "The ON condition is the wrong way round"
+              },
+              {
+                "id": "d",
+                "text_md": "`size` is a reserved word"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT id, size FROM staff JOIN boxes ON boxes.owner_id = staff.id;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-error-aggregate-in-where",
+      "tier": 2,
+      "topic": ["having", "aggregate"],
+      "title": "Counting Too Early",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "COUNT(*) needs a column name"
+              },
+              {
+                "id": "b",
+                "text_md": "dept must also be counted"
+              },
+              {
+                "id": "c",
+                "text_md": "WHERE runs before grouping, so it cannot use COUNT(); use HAVING"
+              },
+              {
+                "id": "d",
+                "text_md": "GROUP BY must come before WHERE"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT dept FROM staff WHERE COUNT(*) > 1 GROUP BY dept;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-error-trailing-comma",
+      "tier": 1,
+      "topic": ["select"],
+      "title": "Stray Comma",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Two columns need brackets"
+              },
+              {
+                "id": "b",
+                "text_md": "salary is not a column"
+              },
+              {
+                "id": "c",
+                "text_md": "There is a comma after the last column"
+              },
+              {
+                "id": "d",
+                "text_md": "FROM must be lower case"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT name, salary, FROM staff;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-error-unquoted-string",
+      "tier": 1,
+      "topic": ["where", "text"],
+      "title": "Vault Without Quotes",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "Text values need single quotes ('Vault'); without them Vault is read as a column name"
+              },
+              {
+                "id": "b",
+                "text_md": "dept must be in double quotes"
+              },
+              {
+                "id": "c",
+                "text_md": "Use LIKE instead of ="
+              },
+              {
+                "id": "d",
+                "text_md": "There is no department called Vault"
+              }
+            ],
+            "correct": ["a"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT name FROM staff WHERE dept = Vault;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-error-window-in-where",
+      "tier": 3,
+      "topic": ["window", "row-number"],
+      "title": "Numbering Too Early",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "OVER needs a GROUP BY"
+              },
+              {
+                "id": "b",
+                "text_md": "ROW_NUMBER needs PARTITION BY"
+              },
+              {
+                "id": "c",
+                "text_md": "Compare with == instead of ="
+              },
+              {
+                "id": "d",
+                "text_md": "Window functions are computed after WHERE: number the rows in a subquery or CTE, then filter"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT name FROM staff WHERE ROW_NUMBER() OVER (ORDER BY salary DESC) = 1;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-error-union-columns",
+      "tier": 2,
+      "topic": ["union"],
+      "title": "Uneven Union",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "UNION cannot read one table twice"
+              },
+              {
+                "id": "b",
+                "text_md": "IS NULL is not allowed after UNION"
+              },
+              {
+                "id": "c",
+                "text_md": "Use UNION ALL instead"
+              },
+              {
+                "id": "d",
+                "text_md": "Both sides of UNION must return the same number of columns"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT name, dept FROM staff UNION SELECT name FROM staff WHERE bonus IS NULL;"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-error-order-before-union",
+      "tier": 3,
+      "topic": ["union", "order-by"],
+      "title": "Sort in the Middle",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "You cannot sort text"
+              },
+              {
+                "id": "b",
+                "text_md": "Audit has only one row"
+              },
+              {
+                "id": "c",
+                "text_md": "UNION needs brackets around each side"
+              },
+              {
+                "id": "d",
+                "text_md": "ORDER BY may only come once, after the last SELECT of the UNION"
+              }
+            ],
+            "correct": ["d"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT name FROM staff WHERE dept = 'Vault' ORDER BY name UNION SELECT name FROM staff WHERE dept = 'Audit';"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-error-subquery-columns",
+      "tier": 2,
+      "topic": ["in", "subquery"],
+      "title": "Too Many Columns",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);\nCREATE TABLE boxes (id INTEGER PRIMARY KEY, owner_id INTEGER, size TEXT);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        },
+        "boxes": {
+          "rows": 4,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4]
+            },
+            "owner_id": {
+              "kind": "list",
+              "values": [1, 1, 3, 9]
+            },
+            "size": {
+              "kind": "list",
+              "values": ["S", "L", "M", "S"]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "IN only works with numbers"
+              },
+              {
+                "id": "b",
+                "text_md": "boxes has no column owner_id"
+              },
+              {
+                "id": "c",
+                "text_md": "`IN (subquery)` needs the subquery to return exactly one column"
+              },
+              {
+                "id": "d",
+                "text_md": "Subqueries need an alias"
+              }
+            ],
+            "correct": ["c"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT name FROM staff WHERE id IN (SELECT owner_id, size FROM boxes);"
+      },
+      "reference_sql": "",
+      "hints": []
+    },
+    {
+      "slug": "c-error-no-function",
+      "tier": 1,
+      "topic": ["string"],
+      "title": "Length of a Name",
+      "rcsbe": "C",
+      "bloom": "analyze",
+      "story_md": "A teammate ran this query and got the error shown. Why?",
+      "schema_sql": "CREATE TABLE staff (id INTEGER PRIMARY KEY, name TEXT, dept TEXT, salary INTEGER, bonus INTEGER);",
+      "data_gen": {
+        "staff": {
+          "rows": 6,
+          "columns": {
+            "id": {
+              "kind": "list",
+              "values": [1, 2, 3, 4, 5, 6]
+            },
+            "name": {
+              "kind": "list",
+              "values": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay"]
+            },
+            "dept": {
+              "kind": "list",
+              "values": ["Vault", "Teller", "Vault", "Audit", "Teller", "Vault"]
+            },
+            "salary": {
+              "kind": "list",
+              "values": [5200, 3100, 6100, 4400, 2900, 5200]
+            },
+            "bonus": {
+              "kind": "list",
+              "values": [300, null, 100, null, 100, 200]
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "choice",
+        "parts": [
+          {
+            "prompt_md": "What is the cause?",
+            "options": [
+              {
+                "id": "a",
+                "text_md": "The staff table has no name column"
+              },
+              {
+                "id": "b",
+                "text_md": "SQLite has no LEN(); its function is length()"
+              },
+              {
+                "id": "c",
+                "text_md": "name must be in quotes"
+              },
+              {
+                "id": "d",
+                "text_md": "Functions are not allowed in SELECT"
+              }
+            ],
+            "correct": ["b"],
+            "multi": false,
+            "weight": 1
+          }
+        ],
+        "pass_share": 1,
+        "shuffle": true,
+        "show": "error",
+        "show_sql": "SELECT name, LEN(name) FROM staff;"
+      },
+      "reference_sql": "",
+      "hints": []
+    }
+  ]
+}
