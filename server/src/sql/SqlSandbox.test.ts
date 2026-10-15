@@ -98,8 +98,14 @@ describe('SqlSandbox: security', () => {
   });
 
   it('caps generated strings instead of allocating them', () => {
-    // Over-limit printf yields NULL rather than a 100 MB string.
-    expect(make().query("SELECT length(printf('%.*c', 100000000, 'x'))").rows).toEqual([[null]]);
+    // Over-limit printf never builds a 100 MB string: older SQLite returns NULL, newer ones
+    // (Node 26.11+) stop with "string or blob too big". Either way the cap holds.
+    const run = () => make().query("SELECT length(printf('%.*c', 100000000, 'x'))").rows;
+    try {
+      expect(run()).toEqual([[null]]);
+    } catch (err) {
+      expect(String(err)).toMatch(/too big/);
+    }
   });
 
   it('cannot write even via a CTE-wrapped statement', () => {
