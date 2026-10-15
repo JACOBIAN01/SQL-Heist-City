@@ -127,6 +127,13 @@ export class QuestionTester {
   /** A fix or faster task whose given query already passes asks nothing: say so. */
   private async givenQueryPasses(ctx: TaskContext, prepared: PreparedTask): Promise<string | null> {
     const p = prepared.public;
+    // A fix, faster or write task's own reference must pass its grading (e.g. a faster task's
+    // reference within max_scans).
+    if (p.kind === 'fix' || p.kind === 'faster' || p.kind === 'write_db') {
+      const own = await taskHandler(p.kind).grade(ctx, prepared, { sql: ctx.variant.referenceSql });
+      if (own.status !== 'correct')
+        return `the reference does not pass its own task: ${'feedback' in own ? own.feedback.message : own.status}`;
+    }
     const given = p.kind === 'fix' ? p.brokenSql : p.kind === 'faster' ? p.slowSql : null;
     if (given === null) return null;
     const grade = await taskHandler(p.kind).grade(ctx, prepared, { sql: given });

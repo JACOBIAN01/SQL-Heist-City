@@ -522,6 +522,9 @@ export class ChallengeService {
 }
 
 function toPublic(c: ActiveChallenge, sampleRows: number, shownRows: number): PublicChallenge {
+  // Answering from the tables alone (predict the output, fill, choose) needs them in full: show as
+  // many rows as a worked example does.
+  const rows = c.task.prepared.canRun ? sampleRows : Math.max(sampleRows, shownRows);
   return {
     id: c.id,
     rewardKey: c.rewardKey,
@@ -532,7 +535,7 @@ function toPublic(c: ActiveChallenge, sampleRows: number, shownRows: number): Pu
     tables: [...c.variant.tables].map(([name, table]) => ({
       name,
       columns: table.columns,
-      sampleRows: table.rows.slice(0, sampleRows),
+      sampleRows: table.rows.slice(0, rows),
       rowCount: table.rows.length,
     })),
     ...(c.example ? { example: toExampleView(c.example, shownRows) } : {}),

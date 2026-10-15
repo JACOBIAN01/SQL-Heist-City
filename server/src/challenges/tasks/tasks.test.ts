@@ -189,6 +189,13 @@ describe('task kinds', () => {
     expect(orders.size).toBeGreaterThan(1);
   });
 
+  it('choice: tables are shown in full (up to the example size), since the answer comes from them', async () => {
+    const c = await setup(choice).issue();
+    expect(c.tables[0]?.sampleRows).toHaveLength(10);
+    const w = await setup({ ...fixed, reference_sql: 'SELECT id FROM accounts' }).issue();
+    expect(w.tables[0]?.sampleRows).toHaveLength(3);
+  });
+
   it('fill: blanks ignore case and spaces', async () => {
     const t = setup({
       ...fixed,
