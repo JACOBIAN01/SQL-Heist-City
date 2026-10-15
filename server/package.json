@@ -11,6 +11,7 @@
     "load:bots": "tsx src/tools/loadBots.ts",
     "fuzz:sql": "tsx src/tools/fuzzSql.ts",
     "grader:stress": "tsx src/tools/graderStress.ts",
+    "capacity": "tsx src/tools/capacity.ts",
     "db:migrate": "tsx src/tools/migratePg.ts",
     "db:import-sqlite": "tsx src/tools/importSqlite.ts"
   },
