@@ -119,8 +119,20 @@ Defaults in `shared/src/config/rateLimits.ts`; operators override with `RATE_LIM
 
 Every row has a test that goes over it.
 
-## Anti-cheat basics
-Validate speed/teleport, fire rate, ammo, line of sight, challenge binding. Client trust = none.
+## Anti-cheat (Phase 18.3)
+Client trust = none. The server simulates every move from input (at most `maxCommandsPerTick` commands a tick, so extra input buys no speed), spaces shots by the gun's cooldown, rewinds targets by at most `maxLagCompMs`, ends every ray at the first wall, and checks range and rules for every interaction and task. On top of that, independent audits feed `AnomalyLog` (`server/src/game/AnomalyLog.ts`):
+
+| Anomaly | Raised when |
+|---|---|
+| `input_flood` | input arrives faster than real time and the queue drops commands |
+| `lag_claim` | a command claims more lag than the server rewinds |
+| `speed` | a body on foot moves further in a tick than the command budget at sprint speed allows (a physics bug) |
+| `fire_rate` | one gun fires more in a second than its rpm allows (a skipped cooldown) |
+| `hit_through_wall` | a hit's line from the gun crosses a wall (the hit is dropped) |
+| `impossible_action` | an interaction out of reach or unknown, or an unknown task |
+| `malformed` | a JSON message that does not match the protocol |
+
+Each is counted (`/metrics` → `anomalies`) and written as one JSON log line (`{"anomaly":…}`), at most three per player and kind. `AntiCheat.test.ts` plays each cheat and checks it fails and is logged, and that honest play logs nothing.
 
 ## Load testing
 `npm run load:bots -- --players 60,100,200 --seconds 20` runs a whole match in-process with scripted bots and prints the tick cost, bandwidth and garbage per tick. `--map city[:seed]` runs it in the real city with its parked cars, `--map sandbox` in the small yard, and the default is the city-sized bench map. `--mode socket --url ws://…` connects real WebSocket bots to a running server instead.
