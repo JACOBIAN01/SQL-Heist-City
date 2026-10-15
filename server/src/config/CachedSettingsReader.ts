@@ -1,4 +1,5 @@
 import type {
+  DialectSettings,
   AtmosphereSettings,
   ChallengeSettings,
   AnalyticsSettings,
@@ -24,6 +25,7 @@ export class CachedSettingsReader implements SettingsReader {
   private city: CitySettings | undefined;
   private icons: RewardIcons | undefined;
   private analytics: AnalyticsSettings | undefined;
+  private dialects: DialectSettings | undefined;
   private tiers = new Map<string, TierRange | undefined>();
 
   constructor(private readonly inner: SettingsReader) {}
@@ -63,6 +65,11 @@ export class CachedSettingsReader implements SettingsReader {
     return this.analytics;
   }
 
+  dialectSettings(): DialectSettings {
+    this.dialects ??= this.inner.dialectSettings();
+    return this.dialects;
+  }
+
   rewardIcons(): RewardIcons {
     this.icons ??= this.inner.rewardIcons();
     return this.icons;
@@ -88,6 +95,7 @@ export class CachedSettingsReader implements SettingsReader {
     this.city = undefined;
     this.icons = undefined;
     this.analytics = undefined;
+    this.dialects = undefined;
     this.tiers = new Map();
   }
 }

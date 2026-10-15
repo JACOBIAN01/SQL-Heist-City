@@ -36,6 +36,7 @@ describe('CachedSettingsReader', () => {
       citySettings: () => (calls++, inner.citySettings()),
       rewardIcons: () => (calls++, inner.rewardIcons()),
       analyticsSettings: () => (calls++, inner.analyticsSettings()),
+      dialectSettings: () => (calls++, inner.dialectSettings()),
       rewardTiers: (k: string) => (calls++, inner.rewardTiers(k)),
     };
     const cached = new CachedSettingsReader(counting);

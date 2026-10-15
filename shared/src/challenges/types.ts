@@ -51,6 +51,21 @@ export interface PublicChallenge {
   readonly expiresAt: number;
   /** What kind of task this is, and what the pop-up shows for it (absent: write a query). */
   readonly task?: PublicTask;
+  /**
+   * How this question's SQL differs in the class's dialect (Phase 17.14): the pack's intro and
+   * its whole cheat-sheet, with the entries this question touches marked.
+   */
+  readonly dialect?: {
+    readonly name: string;
+    readonly intro: string;
+    readonly entries: readonly {
+      readonly quirk: string;
+      readonly note: string;
+      readonly sqlite: string;
+      readonly dialect: string;
+      readonly here: boolean;
+    }[];
+  };
 }
 
 export interface ChallengeFeedback {

@@ -304,4 +304,19 @@ describe('task kinds', () => {
       ],
     });
   });
+
+  it("sends the class's dialect notes with the entries this question touches first", async () => {
+    const t = setup({ ...fixed, reference_sql: "SELECT id FROM accounts WHERE owner LIKE 'A%'" });
+    const r = await t.service.issue({ player: 'p', rewardKey: 'heal:small', dialect: 'postgres' });
+    if (!r.ok) throw new Error(r.reason);
+    expect(r.challenge.dialect?.name).toBe('PostgreSQL');
+    expect(r.challenge.dialect?.entries[0]).toMatchObject({ quirk: 'like-case', here: true });
+    expect(r.challenge.dialect?.entries.filter((e) => e.here)).toHaveLength(1);
+    const plain = await t.service.issue({
+      player: 'q',
+      rewardKey: 'heal:small',
+      dialect: 'sqlite',
+    });
+    expect(plain.ok && plain.challenge.dialect).toBeUndefined();
+  });
 });

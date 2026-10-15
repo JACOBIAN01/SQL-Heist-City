@@ -8,6 +8,9 @@ import {
   DEFAULT_CITY_SETTINGS,
   DEFAULT_HEIST_SETTINGS,
   DEFAULT_ANALYTICS_SETTINGS,
+  DEFAULT_DIALECT_SETTINGS,
+  dialectSettingsSchema,
+  type DialectSettings,
   analyticsSettingsSchema,
   type AnalyticsSettings,
   DEFAULT_NAME_RULES,
@@ -49,6 +52,8 @@ export interface SettingsReader {
   atmosphereSettings(): AtmosphereSettings;
   /** How learning is measured: marks, hint penalty, thresholds, target profile. */
   analyticsSettings(): AnalyticsSettings;
+  /** The dialect packs: notes on how other SQL dialects differ from SQLite. */
+  dialectSettings(): DialectSettings;
   /** Which picture each reward shows. */
   rewardIcons(): RewardIcons;
   /** How the city is generated; read when a match is created. */
@@ -72,10 +77,15 @@ export class StaticSettings implements SettingsReader {
     private readonly city: CitySettings = DEFAULT_CITY_SETTINGS,
     private readonly icons: RewardIcons = DEFAULT_REWARD_ICONS,
     private readonly analytics: AnalyticsSettings = DEFAULT_ANALYTICS_SETTINGS,
+    private readonly dialects: DialectSettings = DEFAULT_DIALECT_SETTINGS,
   ) {}
 
   analyticsSettings(): AnalyticsSettings {
     return this.analytics;
+  }
+
+  dialectSettings(): DialectSettings {
+    return this.dialects;
   }
 
   rewardIcons(): RewardIcons {
@@ -125,6 +135,7 @@ export const CITY_SETTINGS_KEY = 'city';
 export const REWARD_ICONS_KEY = 'reward_icons';
 export const NAME_RULES_KEY = 'names';
 export const ANALYTICS_SETTINGS_KEY = 'analytics';
+export const DIALECT_SETTINGS_KEY = 'dialects';
 
 /** What a match re-reads each round. */
 export function worldSettingsFrom(reader: SettingsReader): WorldSettings {
@@ -188,6 +199,8 @@ export const settingsParsers = {
   analyticsFrom: (raw: unknown): AnalyticsSettings =>
     sectionFrom(raw, analyticsSettingsSchema, DEFAULT_ANALYTICS_SETTINGS),
   namesFrom: (raw: unknown): NameRules => sectionFrom(raw, nameRulesSchema, DEFAULT_NAME_RULES),
+  dialectsFrom: (raw: unknown): DialectSettings =>
+    sectionFrom(raw, dialectSettingsSchema, DEFAULT_DIALECT_SETTINGS),
   rewardIconsFrom: (raw: unknown): RewardIcons =>
     sectionFrom(raw, rewardIconsSchema, DEFAULT_REWARD_ICONS),
 } as const;
@@ -225,6 +238,10 @@ export class SqliteSettingsReader implements SettingsReader {
 
   analyticsSettings(): AnalyticsSettings {
     return settingsParsers.analyticsFrom(this.raw(ANALYTICS_SETTINGS_KEY));
+  }
+
+  dialectSettings(): DialectSettings {
+    return settingsParsers.dialectsFrom(this.raw(DIALECT_SETTINGS_KEY));
   }
 
   rewardIcons(): RewardIcons {

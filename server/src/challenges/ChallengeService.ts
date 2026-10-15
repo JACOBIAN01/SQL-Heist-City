@@ -18,6 +18,8 @@ import {
   type WorkedExampleView,
   type TaskAnswer,
   marksFor,
+  ENGINE_DIALECT,
+  questionQuirks,
 } from '@heist/shared';
 import type { AttemptEventKind, AttemptSink, AttemptWho } from '../analytics/AttemptSink';
 import type { ConceptReader } from '../concepts/ConceptStore';
@@ -48,6 +50,8 @@ export interface IssueOptions {
   readonly skill?: SkillAdjust;
   /** Only questions with these ids may be asked (a class's released set for this kind of task). */
   readonly allowedQuestions?: ReadonlySet<number>;
+  /** The class's dialect pack: its notes for this question go with it. */
+  readonly dialect?: string;
 }
 
 export interface ChallengeRequest extends IssueOptions {
@@ -102,6 +106,8 @@ interface ActiveChallenge {
   readonly hintCostMode: 'fraction' | 'absolute';
   /** Tutorial: the reference query goes to the player, and hints cost nothing. */
   readonly revealSolution: boolean;
+  /** The class's dialect notes for this question (sent with it). */
+  readonly dialect: PublicChallenge['dialect'];
   /** How many hints (in order) the player has revealed and been charged for. */
   hintsRevealed: number;
   /** Revealed steps that cost something: only these count against the profile. */
@@ -241,6 +247,7 @@ export class ChallengeService {
           : this.ladder(question.template, settings.freeHintSteps, request.revealSolution === true),
         hintCostMode: settings.hintCostMode,
         revealSolution: request.revealSolution ?? false,
+        dialect: this.dialectNotes(request.dialect, question.template),
         hintsRevealed: 0,
         paidHints: 0,
         lockedUntil: 0,
@@ -508,6 +515,23 @@ export class ChallengeService {
     );
   }
 
+  /** The class's dialect pack, with the entries this question's SQL touches marked; none for SQLite. */
+  private dialectNotes(
+    id: string | undefined,
+    template: QuestionTemplate,
+  ): PublicChallenge['dialect'] {
+    if (!id || id === ENGINE_DIALECT) return undefined;
+    const pack = this.deps.settings.dialectSettings().packs[id];
+    if (!pack) return undefined;
+    const here = new Set<string>(questionQuirks(template));
+    const entries = Object.entries(pack.entries).flatMap(([quirk, e]) =>
+      e ? [{ quirk, ...e, here: here.has(quirk) }] : [],
+    );
+    // What this question touches comes first.
+    entries.sort((a, b) => Number(b.here) - Number(a.here));
+    return { name: pack.name, intro: pack.intro, entries };
+  }
+
   /** The weak topics to draw from this time, decided by the spaced-repetition chance (seeded, so tests repeat). */
   private focusFor(request: ChallengeRequest, seed: string): ReadonlySet<string> | undefined {
     const spaced = this.deps.settings.analyticsSettings().spaced;
@@ -558,6 +582,7 @@ function toPublic(c: ActiveChallenge, sampleRows: number, shownRows: number): Pu
     orderMatters: c.variant.orderMatters,
     ...(c.revealSolution && c.variant.referenceSql ? { solution: c.variant.referenceSql } : {}),
     ...(c.task.prepared.public.kind === 'write' ? {} : { task: c.task.prepared.public }),
+    ...(c.dialect ? { dialect: c.dialect } : {}),
     hintCosts: c.hints.map((h) => h.cost),
     hintCostMode: c.hintCostMode,
     expiresAt: c.expiresAt,
