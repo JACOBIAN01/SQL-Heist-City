@@ -1,0 +1,945 @@
+{
+  "format": "heist-questions",
+  "version": 1,
+  "questions": [
+    {
+      "slug": "s-faster-function",
+      "tier": 3,
+      "topic": ["index", "where"],
+      "title": "Name Lookup",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **id** and **balance** of accounts owned by **{owner}**. Make the slow query use the index on owner.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "owner": {
+          "kind": "pick",
+          "from": ["Ana", "Ben", "Cy", "Di", "Eli", "Fay", "Gus", "Hal", "Ida", "Jo", "Kai", "Lu"]
+        }
+      },
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT id, balance FROM accounts WHERE lower(owner) = lower({owner|sql});",
+        "max_scans": 0
+      },
+      "reference_sql": "SELECT id, balance FROM accounts WHERE owner = {owner|sql};",
+      "hints": [
+        {
+          "text": "A function around the column hides it from its index.",
+          "cost": 0.05
+        }
+      ],
+      "allow_empty": true
+    },
+    {
+      "slug": "s-faster-arithmetic",
+      "tier": 3,
+      "topic": ["index", "where"],
+      "title": "Rich Accounts Fast",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **id** of accounts with a balance over **{min_balance}**, using the index on balance.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "min_balance": {
+          "kind": "int",
+          "min": 4000,
+          "max": 12000,
+          "step": 500
+        }
+      },
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT id FROM accounts WHERE balance + 0 > {min_balance};",
+        "max_scans": 0
+      },
+      "reference_sql": "SELECT id FROM accounts WHERE balance > {min_balance};",
+      "hints": []
+    },
+    {
+      "slug": "s-faster-year",
+      "tier": 4,
+      "topic": ["index", "dates"],
+      "title": "One Year of Activity",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **id** and **amount** of transactions in **{year}**, using the index on `at`.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "year": {
+          "kind": "pick",
+          "from": [2023, 2024, 2025]
+        }
+      },
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT id, amount FROM transactions WHERE strftime('%Y', at) = '{year}';",
+        "max_scans": 0
+      },
+      "reference_sql": "SELECT id, amount FROM transactions WHERE at BETWEEN '{year}-01-01' AND '{year}-12-31';",
+      "hints": [
+        {
+          "text": "Compare `at` itself with the year's first and last day.",
+          "cost": 0.05
+        }
+      ]
+    },
+    {
+      "slug": "s-faster-cast",
+      "tier": 3,
+      "topic": ["index", "where"],
+      "title": "Branch Lookup",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **owner** of accounts at **{branch}**, using the index on branch.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "branch": {
+          "kind": "pick",
+          "from": ["North", "South", "East", "West", "Harbor"]
+        }
+      },
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT owner FROM accounts WHERE branch || '' = {branch|sql};",
+        "max_scans": 0
+      },
+      "reference_sql": "SELECT owner FROM accounts WHERE branch = {branch|sql};",
+      "hints": []
+    },
+    {
+      "slug": "s-faster-coalesce",
+      "tier": 3,
+      "topic": ["index", "coalesce"],
+      "title": "Nothing Is Missing",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **id** of accounts at **{branch}**. No branch is ever NULL, so COALESCE only slows it down.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "branch": {
+          "kind": "pick",
+          "from": ["North", "South", "East", "West", "Harbor"]
+        }
+      },
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT id FROM accounts WHERE coalesce(branch, '?') = {branch|sql};",
+        "max_scans": 0
+      },
+      "reference_sql": "SELECT id FROM accounts WHERE branch = {branch|sql};",
+      "hints": []
+    },
+    {
+      "slug": "s-faster-month",
+      "tier": 3,
+      "topic": ["index", "dates"],
+      "title": "One Month",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **id** and **amount** of transactions in **{month}** (dates look like 2024-03-15), using the index on `at`.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "month": {
+          "kind": "pick",
+          "from": [
+            "2023-01",
+            "2023-02",
+            "2023-03",
+            "2023-04",
+            "2023-05",
+            "2023-06",
+            "2023-07",
+            "2023-08",
+            "2023-09",
+            "2023-10",
+            "2023-11",
+            "2023-12",
+            "2024-01",
+            "2024-02",
+            "2024-03",
+            "2024-04",
+            "2024-05",
+            "2024-06",
+            "2024-07",
+            "2024-08",
+            "2024-09",
+            "2024-10",
+            "2024-11",
+            "2024-12",
+            "2025-01",
+            "2025-02",
+            "2025-03",
+            "2025-04",
+            "2025-05",
+            "2025-06",
+            "2025-07",
+            "2025-08",
+            "2025-09",
+            "2025-10",
+            "2025-11",
+            "2025-12"
+          ]
+        }
+      },
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT id, amount FROM transactions WHERE substr(at, 1, 7) = '{month}';",
+        "max_scans": 0
+      },
+      "reference_sql": "SELECT id, amount FROM transactions WHERE at BETWEEN '{month}-01' AND '{month}-31';",
+      "hints": [],
+      "allow_empty": true
+    },
+    {
+      "slug": "s-faster-rowid",
+      "tier": 2,
+      "topic": ["index"],
+      "title": "By Its Number",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **id**, **owner** and **balance** of the account whose id is one more than **{acc}**, without scanning.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "acc": {
+          "kind": "int",
+          "min": 2,
+          "max": 38
+        }
+      },
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT id, owner, balance FROM accounts WHERE id - 1 = {acc};",
+        "max_scans": 0
+      },
+      "reference_sql": "SELECT id, owner, balance FROM accounts WHERE id = {acc} + 1;",
+      "hints": []
+    },
+    {
+      "slug": "s-faster-max",
+      "tier": 3,
+      "topic": ["index", "min-max"],
+      "title": "The Largest Under a Cap",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return the **largest balance** that is at most **{cap}**. Let the index on balance answer it.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "cap": {
+          "kind": "int",
+          "min": 5000,
+          "max": 18000,
+          "step": 1
+        }
+      },
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT balance FROM accounts WHERE balance + 0 <= {cap} ORDER BY balance DESC LIMIT 1;",
+        "max_scans": 0
+      },
+      "reference_sql": "SELECT MAX(balance) FROM accounts WHERE balance <= {cap};",
+      "hints": []
+    },
+    {
+      "slug": "s-faster-correlated",
+      "tier": 4,
+      "topic": ["index", "correlated-subquery"],
+      "title": "Count per Account",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return each account **id** and its number of transactions. One full pass over accounts is fine; the counting must use the index on account_id.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {},
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT a.id, (SELECT COUNT(*) FROM transactions t WHERE t.account_id + 0 = a.id) FROM accounts a;",
+        "max_scans": 1
+      },
+      "reference_sql": "SELECT a.id, (SELECT COUNT(*) FROM transactions t WHERE t.account_id = a.id) FROM accounts a;",
+      "hints": []
+    },
+    {
+      "slug": "s-faster-join",
+      "tier": 4,
+      "topic": ["index", "join"],
+      "title": "Money at a Branch",
+      "rcsbe": "S",
+      "bloom": "apply",
+      "story_md": "Return **t.id** and **t.amount** of transactions on accounts at **{branch}**. Read only the accounts of that branch and find their transactions through the index.",
+      "schema_sql": "CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT, branch TEXT, balance INTEGER, opened TEXT);\nCREATE TABLE transactions (id INTEGER PRIMARY KEY, account_id INTEGER, amount INTEGER, at TEXT);\nCREATE INDEX accounts_owner ON accounts(owner);\nCREATE INDEX accounts_branch ON accounts(branch);\nCREATE INDEX accounts_balance ON accounts(balance);\nCREATE INDEX transactions_account ON transactions(account_id);\nCREATE INDEX transactions_at ON transactions(at);",
+      "data_gen": {
+        "accounts": {
+          "rows": [40, 60],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "owner": {
+              "kind": "pick",
+              "from": [
+                "Ana",
+                "Ben",
+                "Cy",
+                "Di",
+                "Eli",
+                "Fay",
+                "Gus",
+                "Hal",
+                "Ida",
+                "Jo",
+                "Kai",
+                "Lu"
+              ]
+            },
+            "branch": {
+              "kind": "pick",
+              "from": ["North", "South", "East", "West", "Harbor"]
+            },
+            "balance": {
+              "kind": "int",
+              "min": 0,
+              "max": 20000,
+              "step": 1
+            },
+            "opened": {
+              "kind": "date",
+              "from": "2015-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        },
+        "transactions": {
+          "rows": [60, 90],
+          "columns": {
+            "id": {
+              "kind": "serial"
+            },
+            "account_id": {
+              "kind": "fk",
+              "table": "accounts",
+              "column": "id"
+            },
+            "amount": {
+              "kind": "int",
+              "min": -2000,
+              "max": 3000,
+              "step": 10
+            },
+            "at": {
+              "kind": "date",
+              "from": "2023-01-01",
+              "to": "2025-12-31"
+            }
+          }
+        }
+      },
+      "params": {
+        "branch": {
+          "kind": "pick",
+          "from": ["North", "South", "East", "West", "Harbor"]
+        }
+      },
+      "task": {
+        "kind": "faster",
+        "slow_sql": "SELECT t.id, t.amount FROM transactions t JOIN accounts a ON a.id = t.account_id WHERE a.branch || '' = {branch|sql};",
+        "max_scans": 0
+      },
+      "reference_sql": "SELECT t.id, t.amount FROM transactions t JOIN accounts a ON a.id = t.account_id WHERE a.branch = {branch|sql};",
+      "hints": []
+    }
+  ]
+}
