@@ -8,6 +8,7 @@ export * from './questions/themes';
 export * from './questions/template';
 export * from './random/Rng';
 export * from './config/challenges';
+export * from './config/dialects';
 export * from './challenges/types';
 export * from './admin/auth';
 export * from './admin/questions';

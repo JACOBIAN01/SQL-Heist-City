@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { bloomSchema, marksSchema, rcsbeSchema } from './analytics';
 import { SQL_TASKS, taskSchema } from './taskTypes';
 import { themeSchema } from './themes';
+import { DIALECT_QUIRKS, detectQuirks, type DialectQuirk } from '../config/dialects';
 
 /**
  * Question template: the import/export + storage format for one SQL question.
@@ -149,6 +150,8 @@ export const questionTemplateSchema = z
     hints: z.array(hintSchema).default([]),
     /** Story themes: each player gets the plain question or one of these (seeded). */
     themes: z.array(themeSchema).max(5).default([]),
+    /** SQL in this question that other dialects write differently (more are found in its SQL). */
+    quirks: z.array(z.enum(DIALECT_QUIRKS)).default([]),
     enabled: z.boolean().default(true),
   })
   .superRefine((q, ctx) => {
@@ -297,4 +300,19 @@ export function parseStoredTemplate(raw: unknown): QuestionTemplate {
       ? { rcsbe: 'S', bloom: 'apply', ...(raw as Record<string, unknown>) }
       : raw;
   return questionTemplateSchema.parse(legacy);
+}
+
+/** Every dialect quirk a question touches: flagged by hand, or found in its SQL. */
+export function questionQuirks(q: QuestionTemplate): DialectQuirk[] {
+  const t = q.task;
+  const sql = [
+    q.reference_sql,
+    t.kind === 'fix' ? t.broken_sql : '',
+    t.kind === 'faster' ? t.slow_sql : '',
+    t.kind === 'write_db' ? t.check_sql : '',
+    t.kind === 'choice' ? (t.show_sql ?? '') : '',
+    t.kind === 'fill' ? t.text_sql : '',
+  ];
+  const found = new Set<DialectQuirk>([...q.quirks, ...detectQuirks(...sql)]);
+  return DIALECT_QUIRKS.filter((k) => found.has(k));
 }
