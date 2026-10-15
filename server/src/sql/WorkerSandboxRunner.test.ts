@@ -61,3 +61,34 @@ describe('WorkerSandboxRunner', () => {
     expect(outcome).toMatchObject({ ok: false, code: 'setup' });
   });
 });
+
+describe('WorkerSandboxRunner: lanes (19.3)', () => {
+  const lanes = new WorkerSandboxRunner({ size: 2, timeoutMs: 5_000, fastBudgetMs: 30 });
+  afterAll(() => lanes.close());
+
+  it('moves a runaway aside, so ordinary jobs are not held up behind it', async () => {
+    const stuck = lanes.run(job(INFINITE));
+    const stuck2 = lanes.run(job(INFINITE));
+    await new Promise((r) => setTimeout(r, 300)); // both overran their first budget by now
+    const started = Date.now();
+    const quick = await lanes.run(job('SELECT 7'));
+    expect(quick).toMatchObject({ ok: true, outcomes: [{ result: { rows: [[7]] } }] });
+    // One of the two slots stays free for ordinary work while the runaways wait their turn.
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(lanes.stats().demoted).toBeGreaterThanOrEqual(2);
+    void stuck;
+    void stuck2;
+  }, 20_000);
+
+  it('a slow but finite job still completes after being moved to the slow lane', async () => {
+    const outcome = await lanes.run(
+      job(
+        'WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 400000) SELECT COUNT(*) FROM n',
+      ),
+    );
+    expect(outcome).toMatchObject({
+      ok: true,
+      outcomes: [{ ok: true, result: { rows: [[400000]] } }],
+    });
+  }, 30_000);
+});
