@@ -34,7 +34,7 @@
 | 14 | Classroom mode | ✅ |
 | 15 | Learning analytics (RCSBE and Bloom, live radars) | ✅ |
 | 16 | Teaching loop | ✅ |
-| 17 | Question types and content (filling R, C, B, E) | 🟨 17.1 done |
+| 17 | Question types and content (filling R, C, B, E) | 🟨 17.1–17.9 done |
 | 18 | Security hardening | ⬜ |
 | 19 | Scale proof | ⬜ |
 | 20 | Operations and deployment | ⬜ |
@@ -365,14 +365,14 @@ Today every question is Solve. This phase adds the question types that measure R
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 17.1 | Question-type framework: a question declares its type; the grader, pop-up, admin editor and validator handle each | adding a type needs no change outside its own module | ✅ seven kinds (write, fix, faster, write_db, choice, fill, brief): server handlers, sandbox plan/write modes, pop-up views, editor field, QA gate |
-| 17.2 | **R** Quick recall: fill the missing keyword or clause; short multiple choice (fits ammo refills) | type built; 20 questions | ⬜ |
-| 17.3 | **C** Predict the output: given a query and tables, pick or build the result | type built; 15 questions | ⬜ |
-| 17.4 | **C** Explain the error: given a failing query and its error, pick the cause | type built; 10 questions | ⬜ |
-| 17.5 | **C** Read the plan: given `EXPLAIN QUERY PLAN`, say what is slow | type built; 10 questions | ⬜ |
-| 17.6 | **S** Fix the query: a broken query is given; the answer must produce the right result | type built; 10 questions | ⬜ |
-| 17.7 | **S** Make it faster: correct and under a cost (rows scanned or plan steps) | cost measured in the sandbox; 10 questions | ⬜ |
-| 17.8 | **S** Write to a scratch database (`CREATE`/`INSERT`/`UPDATE`), graded by the resulting state | the writable sandbox keeps the safety limits; 10 questions | ⬜ |
-| 17.9 | **E** Choose and defend: two or three working queries under a stated constraint; marks mostly in the structured reasons | type built; 15 questions | ⬜ |
+| 17.2 | **R** Quick recall: fill the missing keyword or clause; short multiple choice (fits ammo refills) | type built; 20 questions | ✅ 20 in kinds-recall.json (12 fill, 8 choice) |
+| 17.3 | **C** Predict the output: given a query and tables, pick or build the result | type built; 15 questions | ✅ 15 in kinds-predict.json (fixed `list` tables, options shuffled per player) |
+| 17.4 | **C** Explain the error: given a failing query and its error, pick the cause | type built; 10 questions | ✅ 10 in kinds-errors.json (the real sandbox error is shown) |
+| 17.5 | **C** Read the plan: given `EXPLAIN QUERY PLAN`, say what is slow | type built; 10 questions | ✅ 10 in kinds-plans.json (the real `EXPLAIN QUERY PLAN` is shown) |
+| 17.6 | **S** Fix the query: a broken query is given; the answer must produce the right result | type built; 10 questions | ✅ 10 in kinds-fix.json; QA fails a fix whose broken query already passes |
+| 17.7 | **S** Make it faster: correct and under a cost (rows scanned or plan steps) | cost measured in the sandbox; 10 questions | ✅ 10 in kinds-faster.json; cost = `SCAN` steps in the plan; QA checks the reference is within it and the slow one is not |
+| 17.8 | **S** Write to a scratch database (`CREATE`/`INSERT`/`UPDATE`), graded by the resulting state | the writable sandbox keeps the safety limits; 10 questions | ✅ 10 in kinds-write.json; INSERT/UPDATE/DELETE/CREATE only, then read-only checks |
+| 17.9 | **E** Choose and defend: two or three working queries under a stated constraint; marks mostly in the structured reasons | type built; 15 questions | ✅ 15 in kinds-defend.json; 1 mark for the pick, 2 for the reason, pass at 60% |
 | 17.10 | **B** Open brief: the student sets the goal and the done-condition, writes the queries and states how they know it worked; between rounds (heist planning) | briefs submitted from the game | ⬜ |
 | 17.11 | Rubric review queue in the admin for Build (and free-text Evaluate): rubrics per brief, batch marking, marks flow into profiles | a teacher marks 30 briefs and profiles update | ⬜ |
 | 17.12 | Structural variants: table and column renames, story-theme swaps (designed in questions.md) | one question renders under two themes with the same grading | ⬜ |
