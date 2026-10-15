@@ -126,3 +126,18 @@ Same laptop and method as 6.9, after Phases 7–18 (city, heists, cars, classes,
 - **Garbage per tick has doubled since 6.9** (~200 → ~410 KB at 100 players) as heists, cars and the city were added; at 200 players GC lands in ~10% of ticks. Worth an allocation pass before 200-player classes are offered; tracked for 19.4.
 - A clean answer for 200 needs bots on a separate machine (19.1 on cloud hardware).
 
+## Phase 19.2–19.3 — grader under load
+`npm run grader:stress -w @heist/server -- --submits 100 --heavy 0.2 [--order mixed|first] [--budget 150]`: 100 players submit at the same instant on the laptop's 7 sandbox processes (2 s limit); "heavy" answers are endless recursive CTEs that only the time limit stops.
+
+| case | ordinary answers p50 / p95 | all done |
+|---|---|---|
+| 100 ordinary | 6 / 9 ms | 9 ms |
+| 80 ordinary + 20 runaways, one queue (before 19.3) | 4 676 / 4 693 ms | 6.6 s |
+| same, two lanes, 300 ms first budget | 1 237 / 1 247 ms | 13 s |
+| same, two lanes, **150 ms first budget (default)** | **958 / 965 ms** (runaways first: 1 078 / 1 088) | 14 s |
+
+- **Two lanes:** each job first gets 150 ms; past that it is stopped and re-run in a slow lane that may use at most half the processes, with the rest of its 2 s. A runaway costs ordinary answers 150 ms of one process, not 2 s. The slow lane finishes later (runaways are what wait), which is the point.
+- What remains is arithmetic: 20 runaways × 150 ms ÷ 7 processes ≈ 0.45 s of fast-lane time, plus restarts (a sandbox process is ready ~115 ms after starting; two ready spares take over at once).
+- **Per player:** a player has one Run or Submit being graded at a time (a second is told to retry in 0.5 s), on top of the Run/Submit cooldowns and the wrong-answer lockout; so one flooding client holds at most one process.
+- Target: ordinary answers p95 < 1.5 s with a fifth of the class submitting runaways at the same moment, < 50 ms without. Met.
+
