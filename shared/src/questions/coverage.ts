@@ -28,6 +28,8 @@ export interface CoverageReport {
   readonly byBloom: Readonly<Record<BloomLevel, Tally>>;
   /** Items per tier and dimension: where the paper has holes. */
   readonly byTier: Readonly<Record<number, Readonly<Record<RcsbeDimension, number>>>>;
+  /** Questions per tier and Bloom level. */
+  readonly byTierBloom: Readonly<Record<number, Readonly<Record<BloomLevel, number>>>>;
   /** Dimensions with no question at all. */
   readonly emptyDimensions: readonly RcsbeDimension[];
   readonly emptyBloom: readonly BloomLevel[];
@@ -49,6 +51,7 @@ export function coverageOf(
     Tally
   >;
   const tiers: Record<number, Record<RcsbeDimension, number>> = {};
+  const tierBloom: Record<number, Record<BloomLevel, number>> = {};
   let items = 0;
   let marks = 0;
   for (const q of questions) {
@@ -59,6 +62,11 @@ export function coverageOf(
     bloom[q.bloom] = { items: bloom[q.bloom].items + 1, marks: bloom[q.bloom].marks + m };
     const row = (tiers[q.tier] ??= { R: 0, C: 0, S: 0, B: 0, E: 0 });
     row[q.rcsbe]++;
+    const b = (tierBloom[q.tier] ??= Object.fromEntries(BLOOM_LEVELS.map((l) => [l, 0])) as Record<
+      BloomLevel,
+      number
+    >);
+    b[q.bloom]++;
   }
   return {
     items,
@@ -66,6 +74,7 @@ export function coverageOf(
     byDimension: dim,
     byBloom: bloom,
     byTier: tiers,
+    byTierBloom: tierBloom,
     emptyDimensions: RCSBE_DIMENSIONS.filter((d) => dim[d].items === 0),
     emptyBloom: BLOOM_LEVELS.filter((b) => bloom[b].items === 0),
   };
@@ -117,4 +126,20 @@ export function shapeProblems(
             : `${names[r.dimension]} is ${Math.round(r.actual)}% of the marks, target ${r.target}%`,
         ],
   );
+}
+
+/**
+ * The tier × dimension and tier × Bloom cells with no question (Phase 17.13): each one is a
+ * level of a skill no student can show at that difficulty. Empty means the set covers the grid.
+ */
+export function emptyCells(
+  report: CoverageReport,
+  tiers: readonly number[] = [1, 2, 3, 4, 5],
+): string[] {
+  const out: string[] = [];
+  for (const t of tiers) {
+    for (const d of RCSBE_DIMENSIONS) if (!report.byTier[t]?.[d]) out.push(`tier ${t} × ${d}`);
+    for (const b of BLOOM_LEVELS) if (!report.byTierBloom[t]?.[b]) out.push(`tier ${t} × ${b}`);
+  }
+  return out;
 }

@@ -8,6 +8,7 @@ import {
   RCSBE_NAMES,
   compareToTarget,
   coverageOf,
+  emptyCells,
   DEFAULT_ANALYTICS_SETTINGS,
   conceptFileSchema,
   questionTemplateSchema,
@@ -90,6 +91,20 @@ const gaps = shapeProblems(
 );
 if (gaps.length) console.log('Against the default target profile: ' + gaps.join('; ') + '.');
 
+// Every tier has every RCSBE dimension and every Bloom level (Phase 17.13).
+const enabled = templates.filter((t) => t.enabled);
+const grid = coverageOf(enabled);
+console.log('\nTier × RCSBE (questions):');
+for (const t of [1, 2, 3, 4, 5])
+  console.log(
+    `  T${t} ` +
+      RCSBE_DIMENSIONS.map((d) => `${d} ${String(grid.byTier[t]?.[d] ?? 0).padStart(3)}`).join(
+        '  ',
+      ),
+  );
+const holes = emptyCells(grid);
+if (holes.length > 0) console.log(`✗ empty coverage cells: ${holes.join(', ')}`);
+
 // Every topic a question uses has a concept card (Phase 16.1).
 const cardTopics = new Set(
   conceptFileSchema
@@ -109,4 +124,4 @@ const missingCards = [...new Set(templates.flatMap((t) => t.topic))].filter(
 if (missingCards.length > 0) {
   console.log(`✗ no concept card for topic(s): ${missingCards.join(', ')}`);
 }
-process.exit(errors > 0 || missingCards.length > 0 ? 1 : 0);
+process.exit(errors > 0 || missingCards.length > 0 || holes.length > 0 ? 1 : 0);

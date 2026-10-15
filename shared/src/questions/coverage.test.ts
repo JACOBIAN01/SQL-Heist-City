@@ -5,7 +5,13 @@ import {
   marksFor,
   analyticsSettingsSchema,
 } from './analytics';
-import { compareToTarget, coverageOf, shapeProblems, type TaggedQuestion } from './coverage';
+import {
+  compareToTarget,
+  coverageOf,
+  emptyCells,
+  shapeProblems,
+  type TaggedQuestion,
+} from './coverage';
 import { parseStoredTemplate, questionTemplateSchema } from './template';
 import { sampleQuestion } from './fixtures';
 
@@ -97,5 +103,20 @@ describe('compareToTarget', () => {
     const set = [...Array(20).fill(q(1, 'S')), q(1, 'C')];
     const rows = compareToTarget(coverageOf(set), target);
     expect(rows.find((r) => r.dimension === 'C')?.status).toBe('low');
+  });
+});
+
+describe('emptyCells (17.13)', () => {
+  it('lists every tier × dimension and tier × Bloom cell without a question', () => {
+    const report = coverageOf([
+      { tier: 1, rcsbe: 'S', bloom: 'apply' },
+      { tier: 1, rcsbe: 'R', bloom: 'remember' },
+    ]);
+    const holes = emptyCells(report, [1]);
+    expect(holes).toContain('tier 1 × C');
+    expect(holes).toContain('tier 1 × create');
+    expect(holes).not.toContain('tier 1 × S');
+    expect(holes).not.toContain('tier 1 × remember');
+    expect(holes).toHaveLength(3 + 4);
   });
 });
