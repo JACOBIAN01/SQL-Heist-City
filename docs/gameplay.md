@@ -177,3 +177,7 @@ A teacher makes a **class** in the admin: a name, a six-character **join code**,
 
 ## Planning the next heist (Phase 17.10)
 When a round ends, a signed-in player sees **Plan the next heist** on the results card. It opens an open brief (`brief:plan`): the player writes a goal, when they are done and how they know it worked, and puts their queries in the editor (Run works as usual). It gives nothing in the game; a teacher marks it later against its rubric and the marks count as Build. The task stays open into the next round until its time runs out. `planningBriefs` (heist settings) turns it off; `taskKinds` (challenge settings) keeps briefs out of every in-round task and keeps planning to briefs only.
+
+## Dropping out and coming back (Phase 19.5)
+A signed-in player who loses their connection mid-round keeps their seat: banked cash, kills, deaths and guns are held, and come back when they rejoin the same match in the same round, even after the join window has closed. What they were carrying is dropped as loot when they drop, as before. A seat lasts until the round ends. Signing in again from a second tab or device takes over: the older connection is closed ("Signed in somewhere else") and its seat passes to the new one. Players without an account have no seat, since nobody can prove it is them.
+

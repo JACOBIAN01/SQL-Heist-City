@@ -115,6 +115,15 @@ export interface MatchDeps {
   readonly anomalies?: AnomalyLog;
 }
 
+interface HeldSeat {
+  readonly round: number | undefined;
+  readonly banked: number;
+  readonly kills: number;
+  readonly deaths: number;
+  readonly arsenal: readonly (readonly [string, number])[];
+  readonly weaponId: string;
+}
+
 const MAX_ID = 0xffff;
 const ALL_BANK_TIERS = [1, 2, 3, 4, 5];
 
@@ -131,6 +140,12 @@ export class Match implements MatchApi {
   readonly anomalies: AnomalyLog;
   /** Where each player stood when this tick's input began (the speed envelope). */
   private readonly before = new Map<number, { x: number; z: number }>();
+  /**
+   * Round progress of signed-in players who dropped out, by account (Phase 19.5): rejoining in
+   * the same round gives it back (and lets them in after the join window). What they carried
+   * was dropped as loot when they left, as before.
+   */
+  private readonly heldSeats = new Map<number, HeldSeat>();
   /** Shot ticks per player and gun in the last second (the fire-rate audit). */
   private readonly shotTicks = new Map<string, number[]>();
   private nextId = 1;
@@ -367,7 +382,14 @@ export class Match implements MatchApi {
     for (const p of this.players.values()) if (!p.isDummy) this.sendTo(p, { t: 'json', text });
   }
 
+  /** A held seat for this account, if it is from the round being played now. */
+  private heldSeatFor(accountId: number): HeldSeat | undefined {
+    const seat = this.heldSeats.get(accountId);
+    return seat && seat.round === this.roundNumber && !this.heist.roundOver ? seat : undefined;
+  }
+
   resetPlayersForRound(): void {
+    this.heldSeats.clear();
     // Everyone on foot again and every car back in its spot.
     for (const p of this.players.values()) p.vehicleId = 0;
     this.vehicles.reset();
@@ -424,18 +446,23 @@ export class Match implements MatchApi {
     if (this.players.size >= cap) {
       return { ok: false, code: CLOSE_FULL, reason: 'Match is full' };
     }
-    if (!this.heist.canJoin()) {
+    const held = accountId === undefined ? undefined : this.heldSeatFor(accountId);
+    if (!this.heist.canJoin() && !held) {
       return {
         ok: false,
         code: CLOSE_ROUND,
         reason: 'This round is under way. Join the next one.',
       };
     }
-    if (
-      accountId !== undefined &&
-      [...this.players.values()].some((p) => p.accountId === accountId)
-    ) {
-      return { ok: false, code: CLOSE_DUPLICATE, reason: 'You are already in this match' };
+    // The same account again: a reconnect whose old socket is not yet known to be dead, or a
+    // second tab. The newest connection wins; the old one is told why and its seat is held.
+    const earlier =
+      accountId === undefined
+        ? undefined
+        : [...this.players.values()].find((p) => p.accountId === accountId);
+    if (earlier) {
+      earlier.connection.close(CLOSE_DUPLICATE, 'Signed in somewhere else');
+      this.leave(earlier.id);
     }
     const id = this.allocateId();
     const key = `${this.deps.keyPrefix ?? ''}p${++this.joinCount}`;
@@ -454,6 +481,16 @@ export class Match implements MatchApi {
     player.key = key;
     if (accountId !== undefined) player.accountId = accountId;
     this.equipStartingGear(player);
+    const seat = accountId === undefined ? undefined : this.heldSeatFor(accountId);
+    if (seat && accountId !== undefined) {
+      this.heldSeats.delete(accountId);
+      player.banked = seat.banked;
+      player.kills = seat.kills;
+      player.deaths = seat.deaths;
+      player.arsenal.clear();
+      for (const [gun, rounds] of seat.arsenal) player.arsenal.set(gun, rounds);
+      if (seat.weaponId && player.arsenal.has(seat.weaponId)) player.equip(seat.weaponId);
+    }
     player.protectedUntilTick = this.tick + this.ticksFor(this.combat.spawnProtectionSec);
     this.players.set(id, player);
 
@@ -502,6 +539,15 @@ export class Match implements MatchApi {
   leave(id: number): void {
     const leaving = this.players.get(id);
     if (!leaving || !this.players.delete(id)) return;
+    if (leaving.accountId !== undefined && !this.heist.roundOver)
+      this.heldSeats.set(leaving.accountId, {
+        round: this.roundNumber,
+        banked: leaving.banked,
+        kills: leaving.kills,
+        deaths: leaving.deaths,
+        arsenal: [...leaving.arsenal],
+        weaponId: leaving.weaponId,
+      });
     this.before.delete(id);
     for (const key of this.shotTicks.keys())
       if (key.startsWith(`${id}:`)) this.shotTicks.delete(key);

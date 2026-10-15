@@ -98,11 +98,14 @@ describe('joining with a ticket', () => {
     expect(match.players.size).toBe(1);
   });
 
-  it('keeps one account to one player per match', async () => {
+  it('keeps one account to one player per match: the newest connection wins (19.5)', async () => {
     const { match, url } = await boot(true);
     const player = { id: 9, name: 'Ana' };
     expect((await joinWith(url, 'x', issueTicket(SECRET, player))).welcomed).toBe(true);
-    expect(await joinWith(url, 'x', issueTicket(SECRET, player))).toMatchObject({ code: 4004 });
+    const first = open.at(-1) as WebSocket;
+    const firstClosed = new Promise<number>((r) => first.on('close', (code) => r(code)));
+    expect((await joinWith(url, 'x', issueTicket(SECRET, player))).welcomed).toBe(true);
+    expect(await firstClosed).toBe(4004);
     expect(match.players.size).toBe(1);
   });
 });
