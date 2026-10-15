@@ -23,6 +23,7 @@ export class WorkPane {
   private busy = false;
   private submitLocked = false;
   private readonly canSubmit: boolean;
+  private readonly editorParts: HTMLElement[];
 
   constructor(host: HTMLElement, options: WorkPaneOptions) {
     this.canSubmit = options.onSubmit !== undefined;
@@ -58,33 +59,31 @@ export class WorkPane {
       this.hint,
     );
 
-    host.append(
-      editorHost,
-      createResizer({
-        axis: 'y',
-        direction: 1,
-        label: 'Editor height',
-        read: () => editorHost.getBoundingClientRect().height,
-        apply: (px) => {
-          editorHost.style.height = `${px}px`;
-        },
-        min: () => 72,
-        max: () => window.innerHeight * 0.8,
-        reset: () => editorHost.style.removeProperty('height'),
-        storageKey: 'sqlp.editorHeight',
-      }),
-      toolbar,
-      h(
-        'p',
-        { class: 'sqlp-keys' },
-        h('kbd', { text: 'Ctrl/⌘+Enter' }),
-        ' run · ',
-        h('kbd', { text: 'Ctrl/⌘+Shift+Enter' }),
-        ' submit · ',
-        h('kbd', { text: 'Esc' }),
-        ' back to the game',
-      ),
+    const resizer = createResizer({
+      axis: 'y',
+      direction: 1,
+      label: 'Editor height',
+      read: () => editorHost.getBoundingClientRect().height,
+      apply: (px) => {
+        editorHost.style.height = `${px}px`;
+      },
+      min: () => 72,
+      max: () => window.innerHeight * 0.8,
+      reset: () => editorHost.style.removeProperty('height'),
+      storageKey: 'sqlp.editorHeight',
+    });
+    const keys = h(
+      'p',
+      { class: 'sqlp-keys' },
+      h('kbd', { text: 'Ctrl/⌘+Enter' }),
+      ' run · ',
+      h('kbd', { text: 'Ctrl/⌘+Shift+Enter' }),
+      ' submit · ',
+      h('kbd', { text: 'Esc' }),
+      ' back to the game',
     );
+    this.editorParts = [editorHost, resizer, keys];
+    host.append(editorHost, resizer, toolbar, keys);
     this.result = new ResultView(host);
     this.refreshButtons();
     this.editor = new SqlEditor(editorHost, {
@@ -93,6 +92,12 @@ export class WorkPane {
       ...(options.onSubmit ? { onSubmit: options.onSubmit } : {}),
       ...(options.onChange ? { onChange: options.onChange } : {}),
     });
+  }
+
+  /** Tasks answered in the form (multiple choice, blanks) hide the editor and the Run button. */
+  setEditorShown(shown: boolean, canRun = shown): void {
+    for (const el of this.editorParts) el.hidden = !shown;
+    this.run.hidden = !canRun;
   }
 
   /** Disables the buttons while a request is in flight. */

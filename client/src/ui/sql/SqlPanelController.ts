@@ -102,6 +102,11 @@ export class SqlPanelController {
       this.deps.panel.setBarSchema(result.challenge.tables);
       this.showHeader(result.challenge);
       this.problem.show(result.challenge);
+      const view = this.problem.task;
+      this.work.setEditorShown(view?.usesEditor ?? true);
+      // Fix and faster tasks start from the given query (unless the player already changed it).
+      if (view?.startSql && !this.work.editor.getValue().trim())
+        this.work.editor.setValue(view.startSql);
       this.refreshHintButton();
       this.startTicker();
       this.tick();
@@ -167,7 +172,8 @@ export class SqlPanelController {
     const challenge = this.challenge;
     if (!challenge || this.busy) return;
     const sql = this.work.editor.getValue().trim();
-    if (!sql) {
+    const view = this.problem.task;
+    if (!sql && !view?.formAnswer) {
       this.work.result.showMessage('Write a query first.');
       return;
     }
@@ -181,7 +187,13 @@ export class SqlPanelController {
     this.setBusy(true);
     this.work.result.showMessage('Checking your answer…');
     try {
-      this.showSubmitResult(await this.deps.api.submit(challenge.id, sql));
+      this.showSubmitResult(
+        await this.deps.api.submit(
+          challenge.id,
+          view?.usesEditor === false ? '' : sql,
+          ...(view?.formAnswer ? [view.answer()] : []),
+        ),
+      );
     } catch (err) {
       this.work.result.showMessage(this.describe(err), 'error');
     } finally {
@@ -217,6 +229,23 @@ export class SqlPanelController {
         );
         this.deps.onSolved?.({ rewardKey: result.rewardKey, target: result.target });
         return;
+      case 'answered':
+        // One go (multiple choice, blanks): the question is over; part marks still count.
+        if (this.task) this.drafts.clear(this.task.key);
+        this.endTask();
+        this.work.editor.setReadOnly(true);
+        view.showWith(
+          `✘ ${result.feedback.message} (${Math.round(result.share * 100)}% of the marks)`,
+          'wrong',
+          this.closeButton('Close'),
+        );
+        return;
+      case 'received':
+        if (this.task) this.drafts.clear(this.task.key);
+        this.endTask();
+        this.work.editor.setReadOnly(true);
+        view.showWith('✔ Handed in. Your teacher will mark it.', 'ok', this.closeButton('Close'));
+        return;
       case 'wrong':
         view.showMessage(`✘ Not quite. ${withAdvice(result.feedback)}`, 'wrong');
         this.lockOut(result.lockedUntil);
@@ -235,6 +264,19 @@ export class SqlPanelController {
           );
         return;
     }
+  }
+
+  private closeButton(text: string): HTMLElement {
+    return h(
+      'p',
+      {},
+      h('button', {
+        class: 'sqlp-btn primary',
+        text,
+        attrs: { type: 'button' },
+        on: { click: () => this.deps.panel.close() },
+      }),
+    );
   }
 
   private showRunResult(result: RunResult): void {

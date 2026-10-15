@@ -8,10 +8,13 @@ import {
 import { clear, h } from '../dom';
 import { dataTable } from './DataTable';
 import { hintCostText } from './labels';
+import { taskView, type TaskView } from './TaskView';
 
 /** Left pane: the task text, then the tables the query will run against. */
 export class ProblemPane {
   private hints: HTMLElement | null = null;
+  /** The current task's own view (broken query, options, blanks, brief); null for a plain write task. */
+  task: TaskView | null = null;
 
   constructor(
     private readonly host: HTMLElement,
@@ -22,9 +25,11 @@ export class ProblemPane {
   show(challenge: PublicChallenge): void {
     clear(this.host);
     this.hints = h('div', { class: 'sqlp-hints' });
+    this.task = challenge.task ? taskView(challenge.task) : null;
     this.host.append(
       h('h2', { class: 'sqlp-h2', text: 'Task' }),
       story(challenge.story),
+      ...(this.task ? [this.task.element] : []),
       ...(challenge.solution === undefined ? [] : [this.solution(challenge.solution)]),
       h('h2', { class: 'sqlp-h2', text: challenge.tables.length === 1 ? 'Table' : 'Tables' }),
       ...challenge.tables.map(tableCard),
@@ -90,6 +95,7 @@ export class ProblemPane {
   showMessage(text: string): void {
     clear(this.host);
     this.hints = null;
+    this.task = null;
     this.host.append(h('p', { class: 'sqlp-muted', text }));
   }
 }

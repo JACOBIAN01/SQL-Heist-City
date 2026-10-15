@@ -4,6 +4,7 @@ import type {
   PublicChallenge,
   RunResult,
   SubmitResult,
+  TaskAnswer,
 } from '@heist/shared';
 import type { ChallengeApi } from '../net/ChallengeApi';
 
@@ -71,8 +72,8 @@ export class FakeChallengeApi implements ChallengeApi {
     return this.onRun(id, sql);
   }
 
-  submit(id: string, sql: string): Promise<SubmitResult> {
-    this.calls.push({ method: 'submit', args: [id, sql] });
+  submit(id: string, sql: string, answer?: TaskAnswer): Promise<SubmitResult> {
+    this.calls.push({ method: 'submit', args: answer ? [id, sql, answer] : [id, sql] });
     return this.onSubmit(id, sql);
   }
 

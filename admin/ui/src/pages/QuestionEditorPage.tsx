@@ -319,6 +319,20 @@ export function QuestionEditorPage() {
                 minLines={10}
               />
             </div>
+            <div className="stack">
+              <strong>Task (what the student does)</strong>
+              <p className="muted">
+                {'{"kind":"write"}'} for a query. Other kinds: fix, faster, write_db, choice, fill,
+                brief (see docs/questions.md, &quot;Question types&quot;).
+              </p>
+              <CodeEditor
+                label="task JSON"
+                language="json"
+                value={draft.task}
+                onChange={(v) => set('task', v)}
+                minLines={6}
+              />
+            </div>
           </div>
         </div>
       )}

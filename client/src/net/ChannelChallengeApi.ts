@@ -2,6 +2,7 @@ import {
   isChallengeServerMessage,
   type ChallengeClientMessage,
   type ChallengeServerMessage,
+  type TaskAnswer,
   type JsonServerMessage,
 } from '@heist/shared';
 import type { ChallengeApi } from './ChallengeApi';
@@ -58,12 +59,13 @@ export class ChannelChallengeApi implements ChallengeApi {
     return (reply as Extract<ChallengeServerMessage, { t: 'challenge_preview' }>).result;
   }
 
-  async submit(challengeId: string, sql: string) {
+  async submit(challengeId: string, sql: string, answer?: TaskAnswer) {
     const reply = await this.rpc.call('challenge_result', (ref) => ({
       t: 'challenge_submit',
       ref,
       challengeId,
       sql,
+      ...(answer ? { answer } : {}),
     }));
     return (reply as Extract<ChallengeServerMessage, { t: 'challenge_result' }>).result;
   }

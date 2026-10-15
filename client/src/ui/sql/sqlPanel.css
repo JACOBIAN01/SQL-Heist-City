@@ -577,3 +577,46 @@
 .sqlp-bar-table strong {
   color: var(--sqlp-text);
 }
+
+/* Task kinds (Phase 17): the given query, options, blanks and the brief. */
+.sqlp-task-sql,
+.sqlp-task-plan {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 8px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.sqlp-task-error {
+  color: var(--sqlp-error, #e57373);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.sqlp-choice {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  margin: 8px 0;
+  padding: 6px 8px;
+}
+.sqlp-choice legend {
+  padding: 0 4px;
+}
+.sqlp-option {
+  display: block;
+  padding: 3px 0;
+  cursor: pointer;
+}
+.sqlp-blank {
+  font: inherit;
+  width: 8em;
+  margin: 0 2px;
+}
+.sqlp-brief {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+}
+.sqlp-rubric {
+  margin: 4px 0 8px 18px;
+  padding: 0;
+}

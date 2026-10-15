@@ -1,4 +1,4 @@
-import type { HintResult, IssueResult, RunResult, SubmitResult } from '@heist/shared';
+import type { HintResult, IssueResult, RunResult, SubmitResult, TaskAnswer } from '@heist/shared';
 
 /**
  * What the SQL panel needs from the game connection. The panel depends on
@@ -11,7 +11,8 @@ import type { HintResult, IssueResult, RunResult, SubmitResult } from '@heist/sh
 export interface ChallengeApi {
   request(rewardKey: string, target?: string): Promise<IssueResult>;
   run(challengeId: string, sql: string): Promise<RunResult>;
-  submit(challengeId: string, sql: string): Promise<SubmitResult>;
+  /** `answer` carries the picks, blanks or write-up of a non-SQL task. */
+  submit(challengeId: string, sql: string, answer?: TaskAnswer): Promise<SubmitResult>;
   /** Reveals hint `index` (in order). The first reveal is charged by the game; repeats are free. */
   hint(challengeId: string, index: number): Promise<HintResult>;
   /** Tells the server this player gave up their current task. */

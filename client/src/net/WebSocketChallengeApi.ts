@@ -2,6 +2,7 @@ import {
   isChallengeServerMessage,
   type ChallengeClientMessage,
   type ChallengeServerMessage,
+  type TaskAnswer,
 } from '@heist/shared';
 import { ChallengeConnectionError, type ChallengeApi } from './ChallengeApi';
 import { JsonRpc } from './JsonRpc';
@@ -73,12 +74,13 @@ export class WebSocketChallengeApi implements ChallengeApi {
     return (reply as Extract<ChallengeServerMessage, { t: 'challenge_preview' }>).result;
   }
 
-  async submit(challengeId: string, sql: string) {
+  async submit(challengeId: string, sql: string, answer?: TaskAnswer) {
     const reply = await this.call('challenge_result', (ref) => ({
       t: 'challenge_submit',
       ref,
       challengeId,
       sql,
+      ...(answer ? { answer } : {}),
     }));
     return (reply as Extract<ChallengeServerMessage, { t: 'challenge_result' }>).result;
   }

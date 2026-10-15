@@ -17,6 +17,8 @@ export interface Draft {
   story_md: string;
   schema_sql: string;
   reference_sql: string;
+  /** What the task asks, as JSON (see the question-type reference); `{"kind":"write"}` for a query. */
+  task: string;
   data_gen: string;
   params: string;
   order_matters: boolean;
@@ -63,7 +65,8 @@ export function toDraft(t: QuestionTemplateInput): Draft {
     enabled: t.enabled ?? true,
     story_md: t.story_md,
     schema_sql: t.schema_sql,
-    reference_sql: t.reference_sql,
+    reference_sql: t.reference_sql ?? '',
+    task: JSON.stringify(t.task ?? { kind: 'write' }, null, 2),
     data_gen: JSON.stringify(t.data_gen, null, 2),
     params: JSON.stringify(t.params ?? {}, null, 2),
     order_matters: t.order_matters ?? false,
@@ -90,6 +93,7 @@ export function fromDraft(d: Draft): DraftResult {
   };
   const dataGen = parseJson('data_gen', d.data_gen);
   const params = parseJson('params', d.params);
+  const task = parseJson('task', d.task);
   if (errors.length) return { ok: false, errors };
   return {
     ok: true,
@@ -108,6 +112,7 @@ export function fromDraft(d: Draft): DraftResult {
       story_md: d.story_md,
       schema_sql: d.schema_sql,
       reference_sql: d.reference_sql,
+      task: task as QuestionTemplateInput['task'],
       data_gen: dataGen as QuestionTemplateInput['data_gen'],
       params: params as QuestionTemplateInput['params'],
       order_matters: d.order_matters,
