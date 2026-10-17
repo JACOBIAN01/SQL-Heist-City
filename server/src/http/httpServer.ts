@@ -5,6 +5,7 @@ import {
   CLIENT_ERROR_PATH,
   clientErrorSchema,
   rateLimitsFrom,
+  scrubClientError,
   type ClientError,
 } from '@heist/shared';
 import { clientAddress } from '../net/clientAddress';
@@ -152,7 +153,7 @@ export function createHttpServer(deps: HttpServerDeps): Server {
             sendJson(res, 400, { error: { code: 'bad_report', message: 'Not an error report' } });
             return;
           }
-          report(parsed.data);
+          report(scrubClientError(parsed.data));
           res.writeHead(204).end();
         },
         () => {

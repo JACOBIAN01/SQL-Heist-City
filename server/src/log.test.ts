@@ -63,3 +63,23 @@ describe('structured logs (20.4)', () => {
     expect(String(lines[0]?.line.text).length).toBeLessThan(2100);
   });
 });
+
+describe('personal data in free text (21.5)', () => {
+  it('masks emails, bearer tokens and JWTs wherever they appear, including in errors', () => {
+    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abc_DEF-123';
+    const out = loggable({
+      msg: `duplicate key for ana.silva@school.edu with Bearer abc123.def and ${jwt}`,
+      err: new Error('could not notify bob@gmail.com'),
+      list: ['carol+tag@sub.school.org'],
+    }) as Record<string, unknown>;
+    const text = JSON.stringify(out);
+    expect(text).not.toMatch(/school\.edu|gmail|school\.org|abc123|eyJ/);
+    expect(out.msg).toBe('duplicate key for [email] with Bearer [redacted] and [jwt]');
+  });
+
+  it('leaves ordinary text alone', () => {
+    expect(loggable('match 7 listening on port 8080 (build 2026.10)')).toBe(
+      'match 7 listening on port 8080 (build 2026.10)',
+    );
+  });
+});

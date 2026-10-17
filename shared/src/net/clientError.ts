@@ -24,5 +24,16 @@ export const CLIENT_ERROR_PATH = '/client-error';
 export function scrubErrorText(text: string): string {
   return text
     .replace(/(https?:\/\/[^\s)?#]+)[?#][^\s):]*/g, '$1')
-    .replace(/\b(ticket|token|code|state|secret|password)=[^&\s)]+/gi, '$1=[redacted]');
+    .replace(/\b(ticket|token|code|state|secret|password)=[^&\s)]+/gi, '$1=[redacted]')
+    .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g, '[email]');
+}
+
+/** A report with its text scrubbed. The server does this too: the sender cannot be trusted to have. */
+export function scrubClientError(report: ClientError): ClientError {
+  return {
+    ...report,
+    message: scrubErrorText(report.message),
+    ...(report.stack === undefined ? {} : { stack: scrubErrorText(report.stack) }),
+    page: scrubErrorText(report.page),
+  };
 }

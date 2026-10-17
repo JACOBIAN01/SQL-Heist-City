@@ -111,6 +111,17 @@ describe('game server HTTP', () => {
     expect(ok.headers.get('access-control-allow-origin')).toBe('https://heist.school.test');
     expect(received).toEqual([report]);
     expect((await post(JSON.stringify(report), 'https://evil.test')).status).toBe(403);
+    // A client that did not scrub (an old one, or a hand-made request) is scrubbed here.
+    await post(
+      JSON.stringify({
+        message: 'failed for ana@school.edu with ticket=abc123def',
+        stack: 'at http://h/?class=5&ticket=zz1234:1:1',
+        source: 'error',
+        page: '/',
+      }),
+    );
+    expect(JSON.stringify(received.at(-1))).not.toMatch(/ana@|abc123def|zz1234|class=5/);
+    received.pop();
     expect((await post('{"message": 5}')).status).toBe(400);
     expect((await post('not json')).status).toBe(400);
     expect((await post(JSON.stringify({ ...report, message: 'x'.repeat(600) }))).status).toBe(400);

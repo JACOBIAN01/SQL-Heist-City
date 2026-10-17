@@ -18,16 +18,28 @@ export interface Logger {
 
 const SECRET_KEY = /secret|password|token|ticket|cookie|authorization|api[_-]?key|reference_?sql/i;
 
+/** What personal data looks like inside free text: email addresses, bearer tokens, JWTs. */
+const IN_TEXT: readonly [RegExp, string][] = [
+  [/[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g, '[email]'],
+  [/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [redacted]'],
+  [/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]*/g, '[jwt]'],
+];
+
+/** Masks personal data in a piece of text (the safety net behind not logging it in the first place). */
+export const maskText = (text: string): string =>
+  IN_TEXT.reduce((t, [pattern, replacement]) => t.replace(pattern, replacement), text);
+
 /** A value fit for a log line: errors become {name, message, stack}, secret-looking keys are hidden. */
 export function loggable(value: unknown, depth = 0): unknown {
   if (value instanceof Error)
     return {
       name: value.name,
-      message: value.message,
-      stack: value.stack?.split('\n').slice(0, 6).join('\n'),
+      message: maskText(value.message),
+      stack: maskText(value.stack?.split('\n').slice(0, 6).join('\n') ?? ''),
     };
   if (typeof value === 'bigint') return value.toString();
-  if (typeof value === 'string') return value.length > 2000 ? `${value.slice(0, 2000)}…` : value;
+  if (typeof value === 'string')
+    return maskText(value.length > 2000 ? `${value.slice(0, 2000)}…` : value);
   if (typeof value !== 'object' || value === null) return value;
   if (depth >= 4) return '[deep]';
   if (Array.isArray(value)) return value.slice(0, 50).map((v) => loggable(v, depth + 1));
