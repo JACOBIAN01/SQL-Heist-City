@@ -5,3 +5,6 @@ dist/
 .DS_Store
 data/
 tools/city/inbox/
+# Built from docs/legal by scripts/build-legal.mjs
+client/public/legal/
+admin/ui/public/legal/

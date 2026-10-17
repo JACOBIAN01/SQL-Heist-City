@@ -60,6 +60,22 @@ export class MainMenu {
   }
 
   private draw(who: WhoAmI | undefined): void {
+    this.drawScreen(who);
+    // Every screen links the policies (Phase 21.2).
+    this.root
+      .querySelector('.menu-card')
+      ?.appendChild(
+        h(
+          'p',
+          { class: 'menu-muted menu-legal' },
+          h('a', { text: 'Privacy', attrs: { href: '/legal/privacy.html' } }),
+          ' · ',
+          h('a', { text: 'Terms', attrs: { href: '/legal/terms.html' } }),
+        ),
+      );
+  }
+
+  private drawScreen(who: WhoAmI | undefined): void {
     clear(this.root);
     const card = h('div', { class: 'menu-card' }, h('h1', { text: 'SQL Heist City' }));
     this.root.appendChild(card);

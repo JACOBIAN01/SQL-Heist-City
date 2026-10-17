@@ -29,6 +29,7 @@ export function Shell({ user }: { user: AdminUser }) {
           <NavLink to="/settings">Settings</NavLink>
           {isAdmin && <NavLink to="/audit">Audit log</NavLink>}
           {isAdmin && <NavLink to="/users">Users</NavLink>}
+          <a href="/legal/privacy.html">Privacy</a>
         </nav>
         <ThemeToggle />
         <span className="who">
