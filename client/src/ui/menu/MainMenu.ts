@@ -1,5 +1,7 @@
 import type { AccountApi, AccountPlayer, WhoAmI } from '../../net/account';
 import type { RoomStatus } from '../../net/classRoom';
+import { defaultI18n, type I18n } from '../../i18n/I18n';
+import type { MessageKey } from '../../i18n/en';
 import { clear, h } from '../dom';
 import './menu.css';
 
@@ -29,15 +31,19 @@ export interface MenuOptions {
   readonly devSignInUrl?: (name: string, returnTo: string) => string;
   /** Why the last sign-in failed (`?signin_error=`), if it did. */
   readonly signInError?: string | null;
+  /** Interface language; English when absent. */
+  readonly i18n?: I18n;
+  /** Opens the settings panel (Phase 22); the button stays off without it. */
+  readonly openSettings?: () => void;
 }
 
-const ERRORS: Readonly<Record<string, string>> = {
-  cancelled: 'Sign-in was cancelled.',
-  domain_not_allowed: 'That Google account is not from an allowed school.',
-  email_unverified: 'Google says that email is not verified.',
-  bad_token: 'Google’s answer could not be checked. Try again.',
-  nonce_mismatch: 'Sign-in could not be verified. Try again.',
-  exchange_failed: 'Could not finish signing in with Google. Try again.',
+const ERRORS: Readonly<Record<string, MessageKey>> = {
+  cancelled: 'signin.cancelled',
+  domain_not_allowed: 'signin.domain_not_allowed',
+  email_unverified: 'signin.email_unverified',
+  bad_token: 'signin.bad_token',
+  nonce_mismatch: 'signin.nonce_mismatch',
+  exchange_failed: 'signin.exchange_failed',
 };
 
 /**
@@ -49,7 +55,19 @@ export class MainMenu {
   private who: WhoAmI | undefined;
   private timer: ReturnType<typeof setTimeout> | undefined;
 
-  constructor(private readonly options: MenuOptions) {}
+  private readonly i18n: I18n;
+
+  constructor(private readonly options: MenuOptions) {
+    this.i18n = options.i18n ?? defaultI18n;
+    // A language picked while the menu is open redraws it in the new language.
+    this.i18n.onChange(() => {
+      if (this.root.isConnected && !this.timer) this.draw(this.who);
+    });
+  }
+
+  private t(key: MessageKey, params?: Record<string, string | number>): string {
+    return this.i18n.t(key, params);
+  }
 
   /** Asks who is signed in and draws the right screen. */
   async show(parent: HTMLElement = document.body): Promise<void> {
@@ -68,9 +86,9 @@ export class MainMenu {
         h(
           'p',
           { class: 'menu-muted menu-legal' },
-          h('a', { text: 'Privacy', attrs: { href: '/legal/privacy.html' } }),
+          h('a', { text: this.t('legal.privacy'), attrs: { href: '/legal/privacy.html' } }),
           ' · ',
-          h('a', { text: 'Terms', attrs: { href: '/legal/terms.html' } }),
+          h('a', { text: this.t('legal.terms'), attrs: { href: '/legal/terms.html' } }),
         ),
       );
   }
@@ -81,10 +99,12 @@ export class MainMenu {
     this.root.appendChild(card);
     const error = this.options.signInError;
     if (error)
-      card.appendChild(h('p', { class: 'menu-error', text: ERRORS[error] ?? 'Sign-in failed.' }));
+      card.appendChild(
+        h('p', { class: 'menu-error', text: this.t(ERRORS[error] ?? 'signin.failed') }),
+      );
 
     if (!who) {
-      card.appendChild(h('p', { class: 'menu-note', text: 'Checking your account…' }));
+      card.appendChild(h('p', { class: 'menu-note', text: this.t('menu.checking') }));
       return;
     }
     if (who.state === 'signed_in') return this.drawSignedIn(card, who.player);
@@ -92,16 +112,14 @@ export class MainMenu {
       h('p', {
         class: 'menu-note',
         text:
-          who.state === 'unavailable'
-            ? 'The account service is not reachable right now.'
-            : 'Sign in with your school Google account to play.',
+          who.state === 'unavailable' ? this.t('menu.unreachable') : this.t('menu.signInPrompt'),
       }),
     );
     if (who.state === 'signed_out') {
       card.appendChild(
         h('button', {
           class: 'menu-primary',
-          text: 'Sign in with Google',
+          text: this.t('menu.signIn'),
           on: {
             click: () =>
               this.options.navigate(this.options.account.signInUrl(this.options.returnTo)),
@@ -114,8 +132,8 @@ export class MainMenu {
         attrs: {
           type: 'text',
           maxlength: '20',
-          placeholder: 'Test player name',
-          'aria-label': 'Test player name',
+          placeholder: this.t('menu.devPlaceholder'),
+          'aria-label': this.t('menu.devPlaceholder'),
         },
       });
       card.appendChild(
@@ -124,7 +142,7 @@ export class MainMenu {
           { class: 'menu-row' },
           devName,
           h('button', {
-            text: 'Dev sign-in',
+            text: this.t('menu.devSignIn'),
             on: {
               click: () =>
                 devName.value.trim() &&
@@ -142,12 +160,15 @@ export class MainMenu {
     if (this.options.allowUnsigned) {
       card.appendChild(
         h('button', {
-          text: 'Play without signing in (development)',
+          text: this.t('menu.playUnsigned'),
           on: { click: () => this.options.go('play') },
         }),
       );
       card.appendChild(
-        h('button', { text: 'Tutorial', on: { click: () => this.options.go('tutorial') } }),
+        h('button', {
+          text: this.t('menu.tutorial'),
+          on: { click: () => this.options.go('tutorial') },
+        }),
       );
     }
   }
@@ -156,7 +177,7 @@ export class MainMenu {
   private waitForRoom(classId: number, className: string): void {
     clearTimeout(this.timer);
     clear(this.root);
-    const status = h('p', { class: 'menu-note', text: 'Waiting for your teacher to start…' });
+    const status = h('p', { class: 'menu-note', text: this.t('menu.waiting') });
     this.root.appendChild(
       h(
         'div',
@@ -166,15 +187,15 @@ export class MainMenu {
         ...(this.options.goAssess
           ? (['pre', 'post'] as const).map((kind) =>
               h('button', {
-                text: kind === 'pre' ? 'Take the pre-test' : 'Take the post-test',
-                attrs: { title: 'Only when your teacher has opened it' },
+                text: kind === 'pre' ? this.t('menu.preTest') : this.t('menu.postTest'),
+                attrs: { title: this.t('menu.testHint') },
                 on: { click: () => this.options.goAssess?.(classId, kind) },
               }),
             )
           : []),
         h('button', {
           class: 'menu-quiet',
-          text: 'Leave',
+          text: this.t('menu.leave'),
           on: {
             click: () => {
               clearTimeout(this.timer);
@@ -187,14 +208,12 @@ export class MainMenu {
     const look = async () => {
       const room = (await this.options.roomStatus?.(classId)) ?? { state: 'unavailable' as const };
       if (room.state === 'live') {
-        status.textContent = 'Starting…';
+        status.textContent = this.t('menu.starting');
         this.options.goClass?.(classId);
         return;
       }
       status.textContent =
-        room.state === 'unavailable'
-          ? 'Cannot reach the game server. Trying again…'
-          : 'Waiting for your teacher to start…';
+        room.state === 'unavailable' ? this.t('menu.noServer') : this.t('menu.waiting');
       this.timer = setTimeout(() => void look(), this.options.pollMs ?? 2000);
     };
     void look();
@@ -208,8 +227,8 @@ export class MainMenu {
     const thisYear = new Date().getFullYear();
     const year = h(
       'select',
-      { attrs: { 'aria-label': 'Year you were born' } },
-      h('option', { text: 'Choose a year', attrs: { value: '' } }),
+      { attrs: { 'aria-label': this.t('age.yearLabel') } },
+      h('option', { text: this.t('age.choose'), attrs: { value: '' } }),
       ...Array.from({ length: 60 }, (_, i) =>
         h('option', { text: String(thisYear - i), attrs: { value: String(thisYear - i) } }),
       ),
@@ -218,11 +237,11 @@ export class MainMenu {
     card.append(
       h('p', {
         class: 'menu-note',
-        text: `Hi ${player.displayName}. Before you play: what year were you born?`,
+        text: this.t('age.hello', { name: player.displayName }),
       }),
       h('p', {
         class: 'menu-muted',
-        text: 'This game has cartoon shooting. We only keep whether you are old enough, not your birth year.',
+        text: this.t('age.note'),
       }),
       h(
         'div',
@@ -230,11 +249,11 @@ export class MainMenu {
         year,
         h('button', {
           class: 'menu-primary',
-          text: 'Continue',
+          text: this.t('age.continue'),
           on: {
             click: async () => {
               if (!year.value) {
-                note.textContent = 'Choose the year you were born.';
+                note.textContent = this.t('age.chooseError');
                 return;
               }
               const result = await this.options.account.declareAge(Number(year.value));
@@ -258,14 +277,13 @@ export class MainMenu {
     card.append(
       h('p', {
         class: 'menu-error',
-        text: 'You are not old enough to play this game yet. Ask your teacher if you think this is a mistake.',
+        text: this.t('age.tooYoung'),
       }),
       h('button', {
-        text: 'Delete my account',
+        text: this.t('menu.deleteAccount'),
         on: {
           click: async () => {
-            const sure =
-              this.options.confirm?.('Delete your account? This cannot be undone.') ?? true;
+            const sure = this.options.confirm?.(this.t('age.deleteConfirm')) ?? true;
             if (sure && (await this.options.account.deleteAccount())) {
               this.who = { state: 'signed_out' };
               this.draw(this.who);
@@ -279,7 +297,7 @@ export class MainMenu {
 
   private signOutButton(): HTMLElement {
     return h('button', {
-      text: 'Sign out',
+      text: this.t('menu.signOut'),
       on: {
         click: async () => {
           await this.options.account.signOut();
@@ -297,7 +315,7 @@ export class MainMenu {
       h(
         'p',
         { class: 'menu-who' },
-        'Signed in as ',
+        `${this.t('menu.signedInAs')} `,
         h('strong', { text: player.displayName }),
         h('span', { class: 'menu-muted', text: ` (${player.email})` }),
       ),
@@ -307,7 +325,7 @@ export class MainMenu {
         type: 'text',
         maxlength: '20',
         value: player.displayName,
-        'aria-label': 'Display name',
+        'aria-label': this.t('menu.displayName'),
       },
     });
     const nameNote = h('span', { class: 'menu-muted' });
@@ -315,8 +333,8 @@ export class MainMenu {
       attrs: {
         type: 'text',
         maxlength: '12',
-        placeholder: 'Class code',
-        'aria-label': 'Class code',
+        placeholder: this.t('menu.classCode'),
+        'aria-label': this.t('menu.classCode'),
       },
     });
     const classNote = h('span', { class: 'menu-error' });
@@ -326,11 +344,11 @@ export class MainMenu {
         { class: 'menu-row' },
         nameInput,
         h('button', {
-          text: 'Save name',
+          text: this.t('menu.saveName'),
           on: {
             click: async () => {
               const result = await this.options.account.rename(nameInput.value);
-              nameNote.textContent = 'error' in result ? result.error : 'Saved';
+              nameNote.textContent = 'error' in result ? result.error : this.t('menu.saved');
               if (!('error' in result)) nameInput.value = result.displayName;
             },
           },
@@ -343,7 +361,7 @@ export class MainMenu {
         codeInput,
         h('button', {
           class: 'menu-primary',
-          text: 'Join class',
+          text: this.t('menu.joinClass'),
           on: {
             click: async () => {
               classNote.textContent = '';
@@ -356,49 +374,52 @@ export class MainMenu {
       ),
       classNote,
       h('button', {
-        text: 'Play (open match)',
+        text: this.t('menu.playOpen'),
         on: { click: () => this.options.go('play') },
       }),
-      h('button', { text: 'Tutorial', on: { click: () => this.options.go('tutorial') } }),
       h('button', {
-        text: 'Practice SQL (solo)',
-        attrs: { title: 'Drill a topic on your own: no match, no combat' },
+        text: this.t('menu.tutorial'),
+        on: { click: () => this.options.go('tutorial') },
+      }),
+      h('button', {
+        text: this.t('menu.practice'),
+        attrs: { title: this.t('menu.practiceHint') },
         on: { click: () => this.options.go('practice') },
       }),
       h('button', {
-        text: 'Settings',
-        attrs: { disabled: '', title: 'Coming with the settings menu' },
+        text: this.t('menu.settings'),
+        ...(this.options.openSettings
+          ? { on: { click: () => this.options.openSettings?.() } }
+          : { attrs: { disabled: '' } }),
       }),
       h('button', {
         class: 'menu-quiet',
-        text: 'Download my data',
+        text: this.t('menu.downloadData'),
         on: {
           click: async () => {
             const text = await this.options.account.exportData();
-            if (text === undefined) nameNote.textContent = 'Could not get your data';
+            if (text === undefined) nameNote.textContent = this.t('menu.noData');
             else this.options.saveFile?.('my-heist-data.json', text);
           },
         },
       }),
       h('button', {
         class: 'menu-quiet',
-        text: 'Delete my account',
+        text: this.t('menu.deleteAccount'),
         on: {
           click: async () => {
-            const sure = this.options.confirm?.(
-              'Delete your account and everything stored about you? This cannot be undone.',
-            );
+            const sure = this.options.confirm?.(this.t('menu.deleteConfirm'));
             if (!sure) return;
             if (await this.options.account.deleteAccount()) {
               this.who = { state: 'signed_out' };
               this.draw(this.who);
-            } else nameNote.textContent = 'Could not delete the account';
+            } else nameNote.textContent = this.t('menu.deleteFailed');
           },
         },
       }),
       h('button', {
         class: 'menu-quiet',
-        text: 'Sign out',
+        text: this.t('menu.signOut'),
         on: {
           click: async () => {
             await this.options.account.signOut();

@@ -6,6 +6,13 @@
  */
 export const en = {
   // --- the first screen -------------------------------------------------------------------
+  'signin.cancelled': 'Sign-in was cancelled.',
+  'signin.domain_not_allowed': 'That Google account is not from an allowed school.',
+  'signin.email_unverified': 'Google says that email is not verified.',
+  'signin.bad_token': 'Google’s answer could not be checked. Try again.',
+  'signin.nonce_mismatch': 'Sign-in could not be verified. Try again.',
+  'signin.exchange_failed': 'Could not finish signing in with Google. Try again.',
+  'signin.failed': 'Sign-in failed.',
   'menu.checking': 'Checking your account…',
   'menu.unreachable': 'The account service is not reachable right now.',
   'menu.signInPrompt': 'Sign in with your school Google account to play.',

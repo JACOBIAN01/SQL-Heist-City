@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { AccountApi, WhoAmI } from '../../net/account';
+import { I18n } from '../../i18n/I18n';
 import { MainMenu, type MenuOptions } from './MainMenu';
 
 const ana = {
@@ -261,5 +262,17 @@ describe('joining a class from the menu', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(m.root.textContent).toContain('not old enough');
     expect(buttons(m)).toEqual(['Delete my account', 'Sign out']);
+  });
+
+  it('opens the settings panel from its button, and redraws in the language picked (22.7)', async () => {
+    const openSettings = vi.fn();
+    const i18n = new I18n('en');
+    const { m } = menu({ state: 'signed_in', player: ana }, { openSettings, i18n });
+    await m.show();
+    press(m, 'Settings');
+    expect(openSettings).toHaveBeenCalled();
+    i18n.setLocale('hi');
+    expect(buttons(m)).toContain('साइन आउट');
+    expect(buttons(m)).toContain('मेरा डेटा डाउनलोड करें');
   });
 });
