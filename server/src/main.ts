@@ -1,5 +1,6 @@
 import { installCrashLogging, log } from './log';
 import { renderPrometheus } from './net/prometheus';
+import { upgradeRouterFor } from './net/UpgradeRouter';
 import type { GameMetrics } from './game/startGame';
 import { assertSecrets } from './config/secrets';
 import { existsSync } from 'node:fs';
@@ -110,6 +111,10 @@ const classPool = pg
   : undefined;
 let rooms: ClassRooms | undefined;
 const startedAt = Date.now();
+const matchPorts = (): number[] => [
+  ...(running.pool?.list() ?? []).map((m) => m.port),
+  ...(classPool?.list() ?? []).map((m) => m.port),
+];
 let clientErrors = 0;
 const server = createHttpServer({
   ...(classPool
@@ -238,6 +243,7 @@ if (workers > 0) {
   challenges?.review.bind(running.game.match);
 }
 
+upgradeRouterFor(server).allowRelay((p) => matchPorts().includes(p));
 server.listen(port, () => {
   log.info('game server listening', { port });
 });
