@@ -68,6 +68,12 @@ export interface BriefMarked {
   readonly detail: Record<string, unknown>;
 }
 
+/** The scheduled clean-up deleted what was past its time (Phase 21.4). Counts only: no names. */
+export interface RetentionRun {
+  readonly type: 'retention_run';
+  readonly detail: Record<string, number>;
+}
+
 export type AdminEvent =
   | QuestionChanged
   | SettingsChanged
@@ -76,7 +82,8 @@ export type AdminEvent =
   | PlayerChanged
   | ClassChanged
   | ConceptChanged
-  | BriefMarked;
+  | BriefMarked
+  | RetentionRun;
 export type AdminEventListener = (event: AdminEvent) => void;
 
 // Pattern: Observer — Why: audit logging and game-server reload both react to

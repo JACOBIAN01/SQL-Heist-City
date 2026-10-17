@@ -1,3 +1,5 @@
+import { PrivacyRetention } from './players/PrivacyRetention';
+import { log } from '@heist/server/log';
 import { DEFAULT_RATE_LIMITS, type RateLimits } from '@heist/shared';
 import { KeyedLimiter } from '@heist/server/net/KeyedLimiter';
 import type { Express } from 'express';
@@ -79,6 +81,8 @@ export interface Admin {
   readonly events: AdminEventBus;
   /** Bulk import/export, used by the seed script. */
   readonly io: QuestionImportService;
+  /** The daily deletion of what is past its time (Phase 21.4); main.ts starts it. */
+  readonly retention: PrivacyRetention;
   /** Resolves when the audit writes so far have landed (tests and shutdown). */
   settled(): Promise<void>;
   /** Release worker threads on shutdown. */
@@ -215,11 +219,23 @@ export function buildAdmin(
       }),
     ],
   });
+  const retention = new PrivacyRetention({
+    players: stores.players,
+    classes: stores.classes,
+    briefs: stores.briefs,
+    personalData,
+    settings: privacySettings,
+    events,
+    now,
+    log: (message, fields) => log.info(message, fields),
+  });
   return {
     app,
     auth,
     events,
     io,
+    /** The daily clean-up of what is past its time; started by main.ts. */
+    retention,
     settled: () => auditing.flush(),
     close: async () => {
       await auditing.flush();

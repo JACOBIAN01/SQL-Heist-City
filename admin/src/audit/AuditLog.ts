@@ -167,6 +167,16 @@ export function auditAdminEvents(
 }
 
 function toRecord(event: AdminEvent): AuditRecord {
+  // The scheduled clean-up has no staff actor.
+  if (event.type === 'retention_run')
+    return {
+      userId: null,
+      actor: 'retention job',
+      action: 'delete',
+      entity: 'retention',
+      entityId: null,
+      detail: event.detail,
+    };
   const actor = { userId: event.actor.id, actor: event.actor.email };
   switch (event.type) {
     case 'question_changed':

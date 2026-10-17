@@ -74,7 +74,7 @@ const created = await admin.auth.ensureInitialAdmin(
   process.env.ADMIN_EMAIL,
   process.env.ADMIN_PASSWORD,
 );
-if (created) log.info('created initial admin', { email: created.email });
+if (created) log.info('created initial admin');
 if ((await admin.auth.listUsers()).length === 0) {
   console.warn(
     'No admin accounts exist yet, so nobody can log in.\n' +
@@ -83,6 +83,8 @@ if ((await admin.auth.listUsers()).length === 0) {
   );
 }
 
+// Student data is deleted when its time is up (docs/privacy.md).
+admin.retention.start(undefined, (err) => log.error('privacy clean-up failed', { err }));
 admin.app.listen(port, () => {
   log.info('admin listening', { port, db: opened.label });
 });

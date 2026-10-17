@@ -25,6 +25,8 @@ export interface BriefStore {
     at: number,
   ): Promise<{ before: BriefView; after: BriefView } | null>;
   ofPlayer(playerId: number): Promise<BriefView[]>;
+  /** Deletes briefs handed in before `before` (retention); returns how many. */
+  deleteBefore(before: Date): Promise<number>;
 }
 
 /** The brief part of an item record, as a stored row (unmarked). */
@@ -95,6 +97,16 @@ export class InMemoryBriefStore implements BriefStore {
 
   async ofPlayer(playerId: number) {
     return [...this.rows.values()].filter((b) => b.playerId === playerId);
+  }
+
+  async deleteBefore(before: Date) {
+    let n = 0;
+    for (const [id, b] of this.rows)
+      if (b.submittedAt < before.getTime()) {
+        this.rows.delete(id);
+        n++;
+      }
+    return n;
   }
 }
 
@@ -238,6 +250,14 @@ export class PgBriefStore implements BriefStore {
       [playerId],
     );
     return rows.map(toView);
+  }
+
+  async deleteBefore(before: Date) {
+    const rows = await this.db.query(
+      'DELETE FROM brief_submissions WHERE submitted_at < $1 RETURNING challenge_id',
+      [before],
+    );
+    return rows.length;
   }
 }
 
