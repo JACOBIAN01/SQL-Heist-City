@@ -49,3 +49,21 @@ It remembers the current and previous tag in `.release/`, and an optional `BACKU
 
 **Rehearsing again**: build the images, tag them `heist-local/{server,admin,client}:v1`, copy the `deploy/` files and a `.env` (`IMAGE_PREFIX=heist-local`, a local `DATABASE_URL`, three random secrets) to a folder, then `COMPOSE_EXTRA='-f compose.rehearsal.yaml' SKIP_PULL=1 ./release.sh v1`.
 
+## Logs, metrics, dashboards and alerts (20.4)
+**Logs.** Both services write one JSON object per line (`server/src/log.ts`): `time`, `level`, `service` (`game` or `admin`), `msg`, plus fields. `LOG_LEVEL` (debug, info, warn, error; default info) sets the floor. Keys that look like secrets (`secret`, `password`, `token`, `ticket`, `cookie`, `authorization`, `api_key`) and `reference_sql` are replaced with `[redacted]` before writing; errors are written as name, message and a short stack; a crash (uncaught exception, unhandled rejection) is logged before the process exits. Point the host's log collector (the provider's, Loki, or `docker logs`) at stdout and search by field, for example `msg="anomaly"` grouped by `player`.
+
+**Metrics.** `GET /metrics` (JSON) and `GET /metrics/prometheus` (Prometheus text) on the game server: players, tick time p50/p95/p99/max per match (open play and each class room), bytes per player, anomalies by kind, grader queue, busy processes, wait times, timeouts, memory. In production (`NODE_ENV=production`) they need the internal secret (`x-internal-secret` or `Authorization: Bearer …`); `/health` stays open for load balancers.
+
+**Dashboards and alerts.** `docker compose --profile monitoring up -d` adds Prometheus (:9090) and Grafana (:3000, dashboard "SQL Heist City", eight panels) using `deploy/monitoring/`. Rules in `alerts.yml`:
+
+| Alert | When | Severity |
+|---|---|---|
+| GameServerDown | the game server cannot be scraped for 1 min | critical |
+| TickTooSlow | tick p99 over 15 ms for 2 min, per match | critical |
+| GraderBacklog | more than 20 jobs waiting, or wait p95 over 2 s, for 2 min | warning |
+| GraderTimeouts | over 50 time-limit stops in 10 min | warning |
+| CheatAnomalies | over 100 anomalies in 10 min in one match | warning |
+| MemoryHigh | over 1.5 GB for 5 min | warning |
+
+Each carries an `action` note saying where to look. Send them to your address with Alertmanager (a receiver for email or chat; inputs-needed #10). **Tested**: `promtool test rules deploy/monitoring/alerts.test.yml` proves each alert fires on bad data and stays quiet on good; and on the live compose stack stopping the game server made `GameServerDown` fire about 70 seconds later. A test checks every metric the rules and the dashboard use exists in the server's output.
+
