@@ -11,6 +11,16 @@
 
 `RATE_LIMITS` (game server and admin, optional): JSON over the default limits, e.g. `{"connectionsPerIp":{"burst":600,"perMinute":2000}}` (docs/backend.md, "Rate limits"). `TRUST_PROXY=1`: count the first `X-Forwarded-For` address (only behind your own proxy).
 
+## Containers and local staging (Phase 20.1)
+`Dockerfile` has one target per service: `server` (game), `admin` (API and React UI) and `client` (the game page on nginx). `compose.yaml` runs them with PostgreSQL:
+
+```
+ADMIN_PASSWORD='choose-one' docker compose up --build
+docker compose exec admin npm run db:seed -w @heist/admin     # the 268 questions and 62 concept cards
+curl -X POST -H 'x-internal-secret: local-internal-secret-not-for-production' localhost:8080/internal/reload
+```
+Game http://localhost:8088, game server :8080, admin http://localhost:8081 (`admin@heist.test` and your `ADMIN_PASSWORD`; `DEV_LOGIN=1` for student sign-in without Google). Each service has a health check; the services run as the unprivileged `node` user; the game server's content snapshot lives in a volume. Verified: all four containers healthy, 20 socket bots join, a question is issued and graded through the containerised sandbox, a request from another origin is refused. The compose file is for development and staging: for real use set `NODE_ENV=production`, your own secrets, TLS and `GAME_ORIGINS` (see Secrets).
+
 ## Sizing guide (to be measured in Phase 6/10)
 - 100 players/match ≈ 1 core for match worker + grader pool cores; expect ~400 KB/s outbound per match.
 - Scale out by running more game-server processes; lobby assigns matches.

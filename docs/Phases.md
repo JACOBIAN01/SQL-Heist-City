@@ -37,7 +37,7 @@
 | 17 | Question types and content (filling R, C, B, E) | ✅ |
 | 18 | Security hardening | 🟨 18.1–18.5 done; 18.6 waits for an external tester |
 | 19 | Scale proof | 🟨 19.2–19.5 done; 19.1 cloud run waits for machines |
-| 20 | Operations and deployment | ⬜ |
+| 20 | Operations and deployment | 🟨 20.1 done |
 | 21 | Privacy and compliance | ⬜ |
 | 22 | Settings, accessibility and devices | ⬜ |
 | 23 | Game test plan | ⬜ |
@@ -410,7 +410,7 @@ Audit con 8 plus the old "logging, metrics, backups, containers, deploy" todo it
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 20.1 | Containers for the game server and admin; compose for local staging | `docker compose up` runs the full stack | ⬜ |
+| 20.1 | Containers for the game server and admin; compose for local staging | `docker compose up` runs the full stack | ✅ `docker compose up --build` runs PostgreSQL, game server, admin and the game page, all healthy; seeded, bots joined and a challenge graded through it. Found and fixed: PostgreSQL JSONB scrambled question table order (migration 10) |
 | 20.2 | Staging environment and a CI deploy to it | a merge to main deploys to staging | ⬜ |
 | 20.3 | Managed PostgreSQL with nightly backups and a tested restore drill | restore drill documented and passed | ⬜ |
 | 20.4 | Structured logs, metrics dashboards, alerts (tick, players, grader queue, errors) | dashboards live; alerts fire in a test | ⬜ |
