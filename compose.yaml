@@ -8,7 +8,7 @@ services:
     image: postgres:17
     environment:
       POSTGRES_USER: heist
-      POSTGRES_PASSWORD: heist-local-only
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-heist-local-only}
       POSTGRES_DB: heist
     volumes: ['pgdata:/var/lib/postgresql/data']
     ports: ['54330:5432']
@@ -22,7 +22,7 @@ services:
     build: { context: ., target: admin }
     depends_on: { postgres: { condition: service_healthy } }
     environment:
-      DATABASE_URL: postgres://heist:heist-local-only@postgres:5432/heist
+      DATABASE_URL: postgres://heist:${POSTGRES_PASSWORD:-heist-local-only}@postgres:5432/heist
       GAME_ORIGINS: http://localhost:8088
       GAME_SERVER_URL: http://game:8080
       INTERNAL_SECRET: ${INTERNAL_SECRET:-local-internal-secret-not-for-production}
@@ -35,7 +35,7 @@ services:
     build: { context: ., target: server }
     depends_on: { postgres: { condition: service_healthy } }
     environment:
-      DATABASE_URL: postgres://heist:heist-local-only@postgres:5432/heist
+      DATABASE_URL: postgres://heist:${POSTGRES_PASSWORD:-heist-local-only}@postgres:5432/heist
       GAME_ORIGINS: http://localhost:8088
       INTERNAL_SECRET: ${INTERNAL_SECRET:-local-internal-secret-not-for-production}
       MATCH_WORKERS: '0'

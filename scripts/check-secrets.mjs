@@ -13,7 +13,11 @@ const TOKENS = [
   ['GitHub token', /\b(?:ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b|\bgithub_pat_[A-Za-z0-9_]{40,}/],
   ['Slack token', /\bxox[abprs]-[A-Za-z0-9-]{10,}/],
   ['API key (sk-)', /\bsk-(?:ant-)?[A-Za-z0-9_-]{32,}/],
-  ['database URL with a password', /\bpostgres(?:ql)?:\/\/[^\s:@/'"]+:[^\s@/'"]{6,}@/],
+  // A `${VARIABLE}` reference or the word PASSWORD is a placeholder, not a password.
+  [
+    'database URL with a password',
+    /\bpostgres(?:ql)?:\/\/[^\s:@/'"]+:(?!\$\{|PASSWORD@)[^\s@/'"]{6,}@/,
+  ],
 ];
 
 /** `SECRET = '…'`-style assignments of long literal values (outside tests and docs). */
