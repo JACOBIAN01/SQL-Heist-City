@@ -1,0 +1,58 @@
+name: Deploy to staging
+
+# Inert until the owner provides a staging host (docs/operations.md, "Staging"). To switch it on:
+#   Variables:  STAGING_HOST (e.g. staging.example.org)   STAGING_USER (ssh user)
+#   Secrets:    STAGING_SSH_KEY (private key of a deploy-only user on that host)
+# Until STAGING_HOST is set every job is skipped. Nothing is pushed anywhere without them.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    if: ${{ vars.STAGING_HOST != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [server, admin, client]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: ${{ matrix.target }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/${{ matrix.target }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}/${{ matrix.target }}:staging
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+
+  deploy:
+    needs: images
+    if: ${{ vars.STAGING_HOST != '' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy over SSH
+        env:
+          HOST: ${{ vars.STAGING_HOST }}
+          SSH_USER: ${{ vars.STAGING_USER }}
+          KEY: ${{ secrets.STAGING_SSH_KEY }}
+          TAG: ${{ github.sha }}
+        run: |
+          install -m 600 /dev/null key && printf '%s\n' "$KEY" > key
+          scp -i key -o StrictHostKeyChecking=accept-new deploy/compose.staging.yaml "$SSH_USER@$HOST:heist/compose.yaml"
+          ssh -i key "$SSH_USER@$HOST" "cd heist && ./release.sh $TAG"

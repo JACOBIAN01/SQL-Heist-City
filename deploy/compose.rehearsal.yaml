@@ -1,0 +1,15 @@
+# Adds a local PostgreSQL to compose.staging.yaml so a release and rollback can be rehearsed on one
+# machine (docs/operations.md, "Rehearsing a release"). Not for real use.
+services:
+  postgres:
+    image: postgres:17
+    environment: { POSTGRES_USER: heist, POSTGRES_PASSWORD: rehearsal-only, POSTGRES_DB: heist }
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'heist']
+      interval: 3s
+      timeout: 3s
+      retries: 15
+  admin:
+    depends_on: { postgres: { condition: service_healthy } }
+  game:
+    depends_on: { postgres: { condition: service_healthy } }

@@ -1,0 +1,40 @@
+# Staging and production stack (Phases 20.2 and 20.7): the images built by CI, PostgreSQL managed
+# elsewhere. Settings come from `.env` next to this file (see deploy/env.example); release.sh
+# sets TAG. TLS and the domain sit in front of this (docs/operations.md, "TLS and the domain").
+services:
+  admin:
+    image: ${IMAGE_PREFIX}/admin:${TAG}
+    restart: unless-stopped
+    environment: &shared
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      GAME_ORIGINS: ${GAME_ORIGINS:?set GAME_ORIGINS}
+      TICKET_SECRET: ${TICKET_SECRET:?set TICKET_SECRET}
+      INTERNAL_SECRET: ${INTERNAL_SECRET:?set INTERNAL_SECRET}
+      COOKIE_SECRET: ${COOKIE_SECRET:?set COOKIE_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      TRUST_PROXY: '1'
+      RATE_LIMITS: ${RATE_LIMITS:-}
+      GAME_SERVER_URL: http://game:8080
+      # Only the very first start needs these: they create the first admin.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+    ports: ['127.0.0.1:8081:8081']
+
+  game:
+    image: ${IMAGE_PREFIX}/server:${TAG}
+    restart: unless-stopped
+    environment:
+      <<: *shared
+      MATCH_WORKERS: ${MATCH_WORKERS:-0}
+    volumes: ['snapshot:/data']
+    ports: ['127.0.0.1:8080:8080']
+
+  web:
+    image: ${IMAGE_PREFIX}/client:${TAG}
+    restart: unless-stopped
+    ports: ['127.0.0.1:8088:80']
+
+volumes:
+  snapshot:
