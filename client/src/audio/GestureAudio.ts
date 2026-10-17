@@ -1,6 +1,7 @@
 import type { AudioSettings } from '@heist/shared';
 import {
   AudioEngine,
+  type Channel,
   type AudioOut,
   type LoopHandle,
   type PlayOptions,
@@ -22,6 +23,7 @@ export class GestureAudio implements AudioOut {
   private engine: AudioEngine | undefined;
   private ctx: AudioContext | undefined;
   private mutedNow: boolean;
+  private readonly channels: Record<Channel, number> = { master: 1, effects: 1, ambience: 1 };
 
   constructor(
     private readonly settings: AudioSettings,
@@ -46,6 +48,8 @@ export class GestureAudio implements AudioOut {
     }
     this.engine = new AudioEngine(this.ctx, new SynthSoundBank(this.ctx), this.settings);
     this.engine.setMuted(this.mutedNow);
+    for (const [channel, volume] of Object.entries(this.channels))
+      this.engine.setChannelVolume(channel as Channel, volume);
     if (this.ctx.state === 'suspended') void this.ctx.resume();
   }
 
@@ -66,6 +70,12 @@ export class GestureAudio implements AudioOut {
       // Storage blocked: the choice lasts for this visit only.
     }
     return this.mutedNow;
+  }
+
+  /** The player's volume for a group of sounds; kept for when sound starts. */
+  setChannelVolume(channel: Channel, volume: number): void {
+    this.channels[channel] = volume;
+    this.engine?.setChannelVolume(channel, volume);
   }
 
   get now(): number {

@@ -42,7 +42,16 @@ export interface AudioOut {
   setListener(at: Point, forward: Point, up: Point): void;
   /** Seconds on the audio clock (the clock sounds are scheduled on). */
   readonly now: number;
+  /** The player's volume for a group of sounds, 0–1 (Phase 22.1). */
+  setChannelVolume?(channel: Channel, volume: number): void;
 }
+
+/** Groups of sounds the player turns up or down: everything, the effects, and the wind. */
+export type Channel = 'master' | 'effects' | 'ambience';
+
+/** Which group a sound belongs to. */
+export const channelOf = (name: SoundName): Exclude<Channel, 'master'> =>
+  name === 'wind' ? 'ambience' : 'effects';
 
 /** How loud a sound `distance` m away is, 0–1: the inverse-distance fade the panners use. */
 export function distanceGain(distance: number, s: AudioSettings, reach = s.refDistance): number {
@@ -69,6 +78,8 @@ const ECHO_TONE = 1800;
 export class AudioEngine implements AudioOut {
   private readonly master: GainNode;
   private readonly echoIn: GainNode;
+  private readonly buses: Record<Exclude<Channel, 'master'>, GainNode>;
+  private mutedNow = false;
   private voices: Voice[] = [];
   private listener: Point = { x: 0, y: 0, z: 0 };
   private volume: number;
@@ -82,6 +93,9 @@ export class AudioEngine implements AudioOut {
     this.master = ctx.createGain();
     this.master.gain.value = this.volume;
     this.master.connect(ctx.destination);
+    // Two buses before the master, so the player can turn the effects and the wind apart.
+    this.buses = { effects: ctx.createGain(), ambience: ctx.createGain() };
+    for (const bus of Object.values(this.buses)) bus.connect(this.master);
     // The street echo: a delay feeding back on itself through a dull filter.
     this.echoIn = ctx.createGain();
     this.echoIn.gain.value = settings.echoSend;
@@ -96,7 +110,7 @@ export class AudioEngine implements AudioOut {
     delay.connect(tone);
     tone.connect(feedback);
     feedback.connect(delay);
-    tone.connect(this.master);
+    tone.connect(this.buses.effects);
   }
 
   get now(): number {
@@ -104,11 +118,20 @@ export class AudioEngine implements AudioOut {
   }
 
   get muted(): boolean {
-    return this.master.gain.value === 0;
+    return this.mutedNow;
   }
 
   setMuted(muted: boolean): void {
+    this.mutedNow = muted;
     this.master.gain.value = muted ? 0 : this.volume;
+  }
+
+  setChannelVolume(channel: Channel, volume: number): void {
+    const v = Math.max(0, Math.min(1, volume));
+    if (channel === 'master') {
+      this.volume = this.settings.volume * v;
+      this.master.gain.value = this.mutedNow ? 0 : this.volume;
+    } else this.buses[channel].gain.value = v;
   }
 
   play(name: SoundName, options: PlayOptions = {}): void {
@@ -129,7 +152,7 @@ export class AudioEngine implements AudioOut {
       victim.source.stop();
       this.voices.splice(quietest, 1);
     }
-    const { source } = this.chain(buffer, options);
+    const { source } = this.chain(buffer, options, name);
     source.start();
     const rate = options.rate ?? 1;
     this.voices.push({ ends: now + buffer.duration / rate, loudness, source });
@@ -138,7 +161,7 @@ export class AudioEngine implements AudioOut {
   loop(name: SoundName, options: PlayOptions = {}): LoopHandle | undefined {
     const buffer = this.buffer(name, options.variation ?? 0);
     if (!buffer) return undefined;
-    const { source, gain, panner } = this.chain(buffer, options);
+    const { source, gain, panner } = this.chain(buffer, options, name);
     source.loop = true;
     source.start();
     const ctx = this.ctx;
@@ -196,7 +219,7 @@ export class AudioEngine implements AudioOut {
   }
 
   /** source → gain → (panner) → master, and into the echo if asked. */
-  private chain(buffer: AudioBuffer, options: PlayOptions) {
+  private chain(buffer: AudioBuffer, options: PlayOptions, name: SoundName) {
     const ctx = this.ctx;
     const source = ctx.createBufferSource();
     source.buffer = buffer;
@@ -217,7 +240,7 @@ export class AudioEngine implements AudioOut {
       gain.connect(panner);
       out = panner;
     }
-    out.connect(this.master);
+    out.connect(this.buses[channelOf(name)]);
     if (options.echo) out.connect(this.echoIn);
     source.onended = () => {
       source.disconnect();
