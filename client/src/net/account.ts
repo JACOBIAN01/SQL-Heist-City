@@ -4,6 +4,8 @@ export interface AccountPlayer {
   readonly displayName: string;
   readonly email: string;
   readonly schoolDomain: string | null;
+  /** Whether they have said how old they are, and whether that was old enough. */
+  readonly ageStatus: 'unknown' | 'ok' | 'too_young';
 }
 
 export type WhoAmI =
@@ -26,6 +28,8 @@ export interface AccountApi {
   exportData(): Promise<string | undefined>;
   /** Deletes the account and everything keyed to it. */
   deleteAccount(): Promise<boolean>;
+  /** The age gate: the year they were born. Only the verdict is kept. */
+  declareAge(birthYear: number): Promise<AccountPlayer | { error: string; tooYoung?: boolean }>;
   /** Where to send the browser to sign in; it returns to `returnTo`. */
   signInUrl(returnTo: string): string;
   /** Development only: sign in as a made-up player. */
@@ -95,6 +99,29 @@ export class HttpAccountApi implements AccountApi {
       return res.ok ? await res.text() : undefined;
     } catch {
       return undefined;
+    }
+  }
+
+  async declareAge(
+    birthYear: number,
+  ): Promise<AccountPlayer | { error: string; tooYoung?: boolean }> {
+    try {
+      const res = await this.call('/auth/player/age', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ birthYear }),
+      });
+      const body = (await res.json()) as {
+        player?: AccountPlayer;
+        error?: { code: string; message: string };
+      };
+      if (res.ok && body.player) return body.player;
+      return {
+        error: body.error?.message ?? 'Could not check your age',
+        ...(body.error?.code === 'too_young' ? { tooYoung: true } : {}),
+      };
+    } catch {
+      return { error: 'The account service is not reachable' };
     }
   }
 

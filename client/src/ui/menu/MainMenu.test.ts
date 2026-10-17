@@ -7,6 +7,7 @@ const ana = {
   displayName: 'Ana Silva',
   email: 'ana@school.edu',
   schoolDomain: 'school.edu',
+  ageStatus: 'ok' as const,
 };
 
 function menu(who: WhoAmI, over: Partial<MenuOptions> = {}) {
@@ -21,6 +22,11 @@ function menu(who: WhoAmI, over: Partial<MenuOptions> = {}) {
     ),
     exportData: async () => '{"data":1}',
     deleteAccount: vi.fn(async () => true),
+    declareAge: vi.fn(async (year: number) =>
+      year > 2015
+        ? { error: 'You need to be 13 or older to play.', tooYoung: true }
+        : { ...ana, ageStatus: 'ok' as const },
+    ),
     signInUrl: (to) => `https://acct.test/login?return=${to}`,
     devSignInUrl: (n, to) => `https://acct.test/dev?name=${n}&return=${to}`,
   };
@@ -227,5 +233,31 @@ describe('joining a class from the menu', () => {
     await new Promise((r) => setTimeout(r, 40));
     expect(roomStatus.mock.calls.length).toBe(calls);
     expect(buttons(m)).toContain('Join class');
+  });
+
+  it('asks how old a new player is before anything else, and lets in someone old enough (21.7)', async () => {
+    const { m } = menu({ state: 'signed_in', player: { ...ana, ageStatus: 'unknown' } });
+    await m.show();
+    expect(buttons(m)).toEqual(['Continue', 'Sign out']);
+    // No way into a match yet.
+    expect(m.root.textContent).not.toContain('Play');
+    const year = m.root.querySelector('select') as HTMLSelectElement;
+    press(m, 'Continue');
+    expect(m.root.textContent).toContain('Choose the year you were born.');
+    year.value = '2008';
+    press(m, 'Continue');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(buttons(m)).toContain('Tutorial');
+  });
+
+  it('turns away someone too young, leaving only a way out of the account', async () => {
+    const { m } = menu({ state: 'signed_in', player: { ...ana, ageStatus: 'unknown' } });
+    await m.show();
+    const year = m.root.querySelector('select') as HTMLSelectElement;
+    year.value = '2020';
+    press(m, 'Continue');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(m.root.textContent).toContain('not old enough');
+    expect(buttons(m)).toEqual(['Delete my account', 'Sign out']);
   });
 });

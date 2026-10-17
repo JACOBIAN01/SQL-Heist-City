@@ -184,7 +184,99 @@ export class MainMenu {
     void look();
   }
 
+  /**
+   * The age gate (Phase 21.7): asked once, before anything else. The year is sent to the account
+   * service, which keeps only whether it was old enough.
+   */
+  private drawAgeGate(card: HTMLElement, player: AccountPlayer): void {
+    const thisYear = new Date().getFullYear();
+    const year = h(
+      'select',
+      { attrs: { 'aria-label': 'Year you were born' } },
+      h('option', { text: 'Choose a year', attrs: { value: '' } }),
+      ...Array.from({ length: 60 }, (_, i) =>
+        h('option', { text: String(thisYear - i), attrs: { value: String(thisYear - i) } }),
+      ),
+    );
+    const note = h('p', { class: 'menu-error' });
+    card.append(
+      h('p', {
+        class: 'menu-note',
+        text: `Hi ${player.displayName}. Before you play: what year were you born?`,
+      }),
+      h('p', {
+        class: 'menu-muted',
+        text: 'This game has cartoon shooting. We only keep whether you are old enough, not your birth year.',
+      }),
+      h(
+        'div',
+        { class: 'menu-row' },
+        year,
+        h('button', {
+          class: 'menu-primary',
+          text: 'Continue',
+          on: {
+            click: async () => {
+              if (!year.value) {
+                note.textContent = 'Choose the year you were born.';
+                return;
+              }
+              const result = await this.options.account.declareAge(Number(year.value));
+              if ('error' in result) {
+                note.textContent = result.error;
+                if (result.tooYoung)
+                  this.who = { state: 'signed_in', player: { ...player, ageStatus: 'too_young' } };
+              } else this.who = { state: 'signed_in', player: result };
+              this.draw(this.who);
+            },
+          },
+        }),
+      ),
+      note,
+      this.signOutButton(),
+    );
+  }
+
+  /** Someone the age gate turned away: no way into the game, but a way out of the account. */
+  private drawTooYoung(card: HTMLElement): void {
+    card.append(
+      h('p', {
+        class: 'menu-error',
+        text: 'You are not old enough to play this game yet. Ask your teacher if you think this is a mistake.',
+      }),
+      h('button', {
+        text: 'Delete my account',
+        on: {
+          click: async () => {
+            const sure =
+              this.options.confirm?.('Delete your account? This cannot be undone.') ?? true;
+            if (sure && (await this.options.account.deleteAccount())) {
+              this.who = { state: 'signed_out' };
+              this.draw(this.who);
+            }
+          },
+        },
+      }),
+      this.signOutButton(),
+    );
+  }
+
+  private signOutButton(): HTMLElement {
+    return h('button', {
+      text: 'Sign out',
+      on: {
+        click: async () => {
+          await this.options.account.signOut();
+          this.who = { state: 'signed_out' };
+          this.draw(this.who);
+        },
+      },
+    });
+  }
+
   private drawSignedIn(card: HTMLElement, player: AccountPlayer): void {
+    if (player.ageStatus === 'unknown') return this.drawAgeGate(card, player);
+    if (player.ageStatus === 'too_young') return this.drawTooYoung(card);
     card.appendChild(
       h(
         'p',
