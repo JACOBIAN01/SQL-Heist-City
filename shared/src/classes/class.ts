@@ -52,6 +52,8 @@ export const classUpdateSchema = z.object({
 
 export type ClassInput = z.infer<typeof classInputSchema>;
 
+import type { ClassConsent } from '../legal/consent';
+
 export interface ClassRecord extends ClassInput {
   readonly id: number;
   /** What students type to join. */
@@ -60,6 +62,10 @@ export interface ClassRecord extends ClassInput {
   /** No new students may join while locked. */
   readonly locked: boolean;
   readonly archived: boolean;
+  /** When it was archived (the retention clock), if it is. */
+  readonly archivedAt: string | null;
+  /** The school's acceptance of the terms; a class cannot start without a current one. */
+  readonly consent: ClassConsent | null;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

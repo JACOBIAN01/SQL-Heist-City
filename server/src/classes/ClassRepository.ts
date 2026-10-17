@@ -22,6 +22,15 @@ export interface ClassRepository {
   update(id: number, changes: Partial<ClassInput>): Promise<ClassRecord | undefined>;
   setLocked(id: number, locked: boolean): Promise<ClassRecord | undefined>;
   archive(id: number): Promise<ClassRecord | undefined>;
+  /** Records the school's acceptance of the terms of this `version` (Phase 21.3). */
+  acceptConsent(
+    id: number,
+    version: number,
+    byUserId: number | null,
+    now?: Date,
+  ): Promise<ClassRecord | undefined>;
+  /** Deletes archived classes archived before `before`, with their rosters and results; returns their ids. */
+  deleteArchivedBefore(before: Date): Promise<number[]>;
   /** A new code (the old one stops working), for a class whose code leaked. */
   regenerateCode(id: number): Promise<ClassRecord | undefined>;
 
@@ -54,6 +63,10 @@ interface ClassRow {
   dialect: string;
   locked: boolean;
   archived: boolean;
+  archived_at: Date | null;
+  consent_version: number | null;
+  consent_user_id: string | number | null;
+  consent_at: Date | null;
   created_at: Date;
   updated_at: Date;
   [column: string]: unknown;
@@ -71,6 +84,15 @@ const fromRow = (r: ClassRow): ClassRecord => ({
   dialect: r.dialect,
   locked: r.locked,
   archived: r.archived,
+  archivedAt: r.archived_at ? r.archived_at.toISOString() : null,
+  consent:
+    r.consent_version === null || r.consent_at === null
+      ? null
+      : {
+          version: r.consent_version,
+          byUserId: r.consent_user_id === null ? null : Number(r.consent_user_id),
+          at: r.consent_at.toISOString(),
+        },
   createdAt: r.created_at.toISOString(),
   updatedAt: r.updated_at.toISOString(),
 });
@@ -159,10 +181,27 @@ export class PgClassRepository implements ClassRepository {
 
   private async flag(id: number, column: 'locked' | 'archived', value: boolean) {
     const row = await this.db.one<ClassRow>(
-      `UPDATE classes SET ${column} = $1, updated_at = now() WHERE id = $2 RETURNING *`,
+      `UPDATE classes SET ${column} = $1, ${column === 'archived' ? 'archived_at = now(), ' : ''}updated_at = now() WHERE id = $2 RETURNING *`,
       [value, id],
     );
     return row && fromRow(row);
+  }
+
+  async acceptConsent(id: number, version: number, byUserId: number | null, now = new Date()) {
+    const row = await this.db.one<ClassRow>(
+      `UPDATE classes SET consent_version = $1, consent_user_id = $2, consent_at = $3, updated_at = now()
+       WHERE id = $4 RETURNING *`,
+      [version, byUserId, now, id],
+    );
+    return row && fromRow(row);
+  }
+
+  async deleteArchivedBefore(before: Date): Promise<number[]> {
+    const rows = await this.db.query<{ id: string }>(
+      'DELETE FROM classes WHERE archived AND archived_at < $1 RETURNING id',
+      [before],
+    );
+    return rows.map((r) => Number(r.id));
   }
 
   setLocked(id: number, locked: boolean) {
@@ -283,6 +322,8 @@ export class InMemoryClassRepository implements ClassRepository {
       ownerUserId,
       locked: false,
       archived: false,
+      archivedAt: null,
+      consent: null,
       createdAt: now,
       updatedAt: now,
     };
@@ -326,7 +367,23 @@ export class InMemoryClassRepository implements ClassRepository {
   }
 
   async archive(id: number) {
-    return this.change(id, { archived: true });
+    return this.change(id, { archived: true, archivedAt: new Date().toISOString() });
+  }
+
+  async acceptConsent(id: number, version: number, byUserId: number | null, now = new Date()) {
+    return this.change(id, { consent: { version, byUserId, at: now.toISOString() } });
+  }
+
+  async deleteArchivedBefore(before: Date): Promise<number[]> {
+    const gone = [...this.classes.values()].filter(
+      (c) => c.archived && c.archivedAt !== null && new Date(c.archivedAt) < before,
+    );
+    for (const c of gone) {
+      this.classes.delete(c.id);
+      this.links.delete(c.id);
+      this.joined.delete(c.id);
+    }
+    return gone.map((c) => c.id);
   }
 
   async regenerateCode(id: number) {

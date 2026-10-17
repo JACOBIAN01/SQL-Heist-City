@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
+import type { AgeStatus } from '@heist/shared';
 import type { PgDatabase } from '../pg/PgDatabase';
 
 /** A person who signs in with Google. The only personal data kept (docs/identity.md). */
@@ -11,6 +12,8 @@ export interface Player {
   readonly schoolDomain: string | null;
   readonly createdAt: string;
   readonly lastSeenAt: string;
+  /** What they said about their age: only the verdict is kept, never the birth year (Phase 21.7). */
+  readonly ageStatus: AgeStatus;
 }
 
 export interface GoogleIdentity {
@@ -28,6 +31,10 @@ export interface PlayerRepository {
   findById(id: number): Promise<Player | undefined>;
   findBySub(sub: string): Promise<Player | undefined>;
   rename(id: number, displayName: string): Promise<Player | undefined>;
+  /** Records the verdict of an age declaration. Someone found too young stays so; staff can reset it. */
+  setAgeStatus(id: number, status: AgeStatus): Promise<Player | undefined>;
+  /** Players not seen since `before`, oldest first, for the retention job. */
+  inactiveSince(before: Date, limit?: number): Promise<Player[]>;
   /** Players whose name or email contains `q` (any case), newest first, for the staff page. */
   search(q: string, limit?: number): Promise<Player[]>;
   /** Removes the player and everything keyed to them (13.10). */
@@ -52,6 +59,7 @@ interface PlayerRow {
   school_domain: string | null;
   created_at: Date;
   last_seen_at: Date;
+  age_status: AgeStatus;
   [column: string]: unknown;
 }
 
@@ -63,6 +71,7 @@ const fromRow = (r: PlayerRow): Player => ({
   schoolDomain: r.school_domain,
   createdAt: r.created_at.toISOString(),
   lastSeenAt: r.last_seen_at.toISOString(),
+  ageStatus: r.age_status,
 });
 
 export class PgPlayerRepository implements PlayerRepository {
@@ -96,6 +105,22 @@ export class PgPlayerRepository implements PlayerRepository {
       [displayName, id],
     );
     return row && fromRow(row);
+  }
+
+  async setAgeStatus(id: number, status: AgeStatus): Promise<Player | undefined> {
+    const row = await this.db.one<PlayerRow>(
+      'UPDATE players SET age_status = $1 WHERE id = $2 RETURNING *',
+      [status, id],
+    );
+    return row && fromRow(row);
+  }
+
+  async inactiveSince(before: Date, limit = 500): Promise<Player[]> {
+    const rows = await this.db.query<PlayerRow>(
+      'SELECT * FROM players WHERE last_seen_at < $1 ORDER BY last_seen_at LIMIT $2',
+      [before, limit],
+    );
+    return rows.map(fromRow);
   }
 
   async search(q: string, limit = 50): Promise<Player[]> {
@@ -168,6 +193,7 @@ export class InMemoryPlayerRepository implements PlayerRepository {
           schoolDomain: identity.domain,
           createdAt: now.toISOString(),
           lastSeenAt: now.toISOString(),
+          ageStatus: 'unknown',
         };
     this.players.set(player.id, player);
     return player;
@@ -187,6 +213,21 @@ export class InMemoryPlayerRepository implements PlayerRepository {
     const next = { ...p, displayName };
     this.players.set(id, next);
     return next;
+  }
+
+  async setAgeStatus(id: number, status: AgeStatus) {
+    const p = this.players.get(id);
+    if (!p) return undefined;
+    const next = { ...p, ageStatus: status };
+    this.players.set(id, next);
+    return next;
+  }
+
+  async inactiveSince(before: Date, limit = 500) {
+    return [...this.players.values()]
+      .filter((p) => new Date(p.lastSeenAt) < before)
+      .sort((a, b) => a.lastSeenAt.localeCompare(b.lastSeenAt))
+      .slice(0, limit);
   }
 
   async search(q: string, limit = 50) {

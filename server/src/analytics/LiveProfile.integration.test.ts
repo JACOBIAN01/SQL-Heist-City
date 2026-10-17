@@ -1,3 +1,4 @@
+import { CONSENT_VERSION } from '@heist/shared';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join as joinPath } from 'node:path';
@@ -72,6 +73,7 @@ describe.skipIf(!TEST_DATABASE_URL)('live profile, end to end (15.2, 15.6, 15.8)
       domain: null,
     });
     const cls = await classes.create(classInputSchema.parse({ name: 'Live' }), null);
+    await classes.acceptConsent(cls.id, CONSENT_VERSION, null);
     await classes.addMember(cls.id, ana.id);
     await classes.setQuestions(cls.id, [{ questionId: question.id, usage: 'gun' }]);
 

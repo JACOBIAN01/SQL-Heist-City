@@ -29,6 +29,8 @@ const record: ClassRecord = {
   ownerUserId: null,
   locked: false,
   archived: false,
+  archivedAt: null,
+  consent: null,
   createdAt: '',
   updatedAt: '',
 };

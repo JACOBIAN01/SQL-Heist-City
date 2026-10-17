@@ -314,4 +314,15 @@ export const pgMigrations: readonly string[] = [
   ALTER TABLE questions ALTER COLUMN template_json TYPE JSON USING template_json::json;
   ALTER TABLE question_versions ALTER COLUMN template_json TYPE JSON USING template_json::json;
   `,
+  // 11 — privacy (Phase 21): the school's consent for a class, when it was archived, and the
+  // verdict of a student's age declaration (never the birth year).
+  `
+  ALTER TABLE classes ADD COLUMN consent_version INTEGER;
+  ALTER TABLE classes ADD COLUMN consent_user_id BIGINT REFERENCES users (id) ON DELETE SET NULL;
+  ALTER TABLE classes ADD COLUMN consent_at TIMESTAMPTZ;
+  ALTER TABLE classes ADD COLUMN archived_at TIMESTAMPTZ;
+  UPDATE classes SET archived_at = updated_at WHERE archived;
+  ALTER TABLE players ADD COLUMN age_status TEXT NOT NULL DEFAULT 'unknown'
+    CHECK (age_status IN ('unknown', 'ok', 'too_young'));
+  `,
 ];

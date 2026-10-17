@@ -9,6 +9,9 @@ import {
   DEFAULT_HEIST_SETTINGS,
   DEFAULT_ANALYTICS_SETTINGS,
   DEFAULT_DIALECT_SETTINGS,
+  DEFAULT_PRIVACY_SETTINGS,
+  privacySettingsSchema,
+  type PrivacySettings,
   dialectSettingsSchema,
   type DialectSettings,
   analyticsSettingsSchema,
@@ -136,6 +139,7 @@ export const REWARD_ICONS_KEY = 'reward_icons';
 export const NAME_RULES_KEY = 'names';
 export const ANALYTICS_SETTINGS_KEY = 'analytics';
 export const DIALECT_SETTINGS_KEY = 'dialects';
+export const PRIVACY_SETTINGS_KEY = 'privacy';
 
 /** What a match re-reads each round. */
 export function worldSettingsFrom(reader: SettingsReader): WorldSettings {
@@ -199,6 +203,8 @@ export const settingsParsers = {
   analyticsFrom: (raw: unknown): AnalyticsSettings =>
     sectionFrom(raw, analyticsSettingsSchema, DEFAULT_ANALYTICS_SETTINGS),
   namesFrom: (raw: unknown): NameRules => sectionFrom(raw, nameRulesSchema, DEFAULT_NAME_RULES),
+  privacyFrom: (raw: unknown): PrivacySettings =>
+    sectionFrom(raw, privacySettingsSchema, DEFAULT_PRIVACY_SETTINGS),
   dialectsFrom: (raw: unknown): DialectSettings =>
     sectionFrom(raw, dialectSettingsSchema, DEFAULT_DIALECT_SETTINGS),
   rewardIconsFrom: (raw: unknown): RewardIcons =>

@@ -1,3 +1,4 @@
+import { consentIsCurrent } from '@heist/shared';
 import type { HeistSettings, MatchSettings } from '@heist/shared';
 import { cityMapIdFor, citySettingsSchema, type CitySettings } from '@heist/shared';
 import type { MapName } from '../game/maps';
@@ -48,7 +49,10 @@ export type RoomAction =
 
 export type RoomResult =
   | { readonly ok: true; readonly status: RoomStatus }
-  | { readonly ok: false; readonly reason: 'unknown_class' | 'not_live' | 'archived' };
+  | {
+      readonly ok: false;
+      readonly reason: 'unknown_class' | 'not_live' | 'archived' | 'consent_required';
+    };
 
 /**
  * One match per class (docs/gameplay.md, classroom mode). The teacher starts
@@ -85,6 +89,8 @@ export class ClassRooms {
     switch (command.action) {
       case 'start':
         if (record.archived) return { ok: false, reason: 'archived' };
+        // The school has to have accepted the current terms first (Phase 21.3).
+        if (!consentIsCurrent(record.consent)) return { ok: false, reason: 'consent_required' };
         await this.start(classId);
         return { ok: true, status: this.status(classId) };
       case 'stop':

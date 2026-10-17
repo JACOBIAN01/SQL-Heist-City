@@ -1,3 +1,4 @@
+import { CONSENT_VERSION } from '@heist/shared';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join as joinPath } from 'node:path';
@@ -83,8 +84,11 @@ const until = async (check: () => boolean, ms = 20000) => {
   while (!check() && Date.now() < end) await new Promise((r) => setTimeout(r, 25));
   expect(check()).toBe(true);
 };
-const make = (name: string, over: object = {}) =>
-  classes.create(classInputSchema.parse({ name, ...over }), null);
+// The school has accepted the terms, as a class needs before it can start (Phase 21.3).
+const make = async (name: string, over: object = {}) => {
+  const made = await classes.create(classInputSchema.parse({ name, ...over }), null);
+  return (await classes.acceptConsent(made.id, CONSENT_VERSION, null)) ?? made;
+};
 
 describe('class rooms (14.5, 14.6)', () => {
   it('a class waits until the teacher starts it, then has one room (a second start changes nothing)', async () => {
