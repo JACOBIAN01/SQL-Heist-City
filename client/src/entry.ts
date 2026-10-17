@@ -1,5 +1,6 @@
 import { HttpAccountApi, accountBase } from './net/account';
 import { roomStatus } from './net/classRoom';
+import { ErrorReporter, postReport } from './errors/ErrorReporter';
 import { MainMenu } from './ui/menu/MainMenu';
 
 /**
@@ -8,6 +9,13 @@ import { MainMenu } from './ui/menu/MainMenu';
  * straight to the game, so every developer workflow keeps working.
  */
 const params = new URLSearchParams(location.search);
+
+// Errors in the browser reach the game server's log (Phase 20.5), from every page the entry loads.
+new ErrorReporter({
+  send: postReport(`http://${location.hostname}:${params.get('server') ?? '8080'}`),
+  page: () => location.pathname,
+  userAgent: navigator.userAgent,
+}).install(window);
 const wantsPractice = params.has('practice');
 const wantsAssessment = params.has('assess');
 const onlyAnError = [...params.keys()].every((k) => k === 'signin_error');

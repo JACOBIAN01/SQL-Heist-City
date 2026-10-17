@@ -23,6 +23,8 @@ export const rateLimitsSchema = z.object({
   gameHttpPerIp: bucket.default({ burst: 400, perMinute: 2400 }),
   /** Admin API calls per address (staff only). */
   adminApiPerIp: bucket.default({ burst: 120, perMinute: 600 }),
+  /** Error reports from browsers per address (a broken page must not flood the log). */
+  clientErrorsPerIp: bucket.default({ burst: 30, perMinute: 60 }),
   /** Sign-in routes (staff login, Google sign-in, tickets, class join) per address. */
   authPerIp: bucket.default({ burst: 400, perMinute: 1200 }),
 });

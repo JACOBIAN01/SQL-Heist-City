@@ -10,6 +10,7 @@ export * from './random/Rng';
 export * from './config/challenges';
 export * from './config/dialects';
 export * from './config/rateLimits';
+export * from './net/clientError';
 export * from './challenges/types';
 export * from './admin/auth';
 export * from './admin/questions';
