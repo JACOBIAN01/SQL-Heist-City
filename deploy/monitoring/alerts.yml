@@ -1,0 +1,51 @@
+# Alert rules (Phase 20.4). Each one names what to look at; alerts.test.yml proves they fire.
+groups:
+  - name: heist
+    rules:
+      - alert: GameServerDown
+        expr: up{job="game"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: The game server cannot be scraped
+          action: Check the container (docker compose ps), its logs, and the database.
+
+      - alert: TickTooSlow
+        expr: heist_tick_ms{quantile="0.99"} > 15
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: 'Tick p99 is {{ $value }} ms in {{ $labels.match }} (target under 15)'
+          action: Too many players or classes for this machine, or a slow rule. See docs/deployment.md, sizing.
+
+      - alert: GraderBacklog
+        expr: heist_grader_queue > 20 or heist_grader_wait_ms{quantile="0.95"} > 2000
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: Student answers are waiting for the grader
+          action: Runaway queries or too few cores for grading. Look at heist_grader_timeouts.
+
+      - alert: GraderTimeouts
+        expr: increase(heist_grader_timeouts[10m]) > 50
+        for: 0m
+        labels: { severity: warning }
+        annotations:
+          summary: Many student queries are hitting the time limit
+          action: A question may be producing endless queries, or someone is abusing the sandbox. Check the anomaly and fuzz logs.
+
+      - alert: CheatAnomalies
+        expr: sum by (match) (increase(heist_anomalies[10m])) > 100
+        for: 0m
+        labels: { severity: warning }
+        annotations:
+          summary: 'Many anomalies in {{ $labels.match }}'
+          action: Search the logs for msg="anomaly" and group by player (docs/backend.md, anti-cheat).
+
+      - alert: MemoryHigh
+        expr: heist_process_rss_bytes > 1.5e9
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: The game server holds over 1.5 GB
+          action: Restart in a quiet moment and check the soak test for a leak.

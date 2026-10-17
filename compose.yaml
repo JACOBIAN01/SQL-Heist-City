@@ -46,6 +46,38 @@ services:
     build: { context: ., target: client }
     ports: ['8088:80']
 
+  # Dashboards and alerts (Phase 20.4):  docker compose --profile monitoring up -d
+  #   Prometheus http://localhost:9090   Grafana http://localhost:3000 (admin / admin, dashboard "SQL Heist City")
+  prometheus:
+    profiles: ['monitoring']
+    image: prom/prometheus:v3.0.1
+    depends_on: [game]
+    environment:
+      INTERNAL_SECRET: ${INTERNAL_SECRET:-local-internal-secret-not-for-production}
+    # The bearer token comes from the environment into a file, so no config holds the secret.
+    entrypoint:
+      [
+        '/bin/sh',
+        '-c',
+        'printf %s "$$INTERNAL_SECRET" > /tmp/internal-secret && exec /bin/prometheus --config.file=/etc/prometheus/prometheus.yml',
+      ]
+    volumes:
+      - ./deploy/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports: ['9090:9090']
+
+  grafana:
+    profiles: ['monitoring']
+    image: grafana/grafana:11.3.0
+    depends_on: [prometheus]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+    volumes:
+      - ./deploy/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ['3000:3000']
+
 volumes:
   pgdata:
   snapshot:
