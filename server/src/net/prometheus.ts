@@ -7,6 +7,8 @@ export interface MetricsSnapshot {
   /** Label for the match (`main`, or the match id) → its latest numbers (none yet = left out). */
   readonly matches: Readonly<Record<string, GameMetrics | undefined>>;
   readonly sandbox?: SandboxStats | undefined;
+  /** Error reports received from browsers since the server started. */
+  readonly clientErrors?: number;
   readonly rssBytes?: number;
   readonly heapBytes?: number;
 }
@@ -90,6 +92,10 @@ export function renderPrometheus(m: MetricsSnapshot): string {
       [{ quantile: '1' }, s.waitMs.max],
     ]);
   }
+  if (m.clientErrors !== undefined)
+    gauge('heist_client_errors', 'Error reports received from browsers since the server started.', [
+      [{}, m.clientErrors],
+    ]);
   if (m.rssBytes !== undefined)
     gauge('heist_process_rss_bytes', 'Memory the process holds.', [[{}, m.rssBytes]]);
   if (m.heapBytes !== undefined)

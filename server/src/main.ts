@@ -110,6 +110,7 @@ const classPool = pg
   : undefined;
 let rooms: ClassRooms | undefined;
 const startedAt = Date.now();
+let clientErrors = 0;
 const server = createHttpServer({
   ...(classPool
     ? {
@@ -131,11 +132,16 @@ const server = createHttpServer({
       uptimeSeconds: (Date.now() - startedAt) / 1000,
       matches,
       sandbox: challenges?.sandboxStats(),
+      clientErrors,
       rssBytes: process.memoryUsage().rss,
       heapBytes: process.memoryUsage().heapUsed,
     });
   },
   protectMetrics: production,
+  onClientError: (error) => {
+    clientErrors++;
+    log.warn('client error', { ...error });
+  },
   now: Date.now,
   startedAt,
   ...(process.env.INTERNAL_SECRET ? { internalSecret: process.env.INTERNAL_SECRET } : {}),

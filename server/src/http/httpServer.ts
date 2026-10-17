@@ -1,7 +1,12 @@
 import { timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { PROTOCOL_VERSION } from '@heist/shared';
-import { rateLimitsFrom } from '@heist/shared';
+import {
+  CLIENT_ERROR_PATH,
+  clientErrorSchema,
+  rateLimitsFrom,
+  type ClientError,
+} from '@heist/shared';
 import { clientAddress } from '../net/clientAddress';
 import { KeyedLimiter } from '../net/KeyedLimiter';
 import { OriginPolicy } from '../net/OriginPolicy';
@@ -25,6 +30,8 @@ export interface HttpServerDeps {
    * metrics routes: in production they are for the operator's monitoring, not for players.
    */
   protectMetrics?: boolean;
+  /** Receives each error report from a browser (Phase 20.5). Absent = the route is disabled. */
+  onClientError?: (error: ClientError) => void;
   /** Class rooms: `GET /class/:id` (public status) and `POST /internal/class/:id` (the admin's live controls). */
   classRooms?: {
     status(classId: number): unknown;
@@ -59,8 +66,9 @@ export function createHttpServer(deps: HttpServerDeps): Server {
     }
     return true;
   };
-  const limiter =
-    deps.limiter ?? new KeyedLimiter(rateLimitsFrom(process.env.RATE_LIMITS).gameHttpPerIp);
+  const limits = rateLimitsFrom(process.env.RATE_LIMITS);
+  const limiter = deps.limiter ?? new KeyedLimiter(limits.gameHttpPerIp);
+  const errorLimiter = new KeyedLimiter(limits.clientErrorsPerIp);
   return createServer((req: IncomingMessage, res: ServerResponse) => {
     if (!limiter.take(clientAddress(req))) {
       res.setHeader('retry-after', '5');
@@ -130,7 +138,34 @@ export function createHttpServer(deps: HttpServerDeps): Server {
       );
       return;
     }
-    if (req.method === 'OPTIONS' && (publicRoom || req.url === '/lobby')) {
+    if (req.method === 'POST' && req.url === CLIENT_ERROR_PATH && deps.onClientError) {
+      if (!crossOrigin(req, res)) return;
+      if (!errorLimiter.take(clientAddress(req))) {
+        res.writeHead(429).end();
+        return;
+      }
+      const report = deps.onClientError;
+      void readBody(req).then(
+        (body) => {
+          const parsed = clientErrorSchema.safeParse(body);
+          if (!parsed.success) {
+            sendJson(res, 400, { error: { code: 'bad_report', message: 'Not an error report' } });
+            return;
+          }
+          report(parsed.data);
+          res.writeHead(204).end();
+        },
+        () => {
+          res.setHeader('connection', 'close');
+          sendJson(res, 400, { error: { code: 'bad_body', message: 'Bad request body' } });
+        },
+      );
+      return;
+    }
+    if (
+      req.method === 'OPTIONS' &&
+      (publicRoom || req.url === '/lobby' || req.url === CLIENT_ERROR_PATH)
+    ) {
       if (crossOrigin(req, res)) res.writeHead(204).end();
       return;
     }
@@ -154,14 +189,20 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
 function readBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let text = '';
+    let tooLarge = false;
     req.on('data', (chunk: Buffer) => {
+      if (tooLarge) return;
       text += chunk.toString('utf8');
       if (text.length > 4096) {
+        tooLarge = true;
+        text = '';
+        // Answer first (the caller does), then drop the connection: destroying it now would
+        // leave the sender with a reset instead of a reason.
         reject(new Error('too large'));
-        req.destroy();
       }
     });
     req.on('end', () => {
+      if (tooLarge) return;
       try {
         resolve(text ? JSON.parse(text) : {});
       } catch (err) {

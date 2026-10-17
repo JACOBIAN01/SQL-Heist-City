@@ -25,6 +25,7 @@ describe('Prometheus text (20.4)', () => {
         demoted: 4,
         waitMs: { p50: 1, p95: 40, max: 130 },
       },
+      clientErrors: 12,
       rssBytes: 300e6,
     });
     expect(text).toContain('# TYPE heist_players gauge');
@@ -34,6 +35,7 @@ describe('Prometheus text (20.4)', () => {
     expect(text).toContain('heist_anomalies{match="main",kind="speed"} 2');
     expect(text).toContain('heist_grader_queue 5');
     expect(text).toContain('heist_grader_wait_ms{quantile="0.95"} 40');
+    expect(text).toContain('heist_client_errors 12');
     expect(text).toContain('heist_process_rss_bytes 300000000');
     expect(text.endsWith('\n')).toBe(true);
   });

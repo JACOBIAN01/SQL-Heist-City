@@ -89,6 +89,40 @@ describe('game server HTTP', () => {
     await new Promise<void>((done) => server.close(() => done()));
   });
 
+  it("takes error reports from the game's own pages, validates, limits, and counts them (20.5)", async () => {
+    const received: unknown[] = [];
+    const server = createHttpServer({
+      now: () => 0,
+      startedAt: 0,
+      onClientError: (e) => received.push(e),
+      origins: new OriginPolicy(['https://heist.school.test'], false),
+    });
+    await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+    const { port } = server.address() as AddressInfo;
+    const post = (body: string, origin?: string) =>
+      fetch(`http://127.0.0.1:${port}/client-error`, {
+        method: 'POST',
+        headers: { 'content-type': 'text/plain', ...(origin ? { origin } : {}) },
+        body,
+      });
+    const report = { message: 'TypeError: x', source: 'error', page: '/' };
+    const ok = await post(JSON.stringify(report), 'https://heist.school.test');
+    expect(ok.status).toBe(204);
+    expect(ok.headers.get('access-control-allow-origin')).toBe('https://heist.school.test');
+    expect(received).toEqual([report]);
+    expect((await post(JSON.stringify(report), 'https://evil.test')).status).toBe(403);
+    expect((await post('{"message": 5}')).status).toBe(400);
+    expect((await post('not json')).status).toBe(400);
+    expect((await post(JSON.stringify({ ...report, message: 'x'.repeat(600) }))).status).toBe(400);
+    expect((await post('x'.repeat(5000))).status).toBe(400);
+    expect(received).toHaveLength(1);
+    // A broken page that reports in a loop is cut off.
+    const codes = [];
+    for (let i = 0; i < 40; i++) codes.push((await post(JSON.stringify(report))).status);
+    expect(codes).toContain(429);
+    await new Promise<void>((done) => server.close(() => done()));
+  });
+
   it('returns a JSON 404 for unknown routes', async () => {
     const res = await get('/nope');
     expect(res.status).toBe(404);
