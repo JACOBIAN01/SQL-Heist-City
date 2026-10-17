@@ -23,7 +23,7 @@ COPY content content
 
 # --- game server -----------------------------------------------------------------------------
 FROM base AS server
-ENV PORT=8080 SNAPSHOT_PATH=/data/content-snapshot.db
+ENV PORT=8080 SNAPSHOT_PATH=/data/content-snapshot.db SERVICE_NAME=game
 RUN mkdir -p /data && chown node:node /data
 USER node
 EXPOSE 8080
@@ -36,7 +36,7 @@ FROM base AS admin-build
 RUN npm run build -w @heist/admin
 
 FROM admin-build AS admin
-ENV PORT=8081
+ENV PORT=8081 SERVICE_NAME=admin
 RUN mkdir -p /data && chown node:node /data
 USER node
 EXPOSE 8081

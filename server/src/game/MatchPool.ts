@@ -1,3 +1,4 @@
+import { log } from '../log';
 import { Worker } from 'node:worker_threads';
 import type { HeistSettings, MatchSettings } from '@heist/shared';
 import type { RoundResult } from '../heist/HeistEvents';
@@ -117,7 +118,7 @@ export class MatchPool {
           this.matches.set(id, match);
           worker.on('exit', () => {
             this.matches.delete(id);
-            if (!this.stopping) console.warn(`match ${id} stopped unexpectedly`);
+            if (!this.stopping) log.warn('match stopped unexpectedly', { match: id });
           });
           resolve(match.info);
         } else if (message.type === 'round_result') {

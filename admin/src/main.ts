@@ -1,3 +1,4 @@
+import { installCrashLogging, log } from '@heist/server/log';
 import { assertSecrets } from '@heist/server/config/secrets';
 import { rateLimitsFrom } from '@heist/shared';
 import { fileURLToPath } from 'node:url';
@@ -6,11 +7,13 @@ import { createRemoteJWKSet } from 'jose';
 import { buildAdmin } from './composition';
 import { GoogleOidc } from './players/GoogleOidc';
 
+installCrashLogging();
+
 // Entry point: reads the environment, then delegates wiring to buildAdmin().
 const port = Number(process.env.PORT ?? 8081);
 const dbPath = process.env.DB_PATH ?? fileURLToPath(new URL('../../data/dev.db', import.meta.url));
 const logger = {
-  error: (message: string, meta?: Record<string, unknown>) => console.error(message, meta ?? ''),
+  error: (message: string, meta?: Record<string, unknown>) => log.error(message, meta),
 };
 
 const opened = await openStores(dbPath);
@@ -46,7 +49,7 @@ const playerAuth =
           .filter(Boolean),
       }
     : undefined;
-if (production && !ticketSecret) console.warn('TICKET_SECRET is not set: player sign-in is off.');
+if (production && !ticketSecret) log.warn('TICKET_SECRET is not set: player sign-in is off');
 const admin = buildAdmin(
   opened.stores,
   {
@@ -71,7 +74,7 @@ const created = await admin.auth.ensureInitialAdmin(
   process.env.ADMIN_EMAIL,
   process.env.ADMIN_PASSWORD,
 );
-if (created) console.log(`created initial admin ${created.email}`);
+if (created) log.info('created initial admin', { email: created.email });
 if ((await admin.auth.listUsers()).length === 0) {
   console.warn(
     'No admin accounts exist yet, so nobody can log in.\n' +
@@ -81,5 +84,5 @@ if ((await admin.auth.listUsers()).length === 0) {
 }
 
 admin.app.listen(port, () => {
-  console.log(`admin listening on http://localhost:${port} (db: ${opened.label})`);
+  log.info('admin listening', { port, db: opened.label });
 });

@@ -1,3 +1,4 @@
+import { log } from '../log';
 /**
  * Things an honest client never does (Phase 18.3). The server already refuses or corrects each
  * of them; this log is so a teacher or operator can see who is trying, and so a server bug that
@@ -29,7 +30,7 @@ export interface Anomaly {
 }
 
 /** One structured line per anomaly, for the log collector. */
-export const logAnomaly = (a: Anomaly): void => console.warn(JSON.stringify({ anomaly: a }));
+export const logAnomaly = (a: Anomaly): void => log.warn('anomaly', { ...a });
 
 export class AnomalyLog {
   private readonly totals = new Map<AnomalyKind, number>();

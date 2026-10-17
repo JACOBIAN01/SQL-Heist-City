@@ -1,3 +1,6 @@
+import { installCrashLogging, log } from './log';
+import { renderPrometheus } from './net/prometheus';
+import type { GameMetrics } from './game/startGame';
 import { assertSecrets } from './config/secrets';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +27,8 @@ import { startGame, type RunningGame } from './game/startGame';
 import { createHttpServer } from './http/httpServer';
 import { attachTutorialSocket } from './tutorial/TutorialRooms';
 
+installCrashLogging();
+
 // Entry point: reads the environment, then wires concrete dependencies.
 const port = Number(process.env.PORT ?? 8080);
 let dbPath = process.env.DB_PATH ?? fileURLToPath(new URL('../../data/dev.db', import.meta.url));
@@ -41,7 +46,10 @@ if (process.env.DATABASE_URL) {
   const snapshot = openDatabase({ path: dbPath });
   refreshContent = async () => {
     const counts = await syncContent(pg as PgDatabase, snapshot);
-    console.log(`content snapshot: ${counts.questions} questions, ${counts.settings} settings`);
+    log.info('content snapshot refreshed', {
+      questions: counts.questions,
+      settings: counts.settings,
+    });
   };
   await refreshContent();
 }
@@ -55,11 +63,11 @@ const analytics = pg
   : undefined;
 if (existsSync(dbPath)) {
   challenges = buildChallengeStack(openDatabase({ path: dbPath, readOnly: true }), {
-    logger: { warn: (message, meta) => console.warn(message, meta ?? '') },
+    logger: { warn: (message, meta) => log.warn(message, meta) },
     ...(analytics ? { attempts: analytics.sink } : {}),
   });
 } else {
-  console.warn(`no database at ${dbPath} yet — start the admin and run db:seed first`);
+  log.warn('no database yet: start the admin and run db:seed first', { dbPath });
 }
 
 // The HTTP server is created first (the game attaches to it), so metrics look the game up lazily.
@@ -96,11 +104,12 @@ const classResults = pg ? new PgClassResults(pg) : undefined;
 const classPool = pg
   ? new MatchPool((classId, result) => {
       classResults?.record(classId, result).catch((err: unknown) => {
-        console.error(`could not record round ${result.number} of class ${classId}`, err);
+        log.error('could not record a class round', { classId, round: result.number, err });
       });
     })
   : undefined;
 let rooms: ClassRooms | undefined;
+const startedAt = Date.now();
 const server = createHttpServer({
   ...(classPool
     ? {
@@ -113,15 +122,29 @@ const server = createHttpServer({
     : {}),
   lobby,
   metrics: () => (running.pool ? running.pool.metrics() : (running.game?.metrics() ?? {})),
+  prometheus: () => {
+    const matches: Record<string, GameMetrics | undefined> = {};
+    if (running.game) matches.main = running.game.metrics();
+    for (const [id, m] of Object.entries(running.pool?.metrics() ?? {})) matches[`match-${id}`] = m;
+    for (const [id, m] of Object.entries(classPool?.metrics() ?? {})) matches[`class-${id}`] = m;
+    return renderPrometheus({
+      uptimeSeconds: (Date.now() - startedAt) / 1000,
+      matches,
+      sandbox: challenges?.sandboxStats(),
+      rssBytes: process.memoryUsage().rss,
+      heapBytes: process.memoryUsage().heapUsed,
+    });
+  },
+  protectMetrics: production,
   now: Date.now,
-  startedAt: Date.now(),
+  startedAt,
   ...(process.env.INTERNAL_SECRET ? { internalSecret: process.env.INTERNAL_SECRET } : {}),
   onReload: async () => {
     await refreshContent();
     challenges?.invalidate();
     running.pool?.reload();
     classPool?.reload();
-    console.log('reloaded questions and settings');
+    log.info('reloaded questions and settings');
   },
 });
 if (challenges) {
@@ -161,8 +184,8 @@ if (pg && challenges) {
     new PgAttemptStore(pg),
     () => stack.analyticsSettings(),
     Date.now,
-    (m) => console.log(m),
-  ).start(undefined, (err) => console.error('retention failed', err));
+    (m) => log.info(m),
+  ).start(undefined, (err) => log.error('retention failed', { err }));
 }
 if (pg && classPool && challenges) {
   const stack = challenges;
@@ -178,7 +201,7 @@ if (pg && classPool && challenges) {
     city: () => stack.citySettings(),
     heist: () => stack.heistSettings(),
   });
-  console.log('class rooms: on (teachers start a room from the admin)');
+  log.info('class rooms on: teachers start a room from the admin');
 }
 // MATCH_WORKERS=N runs N matches, each in its own thread on its own port (the lobby tells
 // clients where); 0 (default) runs one match in this process.
@@ -191,7 +214,7 @@ if (workers > 0) {
       ...(process.env.DATABASE_URL ? { databaseUrl: process.env.DATABASE_URL } : {}),
       ...(ticketSecret ? { ticketSecret, requireTicket } : {}),
     });
-    console.log(`match ${info.id} listening on ws://localhost:${info.port}/ws/game`);
+    log.info('match listening', { match: info.id, port: info.port });
   }
 } else {
   running.game = startGame(server, matchSettings, mapByName(mapName), {
@@ -210,9 +233,5 @@ if (workers > 0) {
 }
 
 server.listen(port, () => {
-  console.log(`game server listening on http://localhost:${port}`);
-  if (!running.pool) console.log(`game socket: ws://localhost:${port}/ws/game`);
-  console.log(`lobby: http://localhost:${port}/lobby`);
-  if (challenges) console.log(`challenge socket: ws://localhost:${port}/ws/challenge`);
-  if (challenges) console.log(`tutorial socket: ws://localhost:${port}/ws/tutorial`);
+  log.info('game server listening', { port });
 });

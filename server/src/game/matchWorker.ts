@@ -1,3 +1,4 @@
+import { log } from '../log';
 import { createServer } from 'node:http';
 import { parentPort, workerData } from 'node:worker_threads';
 import { DEFAULT_ANALYTICS_SETTINGS, type HeistSettings, type MatchSettings } from '@heist/shared';
@@ -65,7 +66,7 @@ const analytics = data.databaseUrl
 const stack: ChallengeStack | undefined =
   data.dbPath && existsSync(data.dbPath)
     ? buildChallengeStack(openDatabase({ path: data.dbPath, readOnly: true }), {
-        logger: { warn: (message, meta) => console.warn(message, meta ?? '') },
+        logger: { warn: (message, meta) => log.warn(message, meta) },
         ...(analytics ? { attempts: analytics.sink } : {}),
       })
     : undefined;
