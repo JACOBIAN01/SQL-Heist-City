@@ -66,3 +66,49 @@ describe('Hotkeys', () => {
     expect(states).toEqual([true, false, true, false]);
   });
 });
+
+describe('Hotkeys by action (22.2)', () => {
+  const press = (target: EventTarget, code: string, type = 'keydown') =>
+    target.dispatchEvent(
+      Object.assign(new Event(type, { cancelable: true }), { code, repeat: false }),
+    );
+
+  it('follows the keys the player has chosen, at the moment of the press', () => {
+    const target = new EventTarget();
+    let keys: readonly string[] = ['KeyF'];
+    const hotkeys = new Hotkeys(target, { keys: () => keys });
+    const used = vi.fn();
+    hotkeys.onAction('use', used);
+    press(target, 'KeyF');
+    expect(used).toHaveBeenCalledTimes(1);
+    keys = ['KeyE']; // remapped while playing
+    press(target, 'KeyF');
+    expect(used).toHaveBeenCalledTimes(1);
+    press(target, 'KeyE');
+    expect(used).toHaveBeenCalledTimes(2);
+  });
+
+  it('holds an action while its key is down and lets go of the right one', () => {
+    const target = new EventTarget();
+    let keys: readonly string[] = ['KeyB'];
+    const hotkeys = new Hotkeys(target, { keys: () => keys });
+    const states: boolean[] = [];
+    hotkeys.holdAction('scoreboard', (d) => states.push(d));
+    press(target, 'KeyB');
+    keys = ['KeyG']; // remapped in the middle of a hold
+    press(target, 'KeyB', 'keyup');
+    expect(states).toEqual([true, false]);
+  });
+
+  it('lets a gamepad or touch control do the same things', () => {
+    const hotkeys = new Hotkeys(new EventTarget());
+    const used = vi.fn();
+    const states: boolean[] = [];
+    hotkeys.onAction('use', used).holdAction('scoreboard', (d) => states.push(d));
+    hotkeys.trigger('use');
+    hotkeys.setHeld('scoreboard', true);
+    hotkeys.setHeld('scoreboard', false);
+    expect(used).toHaveBeenCalledTimes(1);
+    expect(states).toEqual([true, false]);
+  });
+});

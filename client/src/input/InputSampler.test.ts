@@ -142,3 +142,68 @@ describe('InputSampler: K fires', () => {
     expect(input.sample().buttons & Button.Fire).toBe(0);
   });
 });
+
+describe("InputSampler: the player's own settings (22.1, 22.2)", () => {
+  it('follows remapped keys at once, and the old keys stop working', () => {
+    let keys: Record<string, readonly string[]> = {};
+    input.setBindings({
+      keys: (a) =>
+        keys[a] ??
+        (
+          {
+            forward: ['KeyW'],
+            back: ['KeyS'],
+            left: ['KeyA'],
+            right: ['KeyD'],
+            jump: ['Space'],
+            crouch: [],
+            sprint: [],
+            fire: [],
+            aim: [],
+          } as Record<string, string[]>
+        )[a] ??
+        [],
+    });
+    keys = { jump: ['KeyJ'], forward: ['ArrowUp'] };
+    key('keydown', 'Space');
+    expect(input.sample().buttons & Button.Jump).toBe(0);
+    key('keydown', 'KeyJ');
+    key('keydown', 'ArrowUp');
+    const c = input.sample();
+    expect(c.buttons & Button.Jump).toBe(Button.Jump);
+    expect(c.moveY).toBe(127);
+    // A key the page scrolls with is kept from doing so while it is a game key.
+    const down = new KeyboardEvent('keydown', { code: 'ArrowUp', cancelable: true });
+    target.dispatchEvent(down);
+    expect(down.defaultPrevented).toBe(true);
+  });
+
+  it('scales look speed and swaps up and down on request', () => {
+    input.setLooking(true);
+    move(0, 10);
+    const normal = input.currentPitch;
+    input.setLook(0, 0);
+    input.setLookPreferences(2, true);
+    move(0, 10);
+    expect(input.currentPitch).toBeCloseTo(-normal * 2, 6);
+  });
+
+  it('takes movement, buttons and turning from a gamepad or touch control, added to the keys', () => {
+    input.setStick(0.5, -1);
+    expect(input.sample().moveY).toBe(-127);
+    expect(input.sample().moveX).toBeGreaterThan(55);
+    key('keydown', 'KeyW'); // keys and stick add, then are limited to full tilt
+    expect(input.sample().moveY).toBe(0);
+    input.setStick(0, 0);
+    input.setActionHeld('fire', true);
+    input.setActionHeld('aim', true);
+    const c = input.sample();
+    expect(c.buttons & Button.Fire).toBe(Button.Fire);
+    expect(input.aiming).toBe(true);
+    input.setActionHeld('fire', false);
+    expect(input.sample().buttons & Button.Fire).toBe(0);
+    const yaw = input.currentYaw;
+    input.look(0.1, 0);
+    expect(input.currentYaw).toBeCloseTo(yaw - 0.1, 6);
+  });
+});
