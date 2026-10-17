@@ -63,6 +63,32 @@ describe('game server HTTP', () => {
     expect((await get('/lobby')).status).toBe(404);
   });
 
+  it('serves Prometheus text, and keeps the metrics for the operator when protected (20.4)', async () => {
+    const server = createHttpServer({
+      now: () => 0,
+      startedAt: 0,
+      metrics: () => ({ players: 3 }),
+      prometheus: () => 'heist_players{match="main"} 3\n',
+      internalSecret: 'a-long-enough-internal-secret-for-this-test',
+      protectMetrics: true,
+    });
+    await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+    const { port } = server.address() as AddressInfo;
+    const get = (path: string, headers: Record<string, string> = {}) =>
+      fetch(`http://127.0.0.1:${port}${path}`, { headers });
+    expect((await get('/metrics/prometheus')).status).toBe(403);
+    expect((await get('/metrics')).status).toBe(403);
+    const key = 'a-long-enough-internal-secret-for-this-test';
+    const ok = await get('/metrics/prometheus', { authorization: `Bearer ${key}` });
+    expect(ok.status).toBe(200);
+    expect(ok.headers.get('content-type')).toContain('text/plain');
+    expect(await ok.text()).toBe('heist_players{match="main"} 3\n');
+    expect((await get('/metrics', { 'x-internal-secret': key })).status).toBe(200);
+    expect((await get('/metrics/prometheus', { authorization: 'Bearer wrong' })).status).toBe(403);
+    expect((await get('/health')).status).toBe(200); // health stays open for load balancers
+    await new Promise<void>((done) => server.close(() => done()));
+  });
+
   it('returns a JSON 404 for unknown routes', async () => {
     const res = await get('/nope');
     expect(res.status).toBe(404);

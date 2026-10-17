@@ -21,12 +21,14 @@ import { CachedQuestionReader } from './questions/CachedQuestionReader';
 import { SqliteQuestionRepository } from './questions/SqliteQuestionRepository';
 import { Grader } from './sql/Grader';
 import type { SandboxRunner } from './sql/SandboxRunner';
-import { WorkerSandboxRunner } from './sql/WorkerSandboxRunner';
+import { WorkerSandboxRunner, type SandboxStats } from './sql/WorkerSandboxRunner';
 import { builtInDatasets } from './variants/datasets';
 import { VariantBuilder } from './variants/VariantBuilder';
 
 export interface ChallengeStack {
   readonly handler: ChallengeMessageHandler;
+  /** How busy the grader is (none when SQL runs in-process, as in tests). */
+  sandboxStats(): SandboxStats | undefined;
   /** Sends each player their review after a round; bind it to the match. */
   readonly review: ReviewKeeper;
   /** Heist rules as the admin has set them (read when a match starts). */
@@ -89,6 +91,7 @@ export function buildChallengeStack(
   });
   return {
     review,
+    sandboxStats: () => (sandbox instanceof WorkerSandboxRunner ? sandbox.stats() : undefined),
     handler: new ChallengeMessageHandler(service, settings, options.now),
     heistSettings: () => settings.heistSettings(),
     combatSettings: () => settings.combatSettings(),

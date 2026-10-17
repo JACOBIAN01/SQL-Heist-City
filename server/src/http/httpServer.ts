@@ -18,6 +18,13 @@ export interface HttpServerDeps {
   lobby?: () => unknown;
   /** Source of numbers for `GET /metrics` (tick time, players, bandwidth). Absent = route disabled. */
   metrics?: () => unknown;
+  /** The same numbers as Prometheus text, for `GET /metrics/prometheus`. Absent = route disabled. */
+  prometheus?: () => string;
+  /**
+   * Require the internal secret (header `x-internal-secret`, or `Authorization: Bearer …`) for the
+   * metrics routes: in production they are for the operator's monitoring, not for players.
+   */
+  protectMetrics?: boolean;
   /** Class rooms: `GET /class/:id` (public status) and `POST /internal/class/:id` (the admin's live controls). */
   classRooms?: {
     status(classId: number): unknown;
@@ -73,8 +80,21 @@ export function createHttpServer(deps: HttpServerDeps): Server {
       if (crossOrigin(req, res)) sendJson(res, 200, deps.lobby());
       return;
     }
+    const isMetrics = req.url === '/metrics' || req.url === '/metrics/prometheus';
+    if (req.method === 'GET' && isMetrics && deps.protectMetrics && deps.internalSecret) {
+      const bearer = /^Bearer (.+)$/.exec(String(req.headers.authorization ?? ''))?.[1];
+      if (!secretMatches(req.headers[INTERNAL_SECRET_HEADER] ?? bearer, deps.internalSecret)) {
+        sendJson(res, 403, { error: { code: 'forbidden', message: 'Metrics are private' } });
+        return;
+      }
+    }
     if (req.method === 'GET' && req.url === '/metrics' && deps.metrics) {
       sendJson(res, 200, deps.metrics());
+      return;
+    }
+    if (req.method === 'GET' && req.url === '/metrics/prometheus' && deps.prometheus) {
+      res.writeHead(200, { 'content-type': 'text/plain; version=0.0.4; charset=utf-8' });
+      res.end(deps.prometheus());
       return;
     }
     if (req.method === 'POST' && req.url === '/internal/reload' && deps.internalSecret) {
