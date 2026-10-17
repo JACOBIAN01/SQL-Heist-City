@@ -307,4 +307,11 @@ export const pgMigrations: readonly string[] = [
   `
   ALTER TABLE classes ADD COLUMN dialect TEXT NOT NULL DEFAULT 'sqlite';
   `,
+  // 10 — a question keeps its key order. JSONB sorts object keys, which scrambled the order of a
+  // question's tables (a foreign key must point at an earlier table) and broke 106 of 268 questions.
+  // JSON stores the text as written. Rows saved under JSONB keep the order JSONB gave them.
+  `
+  ALTER TABLE questions ALTER COLUMN template_json TYPE JSON USING template_json::json;
+  ALTER TABLE question_versions ALTER COLUMN template_json TYPE JSON USING template_json::json;
+  `,
 ];

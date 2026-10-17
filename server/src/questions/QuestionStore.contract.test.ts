@@ -53,6 +53,40 @@ describe.each(implementations)('%s', (_name, make) => {
     expect((await repo.getBySlug(base.slug))?.id).toBe(created.id);
   });
 
+  it("keeps the order of a question's tables (a foreign key must point at an earlier one)", async () => {
+    const repo = await make();
+    // "accounts" is a longer key than "loans"; PostgreSQL JSONB would have put "loans" first.
+    const twoTables = question({
+      slug: 'two-tables',
+      schema_sql:
+        'CREATE TABLE accounts (id INTEGER PRIMARY KEY, owner TEXT); CREATE TABLE loans (id INTEGER PRIMARY KEY, account_id INTEGER);',
+      data_gen: {
+        accounts: {
+          rows: [5, 5],
+          columns: { id: { kind: 'serial', start: 1 }, owner: { kind: 'pick', from: ['a', 'b'] } },
+        },
+        loans: {
+          rows: [5, 5],
+          columns: {
+            id: { kind: 'serial', start: 1 },
+            account_id: { kind: 'fk', table: 'accounts', column: 'id' },
+          },
+        },
+      },
+      params: {},
+      story_md: 'Loans.',
+      reference_sql: 'SELECT id FROM loans',
+    });
+    const created = await repo.create(twoTables, null);
+    const back = await repo.getById(created.id);
+    expect(Object.keys(back?.template.data_gen ?? {})).toEqual(['accounts', 'loans']);
+    await repo.update(created.id, { ...twoTables, title: 'Renamed' }, null);
+    expect(Object.keys((await repo.getById(created.id))?.template.data_gen ?? {})).toEqual([
+      'accounts',
+      'loans',
+    ]);
+  });
+
   it('rejects duplicate slugs', async () => {
     const repo = await make();
     await repo.create(question(), null);
