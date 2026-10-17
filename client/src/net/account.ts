@@ -1,3 +1,5 @@
+import { readPlayerSettings, type PlayerSettings } from '@heist/shared';
+
 /** A signed-in player as the account service describes them. */
 export interface AccountPlayer {
   readonly id: number;
@@ -28,6 +30,9 @@ export interface AccountApi {
   exportData(): Promise<string | undefined>;
   /** Deletes the account and everything keyed to it. */
   deleteAccount(): Promise<boolean>;
+  /** Their settings on the account (the same on every device). */
+  loadSettings(): Promise<{ settings: PlayerSettings; updatedAt: string } | undefined>;
+  saveSettings(settings: PlayerSettings): Promise<void>;
   /** The age gate: the year they were born. Only the verdict is kept. */
   declareAge(birthYear: number): Promise<AccountPlayer | { error: string; tooYoung?: boolean }>;
   /** Where to send the browser to sign in; it returns to `returnTo`. */
@@ -100,6 +105,28 @@ export class HttpAccountApi implements AccountApi {
     } catch {
       return undefined;
     }
+  }
+
+  async loadSettings(): Promise<{ settings: PlayerSettings; updatedAt: string } | undefined> {
+    try {
+      const res = await this.call('/auth/player/settings');
+      if (!res.ok) return undefined;
+      const body = (await res.json()) as { settings: PlayerSettings | null; updatedAt?: string };
+      return body.settings && body.updatedAt
+        ? { settings: readPlayerSettings(body.settings), updatedAt: body.updatedAt }
+        : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  async saveSettings(settings: PlayerSettings): Promise<void> {
+    const res = await this.call('/auth/player/settings', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ settings }),
+    });
+    if (!res.ok) throw new Error(`settings not saved (${res.status})`);
   }
 
   async declareAge(

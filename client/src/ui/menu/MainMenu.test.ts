@@ -22,6 +22,8 @@ function menu(who: WhoAmI, over: Partial<MenuOptions> = {}) {
     ),
     exportData: async () => '{"data":1}',
     deleteAccount: vi.fn(async () => true),
+    loadSettings: async () => undefined,
+    saveSettings: async () => {},
     declareAge: vi.fn(async (year: number) =>
       year > 2015
         ? { error: 'You need to be 13 or older to play.', tooYoung: true }
