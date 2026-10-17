@@ -1,0 +1,51 @@
+# The full stack on one machine (Phase 20.1):  docker compose up --build
+#   game       http://localhost:8088        game server  http://localhost:8080
+#   admin      http://localhost:8081        PostgreSQL   localhost:54330
+# Development settings: dev sign-in is on and the demo secrets are fine here. For a real
+# deployment set NODE_ENV=production and your own secrets (docs/deployment.md, "Secrets").
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: heist
+      POSTGRES_PASSWORD: heist-local-only
+      POSTGRES_DB: heist
+    volumes: ['pgdata:/var/lib/postgresql/data']
+    ports: ['54330:5432']
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'heist']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  admin:
+    build: { context: ., target: admin }
+    depends_on: { postgres: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgres://heist:heist-local-only@postgres:5432/heist
+      GAME_ORIGINS: http://localhost:8088
+      GAME_SERVER_URL: http://game:8080
+      INTERNAL_SECRET: ${INTERNAL_SECRET:-local-internal-secret-not-for-production}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@heist.test}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD (first start creates the admin)}
+      DEV_LOGIN: '1'
+    ports: ['8081:8081']
+
+  game:
+    build: { context: ., target: server }
+    depends_on: { postgres: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgres://heist:heist-local-only@postgres:5432/heist
+      GAME_ORIGINS: http://localhost:8088
+      INTERNAL_SECRET: ${INTERNAL_SECRET:-local-internal-secret-not-for-production}
+      MATCH_WORKERS: '0'
+    volumes: ['snapshot:/data']
+    ports: ['8080:8080']
+
+  web:
+    build: { context: ., target: client }
+    ports: ['8088:80']
+
+volumes:
+  pgdata:
+  snapshot:
