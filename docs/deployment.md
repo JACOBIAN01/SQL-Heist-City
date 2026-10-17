@@ -26,7 +26,7 @@ Game http://localhost:8088, game server :8080, admin http://localhost:8081 (`adm
 - Scale out by running more game-server processes; lobby assigns matches.
 
 ## Operations
-Health `/health`, metrics `/metrics`, nightly SQLite backup (admin question data is precious), structured logs.
+Health `/health`, metrics `/metrics`, backups, logs, releases: see `docs/operations.md`.
 
 ## Release checklist
 Tests green · budgets met · `questions:validate` green · migrations applied · backup taken.
