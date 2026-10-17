@@ -6,11 +6,11 @@
   max-width: calc(100vw - 32px);
   padding: 12px 14px;
   border-radius: 8px;
-  border-left: 4px solid #ffd34d;
+  border-left: 4px solid var(--c-warn, #ffd34d);
   background: rgba(10, 12, 16, 0.82);
   color: #fff;
   font:
-    14px/1.4 system-ui,
+    0.875rem/1.4 system-ui,
     -apple-system,
     'Segoe UI',
     sans-serif;
@@ -18,14 +18,14 @@
   z-index: 11;
 }
 .tut-count {
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #ffd34d;
+  color: var(--c-warn, #ffd34d);
 }
 .tut-title {
   margin-top: 2px;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
 }
 .tut-text {
@@ -35,7 +35,7 @@
 .tut-steps {
   margin: 10px 0 0;
   padding-left: 20px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #8b93a1;
 }
 .tut-steps li.done {
@@ -52,7 +52,7 @@
   padding: 8px 12px;
   border: 0;
   border-radius: 6px;
-  background: #ffd34d;
+  background: var(--c-warn, #ffd34d);
   color: #1a1400;
   font: inherit;
   font-weight: 700;
@@ -69,10 +69,10 @@
   transform: translateX(-50%);
   padding: 6px 14px;
   border-radius: 6px;
-  background: #ffd34d;
+  background: var(--c-warn, #ffd34d);
   color: #1a1400;
   font:
-    600 14px system-ui,
+    600 0.875rem system-ui,
     sans-serif;
   text-decoration: none;
   z-index: 11;

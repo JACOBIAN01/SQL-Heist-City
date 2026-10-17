@@ -1,0 +1,36 @@
+/* Player accessibility choices (Phase 22.3). The values are set by applyAccessibility(). */
+
+/* Less motion: every animation and transition effectively off. */
+:root[data-reduced-motion='on'] *,
+:root[data-reduced-motion='on'] *::before,
+:root[data-reduced-motion='on'] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* High contrast: solid dark panels, white borders, thicker focus. */
+:root[data-palette='high-contrast'] {
+  --sqlp-bg: #000;
+  --sqlp-panel: #111;
+  --sqlp-border: #fff;
+  --sqlp-text: #fff;
+  --sqlp-muted: #e0e0e0;
+}
+:root[data-palette='high-contrast'] .sqlp,
+:root[data-palette='high-contrast'] .menu-card,
+:root[data-palette='high-contrast'] .settings-panel {
+  background: #000;
+  border: 2px solid #fff;
+}
+:root[data-palette='high-contrast'] :focus-visible {
+  outline: 3px solid var(--c-warn);
+  outline-offset: 2px;
+}
+
+/* Everyone: a visible keyboard focus. */
+:focus-visible {
+  outline: 2px solid var(--c-info, #6cc4e8);
+  outline-offset: 2px;
+}

@@ -6,15 +6,15 @@
   --sqlp-border: rgba(255, 255, 255, 0.12);
   --sqlp-text: #e8ebf0;
   --sqlp-muted: #98a2b3;
-  --sqlp-accent: #d4a017;
-  --sqlp-ok: #4cc38a;
-  --sqlp-bad: #ef6b5f;
+  --sqlp-accent: var(--c-accent, #d4a017);
+  --sqlp-ok: var(--c-good, #4cc38a);
+  --sqlp-bad: var(--c-bad, #ef6b5f);
   --sqlp-syn-keyword: #c99bff;
   --sqlp-syn-string: #f0a07a;
-  --sqlp-syn-number: #6cc4e8;
+  --sqlp-syn-number: var(--c-info, #6cc4e8);
   --sqlp-syn-type: #7fd6a4;
   font:
-    13px/1.45 system-ui,
+    0.8125rem/1.45 system-ui,
     -apple-system,
     'Segoe UI',
     sans-serif;
@@ -72,7 +72,7 @@
   border-radius: 999px;
   background: var(--sqlp-panel);
   color: var(--sqlp-accent);
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
 }
 .sqlp-tier:empty {
@@ -206,14 +206,14 @@
 /* Problem pane */
 .sqlp-h2 {
   margin: 0 0 6px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--sqlp-muted);
 }
 .sqlp-story {
   margin-bottom: 16px;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .sqlp-line {
   margin: 0 0 6px;
@@ -248,7 +248,7 @@
 .sqlp-table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .sqlp-table th,
 .sqlp-table td {
@@ -280,21 +280,21 @@
   background: var(--sqlp-panel);
   padding: 8px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 /* Tutorial solution */
 .sqlp-solution {
   margin: 8px 0;
   padding: 8px 10px;
-  border-left: 3px solid #ffd34d;
+  border-left: 3px solid var(--c-warn, #ffd34d);
   background: var(--sqlp-panel);
   border-radius: 6px;
 }
 .sqlp-solution-sql {
   white-space: pre-wrap;
   margin: 8px 0 0;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 /* Expected output */
@@ -313,7 +313,7 @@
 }
 .sqlp-example-label {
   margin: 8px 0 4px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -337,7 +337,7 @@
 }
 .sqlp-keys {
   margin: 6px 0 0;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--sqlp-muted);
 }
 .sqlp-keys kbd {
@@ -432,10 +432,10 @@
 /* Reward icons (game-icons.net): gold silhouettes on a dark tile, border coloured by tier. */
 .sqlp {
   --sqlp-tier-1: #9aa3af;
-  --sqlp-tier-2: #4cc38a;
+  --sqlp-tier-2: var(--c-good, #4cc38a);
   --sqlp-tier-3: #4ea1ff;
   --sqlp-tier-4: #b383ff;
-  --sqlp-tier-5: #d4a017;
+  --sqlp-tier-5: var(--c-accent, #d4a017);
 }
 .sqlp-icon {
   display: inline-flex;
@@ -504,7 +504,7 @@
 }
 .sqlp-menu-group {
   margin: 6px 2px 4px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--sqlp-muted);
@@ -540,7 +540,7 @@
   border-color: var(--sqlp-accent);
 }
 .sqlp-item-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   line-height: 1.2;
   text-align: center;
 }
@@ -550,7 +550,7 @@
   cursor: not-allowed;
 }
 .sqlp-item-why {
-  font-size: 10px;
+  font-size: 0.625rem;
   line-height: 1.2;
   text-align: center;
   color: var(--sqlp-muted);
@@ -565,7 +565,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--sqlp-muted);
   max-width: 28rem;
 }
@@ -586,7 +586,7 @@
   border-radius: 4px;
   white-space: pre-wrap;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 .sqlp-task-error {
   color: var(--sqlp-error, #e57373);
