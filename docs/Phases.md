@@ -36,7 +36,7 @@
 | 16 | Teaching loop | ✅ |
 | 17 | Question types and content (filling R, C, B, E) | ✅ |
 | 18 | Security hardening | 🟨 18.1–18.5 done; 18.6 waits for an external tester |
-| 19 | Scale proof | 🟨 19.1 local, 19.2–19.4 done |
+| 19 | Scale proof | 🟨 19.2–19.5 done; 19.1 cloud run waits for machines |
 | 20 | Operations and deployment | ⬜ |
 | 21 | Privacy and compliance | ⬜ |
 | 22 | Settings, accessibility and devices | ⬜ |
@@ -393,7 +393,7 @@ Audit con 9 plus the old "rate limits" and "anti-cheat" todo items.
 | 18.6 | External penetration test and fixes | report received and every high or critical finding fixed | 🟨 **blocked on the owner**: the tester and staging are yours to choose and authorise (inputs-needed #14). The brief is ready in `docs/pentest-brief.md` |
 
 ---
-## Phase 19 — Scale proof  ⬜
+## Phase 19 — Scale proof  🟨
 Audit con 10 plus the old "100 and 200 player load test" todo item.
 
 | # | Subphase | Done when | Status |
@@ -402,7 +402,7 @@ Audit con 10 plus the old "100 and 200 player load test" todo item.
 | 19.2 | Grader stress: 100 simultaneous submits including heavy recursive queries | queue wait p95 recorded and within target | ✅ `grader:stress`: 100 simultaneous submits, 20 of them runaways: ordinary answers p95 4.7 s → 0.97 s after 19.3; without runaways 9 ms (performance.md) |
 | 19.3 | Per-player grader limits (one job in flight, cooldown) | a flooding client cannot starve others | ✅ one grading job in flight per player (plus cooldowns and lockout); two-lane sandbox scheduling (150 ms first budget, slow lane ≤ half the processes) and ready spare processes; tests show a flood is turned away and others are not slowed |
 | 19.4 | Several classes per server: capacity per core | sizing table in deployment.md | ✅ `npm run capacity`: ~20–50 ms CPU/s and ~70 MB per 100-player class; sizing table in deployment.md (4 classes per game core; confirm on cloud with 19.1) |
-| 19.5 | Soak test (4 h) and reconnect chaos (drops, rejoin mid-heist) | no leak, no lost progress | ⬜ |
+| 19.5 | Soak test (4 h) and reconnect chaos (drops, rejoin mid-heist) | no leak, no lost progress | ✅ `npm run soak`: 4 h of game time, 100 bots, 1 102 drops and rejoins, 0 lost progress, heap flat; signed-in players keep a seat for the round (gameplay.md); a second tab takes over |
 
 ---
 ## Phase 20 — Operations and deployment  ⬜

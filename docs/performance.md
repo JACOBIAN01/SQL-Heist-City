@@ -141,3 +141,15 @@ Same laptop and method as 6.9, after Phases 7–18 (city, heists, cars, classes,
 - **Per player:** a player has one Run or Submit being graded at a time (a second is told to retry in 0.5 s), on top of the Run/Submit cooldowns and the wrong-answer lockout; so one flooding client holds at most one process.
 - Target: ordinary answers p95 < 1.5 s with a fifth of the class submitting runaways at the same moment, < 50 ms without. Met.
 
+## Phase 19.5 — soak and reconnect chaos
+`npm run soak -w @heist/server -- --players 100 --hours 4 --churn 0.05`: a heist match of 100 wandering, shooting, signed-in bots for 4 hours of game time (ticks run back to back, 320 s real), 3-minute rounds, and every game minute each bot has a 5% chance to drop mid-round and rejoin at once.
+
+| | result |
+|---|---|
+| Game time / ticks / rounds | 4 h / 288 000 / 77 |
+| Drops and rejoins | 1 102 / 1 102 |
+| Progress lost (banked cash, kills, guns that did not come back) | **0** |
+| Heap after a collection, minute 10 → minute 240 | 18.6 → 18.9 MB (flat) |
+
+The tool exits 1 on any lost progress or on heap growth above 20 MB, and a shorter version runs in every CI (`Soak.test.ts`).
+
