@@ -12,6 +12,7 @@ export * from './config/dialects';
 export * from './config/rateLimits';
 export * from './config/privacy';
 export * from './legal/consent';
+export * from './settings/playerSettings';
 export * from './net/clientError';
 export * from './challenges/types';
 export * from './admin/auth';

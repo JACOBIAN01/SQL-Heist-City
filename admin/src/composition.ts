@@ -136,6 +136,12 @@ export function buildAdmin(
       erase: async (p) => stores.audit.scrubDetail('player', String(p.id)),
     })
     .register({
+      name: 'settings',
+      export: async (p) => (await stores.playerSettings.get(p.id)) ?? null,
+      // The database removes them with the account (ON DELETE CASCADE); this covers memory stores.
+      erase: async (p) => stores.playerSettings.remove(p.id),
+    })
+    .register({
       name: 'briefs',
       export: async (p) => stores.briefs.ofPlayer(p.id),
       // PostgreSQL removes a player's briefs with the account (ON DELETE CASCADE).
@@ -168,6 +174,7 @@ export function buildAdmin(
               players: stores.players,
               nameRules: nameRules,
               privacy: privacySettings,
+              settings: stores.playerSettings,
               personalData,
               classes: stores.classes,
               sessions: playerSessions,

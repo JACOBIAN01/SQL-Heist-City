@@ -51,6 +51,11 @@ import {
 } from './pools/PoolRepository';
 
 import {
+  InMemoryPlayerSettingsStore,
+  PgPlayerSettingsStore,
+  type PlayerSettingsStore,
+} from '@heist/server/players/PlayerSettingsStore';
+import {
   InMemoryBriefStore,
   PgBriefStore,
   type BriefStore,
@@ -81,6 +86,8 @@ export interface AdminStores {
   readonly profiles: ProfileStore;
   /** Open briefs handed in from the game, and their marks. */
   readonly briefs: BriefStore;
+  /** Each player's own settings (keys, sensitivity, accessibility). */
+  readonly playerSettings: PlayerSettingsStore;
   playerSessions(ttlMs: number, now: () => number): PlayerSessions;
   sessions(ttlMs: number, now: () => number): SessionStore;
 }
@@ -100,6 +107,7 @@ export function sqliteStores(db: DatabaseSync): AdminStores {
     attempts: new InMemoryAttemptStore(),
     profiles: new InMemoryProfileStore(),
     briefs: new InMemoryBriefStore(),
+    playerSettings: new InMemoryPlayerSettingsStore(),
     classes: new InMemoryClassRepository(
       undefined,
       () => new Set(questionRepo.list().map((q) => q.id)),
@@ -124,6 +132,7 @@ export function pgStores(db: PgDatabase): AdminStores {
     attempts: new PgAttemptStore(db),
     profiles: new PgProfileStore(db),
     briefs: new PgBriefStore(db),
+    playerSettings: new PgPlayerSettingsStore(db),
     playerSessions: (ttl, now) => new PgPlayerSessions(db, ttl, now),
     sessions: (ttl, now) => new PgSessionStore(db, ttl, now),
   };

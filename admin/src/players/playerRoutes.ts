@@ -1,8 +1,10 @@
+import type { PlayerSettingsStore } from '@heist/server/players/PlayerSettingsStore';
 import express, { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import {
   NAME_REASONS,
   ageStatusFor,
+  playerSettingsSchema,
   checkDisplayName,
   consentIsCurrent,
   type NameRules,
@@ -53,6 +55,8 @@ export interface PlayerAuthOptions {
   readonly nameRules: () => Promise<NameRules>;
   /** Age limit and retention numbers (Phase 21). */
   readonly privacy: () => Promise<PrivacySettings>;
+  /** Each player's own settings (Phase 22.1). */
+  readonly settings: PlayerSettingsStore;
   readonly now?: () => number;
 }
 
@@ -260,6 +264,36 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
       return;
     }
     res.json({ player: updated && publicPlayer(updated) });
+  });
+
+  // A player's own settings (22.1): the same on every device they sign in on.
+  router.get('/auth/player/settings', async (req, res) => {
+    if (!fromGamePage(req, res)) return;
+    const player = await currentPlayer(req);
+    if (!player) {
+      res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
+      return;
+    }
+    res.json((await options.settings.get(player.id)) ?? { settings: null });
+  });
+
+  router.put('/auth/player/settings', express.json({ limit: '16kb' }), async (req, res) => {
+    if (!fromGamePage(req, res)) return;
+    const player = await currentPlayer(req);
+    if (!player) {
+      res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
+      return;
+    }
+    const given = playerSettingsSchema.safeParse(
+      (req.body as { settings?: unknown } | undefined)?.settings,
+    );
+    if (!given.success) {
+      res
+        .status(400)
+        .json({ error: { code: 'bad_settings', message: 'Those settings are not valid' } });
+      return;
+    }
+    res.json(await options.settings.put(player.id, given.data, new Date(now())));
   });
 
   router.get('/auth/player/export', async (req, res) => {

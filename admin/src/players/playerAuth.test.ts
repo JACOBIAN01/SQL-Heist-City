@@ -1,4 +1,4 @@
-import { CONSENT_STATEMENTS, CONSENT_VERSION } from '@heist/shared';
+import { CONSENT_STATEMENTS, CONSENT_VERSION, playerSettingsSchema } from '@heist/shared';
 import { createHash } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -632,6 +632,80 @@ describe('the age gate (21.7)', () => {
           })
         ).status,
       ).toBe(400);
+  });
+});
+
+describe('player settings (22.1)', () => {
+  beforeEach(() => boot());
+  afterEach(async () => {
+    await h.close();
+    await google.close();
+  });
+  const headers = (cookies: string) => ({
+    cookie: cookies,
+    origin: GAME,
+    'x-heist-player': '1',
+    'content-type': 'application/json',
+  });
+
+  it("keeps a signed-in player's settings for next time, validated, and exports them with the rest", async () => {
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    const get = () => fetch(`${base}/auth/player/settings`, { headers: headers(cookies) });
+    expect(await (await get()).json()).toEqual({ settings: null });
+
+    const mine = playerSettingsSchema.parse({
+      look: { sensitivity: 1.5, invertY: true, fov: 80 },
+      keys: { jump: ['KeyJ'] },
+      access: { textScale: 1.25, palette: 'deuteranopia', reducedMotion: 'on', subtitles: true },
+    });
+    const put = await fetch(`${base}/auth/player/settings`, {
+      method: 'PUT',
+      headers: headers(cookies),
+      body: JSON.stringify({ settings: mine }),
+    });
+    expect(put.status).toBe(200);
+    expect(await (await get()).json()).toMatchObject({ settings: mine });
+
+    const bad = await fetch(`${base}/auth/player/settings`, {
+      method: 'PUT',
+      headers: headers(cookies),
+      body: JSON.stringify({ settings: { look: { sensitivity: 99, invertY: false, fov: 70 } } }),
+    });
+    expect(bad.status).toBe(400);
+    expect(await (await get()).json()).toMatchObject({ settings: mine }); // unchanged
+
+    const data = await (
+      await fetch(`${base}/auth/player/export`, { headers: headers(cookies) })
+    ).text();
+    expect(data).toContain('deuteranopia');
+  });
+
+  it('is private to the signed-in player and to the game page', async () => {
+    const none = await fetch(`${base}/auth/player/settings`, {
+      headers: { origin: GAME, 'x-heist-player': '1' },
+    });
+    expect(none.status).toBe(401);
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    const other = await fetch(`${base}/auth/player/settings`, {
+      headers: { ...headers(cookies), origin: 'https://evil.test' },
+    });
+    expect(other.status).toBe(403);
+  });
+
+  it('goes with the account when it is deleted', async () => {
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    await fetch(`${base}/auth/player/settings`, {
+      method: 'PUT',
+      headers: headers(cookies),
+      body: JSON.stringify({ settings: playerSettingsSchema.parse({}) }),
+    });
+    const player = await h.stores.players.findBySub('google-sub-1');
+    expect(player).toBeDefined();
+    await fetch(`${base}/auth/player/me`, { method: 'DELETE', headers: headers(cookies) });
+    expect(await h.stores.playerSettings.get((player as { id: number }).id)).toBeUndefined();
   });
 });
 

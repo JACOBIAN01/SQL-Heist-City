@@ -325,4 +325,12 @@ export const pgMigrations: readonly string[] = [
   ALTER TABLE players ADD COLUMN age_status TEXT NOT NULL DEFAULT 'unknown'
     CHECK (age_status IN ('unknown', 'ok', 'too_young'));
   `,
+  // 12 — a player's own settings (Phase 22.1): keys, sensitivity, volumes, accessibility
+  `
+  CREATE TABLE player_settings (
+    player_id  BIGINT      PRIMARY KEY REFERENCES players (id) ON DELETE CASCADE,
+    settings   JSONB       NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  `,
 ];

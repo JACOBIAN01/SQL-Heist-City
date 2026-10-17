@@ -42,6 +42,15 @@ A signed-in browser.
 | `expires_at` | When it stops working | technical | as above |
 | `created_at` | When it began | technical | as above |
 
+### `player_settings`
+A student's own settings (sensitivity, volumes, key choices, text size, colour palette, language), so they play the same on any device.
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `player_id` | The student | pseudonymous | with the account |
+| `settings` | Their choices (no free text) | record | with the account |
+| `updated_at` | When they last changed them | technical | with the account |
+
 ### `class_members`
 Which students joined which class (by its code).
 
