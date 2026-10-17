@@ -67,3 +67,8 @@ It remembers the current and previous tag in `.release/`, and an optional `BACKU
 
 Each carries an `action` note saying where to look. Send them to your address with Alertmanager (a receiver for email or chat; inputs-needed #10). **Tested**: `promtool test rules deploy/monitoring/alerts.test.yml` proves each alert fires on bad data and stays quiet on good; and on the live compose stack stopping the game server made `GameServerDown` fire about 70 seconds later. A test checks every metric the rules and the dashboard use exists in the server's output.
 
+## Client error reporting (20.5)
+Every page the game opens (menu, game, practice, assessment) installs an `ErrorReporter` (`client/src/errors/ErrorReporter.ts`, from `entry.ts`) that listens for uncaught errors and unhandled promise rejections and sends each to `POST /client-error` on the game server. A report is the message, a short stack, the page path and the browser name; **never a name, account, ticket or query string** (URLs lose their `?…`, and `ticket=`/`token=`/`code=` values are replaced). The same error is sent once, at most 5 per page load, at least a second apart; failures to send are ignored.
+
+The server accepts it only from the game's own pages (`GAME_ORIGINS`), checks it against a schema (messages up to 500 characters, 4 KB body), limits each address (`clientErrorsPerIp`, default burst 30 and 60 a minute), writes it as `msg="client error"` at warn level and counts it (`heist_client_errors`). Search the logs for `msg="client error"` and group by `message` to see what is breaking for students; compare the stack's line numbers with the build. Verified live: a report with the game page's origin answered 204 and appeared in the container's log; one from another origin got 403.
+
