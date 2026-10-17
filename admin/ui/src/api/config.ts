@@ -99,7 +99,15 @@ export function useSaveTutorialSettings() {
 }
 
 export type SectionName =
-  'heist' | 'vehicles' | 'atmosphere' | 'city' | 'rewardIcons' | 'names' | 'analytics' | 'dialects';
+  | 'heist'
+  | 'vehicles'
+  | 'atmosphere'
+  | 'city'
+  | 'rewardIcons'
+  | 'names'
+  | 'analytics'
+  | 'dialects'
+  | 'privacy';
 export type SectionData = { current: Record<string, unknown>; defaults: Record<string, unknown> };
 
 /** Heist rules, cars, time of day or the city: plain numbers, edited by one generic card. */

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, screen, within } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router';
-import type { ClassRecord } from '@heist/shared';
+import { CONSENT_STATEMENTS, CONSENT_VERSION, type ClassRecord } from '@heist/shared';
 import { admin, fakeApi, renderWithProviders, teacher } from '../testing/render';
 import { ClassEditorPage } from './ClassEditorPage';
 import { ClassesPage } from './ClassesPage';
@@ -24,6 +24,9 @@ const record: ClassRecord = {
   dialect: 'sqlite',
   locked: false,
   archived: false,
+  archivedAt: null,
+  // Accepted, as most tests need; the terms test serves one that has not been.
+  consent: { version: CONSENT_VERSION, byUserId: 1, at: '2026-10-01T10:00:00Z' },
   createdAt: '',
   updatedAt: '',
 };
@@ -38,13 +41,14 @@ const question = (id: number, tier: number, slug: string) => ({
   updatedAt: '',
 });
 
-function api(user: typeof teacher | typeof admin = teacher) {
+function api(user: typeof teacher | typeof admin = teacher, served: ClassRecord = record) {
   return fakeApi({
     'GET /auth/me': () => ({ body: { user } }),
     'GET /classes': () => ({ body: { classes: [record] } }),
     'POST /classes': (b) => ({ status: 201, body: { class: { ...record, ...(b as object) } } }),
     'DELETE /classes/7': () => ({ status: 204 }),
-    'GET /classes/7': () => ({ body: { class: record } }),
+    'GET /classes/7': () => ({ body: { class: served } }),
+    'POST /classes/7/consent': () => ({ body: { class: record } }),
     'PUT /classes/7': (b) => ({ body: { class: { ...record, ...(b as object) } } }),
     'POST /classes/7/code': () => ({ body: { class: { ...record, code: 'NEW123' } } }),
     'GET /classes/7/questions': () => ({
@@ -239,5 +243,35 @@ describe('ClassEditorPage', () => {
     renderEditor();
     const row = (await screen.findByText('Ana')).closest('tr') as HTMLElement;
     expect(await within(row).findByText('ana@school.edu')).toBeTruthy();
+  });
+});
+
+describe('School terms (21.3, 21.7)', () => {
+  it('asks the teacher to tick every statement, including that the game is violent, before accepting', async () => {
+    const calls = api(teacher, { ...record, consent: null });
+    renderEditor();
+    const user = userEvent.setup();
+    expect(await screen.findByText('NOT ACCEPTED')).toBeTruthy();
+    expect(screen.getByText(/the game is violent/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Start the match' })).toHaveProperty(
+      'disabled',
+      true,
+    );
+    const accept = screen.getByRole('button', { name: 'Accept for my school' });
+    expect(accept).toHaveProperty('disabled', true);
+    const statements = within(screen.getByRole('group', { name: 'School terms' })).getAllByRole(
+      'checkbox',
+    );
+    expect(statements).toHaveLength(CONSENT_STATEMENTS.length);
+    for (const box of statements.slice(0, -1)) await user.click(box);
+    expect(accept).toHaveProperty('disabled', true);
+    await user.click(statements.at(-1) as HTMLElement);
+    await waitFor(() => expect(accept).toHaveProperty('disabled', false));
+    await user.click(accept);
+    const post = calls.find((c) => c.method === 'POST' && c.path === '/classes/7/consent');
+    expect(post?.body).toEqual({
+      version: CONSENT_VERSION,
+      accepted: CONSENT_STATEMENTS.map((s) => s.id),
+    });
   });
 });

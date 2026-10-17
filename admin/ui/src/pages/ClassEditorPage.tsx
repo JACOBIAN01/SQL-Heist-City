@@ -2,12 +2,16 @@ import { useSection } from '../api/config';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import {
+  CONSENT_STATEMENTS,
+  CONSENT_VERSION,
   QUESTION_USAGES,
+  consentIsCurrent,
   type ClassQuestionLink,
   type ClassRecord,
   type QuestionUsage,
 } from '@heist/shared';
 import {
+  useAcceptConsent,
   useLive,
   useLiveCommand,
   useLockClass,
@@ -168,6 +172,7 @@ function ClassEditor({ record }: { record: ClassRecord }) {
         </div>
       </div>
 
+      <SchoolTerms record={record} />
       <LiveRoom record={record} />
       <QuestionRelease classId={record.id} />
       <Assessments classId={record.id} />
@@ -328,6 +333,69 @@ function Roster({ classId }: { classId: number }) {
   );
 }
 
+/**
+ * The school's terms (Phase 21.3, 21.7): a class cannot start, or take students, until a teacher
+ * or administrator ticks every statement, including the plain statement that the game is violent.
+ */
+function SchoolTerms({ record }: { record: ClassRecord }) {
+  const accept = useAcceptConsent(record.id);
+  const [ticked, setTicked] = useState<Set<string>>(new Set());
+  if (consentIsCurrent(record.consent))
+    return (
+      <div className="card stack">
+        <h2>School terms</h2>
+        <p>
+          <span className="badge">ACCEPTED</span> on{' '}
+          {new Date(record.consent?.at ?? '').toLocaleDateString()} (terms version{' '}
+          {record.consent?.version}). Students can join and the match can start.
+        </p>
+        <p className="muted">
+          <a href="/legal/privacy.html">Privacy Policy</a> · <a href="/legal/terms.html">Terms</a> ·{' '}
+          <a href="/legal/dpa.html">Data Processing Agreement</a>
+        </p>
+      </div>
+    );
+  const all = CONSENT_STATEMENTS.every((s) => ticked.has(s.id));
+  return (
+    <div className="card stack" role="group" aria-label="School terms">
+      <h2>School terms</h2>
+      <p>
+        <span className="badge">NOT ACCEPTED</span> Students cannot join this class and the match
+        cannot start until the school accepts the terms. Please read them and tick each one.
+      </p>
+      <p className="muted">
+        <a href="/legal/privacy.html">Privacy Policy</a> · <a href="/legal/terms.html">Terms</a> ·{' '}
+        <a href="/legal/dpa.html">Data Processing Agreement</a>
+      </p>
+      {CONSENT_STATEMENTS.map((s) => (
+        <label key={s.id} className="check">
+          <input
+            type="checkbox"
+            checked={ticked.has(s.id)}
+            onChange={(e) => {
+              const next = new Set(ticked);
+              if (e.target.checked) next.add(s.id);
+              else next.delete(s.id);
+              setTicked(next);
+            }}
+          />
+          {s.text}
+        </label>
+      ))}
+      <ErrorMessage error={accept.error} />
+      <div className="row">
+        <button
+          className="primary"
+          disabled={!all || accept.isPending}
+          onClick={() => accept.mutate({ version: CONSENT_VERSION, accepted: [...ticked] })}
+        >
+          Accept for my school
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Start and run the room: the teacher's word begins the match. */
 function LiveRoom({ record }: { record: ClassRecord }) {
   const live = useLive(record.id);
@@ -360,7 +428,8 @@ function LiveRoom({ record }: { record: ClassRecord }) {
         {!running && (
           <button
             className="primary"
-            disabled={command.isPending}
+            disabled={command.isPending || !consentIsCurrent(record.consent)}
+            title={consentIsCurrent(record.consent) ? undefined : 'Accept the school terms first'}
             onClick={() => command.mutate({ action: 'start' })}
           >
             Start the match

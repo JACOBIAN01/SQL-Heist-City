@@ -84,6 +84,12 @@ export function SettingsPage() {
         editable={isAdmin}
       />
       <SectionCard
+        name="privacy"
+        title="Privacy"
+        note="The youngest age allowed to play (asked once; the birth year is not kept) and how long data is kept before it is deleted: unused student accounts, archived classes, open briefs. 0 keeps for ever. See docs/privacy.md."
+        editable={isAdmin}
+      />
+      <SectionCard
         name="dialects"
         title="Dialect packs"
         note="How PostgreSQL and MySQL differ from SQLite (the game's engine), one entry per quirk. A class picks a pack; the pop-up shows the entries its question touches and the rest as a cheat-sheet."

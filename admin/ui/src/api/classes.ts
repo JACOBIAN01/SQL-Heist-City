@@ -45,6 +45,19 @@ export function useUpdateClass(id: number) {
   });
 }
 
+/** The school accepts the terms for this class (Phase 21.3). */
+export function useAcceptConsent(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { version: number; accepted: string[] }) =>
+      api<{ class: ClassRecord }>(`/classes/${id}/consent`, { method: 'POST', body }),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['classes'] });
+      void client.invalidateQueries({ queryKey: ['class', id] });
+    },
+  });
+}
+
 export function useArchiveClass() {
   const client = useQueryClient();
   return useMutation({
