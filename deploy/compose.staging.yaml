@@ -36,5 +36,22 @@ services:
     restart: unless-stopped
     ports: ['127.0.0.1:8088:80']
 
+  # The only service open to the internet: TLS, the domain and the routes (deploy/Caddyfile).
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on: [game, admin, web]
+    environment:
+      SITE: ${SITE:?set SITE (the game's address)}
+      ADMIN_SITE: ${ADMIN_SITE:?set ADMIN_SITE (the teachers' address)}
+      # Certificates from Let's Encrypt for the two names, registered to this address.
+      TLS_MODE: tls ${ACME_EMAIL:?set ACME_EMAIL}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-private_ranges}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    ports: ['80:80', '443:443']
+
 volumes:
   snapshot:
+  caddydata:

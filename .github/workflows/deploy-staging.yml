@@ -55,4 +55,5 @@ jobs:
         run: |
           install -m 600 /dev/null key && printf '%s\n' "$KEY" > key
           scp -i key -o StrictHostKeyChecking=accept-new deploy/compose.staging.yaml "$SSH_USER@$HOST:heist/compose.yaml"
+          scp -i key deploy/Caddyfile deploy/release.sh "$SSH_USER@$HOST:heist/"
           ssh -i key "$SSH_USER@$HOST" "cd heist && ./release.sh $TAG"

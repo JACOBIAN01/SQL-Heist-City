@@ -23,7 +23,8 @@ services:
     depends_on: { postgres: { condition: service_healthy } }
     environment:
       DATABASE_URL: postgres://heist:${POSTGRES_PASSWORD:-heist-local-only}@postgres:5432/heist
-      GAME_ORIGINS: http://localhost:8088
+      GAME_ORIGINS: http://localhost:8088,https://localhost:8443
+      TRUST_PROXY: '1'
       GAME_SERVER_URL: http://game:8080
       INTERNAL_SECRET: ${INTERNAL_SECRET:-local-internal-secret-not-for-production}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@heist.test}
@@ -36,15 +37,30 @@ services:
     depends_on: { postgres: { condition: service_healthy } }
     environment:
       DATABASE_URL: postgres://heist:${POSTGRES_PASSWORD:-heist-local-only}@postgres:5432/heist
-      GAME_ORIGINS: http://localhost:8088
+      GAME_ORIGINS: http://localhost:8088,https://localhost:8443
+      TRUST_PROXY: '1'
       INTERNAL_SECRET: ${INTERNAL_SECRET:-local-internal-secret-not-for-production}
-      MATCH_WORKERS: '0'
+      MATCH_WORKERS: ${MATCH_WORKERS:-0}
     volumes: ['snapshot:/data']
     ports: ['8080:8080']
 
   web:
     build: { context: ., target: client }
     ports: ['8088:80']
+
+  # HTTPS and WSS in front of everything (Phase 20.6):  docker compose --profile tls up -d
+  #   https://localhost:8443 (the game)   https://admin.localhost:8443 (admin)   certificates: Caddy's own, so use -k / accept once
+  caddy:
+    profiles: ['tls']
+    image: caddy:2.8-alpine
+    depends_on: [game, admin, web]
+    environment:
+      SITE: localhost:8443
+      ADMIN_SITE: admin.localhost:8443
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    ports: ['8443:8443']
 
   # Dashboards and alerts (Phase 20.4):  docker compose --profile monitoring up -d
   #   Prometheus http://localhost:9090   Grafana http://localhost:3000 (admin / admin, dashboard "SQL Heist City")
@@ -81,3 +97,4 @@ services:
 volumes:
   pgdata:
   snapshot:
+  caddydata:

@@ -2,7 +2,7 @@
 
 ## Environments
 - **dev:** `npm run dev:*` (server :8080, admin :8081, client :5173); SQLite file `data/dev.db`.
-- **prod:** static client on a CDN/static host; game server + admin as Node processes (Docker), shared persistent volume for the SQLite file; TLS termination at proxy (WSS).
+- **prod:** Docker images behind Caddy for TLS (WSS); the client static behind a CDN; managed PostgreSQL. See `docs/operations.md`.
 
 ## Config (env)
 `PORT`, `DB_PATH`, `INTERNAL_SECRET`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` (first run), `SESSION_SECRET`, `MAX_PLAYERS`, `LOG_LEVEL`.

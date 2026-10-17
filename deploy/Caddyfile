@@ -1,0 +1,48 @@
+# TLS, the domain and the routes in front of the stack (Phase 20.6).
+#   SITE       the game's address, e.g. heist.school.org   (local test: localhost:8443)
+#   ADMIN_SITE the teachers' address, e.g. admin.heist.school.org   (local test: admin.localhost:8443)
+# Caddy gets and renews the certificates itself for public names; for localhost it makes its own
+# (`tls internal`, selected by the TLS_MODE variable). Put a CDN in front of the game site's
+# /assets/* only (docs/operations.md, "CDN").
+{
+	# Behind a CDN or load balancer, list its address ranges here so the client's address is kept.
+	servers {
+		trusted_proxies static {$TRUSTED_PROXIES:private_ranges}
+	}
+}
+
+(security) {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+		-Server
+	}
+	encode zstd gzip
+}
+
+{$SITE:localhost:8443} {
+	import security
+	{$TLS_MODE:tls internal}
+
+	# The game server: sockets, lobby, class rooms, error reports. /metrics is not routed.
+	@game path /ws/* /at/* /lobby /class/* /client-error
+	handle @game {
+		reverse_proxy game:8080
+	}
+	# Student sign-in lives in the account service.
+	handle /auth/* {
+		reverse_proxy admin:8081
+	}
+	# Everything else is the game page.
+	handle {
+		reverse_proxy web:80
+	}
+}
+
+{$ADMIN_SITE:admin.localhost:8443} {
+	import security
+	{$TLS_MODE:tls internal}
+	reverse_proxy admin:8081
+}

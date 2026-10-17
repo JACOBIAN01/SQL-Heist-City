@@ -37,7 +37,7 @@
 | 17 | Question types and content (filling R, C, B, E) | ✅ |
 | 18 | Security hardening | 🟨 18.1–18.5 done; 18.6 waits for an external tester |
 | 19 | Scale proof | 🟨 19.2–19.5 done; 19.1 cloud run waits for machines |
-| 20 | Operations and deployment | 🟨 20.1, 20.4, 20.5, 20.7 done; 20.2–20.3 wait for the owner's cloud |
+| 20 | Operations and deployment | 🟨 20.1, 20.4, 20.5, 20.7 done, 20.6 verified locally; 20.2–20.3 wait for the owner's cloud |
 | 21 | Privacy and compliance | ⬜ |
 | 22 | Settings, accessibility and devices | ⬜ |
 | 23 | Game test plan | ⬜ |
@@ -415,7 +415,7 @@ Audit con 8 plus the old "logging, metrics, backups, containers, deploy" todo it
 | 20.3 | Managed PostgreSQL with nightly backups and a tested restore drill | restore drill documented and passed | 🟨 backup + restore drill built and passing locally (`npm run backup:pg`, tests, runbook in operations.md); **managed PostgreSQL, the nightly schedule and a production drill wait for the owner's cloud** |
 | 20.4 | Structured logs, metrics dashboards, alerts (tick, players, grader queue, errors) | dashboards live; alerts fire in a test | ✅ JSON logs with redaction, Prometheus endpoint (protected in production), 6 alert rules (promtool tests pass; a real stop fired `GameServerDown`), Grafana dashboard via `--profile monitoring`. Alert delivery waits for an address (inputs-needed #10) |
 | 20.5 | Client error reporting | a thrown error in the browser reaches the error log | ✅ `ErrorReporter` on every page → `POST /client-error` (origin-checked, validated, rate-limited, scrubbed of queries and tickets) → structured log + `heist_client_errors`; verified against the container |
-| 20.6 | CDN for the client, TLS and WSS, domain | the game loads over HTTPS from the CDN | ⬜ |
+| 20.6 | CDN for the client, TLS and WSS, domain | the game loads over HTTPS from the CDN | 🟨 built and verified locally over https/wss (Caddy, security headers, relay to worker matches, client works on https pages; `--profile tls`). **The public domain, certificates and CDN account are the owner's** (inputs-needed #10) |
 | 20.7 | Release and rollback procedure | a rollback is rehearsed on staging | ✅ `deploy/release.sh` (health-checked release, automatic and manual rollback) rehearsed on one machine: a broken release went back by itself; checklist in operations.md. Rehearsal on real staging still to do |
 
 ---
