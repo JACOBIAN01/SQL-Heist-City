@@ -32,7 +32,8 @@ import { PredictedPlayer } from './game/PredictedPlayer';
 import { GameClient } from './net/GameClient';
 import { DelayedTransport, WebSocketGameTransport, type GameTransport } from './net/GameTransport';
 import { InputBatcher } from './net/InputBatcher';
-import { HttpAccountApi, accountBase } from './net/account';
+import { HttpAccountApi } from './net/account';
+import { serverAddressFor } from './net/serverAddress';
 import { classRoomUrl, roomStatus } from './net/classRoom';
 import { h } from './ui/dom';
 import { ReviewView } from './ui/profile/ReviewView';
@@ -114,14 +115,13 @@ import { followServerMap } from './world/followServerMap';
 // Composition root for the client.
 // ?map=heist|city|city:<seed> picks the map; on joining, the page follows whatever map the server plays.
 const params = new URLSearchParams(location.search);
+const server = serverAddressFor(location, params);
 // ?tutorial plays the tutorial: a private room on the tutorial map, with a guide.
 const tutorial = params.has('tutorial');
 // Without ?map the page builds the default city (the server's default too, so no reload).
 // ?class=<id> plays the city of that class's room, whatever the page was opened with.
 const classId = Number(params.get('class') ?? 0) || undefined;
-const classRoom = classId
-  ? await roomStatus(location.hostname, params.get('server') ?? '8080', classId)
-  : undefined;
+const classRoom = classId ? await roomStatus(server, classId) : undefined;
 if (classId && classRoom?.state !== 'live') {
   // The room closed (or never opened): back to the menu.
   location.search = '';
@@ -284,16 +284,15 @@ const carRig = new CameraRig(camera, MAP, { distance: 7.5, shoulder: 0, pivotHei
 /** Chase-camera heading: follows the car's with a short lag (rad). */
 let chaseYaw: number | undefined;
 
-// Network: ?server=<port> (default 8080), ?name=, ?lag=<one-way ms> to simulate latency.
-const port = params.get('server') ?? '8080';
+// Network: ?server=<port> (default 8080) or a full address, ?name=, ?lag=<one-way ms> to simulate latency.
 const lag = Number(params.get('lag') ?? 0);
 // The lobby says which match (and which port, when matches run in their own threads) to join.
 // ?class=<id>: the room a teacher started for that class (the lobby says where it runs).
 const gameUrl = tutorial
-  ? tutorialUrl(location.hostname, port)
+  ? tutorialUrl(server)
   : classRoom?.state === 'live'
-    ? classRoomUrl(location.hostname, classRoom.port)
-    : await chooseGameUrl(location.hostname, port);
+    ? classRoomUrl(server, classRoom.port)
+    : await chooseGameUrl(server);
 const thresholds = thresholdsFor(
   DEFAULT_MOVEMENT_SETTINGS.walkSpeed,
   DEFAULT_MOVEMENT_SETTINGS.sprintSpeed,
@@ -418,9 +417,7 @@ const feedback = new CombatFeedback({
 // Connect only once everything that reacts to the server exists: the first messages (welcome, vault and
 // loot state) arrive right after joining and would be dropped if nobody were listening yet.
 // Signed in? The account service gives a one-use ticket; the server then takes the name from the account.
-const ticket = await new HttpAccountApi(
-  accountBase(location.hostname, params.get('account')),
-).ticket(classId);
+const ticket = await new HttpAccountApi(server.account()).ticket(classId);
 let transport: GameTransport = new WebSocketGameTransport(gameUrl);
 if (lag > 0) transport = new DelayedTransport(transport, lag);
 const client = new GameClient(transport, {

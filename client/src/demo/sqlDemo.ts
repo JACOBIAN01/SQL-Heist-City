@@ -1,3 +1,4 @@
+import { serverAddressFor } from '../net/serverAddress';
 import { WebSocketChallengeApi } from '../net/WebSocketChallengeApi';
 import { startSandboxScene } from '../render/sandboxScene';
 import { h } from '../ui/dom';
@@ -17,8 +18,9 @@ startSandboxScene(document.body);
 
 const hud = document.getElementById('demo-hud') as HTMLElement;
 const status = h('div', { text: 'The world keeps running behind the panel.' });
-const serverPort = new URLSearchParams(location.search).get('server') ?? '8080';
-const api = new WebSocketChallengeApi(`ws://${location.hostname}:${serverPort}/ws/challenge`);
+const api = new WebSocketChallengeApi(
+  serverAddressFor(location, new URLSearchParams(location.search)).ws('/ws/challenge'),
+);
 // In the real game the host builds this list from the player's situation
 // (hurt? holding a weapon? standing at a vault door?).
 const tasks: TaskOption[] = [

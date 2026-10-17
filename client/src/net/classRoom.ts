@@ -1,3 +1,5 @@
+import type { ServerAddress } from './serverAddress';
+
 /** Where a class's room is: not started yet, or live on a port. */
 export type RoomStatus =
   | { readonly state: 'waiting' }
@@ -12,13 +14,12 @@ export type RoomStatus =
 
 /** Asks the game server about a class's room (public: the code was the secret). */
 export async function roomStatus(
-  host: string,
-  lobbyPort: string,
+  server: ServerAddress,
   classId: number,
   doFetch: typeof fetch = (...a) => fetch(...a),
 ): Promise<RoomStatus> {
   try {
-    const res = await doFetch(`http://${host}:${lobbyPort}/class/${classId}`);
+    const res = await doFetch(server.http(`/class/${classId}`));
     if (!res.ok) return { state: 'unavailable' };
     const body = (await res.json()) as {
       state: 'waiting' | 'live';
@@ -41,4 +42,4 @@ export async function roomStatus(
   }
 }
 
-export const classRoomUrl = (host: string, port: number): string => `ws://${host}:${port}/ws/game`;
+export const classRoomUrl = (server: ServerAddress, port: number): string => server.matchWs(port);

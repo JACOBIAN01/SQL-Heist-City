@@ -1,4 +1,5 @@
-import { HttpAccountApi, accountBase } from './net/account';
+import { HttpAccountApi } from './net/account';
+import { serverAddressFor } from './net/serverAddress';
 import { WebSocketChallengeApi } from './net/WebSocketChallengeApi';
 import { h } from './ui/dom';
 import { SqlPanel } from './ui/sql/SqlPanel';
@@ -21,9 +22,9 @@ interface Topic {
 }
 
 const params = new URLSearchParams(location.search);
-const port = params.get('server') ?? '8080';
-const account = new HttpAccountApi(accountBase(location.hostname, params.get('account')));
-const base = `ws://${location.hostname}:${port}/ws/practice`;
+const server = serverAddressFor(location, params);
+const account = new HttpAccountApi(server.account());
+const base = server.ws('/ws/practice');
 
 /** A fresh one-use ticket for every connection (empty when not signed in: development only). */
 const address = async () => {

@@ -32,11 +32,6 @@ export interface AccountApi {
   devSignInUrl(name: string, returnTo: string): string;
 }
 
-/** The account service lives beside the game server unless told otherwise (?account=). */
-export function accountBase(host: string, override: string | null): string {
-  return override ?? `http://${host}:8081`;
-}
-
 export class HttpAccountApi implements AccountApi {
   constructor(
     private readonly base: string,

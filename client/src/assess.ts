@@ -1,4 +1,5 @@
-import { HttpAccountApi, accountBase } from './net/account';
+import { HttpAccountApi } from './net/account';
+import { serverAddressFor } from './net/serverAddress';
 import { WebSocketChallengeApi } from './net/WebSocketChallengeApi';
 import { h } from './ui/dom';
 import { SqlPanel } from './ui/sql/SqlPanel';
@@ -13,12 +14,12 @@ import './ui/menu/menu.css';
 const params = new URLSearchParams(location.search);
 const classId = Number(params.get('assess'));
 const kind = params.get('kind') === 'post' ? 'post' : 'pre';
-const port = params.get('server') ?? '8080';
-const account = new HttpAccountApi(accountBase(location.hostname, params.get('account')));
+const server = serverAddressFor(location, params);
+const account = new HttpAccountApi(server.account());
 
 const address = async () => {
   const ticket = (await account.ticket(classId)) ?? '';
-  return `ws://${location.hostname}:${port}/ws/assess?class=${classId}&kind=${kind}&ticket=${encodeURIComponent(ticket)}`;
+  return server.ws(`/ws/assess?class=${classId}&kind=${kind}&ticket=${encodeURIComponent(ticket)}`);
 };
 
 interface Plan {

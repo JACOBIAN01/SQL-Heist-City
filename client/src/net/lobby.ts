@@ -1,3 +1,5 @@
+import type { ServerAddress } from './serverAddress';
+
 export interface LobbyMatch {
   readonly port: number;
   readonly players: number;
@@ -15,24 +17,22 @@ export interface LobbyReply {
  * failure falls back to the game socket on the lobby's own port.
  */
 export async function chooseGameUrl(
-  host: string,
-  lobbyPort: string,
+  server: ServerAddress,
   fetchLobby: (url: string) => Promise<LobbyReply> = async (url) => {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`lobby answered ${res.status}`);
     return (await res.json()) as LobbyReply;
   },
 ): Promise<string> {
-  const fallback = `ws://${host}:${lobbyPort}/ws/game`;
+  const fallback = server.ws('/ws/game');
   try {
-    const lobby = await fetchLobby(`http://${host}:${lobbyPort}/lobby`);
+    const lobby = await fetchLobby(server.http('/lobby'));
     const match = lobby.open ?? lobby.matches[0];
-    return match ? `ws://${host}:${match.port}/ws/game` : fallback;
+    return match ? server.matchWs(match.port) : fallback;
   } catch {
     return fallback;
   }
 }
 
 /** The tutorial: a private room on the lobby server itself (no match to choose). */
-export const tutorialUrl = (host: string, lobbyPort: string): string =>
-  `ws://${host}:${lobbyPort}/ws/tutorial`;
+export const tutorialUrl = (server: ServerAddress): string => server.ws('/ws/tutorial');

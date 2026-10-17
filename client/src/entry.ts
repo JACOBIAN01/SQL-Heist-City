@@ -1,4 +1,5 @@
-import { HttpAccountApi, accountBase } from './net/account';
+import { HttpAccountApi } from './net/account';
+import { serverAddressFor } from './net/serverAddress';
 import { roomStatus } from './net/classRoom';
 import { ErrorReporter, postReport } from './errors/ErrorReporter';
 import { MainMenu } from './ui/menu/MainMenu';
@@ -9,10 +10,11 @@ import { MainMenu } from './ui/menu/MainMenu';
  * straight to the game, so every developer workflow keeps working.
  */
 const params = new URLSearchParams(location.search);
+const server = serverAddressFor(location, params);
 
 // Errors in the browser reach the game server's log (Phase 20.5), from every page the entry loads.
 new ErrorReporter({
-  send: postReport(`http://${location.hostname}:${params.get('server') ?? '8080'}`),
+  send: postReport(server.http('')),
   page: () => location.pathname,
   userAgent: navigator.userAgent,
 }).install(window);
@@ -25,7 +27,7 @@ if (wantsAssessment) {
 } else if (wantsPractice) {
   await import('./practice');
 } else if (onlyAnError) {
-  const account = new HttpAccountApi(accountBase(location.hostname, params.get('account')));
+  const account = new HttpAccountApi(server.account());
   void new MainMenu({
     account,
     go: (destination) => {
@@ -33,7 +35,7 @@ if (wantsAssessment) {
         destination === 'play' ? '?play' : destination === 'practice' ? '?practice' : '?tutorial';
     },
     navigate: (url) => location.assign(url),
-    roomStatus: (classId) => roomStatus(location.hostname, params.get('server') ?? '8080', classId),
+    roomStatus: (classId) => roomStatus(server, classId),
     goAssess: (classId, kind) => {
       location.search = `?assess=${classId}&kind=${kind}`;
     },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HttpAccountApi, accountBase } from './account';
+import { HttpAccountApi } from './account';
 
 const ana = { id: 1, displayName: 'Ana', email: 'ana@school.edu', schoolDomain: 'school.edu' };
 
@@ -13,13 +13,6 @@ function api(handler: (url: string, init: RequestInit) => Response | Promise<Res
 }
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-
-describe('accountBase', () => {
-  it('is the service beside the game unless overridden', () => {
-    expect(accountBase('localhost', null)).toBe('http://localhost:8081');
-    expect(accountBase('localhost', 'https://accounts.example')).toBe('https://accounts.example');
-  });
-});
 
 describe('HttpAccountApi', () => {
   it('says who is signed in, always with the cookie and the marker header', async () => {
