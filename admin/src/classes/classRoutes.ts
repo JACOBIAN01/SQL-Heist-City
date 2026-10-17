@@ -6,6 +6,9 @@ import {
   type ClassRepository,
 } from '@heist/server/classes/ClassRepository';
 import {
+  CONSENT_STATEMENTS,
+  CONSENT_VERSION,
+  consentIsCurrent,
   QUESTION_USAGES,
   classInputSchema,
   classUpdateSchema,
@@ -122,6 +125,40 @@ export function classRoutes(deps: ClassRouteDeps): Router {
     res.json({ class: describeClass(updated) });
   });
 
+  // --- the school's consent (21.3): a class cannot start, or take students, without it ---
+  router.post('/classes/:id/consent', async (req, res) => {
+    const record = await load(res, idParam(req.params.id));
+    const body = parse(
+      z.object({
+        version: z.number().int(),
+        // Every statement, ticked: nothing is accepted by default.
+        accepted: z.array(z.string()).max(50),
+      }),
+      req.body,
+    );
+    if (body.version !== CONSENT_VERSION)
+      throw new HttpError(
+        409,
+        'consent_outdated',
+        'The terms have changed. Reload the page and read them again.',
+      );
+    const missing = CONSENT_STATEMENTS.filter((s) => !body.accepted.includes(s.id)).map(
+      (s) => s.id,
+    );
+    if (missing.length > 0)
+      throw new HttpError(400, 'consent_incomplete', 'Every statement has to be accepted.', {
+        missing,
+      });
+    const updated = await deps.classes.acceptConsent(
+      record.id,
+      CONSENT_VERSION,
+      requireUser(res).id,
+    );
+    if (!updated) throw notFound('Class');
+    audit(res, 'consent', record.id, { version: CONSENT_VERSION });
+    res.json({ class: describeClass(updated) });
+  });
+
   router.post('/classes/:id/lock', async (req, res) => {
     const record = await load(res, idParam(req.params.id));
     const { locked } = parse(z.object({ locked: z.boolean() }), req.body);
@@ -166,11 +203,14 @@ export function classRoutes(deps: ClassRouteDeps): Router {
   // --- live controls (14.7): what the teacher does while the room runs ---
   const live = async (res: Response, id: number, command: RoomCommand) => {
     const record = await load(res, id);
+    // A class cannot start before the school has accepted the terms (the game server checks too).
+    if (command.action === 'start' && !consentIsCurrent(record.consent))
+      throw new HttpError(409, 'consent_required', liveReason('consent_required'));
     if (!deps.game)
       throw new HttpError(503, 'no_game_server', 'The admin is not connected to a game server');
     const result = await deps.game.command(record.id, command);
     if (!result.ok) {
-      const code = result.reason === 'not_live' ? 409 : 502;
+      const code = result.reason === 'not_live' || result.reason === 'consent_required' ? 409 : 502;
       throw new HttpError(code, result.reason, liveReason(result.reason));
     }
     return { record, status: result.status };
@@ -272,6 +312,8 @@ export function classRoutes(deps: ClassRouteDeps): Router {
 const liveReason = (reason: string): string =>
   reason === 'not_live'
     ? 'The class is not running. Start it first.'
-    : reason === 'game_server_unreachable'
-      ? 'The game server did not answer.'
-      : 'The game server could not do that.';
+    : reason === 'consent_required'
+      ? 'The school has not accepted the terms for this class yet. Open the class and accept them first.'
+      : reason === 'game_server_unreachable'
+        ? 'The game server did not answer.'
+        : 'The game server could not do that.';

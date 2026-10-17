@@ -1,3 +1,5 @@
+import { CONSENT_STATEMENTS, CONSENT_VERSION, classInputSchema } from '@heist/shared';
+import { ClassRooms } from '@heist/server/classes/ClassRooms';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -36,6 +38,8 @@ async function boot(game: GameControl | undefined) {
   h = await startAdmin(game ? { gameControl: game } : {});
   await h.loginAs('ana@school.test', 'teacher');
   const made = await h.client.post<{ class: { id: number } }>('/api/classes', { name: '9B' });
+  // The school has accepted the terms (Phase 21.3); the consent tests cover the refusal.
+  await h.stores.classes.acceptConsent(made.body.class.id, CONSENT_VERSION, null);
   return { h, id: made.body.class.id };
 }
 
@@ -71,6 +75,55 @@ describe('live class controls (14.7)', () => {
     expect(
       audit.body.entries.filter((e) => e.action === 'live').map((e) => e.detail.action),
     ).toEqual(['stop', 'next_round', 'end_round', 'start']);
+  });
+
+  it('will not start a class until the school has accepted the terms, and records who did (21.3)', async () => {
+    const game = new FakeGame();
+    h = await startAdmin({ gameControl: game });
+    await h.loginAs('ana@school.test', 'teacher');
+    const id = (await h.client.post<{ class: { id: number } }>('/api/classes', { name: '9B' })).body
+      .class.id;
+    const start = () => h?.client.post(`/api/classes/${id}/live/start`, {});
+
+    const refused = await start();
+    expect(refused?.status).toBe(409);
+    expect(refused?.body).toMatchObject({ error: { code: 'consent_required' } });
+    expect(game.commands).toEqual([]); // the game server was never asked
+
+    // Every statement has to be ticked, and it has to be the current wording.
+    const part = await h.client.post(`/api/classes/${id}/consent`, {
+      version: CONSENT_VERSION,
+      accepted: CONSENT_STATEMENTS.slice(1).map((c) => c.id),
+    });
+    expect(part.status).toBe(400);
+    const old = await h.client.post(`/api/classes/${id}/consent`, {
+      version: CONSENT_VERSION - 1,
+      accepted: CONSENT_STATEMENTS.map((c) => c.id),
+    });
+    expect(old.status).toBe(409);
+    expect((await start())?.status).toBe(409);
+
+    const ok = await h.client.post<{ class: { consent: { version: number; byUserId: number } } }>(
+      `/api/classes/${id}/consent`,
+      { version: CONSENT_VERSION, accepted: CONSENT_STATEMENTS.map((c) => c.id) },
+    );
+    expect(ok.status).toBe(200);
+    expect(ok.body.class.consent).toMatchObject({ version: CONSENT_VERSION });
+    expect((await start())?.status).toBe(200);
+    await h.admin.settled();
+    const audit = await h.stores.audit.list({ entity: 'class' });
+    expect(audit.map((e) => e.action)).toContain('consent');
+  });
+
+  it('the game server refuses a start without consent too, whatever the admin says', async () => {
+    h = await startAdmin();
+    const stores = h.stores;
+    const made = await stores.classes.create({ ...classInputSchema.parse({ name: 'X' }) }, null);
+    const rooms = new ClassRooms({ classes: stores.classes } as never);
+    expect(await rooms.handle(made.id, { action: 'start' })).toEqual({
+      ok: false,
+      reason: 'consent_required',
+    });
   });
 
   it('kicks a student by account, and renames one in the class through the same rules', async () => {

@@ -30,6 +30,7 @@ import { playerStaffRoutes } from './players/staffRoutes';
 import {
   ANALYTICS_SETTINGS_KEY,
   NAME_RULES_KEY,
+  PRIVACY_SETTINGS_KEY,
   settingsParsers,
 } from '@heist/server/config/SettingsReader';
 import { playerRoutes, type PlayerAuthOptions } from './players/playerRoutes';
@@ -143,6 +144,8 @@ export function buildAdmin(
     (config.gameServer
       ? new HttpGameControl(config.gameServer.url, config.gameServer.secret)
       : undefined);
+  const privacySettings = async () =>
+    settingsParsers.privacyFrom(await stores.settings.get(PRIVACY_SETTINGS_KEY));
   const nameRules = async () =>
     settingsParsers.namesFrom(await stores.settings.get(NAME_RULES_KEY));
 
@@ -160,6 +163,7 @@ export function buildAdmin(
               ...config.playerAuth,
               players: stores.players,
               nameRules: nameRules,
+              privacy: privacySettings,
               personalData,
               classes: stores.classes,
               sessions: playerSessions,

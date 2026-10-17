@@ -1,6 +1,13 @@
 import express, { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
-import { NAME_REASONS, checkDisplayName, type NameRules } from '@heist/shared';
+import {
+  NAME_REASONS,
+  ageStatusFor,
+  checkDisplayName,
+  consentIsCurrent,
+  type NameRules,
+  type PrivacySettings,
+} from '@heist/shared';
 import { issueTicket } from '@heist/server/auth/ticket';
 import type {
   Player,
@@ -44,6 +51,8 @@ export interface PlayerAuthOptions {
   readonly googleEnabled?: boolean;
   /** The display-name rules in force (the admin edits the word lists). */
   readonly nameRules: () => Promise<NameRules>;
+  /** Age limit and retention numbers (Phase 21). */
+  readonly privacy: () => Promise<PrivacySettings>;
   readonly now?: () => number;
 }
 
@@ -60,6 +69,7 @@ export const publicPlayer = (p: Player) => ({
   displayName: p.displayName,
   email: p.email,
   schoolDomain: p.schoolDomain,
+  ageStatus: p.ageStatus,
 });
 
 /**
@@ -130,6 +140,8 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
         },
         new Date(now()),
       );
+      // A made-up test player has no age to declare.
+      if (player.ageStatus === 'unknown') await options.players.setAgeStatus(player.id, 'ok');
       const token = await options.sessions.create(player.id);
       res.cookie(PLAYER_COOKIE, token, { ...baseCookie, maxAge: options.sessionTtlMs });
       res.redirect(302, target.data);
@@ -217,6 +229,39 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
     res.json({ player: renamed && publicPlayer(renamed) });
   });
 
+  // The age gate (21.7): asked once. Only the verdict is kept; the birth year is not.
+  router.post('/auth/player/age', express.json(), async (req, res) => {
+    if (!fromGamePage(req, res)) return;
+    const player = await currentPlayer(req);
+    if (!player) {
+      res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
+      return;
+    }
+    const given = z.object({ birthYear: z.number().int().min(1900).max(3000) }).safeParse(req.body);
+    if (!given.success) {
+      res
+        .status(400)
+        .json({ error: { code: 'bad_request', message: 'Give the year you were born' } });
+      return;
+    }
+    // Once decided it stays: a student cannot try other years until one passes.
+    if (player.ageStatus !== 'unknown') {
+      res.status(player.ageStatus === 'ok' ? 200 : 403).json({ player: publicPlayer(player) });
+      return;
+    }
+    const { minAge } = await options.privacy();
+    const status = ageStatusFor(given.data.birthYear, new Date(now()).getUTCFullYear(), minAge);
+    const updated = await options.players.setAgeStatus(player.id, status);
+    if (status === 'too_young') {
+      res.status(403).json({
+        error: { code: 'too_young', message: `You need to be ${minAge} or older to play.` },
+        player: updated && publicPlayer(updated),
+      });
+      return;
+    }
+    res.json({ player: updated && publicPlayer(updated) });
+  });
+
   router.get('/auth/player/export', async (req, res) => {
     if (!fromGamePage(req, res)) return;
     const player = await currentPlayer(req);
@@ -256,6 +301,15 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
     const player = await currentPlayer(req);
     if (!player) {
       res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
+      return;
+    }
+    if (player.ageStatus !== 'ok') {
+      res.status(403).json({
+        error: {
+          code: player.ageStatus === 'too_young' ? 'too_young' : 'age_required',
+          message: 'Say how old you are before you play',
+        },
+      });
       return;
     }
     // A class ticket is only for a student who joined that class (by its code).
@@ -299,6 +353,25 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
     const record = isClassCode(code) ? await options.classes.findByCode(code) : undefined;
     if (!record || record.archived) {
       res.status(404).json({ error: { code: 'unknown_code', message: 'No class has that code.' } });
+      return;
+    }
+    if (player.ageStatus !== 'ok') {
+      res.status(403).json({
+        error: {
+          code: player.ageStatus === 'too_young' ? 'too_young' : 'age_required',
+          message: 'Say how old you are before you join a class',
+        },
+      });
+      return;
+    }
+    // The school has to have accepted the terms before any student's details are taken (21.3).
+    if (!consentIsCurrent(record.consent)) {
+      res.status(403).json({
+        error: {
+          code: 'consent_required',
+          message: 'Your teacher has not accepted the school terms for this class yet.',
+        },
+      });
       return;
     }
     const already = await options.classes.isMember(record.id, player.id);

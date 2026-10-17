@@ -13,6 +13,8 @@ import {
   DEFAULT_NAME_RULES,
   DEFAULT_ANALYTICS_SETTINGS,
   DEFAULT_DIALECT_SETTINGS,
+  DEFAULT_PRIVACY_SETTINGS,
+  privacySettingsSchema,
   dialectSettingsSchema,
   analyticsSettingsSchema,
   nameRulesSchema,
@@ -35,6 +37,7 @@ import {
   CITY_SETTINGS_KEY,
   ANALYTICS_SETTINGS_KEY,
   DIALECT_SETTINGS_KEY,
+  PRIVACY_SETTINGS_KEY,
   HEIST_SETTINGS_KEY,
   NAME_RULES_KEY,
   REWARD_ICONS_KEY,
@@ -261,7 +264,15 @@ export class SettingsService {
 }
 
 export type SectionName =
-  'heist' | 'vehicles' | 'atmosphere' | 'city' | 'rewardIcons' | 'names' | 'analytics' | 'dialects';
+  | 'heist'
+  | 'vehicles'
+  | 'atmosphere'
+  | 'city'
+  | 'rewardIcons'
+  | 'names'
+  | 'analytics'
+  | 'dialects'
+  | 'privacy';
 export const SECTION_NAMES: readonly SectionName[] = [
   'heist',
   'vehicles',
@@ -271,6 +282,7 @@ export const SECTION_NAMES: readonly SectionName[] = [
   'names',
   'analytics',
   'dialects',
+  'privacy',
 ];
 
 interface SectionSpec {
@@ -318,6 +330,12 @@ const SECTIONS: Readonly<Record<SectionName, SectionSpec>> = {
     schema: rewardIconsSchema,
     defaults: DEFAULT_REWARD_ICONS,
     parse: settingsParsers.rewardIconsFrom,
+  },
+  privacy: {
+    key: PRIVACY_SETTINGS_KEY,
+    schema: privacySettingsSchema,
+    defaults: DEFAULT_PRIVACY_SETTINGS,
+    parse: settingsParsers.privacyFrom,
   },
   dialects: {
     key: DIALECT_SETTINGS_KEY,

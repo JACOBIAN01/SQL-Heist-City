@@ -1,3 +1,4 @@
+import { CONSENT_STATEMENTS, CONSENT_VERSION } from '@heist/shared';
 import { createHash } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -110,6 +111,20 @@ async function signIn(over: { state?: string; code?: string | null } = {}) {
   return { res, google_url, cookies: cookieOf(res).join('; ') };
 }
 
+/** Says how old the signed-in student is (the age gate, 21.7). */
+async function declareAge(cookies: string, birthYear: number) {
+  return fetch(`${base}/auth/player/age`, {
+    method: 'POST',
+    headers: {
+      cookie: cookies,
+      origin: GAME,
+      'x-heist-player': '1',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({ birthYear }),
+  });
+}
+
 describe('player sign-in with Google', () => {
   beforeEach(() => boot());
   afterEach(async () => {
@@ -148,6 +163,7 @@ describe('player sign-in with Google', () => {
         displayName: 'Ana Silva',
         email: 'ana@school.edu',
         schoolDomain: 'school.edu',
+        ageStatus: 'unknown',
       },
     });
     // The same Google account is the same player next time.
@@ -220,6 +236,11 @@ describe('player sign-in with Google', () => {
     google.state.claims = { email: 'ana@school.edu', name: 'Ana Silva' };
     const { cookies } = await signIn();
     const headers = { cookie: cookies, origin: GAME, 'x-heist-player': '1' };
+    // Not before they have said how old they are (21.7).
+    const early = await fetch(`${base}/auth/ticket`, { method: 'POST', headers });
+    expect(early.status).toBe(403);
+    expect(await early.json()).toMatchObject({ error: { code: 'age_required' } });
+    await declareAge(cookies, 2008);
     const ok = await fetch(`${base}/auth/ticket`, { method: 'POST', headers });
     expect(ok.headers.get('access-control-allow-origin')).toBe(GAME);
     expect(ok.headers.get('access-control-allow-credentials')).toBe('true');
@@ -473,17 +494,25 @@ describe('joining a class', () => {
       body: JSON.stringify(classId === undefined ? {} : { classId }),
     });
 
-  async function teacherClass() {
+  /** A class whose school has accepted the terms (unless told not to). */
+  async function teacherClass(accept = true) {
     await h.loginAs('teacher@school.test', 'teacher');
-    return (
+    const made = (
       await h.client.post<{ class: { id: number; code: string } }>('/api/classes', { name: '9B' })
     ).body.class;
+    if (accept)
+      await h.client.post(`/api/classes/${made.id}/consent`, {
+        version: CONSENT_VERSION,
+        accepted: CONSENT_STATEMENTS.map((s) => s.id),
+      });
+    return made;
   }
 
   it('a student types the code, joins the roster once, and gets a ticket for that class only', async () => {
     const cls = await teacherClass();
     google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
     const { cookies } = await signIn();
+    await declareAge(cookies, 2008);
     const res = await join(
       cookies,
       ` ${cls.code.toLowerCase().slice(0, 3)}-${cls.code.slice(3).toLowerCase()} `,
@@ -505,6 +534,7 @@ describe('joining a class', () => {
     const cls = await teacherClass();
     google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
     const { cookies } = await signIn();
+    await declareAge(cookies, 2008);
     expect((await join(cookies, 'ZZZZZZ')).status).toBe(404);
     expect((await join(cookies, 'abc')).status).toBe(404);
     expect((await ticketFor(cookies, cls.id)).status).toBe(403);
@@ -515,7 +545,29 @@ describe('joining a class', () => {
     google.state.claims = { email: 'ben@school.edu', name: 'Ben' };
     google.state.sub = 'google-sub-ben';
     const ben = await signIn();
+    await declareAge(ben.cookies, 2008);
     expect((await join(ben.cookies, cls.code)).status).toBe(403);
+  });
+
+  it('turns a student away until the school has accepted the terms, and until they have said their age (21.3, 21.7)', async () => {
+    const cls = await teacherClass(false);
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    const noAge = await join(cookies, cls.code);
+    expect(noAge.status).toBe(403);
+    expect(await noAge.json()).toMatchObject({ error: { code: 'age_required' } });
+    await declareAge(cookies, 2008);
+    const noConsent = await join(cookies, cls.code);
+    expect(noConsent.status).toBe(403);
+    expect(await noConsent.json()).toMatchObject({ error: { code: 'consent_required' } });
+    expect(
+      (await h.client.get<{ roster: unknown[] }>(`/api/classes/${cls.id}/roster`)).body.roster,
+    ).toEqual([]);
+    await h.client.post(`/api/classes/${cls.id}/consent`, {
+      version: CONSENT_VERSION,
+      accepted: CONSENT_STATEMENTS.map((s) => s.id),
+    });
+    expect((await join(cookies, cls.code)).status).toBe(200);
   });
 
   it('limits code guessing per player', async () => {
@@ -525,6 +577,61 @@ describe('joining a class', () => {
     for (let i = 0; i < 12; i++) statuses.push((await join(cookies, 'ZZZZZZ')).status);
     expect(statuses.slice(0, 8).every((s) => s === 404)).toBe(true);
     expect(statuses.at(-1)).toBe(429);
+  });
+});
+
+describe('the age gate (21.7)', () => {
+  beforeEach(() => boot());
+  afterEach(async () => {
+    await h.close();
+    await google.close();
+  });
+
+  it('lets in someone old enough, keeps no birth year, and does not let a refused student try other years', async () => {
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    const thisYear = new Date().getUTCFullYear();
+    const young = await declareAge(cookies, thisYear - 10);
+    expect(young.status).toBe(403);
+    expect(await young.json()).toMatchObject({ error: { code: 'too_young' } });
+    // Saying a different year afterwards changes nothing.
+    expect((await declareAge(cookies, thisYear - 20)).status).toBe(403);
+    const ticket = await fetch(`${base}/auth/ticket`, {
+      method: 'POST',
+      headers: { cookie: cookies, origin: GAME, 'x-heist-player': '1' },
+    });
+    expect(await ticket.json()).toMatchObject({ error: { code: 'too_young' } });
+
+    google.state.claims = { email: 'ben@school.edu', name: 'Ben' };
+    google.state.sub = 'google-sub-ben';
+    const ben = await signIn();
+    const ok = await declareAge(ben.cookies, thisYear - 13);
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toMatchObject({ player: { ageStatus: 'ok' } });
+    // Nothing but the verdict is stored: no column holds a year.
+    const row = JSON.stringify(await h.stores.players.findBySub('google-sub-ben'));
+    expect(row).not.toContain(String(thisYear - 13));
+    expect((await declareAge(ben.cookies, 1990)).status).toBe(200); // already decided
+  });
+
+  it('asks for a real year', async () => {
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    for (const birthYear of [1800, 'nineteen', 99999])
+      expect(
+        (
+          await fetch(`${base}/auth/player/age`, {
+            method: 'POST',
+            headers: {
+              cookie: cookies,
+              origin: GAME,
+              'x-heist-player': '1',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({ birthYear }),
+          })
+        ).status,
+      ).toBe(400);
   });
 });
 
