@@ -51,7 +51,7 @@ Decision record. It fixes who is playing (Google sign-in) and where records live
 
 **Schema changes** are ordered, append-only SQL migrations (`server/src/pg/migrations.ts`), applied by `npm run db:migrate` under an advisory lock. Development and tests use a private cluster that `scripts/pg-dev.mjs` starts in `data/pg` on port 54329; CI uses a service container (`TEST_DATABASE_URL`).
 
-**Personal data kept about a player:** Google subject id, email, display name, school domain, created and last seen. Nothing else (no photo, no birthday, no contacts). See Phase 21 for retention and deletion.
+**Personal data kept about a player:** Google subject id, email, display name, school domain, created and last seen, and whether they said they are old enough (the verdict only, never the birth year). Nothing else (no photo, no birthday, no contacts). Every field, why, and how long: `docs/privacy.md`.
 
 ## Phase 13 plan, in order
 13.2 PostgreSQL and migrations · 13.3 content and admin repositories on PostgreSQL (one-shot import from `dev.db`) · 13.4 players · 13.5 Google sign-in · 13.6 game tickets · 13.7 menu and sign-in screen · 13.8 display names · 13.9 dev bypass · 13.10 account deletion and export.

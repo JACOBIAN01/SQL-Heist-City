@@ -38,7 +38,7 @@
 | 18 | Security hardening | 🟨 18.1–18.5 done; 18.6 waits for an external tester |
 | 19 | Scale proof | 🟨 19.2–19.5 done; 19.1 cloud run waits for machines |
 | 20 | Operations and deployment | 🟨 20.1, 20.4, 20.5, 20.7 done, 20.6 verified locally; 20.2–20.3 wait for the owner's cloud |
-| 21 | Privacy and compliance | ⬜ |
+| 21 | Privacy and compliance | 🟨 built; legal review and the rating wait for the owner |
 | 22 | Settings, accessibility and devices | ⬜ |
 | 23 | Game test plan | ⬜ |
 | 24 | Classroom pilot | ⬜ |
@@ -405,7 +405,7 @@ Audit con 10 plus the old "100 and 200 player load test" todo item.
 | 19.5 | Soak test (4 h) and reconnect chaos (drops, rejoin mid-heist) | no leak, no lost progress | ✅ `npm run soak`: 4 h of game time, 100 bots, 1 102 drops and rejoins, 0 lost progress, heap flat; signed-in players keep a seat for the round (gameplay.md); a second tab takes over |
 
 ---
-## Phase 20 — Operations and deployment  ⬜
+## Phase 20 — Operations and deployment  🟨
 Audit con 8 plus the old "logging, metrics, backups, containers, deploy" todo items.
 
 | # | Subphase | Done when | Status |
@@ -419,18 +419,18 @@ Audit con 8 plus the old "logging, metrics, backups, containers, deploy" todo it
 | 20.7 | Release and rollback procedure | a rollback is rehearsed on staging | ✅ `deploy/release.sh` (health-checked release, automatic and manual rollback) rehearsed on one machine: a broken release went back by itself; checklist in operations.md. Rehearsal on real staging still to do |
 
 ---
-## Phase 21 — Privacy and compliance  ⬜
+## Phase 21 — Privacy and compliance  🟨
 Required before student data flows: Google accounts, attempts and classes. The game stays violent, so it ships with a proper content rating and age gate rather than a softer mode.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 21.1 | Data map: every field stored, why and for how long | `docs/privacy.md` approved | ⬜ |
-| 21.2 | Privacy policy and terms for schools and students (minors), reviewed for COPPA, GDPR and India's DPDP Act | published in the game and the admin | ⬜ |
-| 21.3 | School consent flow (teacher or school admin accepts on the class's behalf) | a class cannot start without it | ⬜ |
-| 21.4 | Retention and deletion jobs tied to 15.10 and 13.10 | tested | ⬜ |
-| 21.5 | Log audit: no personal data in logs or metrics | a scan of the logs finds none | ⬜ |
-| 21.6 | Data processing agreement template for schools | template ready | ⬜ |
-| 21.7 | Content rating for a violent game (IARC, giving PEGI/ESRB ratings) and an age gate at sign-in; the violence is stated plainly to schools at class creation | rating obtained; under-age accounts refused; the notice shows in the class editor | ⬜ |
+| 21.1 | Data map: every field stored, why and for how long | `docs/privacy.md` approved | ✅ `docs/privacy.md` lists every table and column with kind and retention; a test fails if the database and the map differ (and was shown to bite). Awaiting your approval of the content |
+| 21.2 | Privacy policy and terms for schools and students (minors), reviewed for COPPA, GDPR and India's DPDP Act | published in the game and the admin | 🟨 draft Privacy Policy and Terms in `docs/legal/`, published in the game and admin with a draft banner (`npm run legal`). **Legal review is the owner's** (inputs-needed #11) |
+| 21.3 | School consent flow (teacher or school admin accepts on the class's behalf) | a class cannot start without it | ✅ a class cannot start, and students cannot join it, until a teacher ticks every statement of the current terms; versioned, audited, enforced in the admin, the game server and the join route |
+| 21.4 | Retention and deletion jobs tied to 15.10 and 13.10 | tested | ✅ `PrivacyRetention` (daily, audited with counts): unused accounts (365 d), archived classes (180 d), open briefs (730 d) via the same erase path as "delete my account"; the learning record has its own job; settings editable |
+| 21.5 | Log audit: no personal data in logs or metrics | a scan of the logs finds none | ✅ logger masks emails/tokens/JWTs; browser reports scrubbed server-side (a real gap found and closed); `scripts/scan-logs.mjs` found no personal data in 52 live log lines across the stack |
+| 21.6 | Data processing agreement template for schools | template ready | ✅ template ready: `docs/legal/dpa.md` (draft, brackets to fill, for review with #11) |
+| 21.7 | Content rating for a violent game (IARC, giving PEGI/ESRB ratings) and an age gate at sign-in; the violence is stated plainly to schools at class creation | rating obtained; under-age accounts refused; the notice shows in the class editor | 🟨 age gate (once, birth year not kept; refusal stays), violence statement in the class terms, prepared IARC answers (`docs/legal/rating.md`). **Obtaining the rating is the owner's** (#12) |
 
 ---
 ## Phase 22 — Settings, accessibility and devices  ⬜

@@ -175,6 +175,9 @@ A teacher makes a **class** in the admin: a name, a six-character **join code**,
 - **Practice:** a solo drill from the menu, by topic and tier, with no match and no rewards; it counts toward the profile.
 - **Pre/post tests:** a teacher sets a short fixed test before and after a unit; the gain per dimension shows on the class's Learning page.
 
+## Before a class can play (Phase 21)
+A class cannot start, and students cannot join it, until a teacher or administrator has ticked each statement of the school's terms in the class editor, including the plain statement that the game is violent (cartoon shooting and cars, no blood or gore). A new student is asked the year they were born once; only whether they are old enough is kept (the age is a setting, default 13), and someone found too young can only delete their account. Unused accounts, archived classes and old briefs are deleted on a schedule (Settings → Privacy). See `docs/privacy.md`.
+
 ## Planning the next heist (Phase 17.10)
 When a round ends, a signed-in player sees **Plan the next heist** on the results card. It opens an open brief (`brief:plan`): the player writes a goal, when they are done and how they know it worked, and puts their queries in the editor (Run works as usual). It gives nothing in the game; a teacher marks it later against its rubric and the marks count as Build. The task stays open into the next round until its time runs out. `planningBriefs` (heist settings) turns it off; `taskKinds` (challenge settings) keeps briefs out of every in-round task and keeps planning to briefs only.
 

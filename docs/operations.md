@@ -83,3 +83,11 @@ The server accepts it only from the game's own pages (`GAME_ORIGINS`), checks it
 
 **Verified locally** with `docker compose --profile tls up -d` (Caddy's own certificates, `https://localhost:8443`): the page loads over https with the security headers; the lobby answers; 20 bots joined over wss through the relay to a worker match; a port that is not a match, a path other than the game sockets, and another origin are refused; `/metrics` is not reachable; the admin site answers on its own name. **Not yet possible without you**: a public domain, certificates for it, and the CDN account (inputs-needed #10), so "the game loads over HTTPS from the CDN" is open.
 
+## Personal data in logs (21.5)
+The logger masks emails, bearer tokens and JWTs in any text, and hides values under keys such as `ticket`, `password` or `cookie`; browser error reports are scrubbed again on the server. To check real output, run the stack, use it, and scan what it wrote:
+
+```
+docker compose logs --no-log-prefix | node scripts/scan-logs.mjs
+```
+The scan fails on email addresses, tokens, tickets in URLs, Google account ids, session cookies and public IP addresses, and never prints the value it found. **Audit done** (2026-10-17): staff and student sign-in, wrong passwords, the age gate, joining a class, tickets, an export, malformed requests, a foreign-origin request and a browser report containing an email and a ticket produced 52 log lines across the three containers, none with personal data. It found one real gap on the way (the server logged a browser's report as received), now closed. Run it again after changing what is logged, and ask the host to keep logs 30 days or less.
+
