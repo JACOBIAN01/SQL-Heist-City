@@ -1,0 +1,74 @@
+.touch {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  touch-action: none;
+  user-select: none;
+}
+.touch[hidden] {
+  display: none;
+}
+.touch-look {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 50%;
+  pointer-events: auto;
+}
+.touch-stick {
+  position: absolute;
+  left: 2rem;
+  bottom: 2rem;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.touch-knob {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+}
+.touch-buttons {
+  position: absolute;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  width: 14rem;
+  display: grid;
+  grid-template-columns: repeat(3, 4rem);
+  gap: 0.5rem;
+}
+.touch-button {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  color: #fff;
+  background: rgba(20, 24, 31, 0.7);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  pointer-events: auto;
+}
+.touch-fire {
+  background: var(--c-bad, rgba(200, 40, 40, 0.8));
+}
+/* Left-handed: the stick and the look area swap sides with the buttons. */
+.touch-left-handed .touch-look {
+  right: auto;
+  left: 0;
+}
+.touch-left-handed .touch-stick {
+  left: auto;
+  right: 2rem;
+}
+.touch-left-handed .touch-buttons {
+  right: auto;
+  left: 1.5rem;
+}

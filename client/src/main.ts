@@ -26,6 +26,7 @@ import { startSettings } from './settings/bootstrap';
 import { controlsHint } from './settings/controlsHint';
 import { bindingsFrom } from './input/Bindings';
 import { GamepadAdapter } from './input/GamepadAdapter';
+import { TouchControls } from './ui/touch/TouchControls';
 import { prepareSounds } from './audio/synth';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { RemotePlayers } from './entities/RemotePlayers';
@@ -661,6 +662,14 @@ const gamepad = new GamepadAdapter(
     }
   },
 );
+// On-screen controls for touch devices (Phase 22.5); shown by the settings and the device.
+const touch = new TouchControls(
+  document.body,
+  input,
+  { trigger: (a) => hotkeys.trigger(a), setHeld: (a, down) => hotkeys.setHeld(a, down) },
+  () => settings.current,
+  i18n,
+);
 // Settings that need pushing into the running game (the rest read the store when they need it).
 const applySettings = (): void => {
   const s = settings.current;
@@ -670,6 +679,7 @@ const applySettings = (): void => {
   sound.setChannelVolume('effects', s.audio.effects);
   sound.setChannelVolume('ambience', s.audio.ambience);
   hint.textContent = controlsHint(s, i18n.t);
+  touch.refresh();
   if (!fxParam) {
     pinnedQuality = s.graphics.quality === 'auto' ? undefined : QUALITY_PRESETS[s.graphics.quality];
     postFx.setLevel((pinnedQuality ?? quality?.current)?.fx ?? 'high');
