@@ -27,9 +27,12 @@ const KEY_STEP = 24;
 export function createResizer(options: ResizerOptions): HTMLElement {
   const { axis, direction } = options;
   const clamp = (px: number) => Math.min(options.max(), Math.max(options.min(), px));
+  // Screen readers get the size and its limits (a focusable separator must have a value).
+  let sync = (): void => {};
   const set = (px: number) => {
     const next = Math.round(clamp(px));
     options.apply(next);
+    sync();
     return next;
   };
   const save = (px: number) => {
@@ -51,6 +54,18 @@ export function createResizer(options: ResizerOptions): HTMLElement {
       tabindex: '0',
     },
   });
+
+  sync = () => {
+    try {
+      handle.setAttribute('aria-valuemin', String(Math.round(options.min())));
+      handle.setAttribute('aria-valuemax', String(Math.round(options.max())));
+      handle.setAttribute('aria-valuenow', String(Math.round(options.read())));
+    } catch {
+      // The panel is still being built; the first resize or key press fills these in.
+    }
+  };
+  // Once the caller has finished building what `read` looks at.
+  queueMicrotask(sync);
 
   let drag: { from: number; size: number } | null = null;
   const pos = (event: MouseEvent) => (axis === 'x' ? event.clientX : event.clientY);
@@ -79,6 +94,7 @@ export function createResizer(options: ResizerOptions): HTMLElement {
 
   handle.addEventListener('dblclick', () => {
     options.reset();
+    sync();
     if (options.storageKey !== undefined) {
       try {
         localStorage.removeItem(options.storageKey);
@@ -92,6 +108,7 @@ export function createResizer(options: ResizerOptions): HTMLElement {
     const shrink = axis === 'x' ? 'ArrowLeft' : 'ArrowUp';
     if (event.key === 'Home') {
       options.reset();
+      sync();
     } else if (event.key === grow || event.key === shrink) {
       const sign = (event.key === grow ? 1 : -1) * direction;
       save(set(options.read() + sign * KEY_STEP));

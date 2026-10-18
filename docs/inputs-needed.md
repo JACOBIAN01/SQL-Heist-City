@@ -18,8 +18,8 @@ What the phases need that code cannot invent. Work goes ahead without waiting: e
 | # | What | Phase |
 |---|---|---|
 | 7 | Which SQL dialect(s) your classes use (SQLite is what runs today; PostgreSQL and MySQL notes are planned) | 17.14 |
-| 8 | Two languages for the first localisation, and someone to translate the strings | 22.7 |
-| 9 | 3 low-end Chromebooks or similar for the performance pass, or the model names of what schools use | 22.6 |
+| 8 | Which two languages (English and a Hindi draft are in), and a native speaker to review `client/src/i18n/hi.ts` and translate the rest | 22.7 |
+| 9 | 3 low-end Chromebooks or similar for the performance pass, or the model names of what schools use; ideally also a gamepad and a touch screen to try 22.4/22.5 on real hardware | 22.6 |
 | 10 | A cloud account for staging and production (provider of your choice), a domain name, and who gets alerts (email or chat address) | 20 |
 | 11 | A legal reviewer for the privacy policy, terms and school agreement (COPPA, GDPR, India DPDP) and the school consent wording. **The drafts are ready** in `docs/legal/` (published with a visible "draft" banner until `reviewed: true`); the list of questions for the reviewer is in `docs/legal/README.md`. Bracketed items (operator name, contact, providers, governing law) are yours to fill in | 21 |
 | 12 | An IARC account for the content rating (a questionnaire only the publisher can submit). **Prepared answers** are in `docs/legal/rating.md`; after the rating, set Settings → Privacy → minimum age to at least the rating's age | 21.7 |

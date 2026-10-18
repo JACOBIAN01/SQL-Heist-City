@@ -39,7 +39,7 @@
 | 19 | Scale proof | 🟨 19.2–19.5 done; 19.1 cloud run waits for machines |
 | 20 | Operations and deployment | 🟨 20.1, 20.4, 20.5, 20.7 done, 20.6 verified locally; 20.2–20.3 wait for the owner's cloud |
 | 21 | Privacy and compliance | 🟨 built; legal review and the rating wait for the owner |
-| 22 | Settings, accessibility and devices | ⬜ |
+| 22 | Settings, accessibility and devices | 🟨 built; the real-device pass (22.6) and a native review of the Hindi draft (22.7) wait for the owner |
 | 23 | Game test plan | ⬜ |
 | 24 | Classroom pilot | ⬜ |
 | 25 | Launch checklist and release | ⬜ |
@@ -433,18 +433,18 @@ Required before student data flows: Google accounts, attempts and classes. The g
 | 21.7 | Content rating for a violent game (IARC, giving PEGI/ESRB ratings) and an age gate at sign-in; the violence is stated plainly to schools at class creation | rating obtained; under-age accounts refused; the notice shows in the class editor | 🟨 age gate (once, birth year not kept; refusal stays), violence statement in the class terms, prepared IARC answers (`docs/legal/rating.md`). **Obtaining the rating is the owner's** (#12) |
 
 ---
-## Phase 22 — Settings, accessibility and devices  ⬜
+## Phase 22 — Settings, accessibility and devices  🟨
 Audit con 17.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 22.1 | In-game settings menu: sensitivity, invert, FOV, volume per channel, graphics quality | settings persist per account | ⬜ |
-| 22.2 | Key remapping | every action remappable; conflicts flagged | ⬜ |
-| 22.3 | Accessibility: text size, colour-blind palettes, reduced motion, subtitles for sound cues | a WCAG-style check of the HUD and pop-up passes | ⬜ |
-| 22.4 | Gamepad support | full play with a controller | ⬜ |
-| 22.5 | Touch controls (tablets and touch Chromebooks) | full play by touch | ⬜ |
-| 22.6 | Real-device performance pass (3 low-end Chromebooks, integrated GPUs) | ≥ 60 fps target, 30 fps floor, numbers recorded | ⬜ |
-| 22.7 | Localisation framework (UI strings out of code) and the first two languages | the UI switches language at runtime | ⬜ |
+| 22.1 | In-game settings menu: sensitivity, invert, FOV, volume per channel, graphics quality | settings persist per account | ✅ `PlayerSettings` (zod, every value limited) saved in the browser at once and on the account (`player_settings`, newest wins, in the privacy export/erase); one panel (Controls / Sound / Graphics / Accessibility / Language) from the menu and in a match (O); FOV, look speed, invert, three volume channels, picture quality (auto ladder or fixed) apply live |
+| 22.2 | Key remapping | every action remappable; conflicts flagged | ✅ 22 actions through `Bindings`; click a key, press the new one (mouse buttons too, up to 4 per action); Esc and browser keys refused; keys that do two things are marked; the pre-game hint shows the player's own keys |
+| 22.3 | Accessibility: text size, colour-blind palettes, reduced motion, subtitles for sound cues | a WCAG-style check of the HUD and pop-up passes | ✅ text size 85–160 % (all CSS in rem); 4 palettes beyond the default, each checked for WCAG contrast and for staying distinguishable under red-green and blue-yellow colour-vision simulation; reduced motion (own choice or the device's); directional captions for shots, cars, alarms and vault sounds; `axe-core` finds no structural violations in the SQL pop-up, menu, HUD, settings panel and touch controls (it found two in the pop-up, fixed). Colour contrast is checked by the palette tests, since jsdom has no layout |
+| 22.4 | Gamepad support | full play with a controller | ✅ `GamepadAdapter`: sticks with a circular dead zone, triggers fire/aim, buttons do the same actions as keys, guns cycle on the d-pad; dead zone and speed in settings. Tested with scripted pads; **a physical controller has not been tried** |
+| 22.5 | Touch controls (tablets and touch Chromebooks) | full play by touch | ✅ `TouchControls`: stick, drag-to-look, 8 buttons, left-handed layout, shown on touch devices or by choice. Tested with synthetic pointer events; **a real touch screen has not been tried** |
+| 22.6 | Real-device performance pass (3 low-end Chromebooks, integrated GPUs) | ≥ 60 fps target, 30 fps floor, numbers recorded | 🟨 procedure and results table ready (`docs/performance.md`, Phase 22.6); the automatic quality ladder and a fixed Low setting exist. **Needs the devices (#9)** |
+| 22.7 | Localisation framework (UI strings out of code) and the first two languages | the UI switches language at runtime | ✅ `I18n` + typed English catalog (a key the code uses but the catalog lacks is a compile error); menu, age gate, settings, key names, captions and the pre-game hint use it; English plus a **Hindi draft** (partial; missing keys fall back to English per key). **A native speaker must review it and the owner confirm the languages (#8)**. The HUD, SQL pop-up and tutorial text still need converting |
 
 ---
 ## Phase 23 — Game test plan  ⬜

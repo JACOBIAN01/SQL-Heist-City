@@ -153,3 +153,19 @@ Same laptop and method as 6.9, after Phases 7–18 (city, heists, cars, classes,
 
 The tool exits 1 on any lost progress or on heap growth above 20 MB, and a shorter version runs in every CI (`Soak.test.ts`).
 
+## Phase 22.6 — real-device pass (waits for the devices, inputs-needed #9)
+
+How to run it on each device (about 10 minutes):
+
+1. Open the game with `?play` (or a class room) in Chrome, on battery saver off, plugged in.
+2. The overlay at the top shows `fps`, `worst` frame time, draw `calls`, `tris`, and the picture level (`fx … @…×`).
+3. Settings → Graphics → **Auto**. Walk the street for one minute, then inside Bank 1 (lobby, upstairs, vault) for one minute, then drive a car for one minute. Note the steady fps, the worst frame, and the level the automatic ladder settled on.
+4. Repeat with **Low**. If Low is under 30 fps anywhere, note where (calls and tris tell which scene is heavy).
+5. Fill in the table and open an issue for anything under the floor.
+
+Targets: 60 fps where possible, **30 fps floor** on the lowest device, on Low.
+
+| Device | GPU | Auto: street / bank / car (fps, level) | Low: street / bank / car (fps) | Notes |
+|---|---|---|---|---|
+| _to fill_ | | | | |
+

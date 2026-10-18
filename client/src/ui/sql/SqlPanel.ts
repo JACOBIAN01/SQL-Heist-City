@@ -56,7 +56,7 @@ export class SqlPanel {
     );
 
     this.root = h(
-      'aside',
+      'div',
       {
         class: 'sqlp',
         attrs: { role: 'dialog', 'aria-label': 'SQL challenge', 'data-state': 'closed' },

@@ -239,3 +239,12 @@ Banks are dressed instead of drawn as plain boxes. Everything is art from the la
 
 ## Reward icons (12.5)
 Which picture a reward shows (pop-up, task menu, weapon bar) is a setting, not code. The pictures are the bundled game-icons.net SVGs; the admin's Settings page has a picker that chooses an id per reward (`gun:smg` → `rifle`; `vault` stands for every vault lock). The server sends the choice in the `world` message (on join and at each new round), and `setRewardIcons` in `ui/icons/icons.ts` applies it; unknown rewards still fall back to the cash icon. Ids live in `shared/src/config/rewardIcons.ts`, so a typo cannot be saved.
+
+## Settings, accessibility, devices and language (Phase 22)
+- **Model:** `shared/src/settings/playerSettings.ts` (zod; look, audio, graphics, keys, access, gamepad, touch, locale). Keys store only what differs from `DEFAULT_KEYS`. `SettingsStore` (Observer) keeps it in `localStorage` and, signed in, on the account (`GET/PUT /auth/player/settings`, newest `updatedAt` wins). `startSettings()` (`settings/bootstrap.ts`) runs on the menu, game, practice and assessment pages.
+- **Keys:** the game thinks in actions. `Bindings` maps action → key codes live; `InputSampler` and `Hotkeys` take bindings and also accept actions from a gamepad or touch (`setActionHeld`, `setStick`, `look`, `trigger`).
+- **Panel:** `ui/settings/SettingsPanel.ts` only edits the store (Mediator). Esc is reserved and cannot be bound.
+- **Accessibility:** CSS sizes are rem; colours are `--c-good/bad/warn/info/accent` with the original colours as fallbacks, so the default palette is unchanged. Palettes are tested for WCAG contrast and colour-vision distinguishability. `CaptionedAudio` (Decorator) writes captions for sounds that matter. Structural checks use `axe-core` in tests.
+- **Devices:** `GamepadAdapter` and `TouchControls` call the same actions as keys.
+- **Language:** `i18n/en.ts` is the source (`MessageKey`); `hi.ts` may be partial and falls back per key. Add a string: add it to `en.ts`, use `t('key')`. Question text is not translated (it comes from the database).
+
