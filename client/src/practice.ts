@@ -1,6 +1,7 @@
 import { HttpAccountApi } from './net/account';
 import { serverAddressFor } from './net/serverAddress';
 import { WebSocketChallengeApi } from './net/WebSocketChallengeApi';
+import { startSettings } from './settings/bootstrap';
 import { h } from './ui/dom';
 import { SqlPanel } from './ui/sql/SqlPanel';
 import { StorageDraftStore } from './ui/sql/DraftStore';
@@ -24,6 +25,7 @@ interface Topic {
 const params = new URLSearchParams(location.search);
 const server = serverAddressFor(location, params);
 const account = new HttpAccountApi(server.account());
+startSettings(account); // text size, palette and motion apply here too
 const base = server.ws('/ws/practice');
 
 /** A fresh one-use ticket for every connection (empty when not signed in: development only). */

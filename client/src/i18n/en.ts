@@ -156,7 +156,8 @@ export const en = {
   'caption.vault-open': 'Vault opens',
   'caption.metres': '{n} m',
   // --- in the game ------------------------------------------------------------------------
-  'game.hint': 'Click to play — {keys} · right mouse aim · Esc release mouse',
+  'game.hint': 'Click to play — {keys} · Esc release mouse',
+  'game.guns': 'guns',
   'game.settingsButton': 'Settings ({key})',
 } as const;
 

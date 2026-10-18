@@ -99,6 +99,8 @@ export class SettingsPanel {
   // --- key capture ----------------------------------------------------------------------
 
   private readonly onKey = (event: KeyboardEvent): void => {
+    // The game must not see keys typed into its settings (W would walk, F would use).
+    event.stopPropagation();
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();

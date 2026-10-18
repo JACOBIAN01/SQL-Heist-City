@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { en, type MessageKey } from '../i18n/en';
+import type { SoundName } from './synth';
 import { CAPTION_TEXT, CaptionedAudio, bearingOf, type Caption } from './CaptionedAudio';
 import type { AudioOut } from './AudioEngine';
 import { SOUND_NAMES } from './synth';
@@ -7,6 +9,11 @@ const here = { x: 0, y: 0, z: 0 };
 const north = { x: 0, y: 0, z: -1 }; // facing −z
 
 describe('sound captions (22.3)', () => {
+  it('has an English catalog entry for every captioned sound', () => {
+    for (const name of Object.keys(CAPTION_TEXT))
+      expect(en[`caption.${name}` as MessageKey], name).toBe(CAPTION_TEXT[name as SoundName]);
+  });
+
   it('says which way a sound is, from where the player faces', () => {
     expect(bearingOf(here, north, { x: 0, y: 0, z: -20 })).toBe('ahead');
     expect(bearingOf(here, north, { x: 0, y: 0, z: 20 })).toBe('behind');
@@ -37,7 +44,9 @@ describe('sound captions (22.3)', () => {
   it('writes down a gunshot with its direction and distance, and still plays it', () => {
     const { audio, inner, shown } = setup();
     audio.play('shot-rifle', { at: { x: 33, y: 0, z: 0 } });
-    expect(shown).toEqual([{ text: 'Rifle shot', bearing: 'right', metres: 35 }]);
+    expect(shown).toEqual([
+      { text: 'Rifle shot', key: 'caption.shot-rifle', bearing: 'right', metres: 35 },
+    ]);
     expect(inner.play).toHaveBeenCalledWith('shot-rifle', { at: { x: 33, y: 0, z: 0 } });
   });
 
@@ -70,7 +79,7 @@ describe('sound captions (22.3)', () => {
   it('a sound with no place (your own gun, a chime) has no direction', () => {
     const { audio, shown } = setup();
     audio.play('hurt');
-    expect(shown).toEqual([{ text: 'You are hit' }]);
+    expect(shown).toEqual([{ text: 'You are hit', key: 'caption.hurt' }]);
   });
 
   it('only names sounds that exist', () => {

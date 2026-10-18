@@ -1,4 +1,5 @@
 import type { AudioOut, Channel, LoopHandle, PlayOptions, Point } from './AudioEngine';
+import type { MessageKey } from '../i18n/en';
 import type { SoundName } from './synth';
 
 /** What each sound is called in a caption. Footsteps and wind are not captioned. */
@@ -26,6 +27,8 @@ export type Bearing = 'ahead' | 'behind' | 'left' | 'right';
 
 export interface Caption {
   readonly text: string;
+  /** The catalog entry for the text, so the view can show it in the player's language. */
+  readonly key?: MessageKey;
   readonly bearing?: Bearing;
   /** Metres, rounded to 5. */
   readonly metres?: number;
@@ -105,6 +108,7 @@ export class CaptionedAudio implements AudioOut {
     this.last.set(name, now);
     this.show({
       text,
+      key: `caption.${name}` as MessageKey,
       ...(at && metres !== undefined
         ? { bearing: bearingOf(this.listener, this.forward, at), metres }
         : {}),

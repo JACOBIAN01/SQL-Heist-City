@@ -1,4 +1,5 @@
 import { clear, h } from '../dom';
+import type { MessageKey } from '../../i18n/en';
 import type { Caption } from '../../audio/CaptionedAudio';
 
 const ARROW = { ahead: '↑', behind: '↓', left: '←', right: '→' } as const;
@@ -16,6 +17,8 @@ export class CaptionView {
     private readonly clock: () => number = () => performance.now(),
     private readonly lifeMs = 2500,
     private readonly most = 4,
+    /** Translates a caption's key; without it the English text is shown. */
+    private readonly t?: (key: MessageKey) => string,
   ) {
     parent.appendChild(this.root);
   }
@@ -25,7 +28,10 @@ export class CaptionView {
     const where = caption.bearing
       ? ` ${ARROW[caption.bearing]}${caption.metres ? ` ${caption.metres} m` : ''}`
       : '';
-    const el = h('div', { class: 'hud-caption', text: `[${caption.text}]${where}` });
+    const el = h('div', {
+      class: 'hud-caption',
+      text: `[${caption.key && this.t ? this.t(caption.key) : caption.text}]${where}`,
+    });
     this.lines.push({ el, until: now + this.lifeMs });
     this.root.appendChild(el);
     while (this.lines.length > this.most) this.lines.shift()?.el.remove();

@@ -1,6 +1,7 @@
 import { HttpAccountApi } from './net/account';
 import { serverAddressFor } from './net/serverAddress';
 import { WebSocketChallengeApi } from './net/WebSocketChallengeApi';
+import { startSettings } from './settings/bootstrap';
 import { h } from './ui/dom';
 import { SqlPanel } from './ui/sql/SqlPanel';
 import { SqlPanelController } from './ui/sql/SqlPanelController';
@@ -16,6 +17,7 @@ const classId = Number(params.get('assess'));
 const kind = params.get('kind') === 'post' ? 'post' : 'pre';
 const server = serverAddressFor(location, params);
 const account = new HttpAccountApi(server.account());
+startSettings(account); // text size, palette and motion apply here too
 
 const address = async () => {
   const ticket = (await account.ticket(classId)) ?? '';

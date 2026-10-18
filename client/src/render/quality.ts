@@ -19,6 +19,13 @@ export const QUALITY_LADDER: readonly QualityRung[] = [
   { fx: 'off', maxPixelRatio: 1 },
 ];
 
+/** The player's fixed choices in the settings (Phase 22): "auto" is the ladder below. */
+export const QUALITY_PRESETS: Readonly<Record<'low' | 'medium' | 'high', QualityRung>> = {
+  low: { fx: 'off', maxPixelRatio: 1 },
+  medium: { fx: 'fxaa', maxPixelRatio: 1.5 },
+  high: { fx: 'high', maxPixelRatio: 2 },
+};
+
 /**
  * Where the game stands on the quality ladder for this screen. Steps that
  * would change nothing here (a resolution step on a screen that is already

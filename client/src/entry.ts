@@ -3,6 +3,8 @@ import { serverAddressFor } from './net/serverAddress';
 import { roomStatus } from './net/classRoom';
 import { ErrorReporter, postReport } from './errors/ErrorReporter';
 import { MainMenu } from './ui/menu/MainMenu';
+import { SettingsPanel } from './ui/settings/SettingsPanel';
+import { startSettings } from './settings/bootstrap';
 
 /**
  * The page's front door. With no address parameters it shows the main menu;
@@ -28,8 +30,12 @@ if (wantsAssessment) {
   await import('./practice');
 } else if (onlyAnError) {
   const account = new HttpAccountApi(server.account());
+  const { store, i18n } = startSettings(account);
+  const settingsPanel = new SettingsPanel(store, i18n);
   void new MainMenu({
     account,
+    i18n,
+    openSettings: () => settingsPanel.open(),
     go: (destination) => {
       location.search =
         destination === 'play' ? '?play' : destination === 'practice' ? '?practice' : '?tutorial';

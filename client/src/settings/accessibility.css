@@ -20,7 +20,7 @@
 }
 :root[data-palette='high-contrast'] .sqlp,
 :root[data-palette='high-contrast'] .menu-card,
-:root[data-palette='high-contrast'] .settings-panel {
+:root[data-palette='high-contrast'] .settings-card {
   background: #000;
   border: 2px solid #fff;
 }

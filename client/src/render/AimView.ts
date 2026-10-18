@@ -11,7 +11,12 @@ export const SCOPE_ZOOM = 3;
 export class AimView {
   private zoom = 1;
 
-  constructor(private readonly baseFov: number) {}
+  constructor(private baseFov: number) {}
+
+  /** The player's chosen field of view when not aiming. */
+  setBaseFov(fov: number): void {
+    this.baseFov = fov;
+  }
 
   /** Eases toward `target` zoom (1 when not aiming); returns the field of view to use. */
   update(target: number, dtSeconds: number): number {

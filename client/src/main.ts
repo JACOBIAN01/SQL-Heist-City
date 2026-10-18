@@ -19,6 +19,12 @@ import {
 } from '@heist/shared';
 import { GameAudio, type HeardCar } from './audio/GameAudio';
 import { GestureAudio } from './audio/GestureAudio';
+import { CaptionedAudio } from './audio/CaptionedAudio';
+import { CaptionView } from './ui/hud/CaptionView';
+import { SettingsPanel } from './ui/settings/SettingsPanel';
+import { startSettings } from './settings/bootstrap';
+import { controlsHint } from './settings/controlsHint';
+import { bindingsFrom } from './input/Bindings';
 import { prepareSounds } from './audio/synth';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { RemotePlayers } from './entities/RemotePlayers';
@@ -81,7 +87,7 @@ import { followAngle, PredictedVehicle } from './vehicles/PredictedVehicle';
 import { RemoteVehicles } from './vehicles/RemoteVehicles';
 import { VehicleControls } from './vehicles/VehicleControls';
 import { FrameBudget, PostFx } from './render/PostFx';
-import { QualityLadder } from './render/quality';
+import { QUALITY_PRESETS, QualityLadder, type QualityRung } from './render/quality';
 import { addLighting } from './render/lighting';
 import { computeViewport } from './render/viewport';
 import { sceneBudget } from './render/sceneBudget';
@@ -116,6 +122,10 @@ import { followServerMap } from './world/followServerMap';
 // ?map=heist|city|city:<seed> picks the map; on joining, the page follows whatever map the server plays.
 const params = new URLSearchParams(location.search);
 const server = serverAddressFor(location, params);
+// The player's own settings (keys, look, sound, picture, access, language), live from here on.
+const account = new HttpAccountApi(server.account());
+const { store: settings, i18n } = startSettings(account);
+const bindings = bindingsFrom(() => settings.current);
 // ?tutorial plays the tutorial: a private room on the tutorial map, with a guide.
 const tutorial = params.has('tutorial');
 // Without ?map the page builds the default city (the server's default too, so no reload).
@@ -187,7 +197,7 @@ const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
 
 /** Field of view (deg) when not aiming; aiming narrows it by the gun's zoom. */
-const BASE_FOV = 70;
+const BASE_FOV = settings.current.look.fov;
 const camera = new PerspectiveCamera(BASE_FOV, 1, 0.1, 220);
 const aimView = new AimView(BASE_FOV);
 // Bloom + FXAA. ?fx=high|fxaa|off pins a level; otherwise it starts high and, while frames stay
@@ -197,6 +207,8 @@ const fxParam = params.get('fx');
 const postFx = new PostFx(renderer, scene, camera);
 if (fxParam === 'high' || fxParam === 'fxaa' || fxParam === 'off') postFx.setLevel(fxParam);
 const quality = fxParam ? undefined : new QualityLadder(window.devicePixelRatio);
+/** The player's fixed picture quality; none means automatic (the ladder above). */
+let pinnedQuality: QualityRung | undefined;
 const fxBudget = quality ? new FrameBudget() : undefined;
 // The composer renders several passes a frame; count them all in the overlay.
 renderer.info.autoReset = false;
@@ -205,7 +217,7 @@ const resize = (): void => {
     window.innerWidth,
     window.innerHeight,
     window.devicePixelRatio,
-    quality?.current.maxPixelRatio,
+    (pinnedQuality ?? quality?.current)?.maxPixelRatio,
   );
   renderer.setPixelRatio(v.pixelRatio);
   renderer.setSize(v.width, v.height);
@@ -249,7 +261,7 @@ if (MAP.banks?.length)
     })
     .catch((error: unknown) => console.warn('bank furniture unavailable', error));
 const predicted = new PredictedPlayer(player);
-const input = new InputSampler();
+const input = new InputSampler(window, undefined, bindings);
 input.setLook(spawn.yaw);
 // ?at=x,z[,y[,yaw]] starts the player there, to look at a place (offline: a server puts you back).
 const atParam = params.get('at')?.split(',').map(Number);
@@ -259,8 +271,7 @@ if (atParam && atParam.length >= 2 && atParam.every(Number.isFinite)) {
   if (yaw !== undefined) input.setLook(yaw);
 }
 const hint = document.createElement('div');
-hint.textContent =
-  'Click to play — WASD move · Shift sprint · Ctrl crouch · Space jump · K or click fire · F use · Tab tasks · hold B scoreboard · right mouse aim · 1–5 guns · M map · P profile · V review · N mute · Esc release mouse';
+hint.textContent = controlsHint(settings.current, i18n.t);
 hint.style.cssText =
   'position:fixed;left:50%;bottom:96px;transform:translateX(-50%);font:14px system-ui;color:#fff;background:#000a;padding:8px 14px;border-radius:6px;pointer-events:none';
 document.body.appendChild(hint);
@@ -384,8 +395,15 @@ prepareSounds((work) =>
 );
 for (const gesture of ['pointerdown', 'keydown'] as const)
   window.addEventListener(gesture, () => sound.start());
+const hud0 = new CaptionView(document.body, undefined, undefined, undefined, i18n.t);
+const heard = new CaptionedAudio(
+  sound,
+  (caption) => hud0.show(caption),
+  () => settings.current.access.subtitles,
+);
+setInterval(() => hud0.tick(), 500);
 const audio = new GameAudio({
-  out: sound,
+  out: heard,
   settings: DEFAULT_AUDIO_SETTINGS,
   vehicles: liveWorld.vehicles,
   map: MAP,
@@ -417,7 +435,7 @@ const feedback = new CombatFeedback({
 // Connect only once everything that reacts to the server exists: the first messages (welcome, vault and
 // loot state) arrive right after joining and would be dropped if nobody were listening yet.
 // Signed in? The account service gives a one-use ticket; the server then takes the name from the account.
-const ticket = await new HttpAccountApi(server.account()).ticket(classId);
+const ticket = await account.ticket(classId);
 let transport: GameTransport = new WebSocketGameTransport(gameUrl);
 if (lag > 0) transport = new DelayedTransport(transport, lag);
 const client = new GameClient(transport, {
@@ -586,36 +604,61 @@ const interactions = new Interactions({
   },
 });
 // F uses what is in reach; the number keys hold a gun you own (the server confirms in the next snapshot).
-new Hotkeys()
-  .bind(['Tab'], () => {
+const settingsPanel = new SettingsPanel(settings, i18n);
+const hotkeys = new Hotkeys(window, bindings)
+  .onAction('tasks', () => {
     pointer.release();
     sqlTasks.pick();
   })
-  .hold('KeyB', (down) => scoreboard.setBoardVisible(down))
-  .bind(['KeyM'], () => fullMap.toggle())
-  .bind(['KeyV'], () => {
+  .holdAction('scoreboard', (down) => scoreboard.setBoardVisible(down))
+  .onAction('map', () => fullMap.toggle())
+  .onAction('review', () => {
     reviewPanel.hidden = !reviewPanel.hidden;
   })
-  .bind(['KeyP'], () => {
+  .onAction('profile', () => {
     profilePanel.hidden = !profilePanel.hidden;
     if (latestProfile) profileAll.update(latestProfile);
+  })
+  .onAction('settings', () => {
+    pointer.release();
+    settingsPanel.toggle();
   })
   .bind(['Escape'], () => {
     fullMap.setOpen(false);
     profilePanel.hidden = true;
     reviewPanel.hidden = true;
   })
-  .bind(['KeyN'], () => hud.toast(sound.toggleMute() ? 'Sound off (N)' : 'Sound on (N)'))
-  .bind(['KeyF'], () => {
+  .onAction('mute', () => hud.toast(sound.toggleMute() ? 'Sound off' : 'Sound on'))
+  .onAction('use', () => {
     if (!feedback.isAlive) return;
-    // A lift, vault or safehouse in reach comes first; otherwise F is for cars.
+    // A lift, vault or safehouse in reach comes first; otherwise the key is for cars.
     if (vehicleControls.available && !interactions.hasTarget) void vehicleControls.use();
     else void interactions.use();
-  })
-  .bind(['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'], (code) => {
-    const weapon = WEAPON_IDS[Number(code.slice(-1)) - 1];
-    if (weapon && ownedWeapons.includes(weapon)) client.sendJson({ t: 'equip', weapon });
   });
+// The number keys hold a gun you own (the server confirms in the next snapshot).
+WEAPON_IDS.forEach((weapon, i) =>
+  hotkeys.onAction(`weapon${i + 1}` as 'weapon1', () => {
+    if (ownedWeapons.includes(weapon)) client.sendJson({ t: 'equip', weapon });
+  }),
+);
+// Settings that need pushing into the running game (the rest read the store when they need it).
+const applySettings = (): void => {
+  const s = settings.current;
+  input.setLookPreferences(s.look.sensitivity, s.look.invertY);
+  aimView.setBaseFov(s.look.fov);
+  sound.setChannelVolume('master', s.audio.master);
+  sound.setChannelVolume('effects', s.audio.effects);
+  sound.setChannelVolume('ambience', s.audio.ambience);
+  hint.textContent = controlsHint(s, i18n.t);
+  if (!fxParam) {
+    pinnedQuality = s.graphics.quality === 'auto' ? undefined : QUALITY_PRESETS[s.graphics.quality];
+    postFx.setLevel((pinnedQuality ?? quality?.current)?.fx ?? 'high');
+    resize();
+  }
+};
+settings.subscribe(applySettings);
+i18n.onChange(applySettings);
+applySettings();
 const batcher = new InputBatcher((commands) => client.sendInput(commands));
 
 /** Starts, keeps or stops predicting the car the server says you drive. */
@@ -714,7 +757,7 @@ renderer.setAnimationLoop((now) => {
   last = now;
   stats.push(frameMs);
   renderer.info.reset();
-  if (quality && fxBudget?.push(frameMs) && quality.stepDown()) {
+  if (quality && !pinnedQuality && fxBudget?.push(frameMs) && quality.stepDown()) {
     postFx.setLevel(quality.current.fx);
     resize();
     console.info(
