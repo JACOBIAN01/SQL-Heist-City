@@ -1,0 +1,119 @@
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  font-family: system-ui, sans-serif;
+}
+.settings-overlay[hidden] {
+  display: none;
+}
+.settings-card {
+  width: min(44rem, 94vw);
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  background: #14181f;
+  color: #e8eaed;
+  border: 1px solid #3a4150;
+  border-radius: 0.5rem;
+}
+.settings-head,
+.settings-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1rem;
+}
+.settings-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0 1rem;
+  border-bottom: 1px solid #3a4150;
+}
+.settings-tabs button {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: inherit;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.settings-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--c-accent, #4da3ff);
+}
+.settings-body {
+  overflow-y: auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.settings-body h3 {
+  margin: 0.75rem 0 0;
+  font-size: 1rem;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.settings-row > span:first-child {
+  min-width: 12rem;
+}
+.settings-action {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.settings-name {
+  min-width: 12rem;
+}
+.settings-keys {
+  display: flex;
+  gap: 0.35rem;
+}
+.settings-key {
+  display: inline-flex;
+}
+.settings-key button,
+.settings-close,
+.settings-overlay .menu-quiet {
+  background: #232a36;
+  color: inherit;
+  border: 1px solid #3a4150;
+  border-radius: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.settings-clash button {
+  border-color: var(--c-warn, #ffb02e);
+}
+.settings-press {
+  color: var(--c-accent, #4da3ff);
+}
+.settings-overlay button:focus-visible,
+.settings-overlay input:focus-visible,
+.settings-overlay select:focus-visible {
+  outline: 3px solid var(--c-accent, #4da3ff);
+  outline-offset: 2px;
+}
+.settings-overlay .menu-error {
+  color: var(--c-bad, #ff6b6b);
+  margin: 0;
+}
+.settings-overlay .menu-muted {
+  color: #9aa3b2;
+  margin: 0;
+}
