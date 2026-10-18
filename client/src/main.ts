@@ -25,6 +25,7 @@ import { SettingsPanel } from './ui/settings/SettingsPanel';
 import { startSettings } from './settings/bootstrap';
 import { controlsHint } from './settings/controlsHint';
 import { bindingsFrom } from './input/Bindings';
+import { GamepadAdapter } from './input/GamepadAdapter';
 import { prepareSounds } from './audio/synth';
 import { CharacterModel, PALETTES } from './entities/CharacterModel';
 import { RemotePlayers } from './entities/RemotePlayers';
@@ -641,6 +642,25 @@ WEAPON_IDS.forEach((weapon, i) =>
     if (ownedWeapons.includes(weapon)) client.sendJson({ t: 'equip', weapon });
   }),
 );
+// A connected controller plays through the same actions (Phase 22.4).
+const gamepad = new GamepadAdapter(
+  () => (navigator.getGamepads ? [...navigator.getGamepads()] : []),
+  input,
+  { trigger: (a) => hotkeys.trigger(a), setHeld: (a, down) => hotkeys.setHeld(a, down) },
+  () => settings.current.gamepad,
+  (step) => {
+    // The next gun you own, wrapping round.
+    for (let i = 1; i <= WEAPON_IDS.length; i++) {
+      const slot =
+        (((heldWeapon - 1 + step * i) % WEAPON_IDS.length) + WEAPON_IDS.length) % WEAPON_IDS.length;
+      const weapon = WEAPON_IDS[slot];
+      if (weapon && ownedWeapons.includes(weapon)) {
+        client.sendJson({ t: 'equip', weapon });
+        return;
+      }
+    }
+  },
+);
 // Settings that need pushing into the running game (the rest read the store when they need it).
 const applySettings = (): void => {
   const s = settings.current;
@@ -764,6 +784,7 @@ renderer.setAnimationLoop((now) => {
       `frames over budget: quality down to ${quality.current.fx} at ${quality.pixelRatio}× pixels`,
     );
   }
+  gamepad.update(frameMs / 1000);
   input.setViewLag(client.rttMs / 2 + INTERP_DELAY_MS);
   loop.advance(frameMs / 1000);
   batcher.flush(now);
