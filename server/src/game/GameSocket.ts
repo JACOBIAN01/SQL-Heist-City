@@ -104,7 +104,9 @@ export function serveGameConnection(
     let playerId: number | undefined;
     const joinTimer = setTimeout(
       () => socket.close(CLOSE_BAD_MESSAGE, 'Join expected'),
-      options.joinTimeoutMs ?? 5000,
+      // Generous: a slow school laptop can be busy building the city for many seconds between the
+      // socket opening and its join being sent (seen in the browser tests with software rendering).
+      options.joinTimeoutMs ?? 20_000,
     );
 
     socket.on('message', (data: RawData, isBinary: boolean) => {

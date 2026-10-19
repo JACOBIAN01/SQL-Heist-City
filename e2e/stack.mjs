@@ -5,6 +5,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,9 +15,29 @@ rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true });
 
 export const E2E_ADMIN = { email: 'e2e-admin@school.test', password: 'e2e-only-not-a-real-secret' };
+// Class rooms need PostgreSQL (the system of record). CI points TEST_DATABASE_URL at its service
+// container; locally the repo's private cluster is started. The database is made new every run.
+const { devUrl, start } = await import('../scripts/pg-dev.mjs');
+let base = process.env.TEST_DATABASE_URL;
+if (!base) {
+  start();
+  base = devUrl('postgres');
+}
+const dbUrl = new URL(base);
+dbUrl.pathname = '/heist_e2e';
+const adminUrl = new URL(base);
+adminUrl.pathname = '/postgres';
+const { Client } = createRequire(join(root, 'server', 'package.json'))('pg');
+const admin = new Client({ connectionString: adminUrl.toString() });
+await admin.connect();
+await admin.query('DROP DATABASE IF EXISTS heist_e2e WITH (FORCE)');
+await admin.query('CREATE DATABASE heist_e2e');
+await admin.end();
+
 const env = {
   ...process.env,
   DB_PATH: join(dir, 'e2e.db'),
+  DATABASE_URL: dbUrl.toString(),
   SNAPSHOT_PATH: join(dir, 'snapshot.json'),
   ADMIN_EMAIL: E2E_ADMIN.email,
   ADMIN_PASSWORD: E2E_ADMIN.password,
