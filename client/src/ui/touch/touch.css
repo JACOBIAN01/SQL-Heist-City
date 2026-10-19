@@ -1,7 +1,7 @@
 .touch {
   position: fixed;
   inset: 0;
-  z-index: 40;
+  z-index: 900;
   pointer-events: none;
   touch-action: none;
   user-select: none;
