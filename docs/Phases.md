@@ -41,8 +41,8 @@
 | 21 | Privacy and compliance | 🟨 built; legal review and the rating wait for the owner |
 | 22 | Settings, accessibility and devices | 🟨 built; the real-device pass (22.6) and a native review of the Hindi draft (22.7) wait for the owner |
 | 23 | Game test plan | 🟨 23.1–23.4 built; 23.5–23.7 need people (playtests, students, bug bash) |
-| 24 | Classroom pilot | ⬜ |
-| 25 | Launch checklist and release | ⬜ |
+| 24 | Classroom pilot | 🟨 plan ready; the pilot needs schools (#13) |
+| 25 | Launch checklist and release | 🟨 checklist ready; the walk and the deploy wait for the owner |
 | 26 | Progression and the meta-loop | ⬜ |
 | 27 | Squads and roles | ⬜ |
 | 28 | Game modes | ⬜ |
@@ -461,27 +461,27 @@ Audit section "Pre-launch checklist" and the user's item 5.
 | 23.7 | Bug bash and triage until no critical or high bugs remain open | zero open critical or high | 🟨 themed checklist and exit rule ready (`docs/review/playtests.md`); the browser tests already closed three real bugs. **Needs the session after 23.5–23.6** |
 
 ---
-## Phase 24 — Classroom pilot  ⬜
+## Phase 24 — Classroom pilot  🟨
 Proof that it is fun and that it teaches before launch.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 24.1 | Pilot plan: 2–3 schools, classes of 60+, pre/post test, survey, consent | plan approved | ⬜ |
-| 24.2 | Run the pilot (several sessions per class) | sessions held; data collected | ⬜ |
-| 24.3 | Pilot report: learning gain, fun, retention, bugs, teacher feedback | report in `docs/review/pilot.md` | ⬜ |
-| 24.4 | Fix what the pilot found (critical and major) | each fix shipped and re-checked | ⬜ |
+| 24.1 | Pilot plan: 2–3 schools, classes of 60+, pre/post test, survey, consent | plan approved | 🟨 plan written (`docs/review/pilot-plan.md`): questions, sessions, data, survey, interview, success criteria, safeguards. **For the owner to approve; schools needed (#13)** |
+| 24.2 | Run the pilot (several sessions per class) | sessions held; data collected | ⛔ needs schools, teachers, consent (#13) |
+| 24.3 | Pilot report: learning gain, fun, retention, bugs, teacher feedback | report in `docs/review/pilot.md` | ⛔ after 24.2 |
+| 24.4 | Fix what the pilot found (critical and major) | each fix shipped and re-checked | ⛔ after 24.3 |
 
 ---
-## Phase 25 — Launch checklist and release  ⬜
+## Phase 25 — Launch checklist and release  🟨
 The release gate. Every line is verified, not assumed.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 25.1 | Release checklist document (identity, classroom, analytics, teaching loop, security, scale, ops, privacy, accessibility, tests, pilot) | the checklist is approved | ⬜ |
-| 25.2 | Walk the checklist; every item evidenced (test, report or screenshot) | all items ticked with evidence | ⬜ |
-| 25.3 | Production deploy | live | ⬜ |
-| 25.4 | Launch monitoring for the first two weeks (dashboards, on-call, daily triage) | two clean weeks or issues fixed | ⬜ |
-| 25.5 | First 30 days: tune tiers, times and rewards from real attempt data | a tuning report and settings changes | ⬜ |
+| 25.1 | Release checklist document (identity, classroom, analytics, teaching loop, security, scale, ops, privacy, accessibility, tests, pilot) | the checklist is approved | 🟨 `docs/release-checklist.md`, each row with the evidence that exists and what is still owed. **For the owner to approve** |
+| 25.2 | Walk the checklist; every item evidenced (test, report or screenshot) | all items ticked with evidence | ⛔ the ⛔ rows in the checklist are owner-side (#1, #8–#15) |
+| 25.3 | Production deploy | live | ⛔ outward-facing; waits for the owner's cloud and domain (#10) and an explicit go |
+| 25.4 | Launch monitoring for the first two weeks (dashboards, on-call, daily triage) | two clean weeks or issues fixed | ⛔ after 25.3 (dashboards and alerts are ready) |
+| 25.5 | First 30 days: tune tiers, times and rewards from real attempt data | a tuning report and settings changes | ⛔ after launch |
 
 ---
 ## Phase 26 — Progression and the meta-loop  ⬜
