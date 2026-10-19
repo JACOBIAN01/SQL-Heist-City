@@ -15,6 +15,7 @@ import {
   questionTemplateSchema,
   type ProfileMessage,
   type ProgressMessage,
+  type SkillsMessage,
 } from '@heist/shared';
 import { sampleQuestion } from '@heist/shared/fixtures';
 import { issueTicket } from '../auth/ticket';
@@ -159,6 +160,18 @@ describe.skipIf(!TEST_DATABASE_URL)('live profile, end to end (15.2, 15.6, 15.8)
     expect(xp.progress.rank).toBe('Rookie');
     const stored = await new PgProgressStore(pg).get(ana.id);
     expect(stored.learningXp).toBe(xp.progress.learningXp);
+
+    // The skill tree arrived on joining (all roots open) and moved with the answer.
+    await until(() =>
+      json.some(
+        (m) =>
+          m.t === 'skills' &&
+          (m as unknown as SkillsMessage).skills.find((n) => n.id === 'select')?.items === 1,
+      ),
+    );
+    const first = json.find((m) => m.t === 'skills') as unknown as SkillsMessage;
+    expect(first.skills.find((n) => n.id === 'select')).toMatchObject({ state: 'open', items: 0 });
+    expect(first.skills.find((n) => n.id === 'filter')?.state).toBe('locked');
 
     // The record reaches PostgreSQL (saved in batches, so wait for it).
     const items = async () => pg.query('SELECT * FROM attempt_items');

@@ -4,6 +4,7 @@ import type { AtmosphereSettings } from '../config/atmosphere';
 import type { WeaponSpec } from '../config/combat';
 import type { AxisScore } from '../analytics/profile';
 import type { ProgressView } from '../progress/xp';
+import type { SkillView } from '../progress/skills';
 import type { VehicleSettings } from '../config/vehicles';
 import { challengeClientMessageSchema, type ChallengeServerMessage } from './challengeMessages';
 
@@ -310,6 +311,12 @@ export interface ProgressMessage {
   readonly gained?: { readonly amount: number; readonly why: 'solve' | 'round' };
 }
 
+/** The skill tree as this student stands in it (Phase 26.2); sent on joining and after each counted question. */
+export interface SkillsMessage {
+  readonly t: 'skills';
+  readonly skills: readonly SkillView[];
+}
+
 /** One question a student met this round, with what they wrote and the model answer. */
 export interface ReviewItem {
   readonly title: string;
@@ -355,6 +362,7 @@ export type HeistServerMessage =
   | ReviewMessage
   | ProfileMessage
   | ProgressMessage
+  | SkillsMessage
   | WorldMessage
   | InteractReply
   | VehicleReply

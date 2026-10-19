@@ -17,6 +17,7 @@ const SHOWN: readonly Action[] = [
   'aim',
   'map',
   'profile',
+  'skills',
   'review',
   'mute',
   'settings',

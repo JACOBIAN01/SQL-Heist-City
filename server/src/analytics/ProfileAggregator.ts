@@ -12,6 +12,7 @@ import {
   type SkillAdjust,
   skillAdjust,
   type ProfileTotals,
+  type TopicMarks,
 } from '@heist/shared';
 import type { AttemptEvent, AttemptSink, AttemptWho } from './AttemptSink';
 import type { ProfileScope, ProfileStore } from './AttemptStore';
@@ -63,6 +64,19 @@ export class ProfileAggregator implements AttemptSink {
   ) {}
 
   event(_event: AttemptEvent): void {}
+
+  private topicListener: (accountId: number, topics: ReadonlyMap<string, TopicMarks>) => void =
+    () => {};
+
+  /** Called with a student's topic marks after each counted question (the skill tree follows them). */
+  onTopics(listener: (accountId: number, topics: ReadonlyMap<string, TopicMarks>) => void): void {
+    this.topicListener = listener;
+  }
+
+  /** A student's topic marks once their profile has loaded. */
+  topicsOf(accountId: number): ReadonlyMap<string, TopicMarks> | undefined {
+    return this.loaded.get(accountId)?.topics;
+  }
 
   /** The student's weakest topics (with enough evidence), lowest first: where questions are drawn from now and then. */
   focusOf(accountId: number): readonly string[] | undefined {
@@ -132,6 +146,7 @@ export class ProfileAggregator implements AttemptSink {
       t.items += 1;
       live.topics.set(topic, t);
     }
+    this.topicListener(accountId, live.topics);
     if (who.classId !== undefined) live.class = mergeTotals(live.class ?? emptyTotals(), delta);
     if (who.round !== undefined) live.round = mergeTotals(live.round ?? emptyTotals(), delta);
     const scopes: ProfileScope[] = [{ kind: 'all' }];

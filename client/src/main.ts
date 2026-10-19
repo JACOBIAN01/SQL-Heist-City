@@ -22,6 +22,7 @@ import { GestureAudio } from './audio/GestureAudio';
 import { CaptionedAudio } from './audio/CaptionedAudio';
 import { CaptionView } from './ui/hud/CaptionView';
 import { RankView } from './ui/hud/RankView';
+import { SkillTreeView } from './ui/profile/SkillTreeView';
 import { SettingsPanel } from './ui/settings/SettingsPanel';
 import { startSettings } from './settings/bootstrap';
 import { controlsHint } from './settings/controlsHint';
@@ -348,6 +349,8 @@ if (MAP.parkedCars?.length)
 const serverClock = new SnapshotClock();
 const hud = new Hud(document.body);
 const rankView = new RankView(document.body);
+const skillTree = new SkillTreeView(i18n);
+document.body.appendChild(skillTree.root);
 const bankingProgress = new BankingProgress(hud);
 // The minimap: every bank's vault progress (flashing while its alarm rings), safehouses, loose cash.
 const minimap = new MinimapView(hud.root, MAP);
@@ -516,6 +519,8 @@ client.subscribe({
     else if (message.t === 'review') {
       review.update(message);
       hud.toast('Round review ready — press V');
+    } else if (message.t === 'skills') {
+      skillTree.update(message.skills);
     } else if (message.t === 'progress') {
       rankView.update(message);
     } else if (message.t === 'profile') {
@@ -625,6 +630,10 @@ const hotkeys = new Hotkeys(window, bindings)
     profilePanel.hidden = !profilePanel.hidden;
     if (latestProfile) profileAll.update(latestProfile);
   })
+  .onAction('skills', () => {
+    pointer.release();
+    skillTree.hidden = !skillTree.hidden;
+  })
   .onAction('settings', () => {
     pointer.release();
     settingsPanel.toggle();
@@ -633,6 +642,7 @@ const hotkeys = new Hotkeys(window, bindings)
     fullMap.setOpen(false);
     profilePanel.hidden = true;
     reviewPanel.hidden = true;
+    skillTree.hidden = true;
   })
   .onAction('mute', () => hud.toast(sound.toggleMute() ? 'Sound off' : 'Sound on'))
   .onAction('use', () => {

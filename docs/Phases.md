@@ -43,7 +43,7 @@
 | 23 | Game test plan | 🟨 23.1–23.4 built; 23.5–23.7 need people (playtests, students, bug bash) |
 | 24 | Classroom pilot | 🟨 plan ready; the pilot needs schools (#13) |
 | 25 | Launch checklist and release | 🟨 checklist ready; the walk and the deploy wait for the owner |
-| 26 | Progression and the meta-loop | 🟦 26.1 done |
+| 26 | Progression and the meta-loop | 🟦 26.1–26.2 done |
 | 27 | Squads and roles | ⬜ |
 | 28 | Game modes | ⬜ |
 | 29 | Living city | ⬜ |
@@ -490,7 +490,7 @@ Post-launch. Audit con 14 and "Rewards" and "Progression" in the GTA audit (targ
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 26.1 | XP and ranks from play and from learning (mastery counts more than kills) | XP rules in settings; ranks shown | ✅ `progression` settings (admin: XP by tier, first-try and hint adjustments, new-topic bonus, round XP with a per-round cap, rank names and thresholds); `ProgressKeeper` turns each solved question and each finished round into XP (never for the tutorial or pre/post tests); stored in `player_progress` (additive, in the data map, exported and erased with the account); the HUD shows rank, XP bar and "+N XP". One round of fighting at the cap is worth at most three mid-tier solves. End-to-end test on PostgreSQL |
-| 26.2 | Skill tree by SQL topic, driven by mastery | tree shows locked and unlocked topics per student | ⬜ |
+| 26.2 | Skill tree by SQL topic, driven by mastery | tree shows locked and unlocked topics per student | ✅ 17 nodes over the question topics (a test checks every shipped topic is counted); a node is mastered at 70 % of marks over at least 3 counted questions, and opens when what it requires is mastered; the tree, thresholds and names are admin settings (validated: no loops, no unknown requirements). Sent to the student on joining and after each counted question; panel on **J** shows locked / open / mastered in words and marks, not colour alone |
 | 26.3 | Cosmetics (masks, outfits, car paint) unlocked by mastery and rank, no loot boxes | unlocks work and show to others | ⬜ |
 | 26.4 | In-round streak bonus for consecutive correct answers (in gameplay.md, never built) | bonus paid; settings-driven | ⬜ |
 | 26.5 | Daily contracts (three short SQL jobs a day) and day streaks | contracts refresh daily; streak tracked | ⬜ |

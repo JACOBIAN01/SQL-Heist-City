@@ -1,0 +1,67 @@
+.skills {
+  position: fixed;
+  inset: 5vh 8vw;
+  z-index: 55;
+  overflow: auto;
+  padding: 1rem 1.25rem;
+  background: rgba(14, 18, 24, 0.96);
+  color: #e8eaed;
+  border: 1px solid #3a4150;
+  border-radius: 0.5rem;
+  font-family: system-ui, sans-serif;
+}
+.skills[hidden] {
+  display: none;
+}
+.skills-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.skills-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.skills-help {
+  color: #9aa3b2;
+  margin: 0.25rem 0 0.75rem;
+}
+.skills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.9rem;
+}
+.skills-node {
+  min-width: 11rem;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #3a4150;
+  border-radius: 0.4rem;
+  background: #1a2029;
+}
+.skills-name {
+  font-weight: 600;
+}
+.skills-state {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.skills-progress,
+.skills-needs {
+  font-size: 0.8rem;
+  color: #9aa3b2;
+}
+.skills-mastered {
+  border-color: var(--c-good, #7be08f);
+}
+.skills-open {
+  border-color: var(--c-accent, #4da3ff);
+  border-style: dashed;
+}
+.skills-locked {
+  opacity: 0.7;
+  border-style: dotted;
+}

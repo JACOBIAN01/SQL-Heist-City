@@ -4,7 +4,7 @@ import type {
   ProgressMessage,
   ProgressionSettings,
 } from '@heist/shared';
-import { DEFAULT_PROGRESSION_SETTINGS } from '@heist/shared';
+import { DEFAULT_PROGRESSION_SETTINGS, skillTree } from '@heist/shared';
 import { PgProgressStore } from '../progress/ProgressStore';
 import { ProgressKeeper } from '../progress/ProgressKeeper';
 import type { PgDatabase } from '../pg/PgDatabase';
@@ -25,6 +25,7 @@ export class AnalyticsKit {
   private readonly aggregator: ProfileAggregator;
   private deliver: (accountId: number, message: ProfileMessage) => void = () => {};
   private readonly progress: ProgressKeeper;
+  private readonly progression: () => ProgressionSettings;
   private deliverProgress: (accountId: number, message: ProgressMessage) => void = () => {};
 
   constructor(
@@ -48,6 +49,7 @@ export class AnalyticsKit {
     const briefs = new BriefSink(new PgBriefStore(db), (err) =>
       this.log('could not save a brief', err),
     );
+    this.progression = progression;
     this.progress = new ProgressKeeper(
       new PgProgressStore(db),
       progression,
@@ -66,6 +68,9 @@ export class AnalyticsKit {
   /** Send profiles to this match's students, and give each one theirs on joining. */
   bind(match: Match): void {
     this.deliver = (accountId, message) => match.sendProfile(accountId, message);
+    this.aggregator.onTopics((accountId, topics) =>
+      match.sendSkills(accountId, { t: 'skills', skills: skillTree(topics, this.progression()) }),
+    );
     this.deliverProgress = (accountId, message) => match.sendProgress(accountId, message);
     match.heist.events.subscribe((event) => {
       if (event.type === 'round_end') this.progress.roundEnded(event.result);
@@ -79,7 +84,13 @@ export class AnalyticsKit {
       const accountId = player.accountId;
       this.aggregator
         .profileOf(accountId, match.classInfo?.classId, match.roundNumber)
-        .then((message) => match.sendProfile(accountId, message))
+        .then((message) => {
+          match.sendProfile(accountId, message);
+          match.sendSkills(accountId, {
+            t: 'skills',
+            skills: skillTree(this.aggregator.topicsOf(accountId) ?? new Map(), this.progression()),
+          });
+        })
         .catch((err) => this.log('could not load a profile', err));
       this.progress
         .messageOf(accountId)

@@ -73,3 +73,4 @@ export * from './questions/concepts';
 export * from './analytics/skill';
 export * from './config/progression';
 export * from './progress/xp';
+export * from './progress/skills';
