@@ -65,3 +65,26 @@
   opacity: 0.7;
   border-style: dotted;
 }
+.wardrobe-slot h3 {
+  margin: 0.5rem 0 0.3rem;
+  font-size: 1rem;
+}
+.wardrobe-swatch {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  border: 1px solid #fff;
+  vertical-align: -0.1em;
+}
+.skills-node button {
+  margin-top: 0.3rem;
+  background: #232a36;
+  color: inherit;
+  border: 1px solid #3a4150;
+  border-radius: 0.25rem;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+}
+.skills-node button[aria-pressed='true'] {
+  border-color: var(--c-good, #7be08f);
+}

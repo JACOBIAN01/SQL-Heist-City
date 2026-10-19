@@ -65,6 +65,9 @@ export class CarModel {
   private readonly radius: number;
   private readonly jointed: Object3D;
   private readonly still: Mesh;
+  private readonly body: Mesh[] = [];
+  private readonly base: MeshStandardMaterial;
+  private painted: MeshStandardMaterial | undefined;
 
   constructor(template: Object3D, material: MeshStandardMaterial, wheelRadius = 0.27) {
     const car = template.clone();
@@ -72,6 +75,7 @@ export class CarModel {
     car.traverse((n) => {
       const mesh = n as Mesh;
       if (mesh.isMesh) {
+        this.body.push(mesh);
         mesh.material = material;
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -91,9 +95,18 @@ export class CarModel {
     this.still.castShadow = true;
     this.still.receiveShadow = true;
     this.still.name = `${template.name}_still`;
+    this.body.push(this.still);
+    this.base = material;
     car.visible = false;
     this.object.add(car, this.still);
     this.object.name = `car-${template.name}`;
+  }
+
+  /** Paints the car (the colour is a tint over the baked colours); undefined gives back the factory colours. */
+  setPaint(material: MeshStandardMaterial | undefined): void {
+    if (this.painted === material) return;
+    this.painted = material;
+    for (const mesh of this.body) mesh.material = material ?? this.base;
   }
 
   /** Places the car and its wheels; `distance` is how far it moved since the last pose (m, signed). */

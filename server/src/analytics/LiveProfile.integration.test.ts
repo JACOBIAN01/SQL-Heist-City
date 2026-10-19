@@ -16,6 +16,8 @@ import {
   type ProfileMessage,
   type ProgressMessage,
   type SkillsMessage,
+  type WardrobeMessage,
+  type LooksMessage,
 } from '@heist/shared';
 import { sampleQuestion } from '@heist/shared/fixtures';
 import { issueTicket } from '../auth/ticket';
@@ -172,6 +174,25 @@ describe.skipIf(!TEST_DATABASE_URL)('live profile, end to end (15.2, 15.6, 15.8)
     const first = json.find((m) => m.t === 'skills') as unknown as SkillsMessage;
     expect(first.skills.find((n) => n.id === 'select')).toMatchObject({ state: 'open', items: 0 });
     expect(first.skills.find((n) => n.id === 'filter')?.state).toBe('locked');
+
+    // What the student wears: free and earned items can be worn, locked ones cannot, and the whole
+    // match is told how everyone looks.
+    await until(() => json.some((m) => m.t === 'wardrobe'));
+    const wardrobes = () => json.filter((m) => m.t === 'wardrobe') as unknown as WardrobeMessage[];
+    expect(wardrobes().at(-1)?.choice).toEqual({});
+    send({ t: 'set_look', slot: 'outfit', id: 'outfit-gold' }); // Safecracker: not yet earned
+    send({ t: 'set_look', slot: 'outfit', id: 'outfit-street' }); // free
+    await until(() => wardrobes().at(-1)?.choice.outfit === 'outfit-street');
+    expect(
+      wardrobes()
+        .at(-1)
+        ?.items.find((i) => i.id === 'outfit-gold')?.unlocked,
+    ).toBe(false);
+    const looks = json.filter((m) => m.t === 'looks').at(-1) as unknown as LooksMessage;
+    expect(Object.values(looks.looks)).toContainEqual({ outfit: 0x7f8c8d });
+    expect((await pg.query('SELECT choice FROM player_loadout'))[0]?.choice).toEqual({
+      outfit: 'outfit-street',
+    });
 
     // The record reaches PostgreSQL (saved in batches, so wait for it).
     const items = async () => pg.query('SELECT * FROM attempt_items');

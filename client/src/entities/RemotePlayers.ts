@@ -1,5 +1,5 @@
 import type { Scene } from 'three';
-import type { EntityState, GameEvent } from '@heist/shared';
+import type { EntityState, GameEvent, LookView } from '@heist/shared';
 import { Flag, WEAPON_IDS, weaponOfFlags } from '@heist/shared';
 import { SnapshotInterpolator } from '../net/SnapshotInterpolator';
 import { createGun } from './GunModel';
@@ -39,6 +39,8 @@ const HOLD_BEFORE_MS = 50;
 export class RemotePlayers {
   private readonly remotes = new Map<number, Remote>();
   private readonly names = new Map<number, string>();
+  /** How the server says each player looks (cosmetics), kept for players drawn later. */
+  private looks: ReadonlyMap<number, LookView> = new Map();
 
   constructor(
     private readonly scene: Scene,
@@ -68,6 +70,17 @@ export class RemotePlayers {
   /** The gun another player holds (wire number, 0 = none), as last drawn. */
   weaponOf(id: number): number {
     return this.remotes.get(id)?.weapon ?? 0;
+  }
+
+  /** The table of looks the server sent: everyone drawn now, and anyone drawn later, wears theirs. */
+  setLooks(table: Readonly<Record<string, LookView>>): void {
+    this.looks = new Map(Object.entries(table).map(([id, look]) => [Number(id), look]));
+    for (const [id, remote] of this.remotes) remote.model.setLook?.(this.looks.get(id) ?? {});
+  }
+
+  /** What a player wears, for things that follow them (their car's paint). */
+  lookOf(id: number): LookView | undefined {
+    return this.looks.get(id);
   }
 
   nameOf(id: number): string {
@@ -172,6 +185,8 @@ export class RemotePlayers {
       hp: 0,
       far: false,
     };
+    const look = this.looks.get(id);
+    if (look) model.setLook?.(look);
     this.scene.add(remote.model.object);
     this.remotes.set(id, remote);
     return remote;

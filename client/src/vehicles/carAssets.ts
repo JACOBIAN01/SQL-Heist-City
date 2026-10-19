@@ -19,6 +19,8 @@ export interface CarAssets {
   readonly material: MeshStandardMaterial;
   /** 0 by day … 1 at night: lamps glow (set from the sky). */
   readonly nightGlow: { value: number };
+  /** The material for a car painted this colour (one per colour, shared by every car with it). */
+  painted(color: number): MeshStandardMaterial;
   create(id: string): CarModel;
 }
 
@@ -27,7 +29,17 @@ export function carAssetsFrom(scene: Object3D): CarAssets {
   const templates = new Map(scene.children.map((c) => [c.name, c] as const));
   const nightGlow = { value: 0 };
   const material = createCarMaterial(nightGlow);
+  const paints = new Map<number, MeshStandardMaterial>();
   return {
+    painted(color) {
+      let paint = paints.get(color);
+      if (!paint) {
+        paint = createCarMaterial(nightGlow);
+        paint.color.setHex(color);
+        paints.set(color, paint);
+      }
+      return paint;
+    },
     templates,
     material,
     nightGlow,

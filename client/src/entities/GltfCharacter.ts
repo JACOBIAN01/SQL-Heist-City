@@ -2,6 +2,7 @@ import type { AnimationAction } from 'three';
 import {
   AnimationMixer,
   Vector3,
+  Quaternion,
   Color,
   Group,
   MeshStandardMaterial,
@@ -22,6 +23,8 @@ import {
 import { splitClip } from './aimLayers';
 import { CarriedBag } from './CarriedBag';
 import { GunHandling } from './GunHandling';
+import type { LookView } from '@heist/shared';
+import { createMask } from './masks';
 import type { CharacterRig } from './CharacterRig';
 
 /** What makes one player look different from another. */
@@ -83,6 +86,14 @@ const FALLBACK_HIP = new Vector3(0, 0.95, 0);
  * Pattern: Strategy (CharacterRig) — Why: same interface as the placeholder
  * boxes, so the game logic is untouched by which one is used.
  */
+/** The head bone of the character files, and where the head's centre and facing are in its space. */
+const HEAD_BONE = 'Head';
+// In that space +y is up and +z is forward (masks are built facing −z, so they turn half a circle),
+// and the human head is smaller than the placeholder's 0.26 m box.
+const HEAD_CENTRE = new Vector3(0, 0.1, 0.015);
+const HEAD_FACING = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI);
+const HEAD_SCALE = 0.68;
+
 export class GltfCharacter implements CharacterRig {
   readonly object = new Group();
   animation: AnimationName = 'idle';
@@ -124,6 +135,9 @@ export class GltfCharacter implements CharacterRig {
     });
   }
 
+  private clothing: ReturnType<typeof applyClothing> | undefined;
+  private ownShirt = 0;
+  private mask: Object3D | undefined;
   private held: Object3D | undefined;
   private readonly nearMeshes: Object3D[] = [];
   private readonly farMeshes: Object3D[] = [];
@@ -308,11 +322,26 @@ export class GltfCharacter implements CharacterRig {
     if (!copy) {
       const body = material.clone();
       if (look.skin) body.map = look.skin;
-      applyClothing(body, look);
+      this.clothing = applyClothing(body, look);
+      this.ownShirt = look.shirt;
       own.set(material, body);
       copy = body;
     }
     return copy;
+  }
+
+  /** Wears a cosmetic look: the shirt colour is a shader uniform, the mask hangs on the head bone. */
+  setLook(look: LookView): void {
+    this.clothing?.uShirt.value.setHex(look.outfit ?? this.ownShirt);
+    this.mask?.removeFromParent();
+    this.mask = look.mask ? createMask(look.mask.shape, look.mask.color) : undefined;
+    const head = this.bones.get(HEAD_BONE);
+    if (this.mask && head) {
+      this.mask.position.copy(HEAD_CENTRE);
+      this.mask.quaternion.copy(HEAD_FACING);
+      this.mask.scale.setScalar(HEAD_SCALE);
+      head.add(this.mask);
+    }
   }
 
   dispose(): void {
@@ -321,7 +350,7 @@ export class GltfCharacter implements CharacterRig {
 }
 
 /** Shader hook: recolour vertices by region code. Exported for tests. */
-export function applyClothing(material: MeshStandardMaterial, look: Look): void {
+export function applyClothing(material: MeshStandardMaterial, look: Look) {
   const uniforms = {
     uShirt: { value: new Color(look.shirt) },
     uTrousers: { value: new Color(look.trousers) },
@@ -351,4 +380,5 @@ export function applyClothing(material: MeshStandardMaterial, look: Look): void 
         }`,
       );
   };
+  return uniforms;
 }

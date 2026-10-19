@@ -58,6 +58,25 @@ test('a student joins with the code, waits, and is let in when the teacher start
     page.getByRole('button', { name: /Vault lock/ }).or(page.getByText('Vault lock')),
   ).toBeVisible();
 
+  // Progress: the skill tree (J) and the wardrobe (U) are there for a signed-in student, and the
+  // free outfit can be worn while the earned ones are locked with what they need.
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('KeyJ');
+  const tree = page.locator('[data-role="skills"]');
+  await expect(tree).toBeVisible();
+  await expect(tree.locator('[data-skill="select"]')).toContainText('Open');
+  await expect(tree.locator('[data-skill="joins"]')).toContainText('Locked');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('KeyU');
+  const wardrobe = page.locator('[data-role="wardrobe"]');
+  await expect(wardrobe).toBeVisible();
+  await expect(wardrobe.locator('[data-cosmetic="outfit-gold"]')).toContainText(
+    'Reach rank Safecracker',
+  );
+  await wardrobe.locator('[data-cosmetic="outfit-street"] button').click();
+  await expect(wardrobe.locator('[data-cosmetic="outfit-street"] button')).toHaveText('Worn');
+  await page.keyboard.press('Escape');
+
   // The teacher ends the round; the student sees the round end.
   const ended = await request.post(`${ADMIN}/classes/${klass.id}/live/end-round`, { headers });
   expect(ended.ok()).toBe(true);

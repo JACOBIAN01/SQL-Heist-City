@@ -6,6 +6,8 @@ import {
   type AnimationThresholds,
   type MotionState,
 } from './animation';
+import type { LookView } from '@heist/shared';
+import { createMask } from './masks';
 import type { CharacterRig } from './CharacterRig';
 
 export interface CharacterPalette {
@@ -64,6 +66,9 @@ export class CharacterModel implements CharacterRig {
   readonly legR = new Group();
   private phase = 0;
   private breath = 0;
+  private readonly shirt: MeshStandardMaterial;
+  private readonly ownShirt: number;
+  private mask: Object3D | undefined;
   /** Current clip, exposed for tests and HUD debugging. */
   animation: AnimationName = 'idle';
 
@@ -72,6 +77,8 @@ export class CharacterModel implements CharacterRig {
     private readonly thresholds: AnimationThresholds,
   ) {
     const shirt = new MeshStandardMaterial({ color: palette.shirt, roughness: 0.9 });
+    this.shirt = shirt;
+    this.ownShirt = palette.shirt;
     const trousers = new MeshStandardMaterial({ color: palette.trousers, roughness: 0.9 });
     const skin = new MeshStandardMaterial({ color: palette.skin, roughness: 0.8 });
 
@@ -111,6 +118,13 @@ export class CharacterModel implements CharacterRig {
   private held: Object3D | undefined;
 
   fired(): void {}
+
+  setLook(look: LookView): void {
+    this.shirt.color.setHex(look.outfit ?? this.ownShirt);
+    this.mask?.removeFromParent();
+    this.mask = look.mask ? createMask(look.mask.shape, look.mask.color) : undefined;
+    if (this.mask) this.head.add(this.mask);
+  }
 
   raise(): void {}
 

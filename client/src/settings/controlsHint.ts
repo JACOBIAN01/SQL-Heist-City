@@ -18,6 +18,7 @@ const SHOWN: readonly Action[] = [
   'map',
   'profile',
   'skills',
+  'wardrobe',
   'review',
   'mute',
   'settings',

@@ -7,6 +7,23 @@ const make = () =>
   new CharacterModel(PALETTES[0] ?? { shirt: 0, trousers: 0, skin: 0 }, thresholdsFor(4, 7));
 const still = { speed: 0, crouching: false, onGround: true };
 
+describe('CharacterModel looks', () => {
+  it('changes the shirt colour and wears and removes a mask', () => {
+    const m = make();
+    const shirt = (m as unknown as { shirt: { color: { getHex(): number } } }).shirt;
+    const own = PALETTES[0]?.shirt;
+    m.setLook({ outfit: 0x16a085, mask: { shape: 'visor', color: 0x2980b9 } });
+    expect(shirt.color.getHex()).toBe(0x16a085);
+    expect(m.root.getObjectByName('mask-visor')).toBeDefined();
+    m.setLook({ mask: { shape: 'clown', color: 1 } });
+    expect(shirt.color.getHex()).toBe(own);
+    expect(m.root.getObjectByName('mask-visor')).toBeUndefined();
+    expect(m.root.getObjectByName('mask-clown')).toBeDefined();
+    m.setLook({});
+    expect(m.root.getObjectByName('mask-clown')).toBeUndefined();
+  });
+});
+
 describe('CharacterModel', () => {
   it('stays small: six meshes per character', () => {
     let meshes = 0;

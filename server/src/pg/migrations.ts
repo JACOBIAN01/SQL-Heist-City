@@ -342,4 +342,12 @@ export const pgMigrations: readonly string[] = [
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   `,
+  // 14 — what a student wears (Phase 26.3)
+  `
+  CREATE TABLE player_loadout (
+    player_id  BIGINT      PRIMARY KEY REFERENCES players (id) ON DELETE CASCADE,
+    choice     JSON        NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  `,
 ];

@@ -94,6 +94,60 @@ function treeProblem(tree: readonly SkillNode[]): string | undefined {
   return tree.every((n) => visit(n.id)) ? undefined : 'the tree has a loop';
 }
 
+export const COSMETIC_SLOTS = ['outfit', 'mask', 'paint'] as const;
+export type CosmeticSlot = (typeof COSMETIC_SLOTS)[number];
+export const MASK_SHAPES = ['bandana', 'visor', 'balaclava', 'clown'] as const;
+export type MaskShape = (typeof MASK_SHAPES)[number];
+
+/**
+ * A cosmetic (Phase 26.3): earned by rank or by mastering a skill, never bought or won from a
+ * box. It changes how a player looks to everyone and nothing else.
+ */
+export const cosmeticSchema = z.object({
+  id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  slot: z.enum(COSMETIC_SLOTS),
+  name: z.string().min(1).max(40),
+  /** Shirt colour (outfit), mask colour, or car colour (paint), as 0xRRGGBB. */
+  color: z.number().int().min(0).max(0xffffff),
+  /** Mask masks only: which shape. */
+  shape: z.enum(MASK_SHAPES).optional(),
+  unlock: z
+    .object({
+      /** A rank name from `ranks`; reaching it unlocks the item. */
+      rank: z.string().optional(),
+      /** A skill-tree node id; mastering it unlocks the item. */
+      skill: z.string().optional(),
+    })
+    .default({}),
+});
+export type Cosmetic = z.infer<typeof cosmeticSchema>;
+
+const item = (
+  id: string,
+  slot: CosmeticSlot,
+  name: string,
+  color: number,
+  unlock: Cosmetic['unlock'],
+  shape?: MaskShape,
+): Cosmetic => ({ id, slot, name, color, unlock, ...(shape ? { shape } : {}) });
+
+export const DEFAULT_COSMETICS: readonly Cosmetic[] = [
+  item('outfit-street', 'outfit', 'Street grey', 0x7f8c8d, {}),
+  item('outfit-crimson', 'outfit', 'Crimson jacket', 0xc0392b, { rank: 'Lookout' }),
+  item('outfit-teal', 'outfit', 'Teal hoodie', 0x16a085, { rank: 'Runner' }),
+  item('outfit-gold', 'outfit', 'Gold jacket', 0xd4a017, { rank: 'Safecracker' }),
+  item('outfit-night', 'outfit', 'Night suit', 0x1b2631, { skill: 'grouping' }),
+  item('outfit-violet', 'outfit', 'Violet coat', 0x8e44ad, { skill: 'windows' }),
+  item('mask-bandana', 'mask', 'Bandana', 0xc0392b, { rank: 'Lookout' }, 'bandana'),
+  item('mask-visor', 'mask', 'Visor', 0x2980b9, { skill: 'joins' }, 'visor'),
+  item('mask-balaclava', 'mask', 'Balaclava', 0x222222, { rank: 'Cracker' }, 'balaclava'),
+  item('mask-clown', 'mask', 'Party mask', 0xf1c40f, { skill: 'subqueries' }, 'clown'),
+  item('paint-red', 'paint', 'Racing red', 0xc0392b, { rank: 'Runner' }),
+  item('paint-blue', 'paint', 'Deep blue', 0x2c5aa0, { skill: 'aggregates' }),
+  item('paint-black', 'paint', 'Matte black', 0x2b2b2b, { rank: 'Fixer' }),
+  item('paint-gold', 'paint', 'Gold', 0xd4a017, { rank: 'Mastermind' }),
+];
+
 export const progressionSettingsSchema = z.object({
   /** XP for a solved question of tier 1…5. */
   tierXp: z.array(z.number().min(0)).length(5).default([20, 35, 55, 80, 120]),
@@ -134,6 +188,11 @@ export const progressionSettingsSchema = z.object({
         .default([...DEFAULT_SKILL_TREE]),
     })
     .default({ masteryShare: 0.7, minItems: 3, tree: [...DEFAULT_SKILL_TREE] }),
+  /** What can be unlocked by rank or by mastering a skill (26.3). */
+  cosmetics: z
+    .array(cosmeticSchema)
+    .refine((c) => new Set(c.map((x) => x.id)).size === c.length, 'two cosmetics share an id')
+    .default([...DEFAULT_COSMETICS]),
   ranks: z
     .array(rankSchema)
     .min(1)

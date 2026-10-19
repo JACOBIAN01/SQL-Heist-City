@@ -168,4 +168,18 @@ describe('RemotePlayers character LOD', () => {
     at(20);
     expect(calls).toEqual([true, false]);
   });
+
+  it('dresses players in the looks the server sent, including ones who appear later', () => {
+    const { remotes } = make();
+    remotes.onSnapshot(0, [entity(2, 0)]);
+    remotes.setLooks({
+      '2': { outfit: 0x16a085, mask: { shape: 'visor', color: 1 } },
+      '3': { outfit: 0xd4a017 },
+    });
+    expect(remotes.lookOf(2)?.outfit).toBe(0x16a085);
+    remotes.onSnapshot(50, [entity(3, 1)]); // drawn after the table arrived
+    expect(remotes.lookOf(3)?.outfit).toBe(0xd4a017);
+    remotes.setLooks({}); // everyone takes it off
+    expect(remotes.lookOf(2)).toBeUndefined();
+  });
 });

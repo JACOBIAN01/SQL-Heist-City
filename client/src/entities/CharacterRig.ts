@@ -1,4 +1,5 @@
 import type { Object3D } from 'three';
+import type { LookView } from '@heist/shared';
 import type { AnimationName, MotionState } from './animation';
 
 /**
@@ -23,6 +24,8 @@ export interface CharacterRig {
   setAimPitch(pitch: number): void;
   /** Far from the camera: draw the light version of the body, if the rig has one. */
   setFar(far: boolean): void;
+  /** Wears an earned cosmetic look (shirt colour, mask); an empty look takes everything off (Phase 26.3). */
+  setLook?(look: LookView): void;
   update(motion: MotionState, dtSeconds: number): void;
 }
 

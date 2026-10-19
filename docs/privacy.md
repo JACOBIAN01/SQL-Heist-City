@@ -61,6 +61,15 @@ What a student has earned toward their rank (Phase 26): XP from solving question
 | `play_xp` | XP from rounds (kills, cash banked, finishing) | record | with the account |
 | `updated_at` | When it last changed | technical | with the account |
 
+### `player_loadout`
+Which unlocked cosmetics a student wears (outfit, mask, car paint), so other players see them.
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `player_id` | The student | pseudonymous | with the account |
+| `choice` | One cosmetic id per slot (no free text) | record | with the account |
+| `updated_at` | When they last changed it | technical | with the account |
+
 ### `class_members`
 Which students joined which class (by its code).
 

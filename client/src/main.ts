@@ -23,6 +23,8 @@ import { CaptionedAudio } from './audio/CaptionedAudio';
 import { CaptionView } from './ui/hud/CaptionView';
 import { RankView } from './ui/hud/RankView';
 import { SkillTreeView } from './ui/profile/SkillTreeView';
+import { WardrobeView } from './ui/profile/WardrobeView';
+import type { LookView } from '@heist/shared';
 import { SettingsPanel } from './ui/settings/SettingsPanel';
 import { startSettings } from './settings/bootstrap';
 import { controlsHint } from './settings/controlsHint';
@@ -335,6 +337,12 @@ const vehicles = new RemoteVehicles(scene, liveWorld.vehicles);
 player.cars = vehicles.footprints();
 let myCar: PredictedVehicle | undefined;
 let carAssets: CarAssets | undefined;
+// A driver's car wears their paint, for everyone to see.
+vehicles.paintOf = (driver) => {
+  const paint = (driver === client.playerId ? looksTable[String(driver)] : remotes.lookOf(driver))
+    ?.paint;
+  return paint === undefined ? undefined : carAssets?.painted(paint);
+};
 /** What movement collides with right now (vault doors change it); the driven car uses it too. */
 let collisionMap = MAP;
 const driverIds = new Set<number>();
@@ -351,6 +359,12 @@ const hud = new Hud(document.body);
 const rankView = new RankView(document.body);
 const skillTree = new SkillTreeView(i18n);
 document.body.appendChild(skillTree.root);
+const wardrobeView = new WardrobeView(i18n, (slot, id) =>
+  client.sendJson({ t: 'set_look', slot, id }),
+);
+document.body.appendChild(wardrobeView.root);
+/** How everyone looks, as the server last said (cosmetics). */
+let looksTable: Readonly<Record<string, LookView>> = {};
 const bankingProgress = new BankingProgress(hud);
 // The minimap: every bank's vault progress (flashing while its alarm rings), safehouses, loose cash.
 const minimap = new MinimapView(hud.root, MAP);
@@ -519,6 +533,12 @@ client.subscribe({
     else if (message.t === 'review') {
       review.update(message);
       hud.toast('Round review ready — press V');
+    } else if (message.t === 'wardrobe') {
+      wardrobeView.update(message);
+    } else if (message.t === 'looks') {
+      looksTable = message.looks;
+      remotes.setLooks(message.looks);
+      model.setLook?.(looksTable[String(client.playerId)] ?? {});
     } else if (message.t === 'skills') {
       skillTree.update(message.skills);
     } else if (message.t === 'progress') {
@@ -634,6 +654,10 @@ const hotkeys = new Hotkeys(window, bindings)
     pointer.release();
     skillTree.hidden = !skillTree.hidden;
   })
+  .onAction('wardrobe', () => {
+    pointer.release();
+    wardrobeView.hidden = !wardrobeView.hidden;
+  })
   .onAction('settings', () => {
     pointer.release();
     settingsPanel.toggle();
@@ -643,6 +667,7 @@ const hotkeys = new Hotkeys(window, bindings)
     profilePanel.hidden = true;
     reviewPanel.hidden = true;
     skillTree.hidden = true;
+    wardrobeView.hidden = true;
   })
   .onAction('mute', () => hud.toast(sound.toggleMute() ? 'Sound off' : 'Sound on'))
   .onAction('use', () => {

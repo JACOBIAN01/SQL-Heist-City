@@ -7,6 +7,7 @@ import {
   type ChallengeServerMessage,
   type HeistSettings,
   type JsonClientMessage,
+  type SetLookMessage,
   type SkillAdjust,
   type RejectReason,
 } from '@heist/shared';
@@ -129,6 +130,8 @@ export class HeistController implements ArmsControl {
   skillOf: ((player: Player) => SkillAdjust | undefined) | undefined;
   /** The student's weakest topics, for spaced repetition. */
   focusOf: ((player: Player) => readonly string[] | undefined) | undefined;
+  /** A player asked to wear (or take off) a cosmetic; their progress decides (Phase 26.3). */
+  onLook: ((player: Player, message: SetLookMessage) => void) | undefined;
 
   /** The teacher's class closed these banks: no locks, no loose cash, and the round does not wait for them. */
   setClosedTiers(tiers: ReadonlySet<number>): void {
@@ -354,6 +357,10 @@ export class HeistController implements ArmsControl {
       this.match.sendJson(player, this.match.vehicleRequest(player, message));
       return;
     }
+    if (message.t === 'set_look') {
+      this.onLook?.(player, message);
+      return;
+    }
     if (message.t === 'equip') {
       if (player.alive && player.equip(message.weapon)) this.sendArms(player);
       return;
@@ -374,7 +381,7 @@ export class HeistController implements ArmsControl {
    * challenge system; a correct answer applies the reward.
    */
   private onChallenge(player: Player, message: JsonClientMessage, raw: unknown): void {
-    if (message.t === 'interact' || message.t === 'equip') return;
+    if (message.t === 'interact' || message.t === 'equip' || message.t === 'set_look') return;
     if (message.t === 'challenge_request' && !this.tasks.find(message.rewardKey)) {
       this.match.reportAnomaly(player, 'impossible_action', { task: message.rewardKey });
       return this.reply(player, this.refuse(message.ref, 'unknown_reward'));

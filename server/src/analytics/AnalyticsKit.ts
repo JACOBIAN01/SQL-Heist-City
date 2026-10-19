@@ -1,12 +1,8 @@
-import type {
-  AnalyticsSettings,
-  ProfileMessage,
-  ProgressMessage,
-  ProgressionSettings,
-} from '@heist/shared';
-import { DEFAULT_PROGRESSION_SETTINGS, skillTree } from '@heist/shared';
+import type { AnalyticsSettings, ProfileMessage, ProgressionSettings } from '@heist/shared';
+import { DEFAULT_PROGRESSION_SETTINGS } from '@heist/shared';
 import { PgProgressStore } from '../progress/ProgressStore';
-import { ProgressKeeper } from '../progress/ProgressKeeper';
+import { ProgressBinding } from '../progress/ProgressBinding';
+import { PgLoadoutStore } from '../progress/LoadoutStore';
 import type { PgDatabase } from '../pg/PgDatabase';
 import type { Match } from '../game/Match';
 import { FanOutSink, type AttemptSink } from './AttemptSink';
@@ -24,9 +20,7 @@ export class AnalyticsKit {
   private readonly recorder: BatchingRecorder;
   private readonly aggregator: ProfileAggregator;
   private deliver: (accountId: number, message: ProfileMessage) => void = () => {};
-  private readonly progress: ProgressKeeper;
-  private readonly progression: () => ProgressionSettings;
-  private deliverProgress: (accountId: number, message: ProgressMessage) => void = () => {};
+  private readonly progress: ProgressBinding;
 
   constructor(
     db: PgDatabase,
@@ -49,32 +43,27 @@ export class AnalyticsKit {
     const briefs = new BriefSink(new PgBriefStore(db), (err) =>
       this.log('could not save a brief', err),
     );
-    this.progression = progression;
-    this.progress = new ProgressKeeper(
-      new PgProgressStore(db),
-      progression,
-      async (accountId) =>
+    this.progress = new ProgressBinding({
+      progressStore: new PgProgressStore(db),
+      loadoutStore: new PgLoadoutStore(db),
+      settings: progression,
+      solvedTopics: async (accountId) =>
         new Set(
           (await attempts.itemsOf(accountId))
             .slice(-300)
             .flatMap((i) => (i.outcome === 'solved' ? [...i.topics] : [])),
         ),
-      (accountId, message) => this.deliverProgress(accountId, message),
-      (err) => this.log('could not save XP', err),
-    );
-    this.sink = new FanOutSink([this.recorder, this.aggregator, briefs, this.progress]);
+      topicsOf: (accountId) => this.aggregator.topicsOf(accountId),
+      log: (message, err) => this.log(message, err),
+    });
+    this.sink = new FanOutSink([this.recorder, this.aggregator, briefs, this.progress.sink]);
   }
 
   /** Send profiles to this match's students, and give each one theirs on joining. */
   bind(match: Match): void {
     this.deliver = (accountId, message) => match.sendProfile(accountId, message);
-    this.aggregator.onTopics((accountId, topics) =>
-      match.sendSkills(accountId, { t: 'skills', skills: skillTree(topics, this.progression()) }),
-    );
-    this.deliverProgress = (accountId, message) => match.sendProgress(accountId, message);
-    match.heist.events.subscribe((event) => {
-      if (event.type === 'round_end') this.progress.roundEnded(event.result);
-    });
+    this.aggregator.onTopics((accountId) => this.progress.topicsChanged(accountId));
+    this.progress.bind(match);
     match.heist.focusOf = (player) =>
       player.accountId === undefined ? undefined : this.aggregator.focusOf(player.accountId);
     match.heist.skillOf = (player) =>
@@ -86,28 +75,21 @@ export class AnalyticsKit {
         .profileOf(accountId, match.classInfo?.classId, match.roundNumber)
         .then((message) => {
           match.sendProfile(accountId, message);
-          match.sendSkills(accountId, {
-            t: 'skills',
-            skills: skillTree(this.aggregator.topicsOf(accountId) ?? new Map(), this.progression()),
-          });
+          // The tree needs the profile's topic marks, so progress is told after it has loaded.
+          return this.progress.playerJoined(match, player);
         })
         .catch((err) => this.log('could not load a profile', err));
-      this.progress
-        .messageOf(accountId)
-        .then((message) => match.sendProgress(accountId, message))
-        .catch((err) => this.log('could not load XP', err));
     });
     match.onPlayerLeft((player) => {
-      if (player.accountId === undefined) return;
-      this.aggregator.forget(player.accountId);
-      this.progress.forget(player.accountId);
+      if (player.accountId !== undefined) this.aggregator.forget(player.accountId);
+      this.progress.playerLeft(match, player);
     });
   }
 
   /** Save everything that is waiting (shutdown). */
   async flush(): Promise<void> {
     await this.aggregator.settled();
-    await this.progress.settled();
+    await this.progress.keeper.settled();
     await this.recorder.flush();
   }
 }

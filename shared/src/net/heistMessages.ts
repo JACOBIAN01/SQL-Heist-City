@@ -5,6 +5,8 @@ import type { WeaponSpec } from '../config/combat';
 import type { AxisScore } from '../analytics/profile';
 import type { ProgressView } from '../progress/xp';
 import type { SkillView } from '../progress/skills';
+import type { CosmeticView, LookChoice, LookView } from '../progress/cosmetics';
+import { COSMETIC_SLOTS } from '../config/progression';
 import type { VehicleSettings } from '../config/vehicles';
 import { challengeClientMessageSchema, type ChallengeServerMessage } from './challengeMessages';
 
@@ -44,12 +46,34 @@ export const vehicleMessageSchema = z.discriminatedUnion('action', [
 ]);
 export type VehicleMessage = z.infer<typeof vehicleMessageSchema>;
 
+/** Wear a cosmetic in a slot, or take it off (Phase 26.3). The server checks it is unlocked. */
+export const setLookMessageSchema = z.object({
+  t: z.literal('set_look'),
+  slot: z.enum(COSMETIC_SLOTS),
+  id: z.string().max(60).nullable(),
+});
+export type SetLookMessage = z.infer<typeof setLookMessageSchema>;
+
+/** The owner's wardrobe: every cosmetic, which are unlocked, and what is worn. */
+export interface WardrobeMessage {
+  readonly t: 'wardrobe';
+  readonly items: readonly CosmeticView[];
+  readonly choice: LookChoice;
+}
+
+/** How everyone in the match looks, by player id. Sent when anyone joins, leaves or changes. */
+export interface LooksMessage {
+  readonly t: 'looks';
+  readonly looks: Readonly<Record<string, LookView>>;
+}
+
 /** Everything a client may send as JSON. The server validates it again; this is the shape check. */
 export const jsonClientMessageSchema = z.union([
   challengeClientMessageSchema,
   interactMessageSchema,
   equipMessageSchema,
   vehicleMessageSchema,
+  setLookMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -363,6 +387,8 @@ export type HeistServerMessage =
   | ProfileMessage
   | ProgressMessage
   | SkillsMessage
+  | WardrobeMessage
+  | LooksMessage
   | WorldMessage
   | InteractReply
   | VehicleReply

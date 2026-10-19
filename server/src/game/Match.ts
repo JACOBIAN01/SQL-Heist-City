@@ -578,6 +578,11 @@ export class Match implements MatchApi {
     for (const p of this.players.values()) if (p.accountId === accountId) this.sendJson(p, message);
   }
 
+  /** The connections of one signed-in account (normally one). */
+  playersOfAccount(accountId: number): Player[] {
+    return [...this.players.values()].filter((p) => p.accountId === accountId);
+  }
+
   /** Sends a signed-in player's skill tree (and nobody else's). */
   sendSkills(accountId: number, message: SkillsMessage): void {
     for (const p of this.players.values()) if (p.accountId === accountId) this.sendJson(p, message);

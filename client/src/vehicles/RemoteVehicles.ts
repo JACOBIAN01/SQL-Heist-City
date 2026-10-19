@@ -1,4 +1,4 @@
-import type { Scene } from 'three';
+import type { MeshStandardMaterial, Scene } from 'three';
 import {
   distanceToCar,
   type CarFootprint,
@@ -97,6 +97,9 @@ export class RemoteVehicles {
     return this.cars.get(id)?.latest;
   }
 
+  /** Which paint a driver's car wears (their cosmetic); undefined for none. */
+  paintOf: ((driver: number) => MeshStandardMaterial | undefined) | undefined;
+
   modelOf(id: number): CarModel | undefined {
     return this.cars.get(id)?.model;
   }
@@ -141,6 +144,7 @@ export class RemoteVehicles {
     for (const [id, tracked] of this.cars) {
       const model = tracked.model;
       if (!model) continue;
+      model.setPaint(tracked.latest.driver ? this.paintOf?.(tracked.latest.driver) : undefined);
       if (id === this.ownId) continue; // drawn by prediction
       const pose = sample(tracked.samples, at) ?? tracked.latest;
       model.object.visible = Math.hypot(pose.x - viewer.x, pose.z - viewer.z) < DRAW_DISTANCE;

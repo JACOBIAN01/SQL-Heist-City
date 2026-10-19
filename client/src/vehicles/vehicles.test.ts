@@ -49,6 +49,33 @@ describe('the car file', () => {
   });
 });
 
+describe('car paint', () => {
+  it('paints a car with a shared per-colour material that keeps the night glow, and unpaints it', () => {
+    const car = cars.create('Taxi');
+    const red = cars.painted(0xc0392b);
+    expect(cars.painted(0xc0392b)).toBe(red); // one material per colour
+    expect(red.color.getHex()).toBe(0xc0392b);
+    expect(red).not.toBe(cars.material);
+    const materials = () => {
+      const set = new Set<unknown>();
+      car.object.traverse((n) => (n as Mesh).isMesh && set.add((n as Mesh).material));
+      return set;
+    };
+    car.setPaint(red);
+    expect([...materials()]).toEqual([red]);
+    car.setPaint(undefined);
+    expect([...materials()]).toEqual([cars.material]);
+    // The paint is the same shader as the factory material, so lamps still glow.
+    const shader = {
+      uniforms: {} as Record<string, unknown>,
+      vertexShader: '#include <common>\n#include <begin_vertex>',
+      fragmentShader: '#include <common>\n#include <emissivemap_fragment>',
+    };
+    red.onBeforeCompile(shader as never, undefined as never);
+    expect(shader.uniforms.uNightGlow).toBe(cars.nightGlow);
+  });
+});
+
 describe('CarModel', () => {
   it('shares one flat-shaded material whose lamps glow with the night', () => {
     const a = cars.create('Taxi');
