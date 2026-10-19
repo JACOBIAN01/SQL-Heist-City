@@ -290,6 +290,13 @@ describe('player sign-in with Google', () => {
     expect(other.headers.get('access-control-allow-origin')).toBeNull();
   });
 
+  it('answers the preflight for every call the game page makes, joining a class included', async () => {
+    for (const path of ['/auth/class/join', '/auth/player/settings', '/auth/ticket']) {
+      const pre = await fetch(`${base}${path}`, { method: 'OPTIONS', headers: { origin: GAME } });
+      expect(pre.headers.get('access-control-allow-origin'), path).toBe(GAME);
+    }
+  });
+
   it('signs out: the cookie stops working', async () => {
     google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
     const { cookies } = await signIn();

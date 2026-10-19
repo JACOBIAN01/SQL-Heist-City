@@ -96,6 +96,8 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
   // CORS for the calls the game page makes with the player's cookie.
   router.use('/auth/player', corsFor(allowedOrigin));
   router.use('/auth/ticket', corsFor(allowedOrigin));
+  // Joining a class is called from the game page too (found by the browser tests, Phase 23.2).
+  router.use('/auth/class', corsFor(allowedOrigin));
 
   router.get('/auth/google/login', (req, res) => {
     if (options.googleEnabled === false) {
