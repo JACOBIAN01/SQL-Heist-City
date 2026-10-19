@@ -3,6 +3,7 @@ import type { AwardId } from '../config/awards';
 import type { AtmosphereSettings } from '../config/atmosphere';
 import type { WeaponSpec } from '../config/combat';
 import type { AxisScore } from '../analytics/profile';
+import type { ProgressView } from '../progress/xp';
 import type { VehicleSettings } from '../config/vehicles';
 import { challengeClientMessageSchema, type ChallengeServerMessage } from './challengeMessages';
 
@@ -301,6 +302,14 @@ export interface ProfileMessage {
   readonly moved?: readonly { readonly lens: 'rcsbe' | 'bloom'; readonly dimension: string }[];
 }
 
+/** A signed-in student's rank and XP (Phase 26.1); sent on joining and whenever XP is earned. */
+export interface ProgressMessage {
+  readonly t: 'progress';
+  readonly progress: ProgressView;
+  /** XP just earned, and for what, so the HUD can show "+45 XP". */
+  readonly gained?: { readonly amount: number; readonly why: 'solve' | 'round' };
+}
+
 /** One question a student met this round, with what they wrote and the model answer. */
 export interface ReviewItem {
   readonly title: string;
@@ -345,6 +354,7 @@ export interface WorldMessage {
 export type HeistServerMessage =
   | ReviewMessage
   | ProfileMessage
+  | ProgressMessage
   | WorldMessage
   | InteractReply
   | VehicleReply

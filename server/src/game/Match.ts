@@ -50,6 +50,7 @@ import {
   type VehicleWire,
   type AtmosphereSettings,
   type ProfileMessage,
+  type ProgressMessage,
   type RewardIcons,
   type WorldMessage,
   type WorldSettings,
@@ -573,6 +574,11 @@ export class Match implements MatchApi {
 
   /** Sends a signed-in player's own profile (and nobody else's). */
   sendProfile(accountId: number, message: ProfileMessage): void {
+    for (const p of this.players.values()) if (p.accountId === accountId) this.sendJson(p, message);
+  }
+
+  /** Sends a signed-in player's rank and XP (and nobody else's). */
+  sendProgress(accountId: number, message: ProgressMessage): void {
     for (const p of this.players.values()) if (p.accountId === accountId) this.sendJson(p, message);
   }
 

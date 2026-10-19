@@ -71,3 +71,5 @@ export * from './analytics/radar';
 export * from './analytics/profileRadar';
 export * from './questions/concepts';
 export * from './analytics/skill';
+export * from './config/progression';
+export * from './progress/xp';

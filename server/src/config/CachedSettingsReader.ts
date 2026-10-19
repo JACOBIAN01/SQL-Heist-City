@@ -10,6 +10,7 @@ import type {
   HeistSettings,
   TierRange,
   TutorialSettings,
+  ProgressionSettings,
 } from '@heist/shared';
 import type { SettingsReader } from './SettingsReader';
 
@@ -25,6 +26,7 @@ export class CachedSettingsReader implements SettingsReader {
   private city: CitySettings | undefined;
   private icons: RewardIcons | undefined;
   private analytics: AnalyticsSettings | undefined;
+  private progression: ProgressionSettings | undefined;
   private dialects: DialectSettings | undefined;
   private tiers = new Map<string, TierRange | undefined>();
 
@@ -65,6 +67,11 @@ export class CachedSettingsReader implements SettingsReader {
     return this.analytics;
   }
 
+  progressionSettings(): ProgressionSettings {
+    this.progression ??= this.inner.progressionSettings();
+    return this.progression;
+  }
+
   dialectSettings(): DialectSettings {
     this.dialects ??= this.inner.dialectSettings();
     return this.dialects;
@@ -95,6 +102,7 @@ export class CachedSettingsReader implements SettingsReader {
     this.city = undefined;
     this.icons = undefined;
     this.analytics = undefined;
+    this.progression = undefined;
     this.dialects = undefined;
     this.tiers = new Map();
   }

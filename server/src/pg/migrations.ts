@@ -333,4 +333,13 @@ export const pgMigrations: readonly string[] = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   `,
+  // 13 — XP and ranks (Phase 26.1): what a student has earned by learning and by playing
+  `
+  CREATE TABLE player_progress (
+    player_id   BIGINT      PRIMARY KEY REFERENCES players (id) ON DELETE CASCADE,
+    learning_xp BIGINT      NOT NULL DEFAULT 0 CHECK (learning_xp >= 0),
+    play_xp     BIGINT      NOT NULL DEFAULT 0 CHECK (play_xp >= 0),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  `,
 ];

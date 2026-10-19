@@ -1,7 +1,12 @@
 import { log } from '../log';
 import { createServer } from 'node:http';
 import { parentPort, workerData } from 'node:worker_threads';
-import { DEFAULT_ANALYTICS_SETTINGS, type HeistSettings, type MatchSettings } from '@heist/shared';
+import {
+  DEFAULT_ANALYTICS_SETTINGS,
+  DEFAULT_PROGRESSION_SETTINGS,
+  type HeistSettings,
+  type MatchSettings,
+} from '@heist/shared';
 import { existsSync } from 'node:fs';
 import { AnalyticsKit } from '../analytics/AnalyticsKit';
 import { buildChallengeStack, type ChallengeStack } from '../composition';
@@ -61,6 +66,8 @@ const analytics = data.databaseUrl
   ? new AnalyticsKit(
       PgDatabase.open({ url: data.databaseUrl, max: 2 }),
       () => holder.stack?.analyticsSettings() ?? DEFAULT_ANALYTICS_SETTINGS,
+      undefined,
+      () => holder.stack?.progressionSettings() ?? DEFAULT_PROGRESSION_SETTINGS,
     )
   : undefined;
 const stack: ChallengeStack | undefined =

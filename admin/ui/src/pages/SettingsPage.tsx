@@ -90,6 +90,12 @@ export function SettingsPage() {
         editable={isAdmin}
       />
       <SectionCard
+        name="progression"
+        title="XP and ranks"
+        note="XP for a solved question by tier, the first-try and hint adjustments, XP for rounds (kills, cash, the podium, with a cap so fighting cannot outrun learning), and the rank names with the XP each needs."
+        editable={isAdmin}
+      />
+      <SectionCard
         name="dialects"
         title="Dialect packs"
         note="How PostgreSQL and MySQL differ from SQLite (the game's engine), one entry per quirk. A class picks a pack; the pop-up shows the entries its question touches and the rest as a cheat-sheet."

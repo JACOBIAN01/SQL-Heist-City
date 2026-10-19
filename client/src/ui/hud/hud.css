@@ -505,3 +505,35 @@
   padding: 0.2rem 0.6rem;
   border-radius: 0.3rem;
 }
+
+.hud-rank {
+  position: absolute;
+  right: 16px;
+  top: 68px;
+  width: 170px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 0.75rem;
+  text-align: right;
+  text-shadow: 0 1px 2px #000;
+}
+.hud-rank[hidden] {
+  display: none;
+}
+.hud-rank-bar {
+  height: 5px;
+  margin-top: 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+.hud-rank-fill {
+  height: 100%;
+  background: var(--c-accent, #4da3ff);
+}
+.hud-rank-flash {
+  min-height: 1em;
+  color: var(--c-good, #7be08f);
+  font-weight: 600;
+}

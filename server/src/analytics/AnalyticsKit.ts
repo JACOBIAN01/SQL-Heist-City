@@ -1,4 +1,12 @@
-import type { AnalyticsSettings, ProfileMessage } from '@heist/shared';
+import type {
+  AnalyticsSettings,
+  ProfileMessage,
+  ProgressMessage,
+  ProgressionSettings,
+} from '@heist/shared';
+import { DEFAULT_PROGRESSION_SETTINGS } from '@heist/shared';
+import { PgProgressStore } from '../progress/ProgressStore';
+import { ProgressKeeper } from '../progress/ProgressKeeper';
 import type { PgDatabase } from '../pg/PgDatabase';
 import type { Match } from '../game/Match';
 import { FanOutSink, type AttemptSink } from './AttemptSink';
@@ -16,11 +24,14 @@ export class AnalyticsKit {
   private readonly recorder: BatchingRecorder;
   private readonly aggregator: ProfileAggregator;
   private deliver: (accountId: number, message: ProfileMessage) => void = () => {};
+  private readonly progress: ProgressKeeper;
+  private deliverProgress: (accountId: number, message: ProgressMessage) => void = () => {};
 
   constructor(
     db: PgDatabase,
     settings: () => AnalyticsSettings,
     private readonly log: (message: string, err: unknown) => void = (m, e) => console.error(m, e),
+    progression: () => ProgressionSettings = () => DEFAULT_PROGRESSION_SETTINGS,
   ) {
     const attempts = new PgAttemptStore(db);
     this.recorder = new BatchingRecorder(
@@ -37,12 +48,28 @@ export class AnalyticsKit {
     const briefs = new BriefSink(new PgBriefStore(db), (err) =>
       this.log('could not save a brief', err),
     );
-    this.sink = new FanOutSink([this.recorder, this.aggregator, briefs]);
+    this.progress = new ProgressKeeper(
+      new PgProgressStore(db),
+      progression,
+      async (accountId) =>
+        new Set(
+          (await attempts.itemsOf(accountId))
+            .slice(-300)
+            .flatMap((i) => (i.outcome === 'solved' ? [...i.topics] : [])),
+        ),
+      (accountId, message) => this.deliverProgress(accountId, message),
+      (err) => this.log('could not save XP', err),
+    );
+    this.sink = new FanOutSink([this.recorder, this.aggregator, briefs, this.progress]);
   }
 
   /** Send profiles to this match's students, and give each one theirs on joining. */
   bind(match: Match): void {
     this.deliver = (accountId, message) => match.sendProfile(accountId, message);
+    this.deliverProgress = (accountId, message) => match.sendProgress(accountId, message);
+    match.heist.events.subscribe((event) => {
+      if (event.type === 'round_end') this.progress.roundEnded(event.result);
+    });
     match.heist.focusOf = (player) =>
       player.accountId === undefined ? undefined : this.aggregator.focusOf(player.accountId);
     match.heist.skillOf = (player) =>
@@ -54,15 +81,22 @@ export class AnalyticsKit {
         .profileOf(accountId, match.classInfo?.classId, match.roundNumber)
         .then((message) => match.sendProfile(accountId, message))
         .catch((err) => this.log('could not load a profile', err));
+      this.progress
+        .messageOf(accountId)
+        .then((message) => match.sendProgress(accountId, message))
+        .catch((err) => this.log('could not load XP', err));
     });
     match.onPlayerLeft((player) => {
-      if (player.accountId !== undefined) this.aggregator.forget(player.accountId);
+      if (player.accountId === undefined) return;
+      this.aggregator.forget(player.accountId);
+      this.progress.forget(player.accountId);
     });
   }
 
   /** Save everything that is waiting (shutdown). */
   async flush(): Promise<void> {
     await this.aggregator.settled();
+    await this.progress.settled();
     await this.recorder.flush();
   }
 }

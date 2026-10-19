@@ -1,3 +1,8 @@
+import {
+  InMemoryProgressStore,
+  PgProgressStore,
+  type ProgressStore,
+} from '@heist/server/progress/ProgressStore';
 import type { DatabaseSync } from 'node:sqlite';
 import type { SettingsStore } from '@heist/server/config/SettingsStore';
 import { PgSettingsStore, SqliteSettingsStore } from '@heist/server/config/SettingsStore';
@@ -88,6 +93,7 @@ export interface AdminStores {
   readonly briefs: BriefStore;
   /** Each player's own settings (keys, sensitivity, accessibility). */
   readonly playerSettings: PlayerSettingsStore;
+  readonly progress: ProgressStore;
   playerSessions(ttlMs: number, now: () => number): PlayerSessions;
   sessions(ttlMs: number, now: () => number): SessionStore;
 }
@@ -108,6 +114,7 @@ export function sqliteStores(db: DatabaseSync): AdminStores {
     profiles: new InMemoryProfileStore(),
     briefs: new InMemoryBriefStore(),
     playerSettings: new InMemoryPlayerSettingsStore(),
+    progress: new InMemoryProgressStore(),
     classes: new InMemoryClassRepository(
       undefined,
       () => new Set(questionRepo.list().map((q) => q.id)),
@@ -133,6 +140,7 @@ export function pgStores(db: PgDatabase): AdminStores {
     profiles: new PgProfileStore(db),
     briefs: new PgBriefStore(db),
     playerSettings: new PgPlayerSettingsStore(db),
+    progress: new PgProgressStore(db),
     playerSessions: (ttl, now) => new PgPlayerSessions(db, ttl, now),
     sessions: (ttl, now) => new PgSessionStore(db, ttl, now),
   };

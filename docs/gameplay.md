@@ -184,3 +184,9 @@ When a round ends, a signed-in player sees **Plan the next heist** on the result
 ## Dropping out and coming back (Phase 19.5)
 A signed-in player who loses their connection mid-round keeps their seat: banked cash, kills, deaths and guns are held, and come back when they rejoin the same match in the same round, even after the join window has closed. What they were carrying is dropped as loot when they drop, as before. A seat lasts until the round ends. Signing in again from a second tab or device takes over: the older connection is closed ("Signed in somewhere else") and its seat passes to the new one. Players without an account have no seat, since nobody can prove it is them.
 
+
+## Progression (Phase 26)
+**XP and ranks (26.1).** A signed-in student earns XP two ways, both set in the admin (`progression`):
+- **Learning:** a solved question pays by tier (20 / 35 / 55 / 80 / 120), ×1.25 when right first time with no paid hint, ×0.9 per paid hint, ×1.5 for a topic not solved recently. Part marks pay their share. The tutorial and the pre/post tests pay nothing.
+- **Playing:** at the end of a round, 20 for finishing, 4 per kill, 8 per $1,000 banked, and 40 / 25 / 15 for the podium — **capped at 150 per round**, so a player who only fights cannot out-rank one who is learning (the cap is no more than three mid-tier first-try solves).
+Ranks (Rookie → Mastermind by default) come from total XP. The HUD shows the rank, a bar to the next one, and "+N XP" when something is earned. XP only goes up and is deleted with the account.

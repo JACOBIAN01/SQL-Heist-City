@@ -51,6 +51,16 @@ A student's own settings (sensitivity, volumes, key choices, text size, colour p
 | `settings` | Their choices (no free text) | record | with the account |
 | `updated_at` | When they last changed them | technical | with the account |
 
+### `player_progress`
+What a student has earned toward their rank (Phase 26): XP from solving questions and XP from playing rounds.
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `player_id` | The student | pseudonymous | with the account |
+| `learning_xp` | XP from solved questions | record | with the account |
+| `play_xp` | XP from rounds (kills, cash banked, finishing) | record | with the account |
+| `updated_at` | When it last changed | technical | with the account |
+
 ### `class_members`
 Which students joined which class (by its code).
 

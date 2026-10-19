@@ -14,7 +14,12 @@ import { openDatabase } from './db/database';
 import { PgDatabase } from './pg/PgDatabase';
 import { syncContent } from './pg/ContentSnapshot';
 import { migratePg } from './pg/migrate';
-import { DEFAULT_ANALYTICS_SETTINGS, DEFAULT_MATCH_SETTINGS, cityMapIdFor } from '@heist/shared';
+import {
+  DEFAULT_ANALYTICS_SETTINGS,
+  DEFAULT_MATCH_SETTINGS,
+  DEFAULT_PROGRESSION_SETTINGS,
+  cityMapIdFor,
+} from '@heist/shared';
 import { PgAttemptStore } from './analytics/AttemptStore';
 import { RetentionJob } from './analytics/RetentionJob';
 import { AnalyticsKit } from './analytics/AnalyticsKit';
@@ -60,7 +65,12 @@ if (process.env.DATABASE_URL) {
 let challenges: ChallengeStack | undefined;
 // The learning record for the open match and the tutorial (class rooms record in their own threads).
 const analytics = pg
-  ? new AnalyticsKit(pg, () => challenges?.analyticsSettings() ?? DEFAULT_ANALYTICS_SETTINGS)
+  ? new AnalyticsKit(
+      pg,
+      () => challenges?.analyticsSettings() ?? DEFAULT_ANALYTICS_SETTINGS,
+      undefined,
+      () => challenges?.progressionSettings() ?? DEFAULT_PROGRESSION_SETTINGS,
+    )
   : undefined;
 if (existsSync(dbPath)) {
   challenges = buildChallengeStack(openDatabase({ path: dbPath, readOnly: true }), {

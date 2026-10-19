@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { DatabaseSync } from 'node:sqlite';
 import type {
   AnalyticsSettings,
+  ProgressionSettings,
   CitySettings,
   CombatSettings,
   HeistSettings,
@@ -37,6 +38,8 @@ export interface ChallengeStack {
   combatSettings(): CombatSettings;
   /** How learning is measured (marks, thresholds). */
   analyticsSettings(): AnalyticsSettings;
+  /** XP and ranks. */
+  progressionSettings(): ProgressionSettings;
   /** Heist rules, cars and time of day, read again at each new round. */
   worldSettings(): WorldSettings;
   /** City generation settings, read when a match is created. */
@@ -99,6 +102,7 @@ export function buildChallengeStack(
     practiceTopics: () => practiceTopicsOf(questions, concepts),
     slugOf: (id) => questions.getById(id)?.slug,
     analyticsSettings: () => settings.analyticsSettings(),
+    progressionSettings: () => settings.progressionSettings(),
     worldSettings: () => worldSettingsFrom(settings),
     citySettings: () => settings.citySettings(),
     invalidate: () => {

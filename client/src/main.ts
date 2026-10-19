@@ -21,6 +21,7 @@ import { GameAudio, type HeardCar } from './audio/GameAudio';
 import { GestureAudio } from './audio/GestureAudio';
 import { CaptionedAudio } from './audio/CaptionedAudio';
 import { CaptionView } from './ui/hud/CaptionView';
+import { RankView } from './ui/hud/RankView';
 import { SettingsPanel } from './ui/settings/SettingsPanel';
 import { startSettings } from './settings/bootstrap';
 import { controlsHint } from './settings/controlsHint';
@@ -346,6 +347,7 @@ if (MAP.parkedCars?.length)
     .catch((error: unknown) => console.warn('car models unavailable', error));
 const serverClock = new SnapshotClock();
 const hud = new Hud(document.body);
+const rankView = new RankView(document.body);
 const bankingProgress = new BankingProgress(hud);
 // The minimap: every bank's vault progress (flashing while its alarm rings), safehouses, loose cash.
 const minimap = new MinimapView(hud.root, MAP);
@@ -514,6 +516,8 @@ client.subscribe({
     else if (message.t === 'review') {
       review.update(message);
       hud.toast('Round review ready — press V');
+    } else if (message.t === 'progress') {
+      rankView.update(message);
     } else if (message.t === 'profile') {
       latestProfile = message;
       profileAll.update(message);

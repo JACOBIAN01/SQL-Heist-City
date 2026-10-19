@@ -14,6 +14,7 @@ import {
   encodeClientMessage,
   questionTemplateSchema,
   type ProfileMessage,
+  type ProgressMessage,
 } from '@heist/shared';
 import { sampleQuestion } from '@heist/shared/fixtures';
 import { issueTicket } from '../auth/ticket';
@@ -26,6 +27,7 @@ import { TEST_DATABASE_URL, freshPg } from '../pg/testing';
 import { PgPlayerRepository } from '../players/PlayerRepository';
 import { PgQuestionStore } from '../questions/PgQuestionStore';
 import { PgProfileStore } from './AttemptStore';
+import { PgProgressStore } from '../progress/ProgressStore';
 import type { PgDatabase } from '../pg/PgDatabase';
 
 const SECRET = 'live-profile-secret-live-profile';
@@ -146,6 +148,17 @@ describe.skipIf(!TEST_DATABASE_URL)('live profile, end to end (15.2, 15.6, 15.8)
       items: 1,
     });
     expect(live.class?.rcsbe.find((a) => a.dimension === 'C')?.items).toBe(1);
+
+    // The student's rank arrived on joining, and XP for the solved question arrives with the answer.
+    await until(() => json.some((m) => m.t === 'progress' && 'gained' in m));
+    const xp = json
+      .filter((m) => m.t === 'progress' && 'gained' in m)
+      .at(-1) as unknown as ProgressMessage;
+    expect(xp.gained).toMatchObject({ why: 'solve' });
+    expect(xp.progress.learningXp).toBeGreaterThan(0);
+    expect(xp.progress.rank).toBe('Rookie');
+    const stored = await new PgProgressStore(pg).get(ana.id);
+    expect(stored.learningXp).toBe(xp.progress.learningXp);
 
     // The record reaches PostgreSQL (saved in batches, so wait for it).
     const items = async () => pg.query('SELECT * FROM attempt_items');

@@ -142,6 +142,11 @@ export function buildAdmin(
       erase: async (p) => stores.playerSettings.remove(p.id),
     })
     .register({
+      name: 'progress',
+      export: async (p) => stores.progress.get(p.id),
+      erase: async (p) => stores.progress.remove(p.id),
+    })
+    .register({
       name: 'briefs',
       export: async (p) => stores.briefs.ofPlayer(p.id),
       // PostgreSQL removes a player's briefs with the account (ON DELETE CASCADE).
