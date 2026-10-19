@@ -40,7 +40,7 @@
 | 20 | Operations and deployment | 🟨 20.1, 20.4, 20.5, 20.7 done, 20.6 verified locally; 20.2–20.3 wait for the owner's cloud |
 | 21 | Privacy and compliance | 🟨 built; legal review and the rating wait for the owner |
 | 22 | Settings, accessibility and devices | 🟨 built; the real-device pass (22.6) and a native review of the Hindi draft (22.7) wait for the owner |
-| 23 | Game test plan | ⬜ |
+| 23 | Game test plan | 🟨 23.1 done, 23.2 started |
 | 24 | Classroom pilot | ⬜ |
 | 25 | Launch checklist and release | ⬜ |
 | 26 | Progression and the meta-loop | ⬜ |
@@ -447,13 +447,13 @@ Audit con 17.
 | 22.7 | Localisation framework (UI strings out of code) and the first two languages | the UI switches language at runtime | ✅ `I18n` + typed English catalog (a key the code uses but the catalog lacks is a compile error); menu, age gate, settings, key names, captions and the pre-game hint use it; English plus a **Hindi draft** (partial; missing keys fall back to English per key). **A native speaker must review it and the owner confirm the languages (#8)**. The HUD, SQL pop-up and tutorial text still need converting |
 
 ---
-## Phase 23 — Game test plan  ⬜
+## Phase 23 — Game test plan  🟨
 Audit section "Pre-launch checklist" and the user's item 5.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 23.1 | Test strategy doc: levels, owners, entry/exit criteria, bug severity scale, triage process | `docs/testing.md` updated and approved | ⬜ |
-| 23.2 | End-to-end browser tests: sign in, join class, solve, crack, carry, bank, round end, review | the suite runs in CI on every merge | ⬜ |
+| 23.1 | Test strategy doc: levels, owners, entry/exit criteria, bug severity scale, triage process | `docs/testing.md` updated and approved | ✅ `docs/testing.md`: levels and when each runs, owners, merge/staging/school entry criteria, S1–S4 severity, triage steps. ("Approved" = the owner reads it.) |
+| 23.2 | End-to-end browser tests: sign in, join class, solve, crack, carry, bank, round end, review | the suite runs in CI on every merge | 🟨 Playwright stack (`e2e/stack.mjs`, `npm run e2e`) and CI step in place; 4 tests pass: dev sign-in, settings + language that survives a reload, tutorial heal solved by the free solution (health rises), wrong answer refused with the match still live, settings in a match. Found a real bug on the first run. **Still to add:** join a class, vault crack, carry and bank, round end and review |
 | 23.3 | Multiplayer integration tests with headless clients (class of 100, two classes at once) | runs nightly | ⬜ |
 | 23.4 | Performance regression in CI (bundle, draw calls, triangles, tick) | a regression fails CI | ⬜ |
 | 23.5 | Internal playtests (scripted sessions, observation notes, survey) | three sessions run, findings filed | ⬜ |

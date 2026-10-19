@@ -30,3 +30,13 @@ jobs:
       # A known high or critical advisory in any dependency blocks the merge (Phase 18.5).
       - run: npm audit --audit-level=high
       - run: npm run ci
+      # Browser tests (Phase 23.2): the real game, admin and client on a fresh database.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: e2e-traces
+          path: |
+            test-results/
+            playwright-report/
