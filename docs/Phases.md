@@ -40,7 +40,7 @@
 | 20 | Operations and deployment | 🟨 20.1, 20.4, 20.5, 20.7 done, 20.6 verified locally; 20.2–20.3 wait for the owner's cloud |
 | 21 | Privacy and compliance | 🟨 built; legal review and the rating wait for the owner |
 | 22 | Settings, accessibility and devices | 🟨 built; the real-device pass (22.6) and a native review of the Hindi draft (22.7) wait for the owner |
-| 23 | Game test plan | 🟨 23.1 done, 23.2 started |
+| 23 | Game test plan | 🟨 23.1–23.4 built; 23.5–23.7 need people (playtests, students, bug bash) |
 | 24 | Classroom pilot | ⬜ |
 | 25 | Launch checklist and release | ⬜ |
 | 26 | Progression and the meta-loop | ⬜ |
@@ -454,11 +454,11 @@ Audit section "Pre-launch checklist" and the user's item 5.
 |---|---|---|---|
 | 23.1 | Test strategy doc: levels, owners, entry/exit criteria, bug severity scale, triage process | `docs/testing.md` updated and approved | ✅ `docs/testing.md`: levels and when each runs, owners, merge/staging/school entry criteria, S1–S4 severity, triage steps. ("Approved" = the owner reads it.) |
 | 23.2 | End-to-end browser tests: sign in, join class, solve, crack, carry, bank, round end, review | the suite runs in CI on every merge | 🟨 Playwright stack on a fresh PostgreSQL database (`e2e/stack.mjs`, `npm run e2e`, CI step) with 5 passing tests: dev sign-in; settings + language that survive a reload; a class joined with its code, waiting room, teacher starts, match, released tasks on offer, teacher ends the round; tutorial heal solved with the free solution (health rises); wrong answer refused, match still live. **Real bugs found and fixed:** settings panel under the menu; Join class blocked by CORS; the server dropped slow clients 5 s after connecting (now 20 s). **Not yet in the browser:** walking to a vault, carrying and banking (covered by server integration tests), review screen |
-| 23.3 | Multiplayer integration tests with headless clients (class of 100, two classes at once) | runs nightly | ⬜ |
-| 23.4 | Performance regression in CI (bundle, draw calls, triangles, tick) | a regression fails CI | ⬜ |
-| 23.5 | Internal playtests (scripted sessions, observation notes, survey) | three sessions run, findings filed | ⬜ |
-| 23.6 | Usability tests with students (think-aloud, first-time-user flow) | findings filed and triaged | ⬜ |
-| 23.7 | Bug bash and triage until no critical or high bugs remain open | zero open critical or high | ⬜ |
+| 23.3 | Multiplayer integration tests with headless clients (class of 100, two classes at once) | runs nightly | ✅ existing tests cover 100 in one class (the 101st refused) and two classes isolated by ticket; new `ClassRooms.multiplayer.test.ts` runs **two full classes (200 headless students)** for 10 s and asserts nobody drops, snapshots keep flowing and each room's tick p95 < 15 ms; runs nightly (`nightly.yml`, `MULTIPLAYER=1`). Passed locally |
+| 23.4 | Performance regression in CI (bundle, draw calls, triangles, tick) | a regression fails CI | ✅ bundle size (`npm run size`, every push); server tick p95 < 15 ms at 100 players on the bench map and the real city (`tickBudget.test.ts`, every push); draw calls and triangles for the tutorial yard and the city (`e2e/render-budget.spec.ts`, every merge) |
+| 23.5 | Internal playtests (scripted sessions, observation notes, survey) | three sessions run, findings filed | 🟨 three scripted sessions, observer notes and a survey are ready (`docs/review/playtests.md`). **Needs people to run them** |
+| 23.6 | Usability tests with students (think-aloud, first-time-user flow) | findings filed and triaged | 🟨 task script, measures and consent notes ready (`docs/review/playtests.md`). **Needs students, teachers and consent (#13)** |
+| 23.7 | Bug bash and triage until no critical or high bugs remain open | zero open critical or high | 🟨 themed checklist and exit rule ready (`docs/review/playtests.md`); the browser tests already closed three real bugs. **Needs the session after 23.5–23.6** |
 
 ---
 ## Phase 24 — Classroom pilot  ⬜
