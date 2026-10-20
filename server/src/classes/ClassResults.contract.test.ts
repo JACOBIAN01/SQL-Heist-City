@@ -134,4 +134,27 @@ describe.each(implementations)('class results: %s', (_n, make) => {
     ]);
     expect(await results.forPlayer(c, 9999)).toEqual([]);
   });
+
+  it('totals cash and rounds per student inside a period, by when the round ended', async () => {
+    const { results, newClass, newPlayer } = await make();
+    const c = await newClass();
+    const [a, b] = [await newPlayer('a'), await newPlayer('b')];
+    const at = (iso: string) => ({
+      startedAt: Date.parse(iso) - 900_000,
+      endedAt: Date.parse(iso),
+    });
+    await results.record(c, result(1, [a, b], at('2026-10-19T10:00:00Z'))); // in the week
+    await results.record(c, result(2, [b, a], at('2026-10-22T10:00:00Z'))); // in the week
+    await results.record(c, result(3, [a], at('2026-10-26T00:00:00Z'))); // next week: the end is not included
+    await results.record(c, result(4, [a], at('2026-10-18T23:59:59Z'))); // the week before
+    const totals = await results.totalsBetween(
+      c,
+      new Date('2026-10-19T00:00:00Z'),
+      new Date('2026-10-26T00:00:00Z'),
+    );
+    const byId = Object.fromEntries(totals.map((t) => [t.playerId, t]));
+    expect(byId[a]).toMatchObject({ banked: 5000 + 4000, rounds: 2 });
+    expect(byId[b]).toMatchObject({ banked: 4000 + 5000, rounds: 2 });
+    expect(await results.totalsBetween(c + 100, new Date(0), new Date('2100-01-01'))).toEqual([]);
+  });
 });

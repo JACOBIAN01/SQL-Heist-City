@@ -254,6 +254,30 @@ export const progressionSettingsSchema = z.object({
       streakCap: 7,
       keepDays: 30,
     }),
+  /**
+   * The weekly class league (26.6): points from learning count more than points from cash.
+   * Cash is capped, so the richest player cannot win without learning.
+   */
+  league: z
+    .object({
+      /** Points per mark earned on counted questions in the week. */
+      pointsPerMark: z.number().min(0).default(10),
+      /** Points per $1,000 banked in class rounds in the week… */
+      pointsPerThousand: z.number().min(0).default(1),
+      /** …up to this many points from cash in a week. */
+      cashCap: z.number().min(0).default(100),
+      /** Points for each round played. */
+      pointsPerRound: z.number().min(0).default(5),
+      /** How many students the table lists (the rest are cut). */
+      show: z.number().int().min(1).max(200).default(30),
+    })
+    .default({
+      pointsPerMark: 10,
+      pointsPerThousand: 1,
+      cashCap: 100,
+      pointsPerRound: 5,
+      show: 30,
+    }),
   /** What can be unlocked by rank or by mastering a skill (26.3). */
   cosmetics: z
     .array(cosmeticSchema)

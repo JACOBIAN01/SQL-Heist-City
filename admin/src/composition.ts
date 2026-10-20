@@ -22,6 +22,7 @@ import { SandboxTemplateValidator } from './questions/TemplateValidator';
 import { QuestionImportService } from './questions/io/QuestionImportService';
 import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
+import { LeagueService } from '@heist/server/progress/LeagueService';
 import { PersonalDataRegistry, accountSource } from '@heist/server/players/PersonalData';
 import { HttpGameControl, type GameControl } from './classes/GameControl';
 import { conceptRoutes } from './concepts';
@@ -33,6 +34,7 @@ import {
   ANALYTICS_SETTINGS_KEY,
   NAME_RULES_KEY,
   PRIVACY_SETTINGS_KEY,
+  PROGRESSION_SETTINGS_KEY,
   settingsParsers,
 } from '@heist/server/config/SettingsReader';
 import { playerRoutes, type PlayerAuthOptions } from './players/playerRoutes';
@@ -233,6 +235,13 @@ export function buildAdmin(
       classRoutes({
         classes: stores.classes,
         results: stores.classResults,
+        league: new LeagueService(
+          stores.classResults,
+          stores.attempts,
+          async () =>
+            settingsParsers.progressionFrom(await stores.settings.get(PROGRESSION_SETTINGS_KEY)),
+          async (id) => (await stores.players.findById(id))?.displayName,
+        ),
         questions: stores.questions,
         players: stores.players,
         events,

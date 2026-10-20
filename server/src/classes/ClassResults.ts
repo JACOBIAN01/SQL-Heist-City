@@ -24,6 +24,14 @@ export interface StoredStanding {
   readonly deaths: number;
 }
 
+/** What one student did across a class's rounds in a period. */
+export interface PeriodTotal {
+  readonly playerId: number;
+  readonly name: string;
+  readonly banked: number;
+  readonly rounds: number;
+}
+
 // Pattern: Repository — Why: results are written by the game server and read by the admin, on
 // different processes; both use this contract.
 export interface ClassResultRepository {
@@ -35,6 +43,8 @@ export interface ClassResultRepository {
     classId: number,
     roundId: number,
   ): Promise<{ round: StoredRound; standings: StoredStanding[] } | undefined>;
+  /** Per student: cash banked and rounds played in rounds that ended in [from, to). */
+  totalsBetween(classId: number, from: Date, to: Date): Promise<PeriodTotal[]>;
   /** A student's results across a class's rounds. */
   forPlayer(
     classId: number,
@@ -84,6 +94,20 @@ export class InMemoryClassResults implements ClassResultRepository {
   async round(classId: number, roundId: number) {
     const found = this.rows.find((r) => r.round.id === roundId && r.round.classId === classId);
     return found && { round: found.round, standings: found.standings };
+  }
+
+  async totalsBetween(classId: number, from: Date, to: Date) {
+    const totals = new Map<number, { name: string; banked: number; rounds: number }>();
+    for (const { round, standings } of this.rows) {
+      const ended = Date.parse(round.endedAt);
+      if (round.classId !== classId || ended < from.getTime() || ended >= to.getTime()) continue;
+      for (const s of standings) {
+        if (s.playerId === null) continue;
+        const t = totals.get(s.playerId) ?? { name: s.name, banked: 0, rounds: 0 };
+        totals.set(s.playerId, { name: s.name, banked: t.banked + s.banked, rounds: t.rounds + 1 });
+      }
+    }
+    return [...totals].map(([playerId, t]) => ({ playerId, ...t }));
   }
 
   async forPlayer(classId: number, playerId: number) {
@@ -148,6 +172,28 @@ const toStanding = (s: StandingRow): StoredStanding => ({
 
 export class PgClassResults implements ClassResultRepository {
   constructor(private readonly db: PgDatabase) {}
+
+  async totalsBetween(classId: number, from: Date, to: Date): Promise<PeriodTotal[]> {
+    const rows = await this.db.query<{
+      player_id: string;
+      name: string;
+      banked: string;
+      rounds: string;
+    }>(
+      `SELECT c.player_id, (array_agg(c.name ORDER BY r.ended_at DESC))[1] AS name,
+              sum(c.banked) AS banked, count(*) AS rounds
+       FROM class_results c JOIN class_rounds r ON r.id = c.round_id
+       WHERE r.class_id = $1 AND r.ended_at >= $2 AND r.ended_at < $3 AND c.player_id IS NOT NULL
+       GROUP BY c.player_id`,
+      [classId, from, to],
+    );
+    return rows.map((r) => ({
+      playerId: Number(r.player_id),
+      name: r.name,
+      banked: Number(r.banked),
+      rounds: Number(r.rounds),
+    }));
+  }
 
   async record(classId: number, result: RoundResult): Promise<StoredRound> {
     const id = await this.db.tx(async (tx) => {

@@ -18,6 +18,7 @@ import {
   type SkillsMessage,
   type WardrobeMessage,
   type ContractsMessage,
+  type LeagueMessage,
   type LooksMessage,
 } from '@heist/shared';
 import { sampleQuestion } from '@heist/shared/fixtures';
@@ -182,6 +183,12 @@ describe.skipIf(!TEST_DATABASE_URL)('live profile, end to end (15.2, 15.6, 15.8)
     expect(dealt.contracts).toHaveLength(3);
     expect(dealt.streak.days).toBe(0);
     expect((await pg.query('SELECT state FROM player_contracts')).length).toBe(1);
+
+    // A class room sends the week's league on joining (nothing played yet, so the table is empty).
+    await until(() => json.some((m) => m.t === 'league'));
+    const league = json.find((m) => m.t === 'league') as unknown as LeagueMessage;
+    expect(league.week.start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(Array.isArray(league.rows)).toBe(true);
 
     // What the student wears: free and earned items can be worn, locked ones cannot, and the whole
     // match is told how everyone looks.

@@ -148,3 +148,47 @@ describe('class API (14.2, 14.3)', () => {
     expect(audit.body.entries.map((e) => e.action)).toEqual(['update', 'create']);
   });
 });
+
+describe('weekly league (26.6)', () => {
+  it('shows a class’s week, ranking learning above cash, and refuses a day that is not a Monday', async () => {
+    await boot();
+    const c = await make('League');
+    const hh = h as Harness;
+    const ana = await hh.stores.players.upsertFromGoogle({
+      sub: 'g1',
+      email: 'a@x.test',
+      name: 'Ana',
+      domain: null,
+    });
+    const ben = await hh.stores.players.upsertFromGoogle({
+      sub: 'g2',
+      email: 'b@x.test',
+      name: 'Ben',
+      domain: null,
+    });
+    const week = '2026-10-19';
+    const ended = Date.parse('2026-10-21T10:00:00Z');
+    await hh.stores.classResults.record(c.id, {
+      number: 1,
+      startedAt: ended - 900_000,
+      endedAt: ended,
+      awards: [],
+      standings: [
+        { rank: 1, accountId: ana.id, name: 'Ana', banked: 400_000, kills: 5, deaths: 0 },
+        { rank: 2, accountId: ben.id, name: 'Ben', banked: 1000, kills: 0, deaths: 2 },
+      ],
+    });
+    const res = await hh.client.get<{
+      week: { start: string; end: string };
+      rows: { name: string; rank: number; cashPoints: number; points: number }[];
+    }>(`/api/classes/${c.id}/league?week=${week}`);
+    expect(res.status).toBe(200);
+    expect(res.body.week).toEqual({ start: week, end: '2026-10-26' });
+    expect(res.body.rows.map((r) => r.name)).toEqual(['Ana', 'Ben']);
+    expect(res.body.rows[0]?.cashPoints).toBe(100); // 400 → capped
+    expect((await hh.client.get(`/api/classes/${c.id}/league?week=2026-10-20`)).status).toBe(400);
+    expect((await hh.client.get(`/api/classes/${c.id}/league?week=2026-10-12`)).body).toMatchObject(
+      { rows: [] },
+    );
+  });
+});

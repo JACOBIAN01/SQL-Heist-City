@@ -41,6 +41,8 @@ const question = (id: number, tier: number, slug: string) => ({
   updatedAt: '',
 });
 
+const leagueWeeks: (string | null)[] = [];
+
 function api(user: typeof teacher | typeof admin = teacher, served: ClassRecord = record) {
   return fakeApi({
     'GET /auth/me': () => ({ body: { user } }),
@@ -89,6 +91,38 @@ function api(user: typeof teacher | typeof admin = teacher, served: ClassRecord 
         standings: [
           { rank: 1, name: 'Ana', banked: 9000, kills: 4, deaths: 1 },
           { rank: 2, name: 'Ben', banked: 3000, kills: 1, deaths: 2 },
+        ],
+      },
+    }),
+    'GET /classes/7/league': (_b, url) => ({
+      body: {
+        requested: leagueWeeks.push(url.searchParams.get('week')),
+        week: { start: '2026-10-19', end: '2026-10-26' },
+        rows: [
+          {
+            rank: 1,
+            name: 'Cleo',
+            points: 140,
+            learningPoints: 120,
+            cashPoints: 5,
+            roundPoints: 15,
+            earned: 12,
+            available: 15,
+            banked: 5000,
+            rounds: 3,
+          },
+          {
+            rank: 2,
+            name: 'Dev',
+            points: 90,
+            learningPoints: 40,
+            cashPoints: 35,
+            roundPoints: 15,
+            earned: 4,
+            available: 9,
+            banked: 35000,
+            rounds: 3,
+          },
         ],
       },
     }),
@@ -229,6 +263,18 @@ describe('ClassEditorPage', () => {
     await user.click(screen.getByRole('button', { name: 'Save pre-test' }));
     const put = calls.find((c) => c.method === 'PUT' && c.path === '/classes/7/assessments/pre');
     expect(put?.body).toEqual({ questionIds: [1], open: true });
+  });
+
+  it('shows the weekly league with learning and cash points apart, and can step a week back (26.6)', async () => {
+    api();
+    renderEditor();
+    const user = userEvent.setup();
+    const table = await screen.findByRole('table', { name: 'Weekly league' });
+    expect(within(table).getByText('Cleo')).toBeTruthy();
+    expect(within(table).getByText('(12/15 marks)')).toBeTruthy();
+    expect(within(table).getByText('($35,000)')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Previous week' }));
+    await waitFor(() => expect(leagueWeeks).toContain('2026-10-12'));
   });
 
   it('shows who joined, without emails for a teacher', async () => {

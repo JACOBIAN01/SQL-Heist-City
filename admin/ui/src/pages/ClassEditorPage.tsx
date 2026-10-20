@@ -12,6 +12,7 @@ import {
 } from '@heist/shared';
 import {
   useAcceptConsent,
+  useLeague,
   useLive,
   useLiveCommand,
   useLockClass,
@@ -176,6 +177,7 @@ function ClassEditor({ record }: { record: ClassRecord }) {
       <LiveRoom record={record} />
       <QuestionRelease classId={record.id} />
       <Assessments classId={record.id} />
+      <League classId={record.id} />
       <Rounds classId={record.id} />
       <Roster classId={record.id} />
     </div>
@@ -463,6 +465,68 @@ function LiveRoom({ record }: { record: ClassRecord }) {
 }
 
 /** Finished rounds, kept after the room closes. */
+/** The weekly league: marks earned count for more than cash, which is capped (docs/gameplay.md). */
+function League({ classId }: { classId: number }) {
+  const [week, setWeek] = useState<string | undefined>();
+  const league = useLeague(classId, week);
+  const shift = (weeks: number) => {
+    const current = league.data?.week.start;
+    if (!current) return;
+    setWeek(new Date(Date.parse(current) + weeks * 7 * 86_400_000).toISOString().slice(0, 10));
+  };
+  return (
+    <div className="card stack">
+      <h2>Weekly league</h2>
+      <div className="row">
+        <button type="button" onClick={() => shift(-1)} aria-label="Previous week">
+          ←
+        </button>
+        <span>Week of {league.data?.week.start ?? '…'}</span>
+        <button type="button" onClick={() => shift(1)} aria-label="Next week">
+          →
+        </button>
+      </div>
+      <ErrorMessage error={league.error} />
+      {league.data?.rows.length === 0 && (
+        <p className="muted">Nobody played or answered this week.</p>
+      )}
+      {league.data && league.data.rows.length > 0 && (
+        <table aria-label="Weekly league">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student</th>
+              <th>Points</th>
+              <th>Learning</th>
+              <th>Cash</th>
+              <th>Rounds</th>
+            </tr>
+          </thead>
+          <tbody>
+            {league.data.rows.map((r) => (
+              <tr key={r.name + r.rank}>
+                <td className="num">{r.rank}</td>
+                <td>{r.name}</td>
+                <td className="num">{r.points}</td>
+                <td className="num">
+                  {r.learningPoints}{' '}
+                  <span className="muted">
+                    ({r.earned}/{r.available} marks)
+                  </span>
+                </td>
+                <td className="num">
+                  {r.cashPoints} <span className="muted">(${r.banked.toLocaleString()})</span>
+                </td>
+                <td className="num">{r.rounds}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
 function Rounds({ classId }: { classId: number }) {
   const rounds = useRounds(classId);
   const [open, setOpen] = useState<number | undefined>();

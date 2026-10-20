@@ -12,6 +12,7 @@ import {
   QUESTION_USAGES,
   classInputSchema,
   classUpdateSchema,
+  isWeekStart,
   type ClassInput,
   type ClassRecord,
 } from '@heist/shared';
@@ -19,6 +20,7 @@ import type { PlayerRepository } from '@heist/server/players/PlayerRepository';
 import type { QuestionStore } from '@heist/server/questions/QuestionStore';
 import { NAME_REASONS, checkDisplayName, type NameRules } from '@heist/shared';
 import type { ClassResultRepository } from '@heist/server/classes/ClassResults';
+import type { LeagueService } from '@heist/server/progress/LeagueService';
 import type { GameControl, RoomCommand } from './GameControl';
 import { requireLogin, requireUser } from '../auth/middleware';
 import type { AdminEventBus, ClassChanged } from '../events/AdminEvents';
@@ -41,6 +43,8 @@ export interface ClassRouteDeps {
   readonly players: PlayerRepository;
   readonly events: AdminEventBus;
   readonly results: ClassResultRepository;
+  /** The weekly league (26.6). */
+  readonly league?: LeagueService;
   /** The running game, for the live controls; none when the admin is not wired to a game server. */
   readonly game?: GameControl;
   /** The display-name rules (a teacher's rename obeys them too). */
@@ -290,6 +294,16 @@ export function classRoutes(deps: ClassRouteDeps): Router {
     const detail = await deps.results.round(record.id, idParam(req.params.roundId));
     if (!detail) throw notFound('Round');
     res.json(detail);
+  });
+
+  // --- the weekly league (26.6): learning counts for more than cash ---
+  router.get('/classes/:id/league', async (req, res) => {
+    const record = await load(res, idParam(req.params.id));
+    if (!deps.league) throw notFound('League');
+    const week = typeof req.query.week === 'string' ? req.query.week : undefined;
+    if (week !== undefined && !isWeekStart(week))
+      throw new HttpError(400, 'bad_week', 'A week is given by its Monday, YYYY-MM-DD.');
+    res.json(await deps.league.table(record.id, week));
   });
 
   router.get('/classes/:id/roster', async (req, res) => {

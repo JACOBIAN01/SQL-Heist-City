@@ -184,6 +184,32 @@ export function useRound(id: number, roundId: number | undefined) {
   });
 }
 
+export interface LeagueRowView {
+  rank: number;
+  name: string;
+  points: number;
+  learningPoints: number;
+  cashPoints: number;
+  roundPoints: number;
+  earned: number;
+  available: number;
+  banked: number;
+  rounds: number;
+}
+
+export interface LeagueView {
+  week: { start: string; end: string };
+  rows: LeagueRowView[];
+}
+
+/** The weekly league of a class (a week is given by its Monday; this week when omitted). */
+export function useLeague(id: number, week: string | undefined) {
+  return useQuery({
+    queryKey: ['class', id, 'league', week ?? 'now'],
+    queryFn: () => api<LeagueView>(`/classes/${id}/league${week ? `?week=${week}` : ''}`),
+  });
+}
+
 export interface ConceptCardView {
   topic: string;
   title: string;

@@ -88,3 +88,13 @@
 .skills-node button[aria-pressed='true'] {
   border-color: var(--c-good, #7be08f);
 }
+.league-rows {
+  padding-left: 2rem;
+}
+.league-rows li {
+  margin: 0.25rem 0;
+}
+.league-you {
+  border-left: 4px solid var(--c-accent, #4da3ff);
+  padding-left: 0.5rem;
+}

@@ -578,6 +578,11 @@ export class Match implements MatchApi {
     for (const p of this.players.values()) if (p.accountId === accountId) this.sendJson(p, message);
   }
 
+  /** Everyone in the match. */
+  allPlayers(): Player[] {
+    return [...this.players.values()];
+  }
+
   /** The connections of one signed-in account (normally one). */
   playersOfAccount(accountId: number): Player[] {
     return [...this.players.values()].filter((p) => p.accountId === accountId);

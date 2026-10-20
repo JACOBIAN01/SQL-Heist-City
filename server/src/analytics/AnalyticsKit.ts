@@ -4,6 +4,9 @@ import { PgProgressStore } from '../progress/ProgressStore';
 import { ProgressBinding } from '../progress/ProgressBinding';
 import { PgLoadoutStore } from '../progress/LoadoutStore';
 import { PgContractStore } from '../progress/ContractStore';
+import { LeagueService } from '../progress/LeagueService';
+import { PgClassResults } from '../classes/ClassResults';
+import { PgPlayerRepository } from '../players/PlayerRepository';
 import type { PgDatabase } from '../pg/PgDatabase';
 import type { Match } from '../game/Match';
 import { FanOutSink, type AttemptSink } from './AttemptSink';
@@ -48,6 +51,12 @@ export class AnalyticsKit {
       progressStore: new PgProgressStore(db),
       loadoutStore: new PgLoadoutStore(db),
       contractStore: new PgContractStore(db),
+      league: new LeagueService(
+        new PgClassResults(db),
+        attempts,
+        progression,
+        async (id) => (await new PgPlayerRepository(db).findById(id))?.displayName,
+      ),
       settings: progression,
       solvedTopics: async (accountId) =>
         new Set(

@@ -353,6 +353,20 @@ export interface ContractsMessage {
   readonly completed?: readonly string[];
 }
 
+/** This week's league of the student's class (Phase 26.6): the top of the table and where they stand. */
+export interface LeagueMessage {
+  readonly t: 'league';
+  readonly week: { readonly start: string; readonly end: string };
+  readonly rows: readonly {
+    readonly rank: number;
+    readonly name: string;
+    readonly points: number;
+    readonly learningPoints: number;
+    readonly cashPoints: number;
+    readonly you: boolean;
+  }[];
+}
+
 /** One question a student met this round, with what they wrote and the model answer. */
 export interface ReviewItem {
   readonly title: string;
@@ -400,6 +414,7 @@ export type HeistServerMessage =
   | ProgressMessage
   | SkillsMessage
   | ContractsMessage
+  | LeagueMessage
   | WardrobeMessage
   | LooksMessage
   | WorldMessage

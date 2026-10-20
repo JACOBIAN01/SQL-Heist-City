@@ -8,6 +8,7 @@ import {
 import { FanOutSink, type AttemptSink } from '../analytics/AttemptSink';
 import { ContractKeeper } from './ContractKeeper';
 import type { ContractStore } from './ContractStore';
+import type { LeagueService } from './LeagueService';
 import type { Match } from '../game/Match';
 import type { Player } from '../game/Player';
 import { LoadoutKeeper, type Wardrobe } from './LoadoutKeeper';
@@ -20,6 +21,8 @@ export interface ProgressBindingDeps {
   readonly loadoutStore: LoadoutStore;
   readonly contractStore: ContractStore;
   readonly now?: () => number;
+  /** The class league; without it no league is sent. */
+  readonly league?: LeagueService;
   readonly settings: () => ProgressionSettings;
   /** Topics a student solved before this visit. */
   readonly solvedTopics: (accountId: number) => Promise<ReadonlySet<string>>;
@@ -93,7 +96,11 @@ export class ProgressBinding {
   bind(match: Match): void {
     this.match = match;
     match.heist.events.subscribe((event) => {
-      if (event.type === 'round_end') this.keeper.roundEnded(event.result);
+      if (event.type === 'round_end') {
+        this.keeper.roundEnded(event.result);
+        // The round's cash is saved a moment after it ends; the table is sent a little later.
+        setTimeout(() => this.sendLeague(match), 2000).unref();
+      }
     });
     match.heist.onLook = (player, message) => {
       if (player.accountId === undefined) return;
@@ -126,6 +133,7 @@ export class ProgressBinding {
       match.sendSkills(accountId, { t: 'skills', skills: this.skillsOf(accountId) });
       for (const p of match.playersOfAccount(accountId))
         match.sendJson(p, await this.contracts.messageOf(accountId));
+      void this.sendLeague(match, player);
       await new Promise<void>((resolve) =>
         this.inOrder(accountId, async () => {
           try {
@@ -137,6 +145,31 @@ export class ProgressBinding {
       );
     } catch (err) {
       this.deps.log('could not load progress', err);
+    }
+  }
+
+  /** The class league, to one player or to everyone signed in (a class room only). */
+  async sendLeague(match: Match, only?: Player): Promise<void> {
+    const classId = match.classInfo?.classId;
+    if (!this.deps.league || classId === undefined) return;
+    try {
+      const league = await this.deps.league.table(classId);
+      const to = only ? [only] : match.allPlayers().filter((p) => p.accountId !== undefined);
+      for (const p of to)
+        match.sendJson(p, {
+          t: 'league',
+          week: league.week,
+          rows: league.rows.slice(0, 10).map((r) => ({
+            rank: r.rank,
+            name: r.name,
+            points: r.points,
+            learningPoints: r.learningPoints,
+            cashPoints: r.cashPoints,
+            you: r.playerId === p.accountId,
+          })),
+        });
+    } catch (err) {
+      this.deps.log('could not send the league', err);
     }
   }
 
