@@ -2,6 +2,7 @@ import {
   ANCHOR_REACH_Y,
   DEFAULT_HEIST_SETTINGS,
   carrySpeedScale,
+  streakBonus,
   jsonClientMessageSchema,
   mapWithClosedDoors,
   type ChallengeServerMessage,
@@ -16,6 +17,7 @@ import { AmmoRule, GunRule, type ArmsControl } from './ArmsRules';
 import { BankingService } from './BankingService';
 import { BountyBoard } from './BountyBoard';
 import { RoundAwards } from './RoundAwards';
+import { StreakKeeper } from './StreakKeeper';
 import { FeedReporter } from './FeedReporter';
 import { HeistEvents } from './HeistEvents';
 import type { ChallengeGateway } from './ChallengeGateway';
@@ -74,6 +76,9 @@ export class HeistController implements ArmsControl {
     this.vaults = new VaultRegistry(match.map, settings.locksPerVault);
     this.vaults.closeTiers(closedTiers);
     new FeedReporter(match, this.events);
+    this.events.subscribe((event) => {
+      if (event.type === 'round_end') this.streaks.reset();
+    });
     this.bounties = new BountyBoard(match, settings, this.events);
     this.awards = new RoundAwards(this.events);
     this.banking = new BankingService(match, () => this.settings.bankingSeconds, {
@@ -222,6 +227,7 @@ export class HeistController implements ArmsControl {
 
   /** A player died: what they carried drops where they fell. */
   onDeath(victim: Player, killer?: Player): void {
+    this.streaks.broke(victim.key);
     this.banking.cancel(victim, 'died');
     this.challenges?.playerDied?.(victim.key); // an open question ends with the life
     // The killer of a wanted player collects the bounty on top of the kill bonus.
@@ -429,9 +435,12 @@ export class HeistController implements ArmsControl {
         if (reply.t === 'challenge_hint' && reply.result.ok && reply.result.hint.charged)
           this.chargeHint(player, reply.result.hint.cost, reply.result.hint.costMode);
         if (reply.t === 'challenge' && reply.result.ok) this.issuedAt.set(player.key, reply.now);
+        if (reply.t === 'challenge_result' && reply.result.status === 'wrong')
+          this.streaks.broke(player.key);
         if (reply.t === 'challenge_result' && reply.result.status === 'correct') {
           const { rewardKey, target } = reply.result;
           this.tasks.find(rewardKey)?.grant(player, rewardKey, target);
+          this.payStreak(player);
           const issued = this.issuedAt.get(player.key);
           this.issuedAt.delete(player.key);
           this.events.publish({
@@ -444,6 +453,24 @@ export class HeistController implements ArmsControl {
         this.reply(player, reply);
       })
       .catch(() => this.reply(player, this.refuse(message.ref, 'unavailable')));
+  }
+
+  private readonly streaks = new StreakKeeper();
+
+  /**
+   * A correct answer: a clean one (right at the first go) lengthens the player's run and pays the
+   * bonus from the minimum on; one that took wrong tries ends it. The tutorial pays nothing.
+   */
+  private payStreak(player: Player): void {
+    if (this.taskOptions) return;
+    const run = this.streaks.solved(player.key);
+    const bonus = streakBonus(run, this.settings);
+    if (bonus <= 0) return;
+    this.setCash(player, player.cash + bonus);
+    this.match.sendJson(player, {
+      t: 'notice',
+      text: `Streak ×${run}: +$${bonus.toLocaleString('en-US')}`,
+    });
   }
 
   /** A hint costs carried cash (a fraction of it, or a fixed amount); never more than the player has. */

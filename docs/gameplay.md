@@ -72,7 +72,7 @@ Carrying: visible bag, −10% speed per $100k (cap −30%). **Banking** at one o
 Sedan (balanced), sports car (fast, fragile), bike (light); enter/exit with F; collision damage; can be shot out; can carry cash bags.
 
 ## Engagement levers
-Alarm/bounty markers, killfeed, day/night (night = reduced visibility), vault progress on map, round-end awards (see "Round awards"), streak bonuses for consecutive correct answers.
+Alarm/bounty markers, killfeed, day/night (night = reduced visibility), vault progress on map, round-end awards (see "Round awards"), streak bonuses for consecutive correct answers (see "Progression").
 
 ## Tuning
 Tier 1 ≈ 30–60 s, tier 5 ≈ 4–6 min. Admin analytics show real medians; teachers retune tiers, not code.
@@ -194,3 +194,5 @@ Ranks (Rookie → Mastermind by default) come from total XP. The HUD shows the r
 **Skill tree (26.2).** Topics are grouped into nodes (Selecting → Filtering → Joins → Subqueries → CTEs → Window functions …). A node is *mastered* when the student has at least 3 counted questions on its topics and has earned 70 % of the marks available on them; it is *open* when everything it requires is mastered (the roots are always open). Press **J** to see it. The tree is an admin setting (`progression.skills`), so a teacher or admin can reshape it; the shipped questions' topics are all covered (a test enforces it). The tree currently shows progress and gates nothing in play — cosmetics (26.3) and the profile (26.9) use it.
 
 **Cosmetics (26.3).** Outfits (shirt colour), masks and car paint are earned, never bought or won from a box: each is unlocked by reaching a rank or by mastering a skill-tree node (the free "Street grey" outfit aside). Press **U** to wear what you have earned; locked items show what they need. The server checks every choice, and everyone in the match sees how you look; your car wears your paint while you drive it (a tint over the car's colours). The catalog is an admin setting (`progression.cosmetics`).
+
+**Streak bonus (26.4).** In a match, answers that are right at the first go, one after another, earn extra carried cash from the third on: $500 for the third, $1,000 for the fourth, and so on up to $3,000 (`heist.streak`). A wrong submit or a death ends the run, and each round starts everyone at zero. The cash is carried like any other, so it can be lost; the tutorial pays no streak.

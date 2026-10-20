@@ -48,6 +48,18 @@ export const heistSettingsSchema = z.object({
   scoreboardEverySec: z.number().positive().default(3),
   /** Seconds a player must stay at a safehouse, unhurt, to bank what they carry. */
   bankingSeconds: z.number().positive().default(4),
+  /**
+   * Streak bonus (Phase 26.4): answers that are right at the first go, one after another, earn
+   * extra carried cash from the `minStreak`-th on: `cashPerStep` for it, more for each further one,
+   * up to `cap`. A wrong submit or a death ends the streak. 0 for `cashPerStep` switches it off.
+   */
+  streak: z
+    .object({
+      minStreak: z.number().int().min(2).default(3),
+      cashPerStep: z.number().int().min(0).default(500),
+      cap: z.number().int().min(0).default(3_000),
+    })
+    .default({ minStreak: 3, cashPerStep: 500, cap: 3_000 }),
   /** Top speed lost per $100k carried (0.1 = 10%), up to `carrySlowMax`. */
   carrySlowPer100k: z.number().min(0).max(1).default(0.1),
   carrySlowMax: z.number().min(0).max(0.9).default(0.3),
@@ -55,6 +67,13 @@ export const heistSettingsSchema = z.object({
 
 export type HeistSettings = z.infer<typeof heistSettingsSchema>;
 export const DEFAULT_HEIST_SETTINGS: HeistSettings = heistSettingsSchema.parse({});
+
+/** Cash for the `streak`-th clean answer in a row (0 below the minimum, or when switched off). */
+export function streakBonus(streak: number, settings: HeistSettings): number {
+  const { minStreak, cashPerStep, cap } = settings.streak;
+  if (cashPerStep <= 0 || streak < minStreak) return 0;
+  return Math.min(cap, cashPerStep * (streak - minStreak + 1));
+}
 
 /** Top-speed multiplier for a player carrying `cash`. Server and client use the same function, so prediction agrees. */
 export function carrySpeedScale(cash: number, settings: HeistSettings): number {
