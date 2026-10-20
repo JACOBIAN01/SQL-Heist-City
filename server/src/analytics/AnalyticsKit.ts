@@ -3,6 +3,7 @@ import { DEFAULT_PROGRESSION_SETTINGS } from '@heist/shared';
 import { PgProgressStore } from '../progress/ProgressStore';
 import { ProgressBinding } from '../progress/ProgressBinding';
 import { PgLoadoutStore } from '../progress/LoadoutStore';
+import { PgContractStore } from '../progress/ContractStore';
 import type { PgDatabase } from '../pg/PgDatabase';
 import type { Match } from '../game/Match';
 import { FanOutSink, type AttemptSink } from './AttemptSink';
@@ -46,6 +47,7 @@ export class AnalyticsKit {
     this.progress = new ProgressBinding({
       progressStore: new PgProgressStore(db),
       loadoutStore: new PgLoadoutStore(db),
+      contractStore: new PgContractStore(db),
       settings: progression,
       solvedTopics: async (accountId) =>
         new Set(
@@ -90,6 +92,7 @@ export class AnalyticsKit {
   async flush(): Promise<void> {
     await this.aggregator.settled();
     await this.progress.keeper.settled();
+    await this.progress.contracts.settled();
     await this.recorder.flush();
   }
 }

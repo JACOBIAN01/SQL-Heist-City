@@ -147,6 +147,11 @@ export function buildAdmin(
       erase: async (p) => stores.progress.remove(p.id),
     })
     .register({
+      name: 'contracts',
+      export: async (p) => ({ streak: await stores.contracts.getStreak(p.id) }),
+      erase: async (p) => stores.contracts.remove(p.id),
+    })
+    .register({
       name: 'loadout',
       export: async (p) => stores.loadout.get(p.id),
       erase: async (p) => stores.loadout.remove(p.id),

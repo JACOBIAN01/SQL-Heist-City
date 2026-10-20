@@ -24,6 +24,7 @@ import { CaptionView } from './ui/hud/CaptionView';
 import { RankView } from './ui/hud/RankView';
 import { SkillTreeView } from './ui/profile/SkillTreeView';
 import { WardrobeView } from './ui/profile/WardrobeView';
+import { ContractsView } from './ui/profile/ContractsView';
 import type { LookView } from '@heist/shared';
 import { SettingsPanel } from './ui/settings/SettingsPanel';
 import { startSettings } from './settings/bootstrap';
@@ -363,6 +364,8 @@ const wardrobeView = new WardrobeView(i18n, (slot, id) =>
   client.sendJson({ t: 'set_look', slot, id }),
 );
 document.body.appendChild(wardrobeView.root);
+const contractsView = new ContractsView(i18n);
+document.body.appendChild(contractsView.root);
 /** How everyone looks, as the server last said (cosmetics). */
 let looksTable: Readonly<Record<string, LookView>> = {};
 const bankingProgress = new BankingProgress(hud);
@@ -533,6 +536,9 @@ client.subscribe({
     else if (message.t === 'review') {
       review.update(message);
       hud.toast('Round review ready — press V');
+    } else if (message.t === 'contracts') {
+      contractsView.update(message);
+      if (message.completed?.length) hud.toast(i18n.t('contracts.completed'));
     } else if (message.t === 'wardrobe') {
       wardrobeView.update(message);
     } else if (message.t === 'looks') {
@@ -654,6 +660,10 @@ const hotkeys = new Hotkeys(window, bindings)
     pointer.release();
     skillTree.hidden = !skillTree.hidden;
   })
+  .onAction('contracts', () => {
+    pointer.release();
+    contractsView.hidden = !contractsView.hidden;
+  })
   .onAction('wardrobe', () => {
     pointer.release();
     wardrobeView.hidden = !wardrobeView.hidden;
@@ -668,6 +678,7 @@ const hotkeys = new Hotkeys(window, bindings)
     reviewPanel.hidden = true;
     skillTree.hidden = true;
     wardrobeView.hidden = true;
+    contractsView.hidden = true;
   })
   .onAction('mute', () => hud.toast(sound.toggleMute() ? 'Sound off' : 'Sound on'))
   .onAction('use', () => {

@@ -1,4 +1,9 @@
 import {
+  InMemoryContractStore,
+  PgContractStore,
+  type ContractStore,
+} from '@heist/server/progress/ContractStore';
+import {
   InMemoryLoadoutStore,
   PgLoadoutStore,
   type LoadoutStore,
@@ -100,6 +105,7 @@ export interface AdminStores {
   readonly playerSettings: PlayerSettingsStore;
   readonly progress: ProgressStore;
   readonly loadout: LoadoutStore;
+  readonly contracts: ContractStore;
   playerSessions(ttlMs: number, now: () => number): PlayerSessions;
   sessions(ttlMs: number, now: () => number): SessionStore;
 }
@@ -122,6 +128,7 @@ export function sqliteStores(db: DatabaseSync): AdminStores {
     playerSettings: new InMemoryPlayerSettingsStore(),
     progress: new InMemoryProgressStore(),
     loadout: new InMemoryLoadoutStore(),
+    contracts: new InMemoryContractStore(),
     classes: new InMemoryClassRepository(
       undefined,
       () => new Set(questionRepo.list().map((q) => q.id)),
@@ -149,6 +156,7 @@ export function pgStores(db: PgDatabase): AdminStores {
     playerSettings: new PgPlayerSettingsStore(db),
     progress: new PgProgressStore(db),
     loadout: new PgLoadoutStore(db),
+    contracts: new PgContractStore(db),
     playerSessions: (ttl, now) => new PgPlayerSessions(db, ttl, now),
     sessions: (ttl, now) => new PgSessionStore(db, ttl, now),
   };

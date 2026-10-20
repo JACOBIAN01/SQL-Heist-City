@@ -64,6 +64,19 @@ export class ProgressKeeper implements AttemptSink {
   }
 
   /** A student's progress as the client shows it. */
+  /** XP that is not for a question or a round (a finished contract), added in order with the rest. */
+  bonus(accountId: number, xp: number, why: 'contract'): Promise<void> {
+    return new Promise((resolve) =>
+      this.enqueue(accountId, async () => {
+        try {
+          if (xp > 0) await this.award(accountId, { learningXp: xp }, xp, why);
+        } finally {
+          resolve();
+        }
+      }),
+    );
+  }
+
   async messageOf(accountId: number): Promise<ProgressMessage> {
     const stored = await this.store.get(accountId);
     return {
@@ -85,7 +98,7 @@ export class ProgressKeeper implements AttemptSink {
     accountId: number,
     delta: { learningXp?: number; playXp?: number },
     amount: number,
-    why: 'solve' | 'round',
+    why: 'solve' | 'round' | 'contract',
   ): Promise<void> {
     const stored = await this.store.add(accountId, delta);
     this.deliver(accountId, {

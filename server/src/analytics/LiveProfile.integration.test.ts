@@ -17,6 +17,7 @@ import {
   type ProgressMessage,
   type SkillsMessage,
   type WardrobeMessage,
+  type ContractsMessage,
   type LooksMessage,
 } from '@heist/shared';
 import { sampleQuestion } from '@heist/shared/fixtures';
@@ -174,6 +175,13 @@ describe.skipIf(!TEST_DATABASE_URL)('live profile, end to end (15.2, 15.6, 15.8)
     const first = json.find((m) => m.t === 'skills') as unknown as SkillsMessage;
     expect(first.skills.find((n) => n.id === 'select')).toMatchObject({ state: 'open', items: 0 });
     expect(first.skills.find((n) => n.id === 'filter')?.state).toBe('locked');
+
+    // Today's three contracts were dealt on joining and saved.
+    await until(() => json.some((m) => m.t === 'contracts'));
+    const dealt = json.find((m) => m.t === 'contracts') as unknown as ContractsMessage;
+    expect(dealt.contracts).toHaveLength(3);
+    expect(dealt.streak.days).toBe(0);
+    expect((await pg.query('SELECT state FROM player_contracts')).length).toBe(1);
 
     // What the student wears: free and earned items can be worn, locked ones cannot, and the whole
     // match is told how everyone looks.

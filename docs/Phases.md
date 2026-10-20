@@ -43,7 +43,7 @@
 | 23 | Game test plan | 🟨 23.1–23.4 built; 23.5–23.7 need people (playtests, students, bug bash) |
 | 24 | Classroom pilot | 🟨 plan ready; the pilot needs schools (#13) |
 | 25 | Launch checklist and release | 🟨 checklist ready; the walk and the deploy wait for the owner |
-| 26 | Progression and the meta-loop | 🟦 26.1–26.4 done |
+| 26 | Progression and the meta-loop | 🟦 26.1–26.5 done |
 | 27 | Squads and roles | ⬜ |
 | 28 | Game modes | ⬜ |
 | 29 | Living city | ⬜ |
@@ -493,7 +493,7 @@ Post-launch. Audit con 14 and "Rewards" and "Progression" in the GTA audit (targ
 | 26.2 | Skill tree by SQL topic, driven by mastery | tree shows locked and unlocked topics per student | ✅ 17 nodes over the question topics (a test checks every shipped topic is counted); a node is mastered at 70 % of marks over at least 3 counted questions, and opens when what it requires is mastered; the tree, thresholds and names are admin settings (validated: no loops, no unknown requirements). Sent to the student on joining and after each counted question; panel on **J** shows locked / open / mastered in words and marks, not colour alone |
 | 26.3 | Cosmetics (masks, outfits, car paint) unlocked by mastery and rank, no loot boxes | unlocks work and show to others | ✅ 14 cosmetics (admin-editable catalog) each unlocked by a rank or by mastering a skill; none bought or random (a test checks every item names an earned condition). The server checks every choice against current progress and stores it (`player_loadout`, in the data map, exported and erased with the account); everyone is sent how everyone looks. Outfits recolour the shirt, masks sit on the head (4 shapes, both body types), car paint tints the car a player drives. Wardrobe panel on **U**; `character.html` previews looks. Tested end to end on PostgreSQL and in the browser |
 | 26.4 | In-round streak bonus for consecutive correct answers (in gameplay.md, never built) | bonus paid; settings-driven | ✅ `heist.streak` (min run 3, $500 a step, cap $3,000, 0 switches it off): clean answers in a row pay carried cash from the third on, with a "Streak ×N: +$X" notice; a wrong submit or a death ends the run, a new round starts at zero, the tutorial pays nothing. Server-side, tested |
-| 26.5 | Daily contracts (three short SQL jobs a day) and day streaks | contracts refresh daily; streak tracked | ⬜ |
+| 26.5 | Daily contracts (three short SQL jobs a day) and day streaks | contracts refresh daily; streak tracked | ✅ 11 contract templates (topic / tier / clean; admin-editable) dealt three a day, the same for a student on the same day and different between students; filled by finished questions (never the tutorial or tests), paying XP; day streak of consecutive days with a finished contract adds +10 % contract XP a day up to 7 days, and ends after a missed day. Stored in `player_contracts` / `player_streaks` (data map, export, erase; old days cleared after 30). Panel on **L**, toast when one is done |
 | 26.6 | Weekly class leagues on mastery as well as cash | league table per class | ⬜ |
 | 26.7 | Seasons: themed content, a free progression track | a season can be configured and run | ⬜ |
 | 26.8 | Share cards: the round's best query, time, haul and award as an image | a card can be saved and shared | ⬜ |

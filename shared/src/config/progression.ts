@@ -148,6 +148,50 @@ export const DEFAULT_COSMETICS: readonly Cosmetic[] = [
   item('paint-gold', 'paint', 'Gold', 0xd4a017, { rank: 'Mastermind' }),
 ];
 
+/**
+ * A kind of daily contract (Phase 26.5). Each student is dealt a few each day from these; solving
+ * the right questions fills them and pays XP. Contracts are short and always about SQL.
+ */
+export const CONTRACT_KINDS = ['topic', 'tier', 'clean'] as const;
+export type ContractKind = (typeof CONTRACT_KINDS)[number];
+
+export const contractTemplateSchema = z.object({
+  id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  /** `topic`: solve questions of a skill-tree node's topics. `tier`: of at least a tier. `clean`: right first time. */
+  kind: z.enum(CONTRACT_KINDS),
+  /** For `topic`: a skill-tree node id. */
+  skill: z.string().optional(),
+  /** For `tier`: the lowest tier that counts. */
+  tier: z.number().int().min(1).max(5).optional(),
+  /** Questions to solve. */
+  count: z.number().int().min(1).max(20),
+  /** XP paid when it is done. */
+  xp: z.number().int().min(0),
+});
+export type ContractTemplate = z.infer<typeof contractTemplateSchema>;
+
+const contract = (
+  id: string,
+  kind: ContractKind,
+  count: number,
+  xp: number,
+  extra: Partial<ContractTemplate> = {},
+): ContractTemplate => ({ id, kind, count, xp, ...extra });
+
+export const DEFAULT_CONTRACTS: readonly ContractTemplate[] = [
+  contract('filter-3', 'topic', 3, 40, { skill: 'filter' }),
+  contract('sort-2', 'topic', 2, 30, { skill: 'sort' }),
+  contract('aggregates-3', 'topic', 3, 50, { skill: 'aggregates' }),
+  contract('grouping-2', 'topic', 2, 50, { skill: 'grouping' }),
+  contract('joins-3', 'topic', 3, 60, { skill: 'joins' }),
+  contract('subqueries-2', 'topic', 2, 70, { skill: 'subqueries' }),
+  contract('windows-2', 'topic', 2, 80, { skill: 'windows' }),
+  contract('tier2-3', 'tier', 3, 60, { tier: 2 }),
+  contract('tier3-2', 'tier', 2, 80, { tier: 3 }),
+  contract('clean-3', 'clean', 3, 50),
+  contract('clean-5', 'clean', 5, 90),
+];
+
 export const progressionSettingsSchema = z.object({
   /** XP for a solved question of tier 1…5. */
   tierXp: z.array(z.number().min(0)).length(5).default([20, 35, 55, 80, 120]),
@@ -188,6 +232,28 @@ export const progressionSettingsSchema = z.object({
         .default([...DEFAULT_SKILL_TREE]),
     })
     .default({ masteryShare: 0.7, minItems: 3, tree: [...DEFAULT_SKILL_TREE] }),
+  /** Daily contracts (26.5) and the day streak they keep. */
+  contracts: z
+    .object({
+      /** Contracts dealt each day. */
+      perDay: z.number().int().min(1).max(6).default(3),
+      templates: z
+        .array(contractTemplateSchema)
+        .refine((t) => new Set(t.map((x) => x.id)).size === t.length, 'two contracts share an id')
+        .default([...DEFAULT_CONTRACTS]),
+      /** Extra share of contract XP for each day in a row with a finished contract, up to `streakCap` days. */
+      streakBonusPerDay: z.number().min(0).max(1).default(0.1),
+      streakCap: z.number().int().min(0).default(7),
+      /** Days of past contracts kept (older ones are deleted; the streak itself is kept). */
+      keepDays: z.number().int().min(1).default(30),
+    })
+    .default({
+      perDay: 3,
+      templates: [...DEFAULT_CONTRACTS],
+      streakBonusPerDay: 0.1,
+      streakCap: 7,
+      keepDays: 30,
+    }),
   /** What can be unlocked by rank or by mastering a skill (26.3). */
   cosmetics: z
     .array(cosmeticSchema)

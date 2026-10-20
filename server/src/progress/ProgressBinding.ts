@@ -5,7 +5,9 @@ import {
   type SkillView,
   type TopicMarks,
 } from '@heist/shared';
-import type { AttemptSink } from '../analytics/AttemptSink';
+import { FanOutSink, type AttemptSink } from '../analytics/AttemptSink';
+import { ContractKeeper } from './ContractKeeper';
+import type { ContractStore } from './ContractStore';
 import type { Match } from '../game/Match';
 import type { Player } from '../game/Player';
 import { LoadoutKeeper, type Wardrobe } from './LoadoutKeeper';
@@ -16,6 +18,8 @@ import type { ProgressStore } from './ProgressStore';
 export interface ProgressBindingDeps {
   readonly progressStore: ProgressStore;
   readonly loadoutStore: LoadoutStore;
+  readonly contractStore: ContractStore;
+  readonly now?: () => number;
   readonly settings: () => ProgressionSettings;
   /** Topics a student solved before this visit. */
   readonly solvedTopics: (accountId: number) => Promise<ReadonlySet<string>>;
@@ -34,6 +38,7 @@ export interface ProgressBindingDeps {
 export class ProgressBinding {
   readonly keeper: ProgressKeeper;
   readonly loadout: LoadoutKeeper;
+  readonly contracts: ContractKeeper;
   private match: Match | undefined;
   /** How everyone in the match looks, by player id. */
   private readonly looks = new Map<number, LookView>();
@@ -51,6 +56,17 @@ export class ProgressBinding {
       },
       (err) => deps.log('could not save XP', err),
     );
+    this.contracts = new ContractKeeper(
+      deps.contractStore,
+      deps.settings,
+      deps.now ?? Date.now,
+      (accountId, xp) => this.keeper.bonus(accountId, xp, 'contract'),
+      (accountId, message) => {
+        if (this.match)
+          for (const p of this.match.playersOfAccount(accountId)) this.match.sendJson(p, message);
+      },
+      (err) => deps.log('could not update contracts', err),
+    );
     this.loadout = new LoadoutKeeper(
       deps.loadoutStore,
       deps.settings,
@@ -61,7 +77,7 @@ export class ProgressBinding {
 
   /** The XP listener for the attempt sinks. */
   get sink(): AttemptSink {
-    return this.keeper;
+    return new FanOutSink([this.keeper, this.contracts]);
   }
 
   skillsOf(accountId: number): SkillView[] {
@@ -108,6 +124,8 @@ export class ProgressBinding {
     try {
       match.sendProgress(accountId, await this.keeper.messageOf(accountId));
       match.sendSkills(accountId, { t: 'skills', skills: this.skillsOf(accountId) });
+      for (const p of match.playersOfAccount(accountId))
+        match.sendJson(p, await this.contracts.messageOf(accountId));
       await new Promise<void>((resolve) =>
         this.inOrder(accountId, async () => {
           try {

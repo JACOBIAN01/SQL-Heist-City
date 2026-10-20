@@ -5,6 +5,7 @@ import type { WeaponSpec } from '../config/combat';
 import type { AxisScore } from '../analytics/profile';
 import type { ProgressView } from '../progress/xp';
 import type { SkillView } from '../progress/skills';
+import type { ContractView } from '../progress/contracts';
 import type { CosmeticView, LookChoice, LookView } from '../progress/cosmetics';
 import { COSMETIC_SLOTS } from '../config/progression';
 import type { VehicleSettings } from '../config/vehicles';
@@ -332,13 +333,24 @@ export interface ProgressMessage {
   readonly t: 'progress';
   readonly progress: ProgressView;
   /** XP just earned, and for what, so the HUD can show "+45 XP". */
-  readonly gained?: { readonly amount: number; readonly why: 'solve' | 'round' };
+  readonly gained?: { readonly amount: number; readonly why: 'solve' | 'round' | 'contract' };
 }
 
 /** The skill tree as this student stands in it (Phase 26.2); sent on joining and after each counted question. */
 export interface SkillsMessage {
   readonly t: 'skills';
   readonly skills: readonly SkillView[];
+}
+
+/** Today's contracts and the day streak (Phase 26.5); sent on joining and whenever one moves. */
+export interface ContractsMessage {
+  readonly t: 'contracts';
+  readonly day: string;
+  readonly contracts: readonly ContractView[];
+  /** Days in a row with a finished contract, and the extra share of contract XP it gives. */
+  readonly streak: { readonly days: number; readonly bonusPct: number };
+  /** Contracts this update finished (so the HUD can say so). */
+  readonly completed?: readonly string[];
 }
 
 /** One question a student met this round, with what they wrote and the model answer. */
@@ -387,6 +399,7 @@ export type HeistServerMessage =
   | ProfileMessage
   | ProgressMessage
   | SkillsMessage
+  | ContractsMessage
   | WardrobeMessage
   | LooksMessage
   | WorldMessage

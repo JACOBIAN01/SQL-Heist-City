@@ -70,6 +70,25 @@ Which unlocked cosmetics a student wears (outfit, mask, car paint), so other pla
 | `choice` | One cosmetic id per slot (no free text) | record | with the account |
 | `updated_at` | When they last changed it | technical | with the account |
 
+### `player_contracts`
+The daily contracts a student was dealt and how far each got (Phase 26.5). Old days are deleted by the retention job.
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `player_id` | The student | pseudonymous | with the account, or 30 days per day |
+| `day` | The calendar day (UTC) | technical | as above |
+| `state` | Contract ids with progress and done flags (no free text) | record | as above |
+
+### `player_streaks`
+How many days in a row a student finished a contract.
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `player_id` | The student | pseudonymous | with the account |
+| `days` | The run length | record | with the account |
+| `last_day` | The last day a contract was finished | record | with the account |
+| `updated_at` | When it last changed | technical | with the account |
+
 ### `class_members`
 Which students joined which class (by its code).
 

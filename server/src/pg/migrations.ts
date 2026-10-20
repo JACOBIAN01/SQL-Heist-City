@@ -350,4 +350,19 @@ export const pgMigrations: readonly string[] = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   `,
+  // 15 — daily contracts and the day streak (Phase 26.5)
+  `
+  CREATE TABLE player_contracts (
+    player_id BIGINT NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    day       DATE   NOT NULL,
+    state     JSON   NOT NULL,
+    PRIMARY KEY (player_id, day)
+  );
+  CREATE TABLE player_streaks (
+    player_id  BIGINT      PRIMARY KEY REFERENCES players (id) ON DELETE CASCADE,
+    days       INTEGER     NOT NULL DEFAULT 0 CHECK (days >= 0),
+    last_day   DATE,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  `,
 ];
