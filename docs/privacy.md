@@ -403,6 +403,7 @@ These tables hold questions, settings and teaching text written by staff.
 |---|---|---|
 | **Cookies** | `heist_player` (a student's session, HttpOnly, 12 hours), a short-lived sign-in cookie during the Google redirect (minutes), the staff session cookie (12 hours). No tracking cookies | as stated |
 | **The browser** (`sessionStorage`, `localStorage`) | Unsent SQL drafts for the question being worked on; sound and display choices | on the student's own device, until they clear it |
+| **Round card** (Phase 26.8) | A picture of the student's round (name, place, haul, awards, their best query), drawn in their browser when they open the review. Saved or shared only if they press a button; the game sends it nowhere. An admin can switch it off or leave the query off (`progression.share`) | on the student's own device, as long as they keep it |
 | **Game memory** | Who is in the match, positions, health, cash, the student's last SQL for the post-round review | until the round or the connection ends; never written to the database |
 | **Content snapshot** (SQLite file on the game server) | Questions, settings, concept cards. No student data | rebuilt from PostgreSQL |
 | **Logs** | JSON lines: events, errors, anomalies (a match-local player label and, for cheat checks, our number for the student). No names, emails, tickets, queries or answers; emails and tokens in any text are masked, and a scan of real logs checks it (`scripts/scan-logs.mjs`) | by the host's log retention (set it to 30 days or less) |

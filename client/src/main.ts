@@ -26,6 +26,8 @@ import { SkillTreeView } from './ui/profile/SkillTreeView';
 import { WardrobeView } from './ui/profile/WardrobeView';
 import { ContractsView } from './ui/profile/ContractsView';
 import { LeagueView } from './ui/profile/LeagueView';
+import { ShareCardView } from './ui/share/ShareCardView';
+import type { ProgressMessage, ReviewMessage, RoundMessage } from '@heist/shared';
 import type { LookView } from '@heist/shared';
 import { SettingsPanel } from './ui/settings/SettingsPanel';
 import { startSettings } from './settings/bootstrap';
@@ -380,7 +382,36 @@ const fullMap = new FullMapView(document.body, MAP);
 const profileAll = new ProfileView('all');
 const profilePanel = h('div', { class: 'profile-panel', attrs: { hidden: '' } }, profileAll.root);
 const review = new ReviewView();
-const reviewPanel = h('div', { class: 'profile-panel', attrs: { hidden: '' } }, review.root);
+const shareCard = new ShareCardView(i18n);
+const reviewPanel = h(
+  'div',
+  { class: 'profile-panel', attrs: { hidden: '' } },
+  shareCard.root,
+  review.root,
+);
+// The round card is drawn from what this player already sees, once the round has ended.
+let roundsSeen = 0;
+let lastRoundEnd: Extract<RoundMessage, { phase: 'ended' }> | undefined;
+let lastReview: ReviewMessage | undefined;
+let shareConfig: ProgressMessage['share'];
+const refreshShareCard = (): void => {
+  const end = lastRoundEnd;
+  const mine = end?.standings.find((s) => s.id === client.playerId);
+  if (!end || !mine || !shareConfig) return;
+  shareCard.update(
+    {
+      name: mine.name,
+      round: lastReview?.round ?? roundsSeen,
+      rank: end.standings.indexOf(mine) + 1,
+      players: end.standings.length,
+      banked: mine.banked,
+      kills: mine.kills,
+      awards: end.awards.filter((a) => a.playerId === client.playerId),
+      items: lastReview?.items ?? [],
+    },
+    shareConfig,
+  );
+};
 const profileRound = new ProfileView('round');
 const profileCard = h(
   'div',
@@ -515,6 +546,13 @@ client.subscribe({
       vaultAlerts.observe(message.vaults, performance.now() / 1000);
       vaultArt?.onVaults(message.vaults, performance.now() / 1000);
     } else if (message.t === 'round') {
+      if (message.phase === 'playing') {
+        roundsSeen++;
+        lastReview = undefined;
+      } else {
+        lastRoundEnd = message;
+        refreshShareCard();
+      }
       // The tutorial has no round to race: its room closes long before the clock would matter.
       if (!tutorial) roundUi.onRound(message, performance.now());
       // The round-end card: this round over everything so far, until the next round begins.
@@ -538,6 +576,8 @@ client.subscribe({
     } else if (message.t === 'weapons') weaponTable.set(message.weapons);
     else if (message.t === 'review') {
       review.update(message);
+      lastReview = message;
+      refreshShareCard();
       hud.toast('Round review ready — press V');
     } else if (message.t === 'season') {
       wardrobeView.updateSeason(message);
@@ -556,6 +596,7 @@ client.subscribe({
       skillTree.update(message.skills);
     } else if (message.t === 'progress') {
       rankView.update(message);
+      if (message.share) shareConfig = message.share;
     } else if (message.t === 'profile') {
       latestProfile = message;
       profileAll.update(message);

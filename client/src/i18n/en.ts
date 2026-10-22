@@ -198,6 +198,13 @@ export const en = {
   'league.empty': 'Nobody has played or answered a question this week yet.',
   'league.none': 'The league shows in a class room.',
   'league.close': 'Close',
+  // --- the share card ---------------------------------------------------------------------
+  'share.title': 'Round card',
+  'share.help': 'A picture of your round. It stays on your screen until you save or share it.',
+  'share.save': 'Save image',
+  'share.share': 'Share…',
+  'share.alt': 'Your round card',
+  'share.waiting': 'Your card appears when the round ends.',
   // --- sound captions ---------------------------------------------------------------------
   'caption.shot-pistol': 'Pistol shot',
   'caption.shot-smg': 'Machine gun fire',

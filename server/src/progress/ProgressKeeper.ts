@@ -82,9 +82,11 @@ export class ProgressKeeper implements AttemptSink {
 
   async messageOf(accountId: number): Promise<ProgressMessage> {
     const stored = await this.store.get(accountId);
+    const settings = this.settings();
     return {
       t: 'progress',
-      progress: progressView(stored.learningXp, stored.playXp, this.settings()),
+      progress: progressView(stored.learningXp, stored.playXp, settings),
+      share: settings.share,
     };
   }
 

@@ -335,6 +335,12 @@ export interface ProgressMessage {
   readonly progress: ProgressView;
   /** XP just earned, and for what, so the HUD can show "+45 XP". */
   readonly gained?: { readonly amount: number; readonly why: 'solve' | 'round' | 'contract' };
+  /** What the share card may show (Phase 26.8); sent with the first progress message. */
+  readonly share?: {
+    readonly enabled: boolean;
+    readonly showQuery: boolean;
+    readonly maxQueryLines: number;
+  };
 }
 
 /** The skill tree as this student stands in it (Phase 26.2); sent on joining and after each counted question. */

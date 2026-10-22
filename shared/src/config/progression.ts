@@ -335,6 +335,16 @@ export const progressionSettingsSchema = z.object({
       pointsPerRound: 5,
       show: 30,
     }),
+  /** Share cards (26.8): a picture of the round a student chooses to save or share. */
+  share: z
+    .object({
+      enabled: z.boolean().default(true),
+      /** Put the student's best query on the card. Switch off if a class should not see each other's answers. */
+      showQuery: z.boolean().default(true),
+      /** Longest query shown, in lines. */
+      maxQueryLines: z.number().int().min(1).max(20).default(8),
+    })
+    .default({ enabled: true, showQuery: true, maxQueryLines: 8 }),
   /** Seasons (26.7): the track runs while one is current. Dates may not overlap. */
   seasons: z
     .array(seasonSchema)
