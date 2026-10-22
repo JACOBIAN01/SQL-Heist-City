@@ -1,4 +1,4 @@
-import type { AwardView, HeistSettings } from '@heist/shared';
+import type { AwardView, HeistSettings, SquadStandingView } from '@heist/shared';
 import type { Player } from '../game/Player';
 import type { MatchApi } from './MatchApi';
 import type { RoundResult } from './HeistEvents';
@@ -15,6 +15,8 @@ export interface RoundHooks {
   onEnd(): void;
   /** Who earned what this round (asked when the round ends, and of anyone joining before the next). */
   awards(): readonly AwardView[];
+  /** Squad scores, when the class plays in squads. */
+  squadTable?(): readonly SquadStandingView[] | undefined;
   /** The finished round's full result (for the class record). */
   onResult(result: RoundResult): void;
 }
@@ -126,6 +128,7 @@ export class RoundController {
         deaths: p.deaths,
       })),
       awards: this.hooks.awards(),
+      ...this.squadsField(),
     });
     this.match.broadcastJson(this.roundMessage());
     this.publishScores();
@@ -152,6 +155,7 @@ export class RoundController {
       winner: first && first.banked > 0 ? toStanding(first) : null,
       standings: ranked.slice(0, TOP).map(toStanding),
       awards: this.hooks.awards(),
+      ...this.squadsField(),
     };
   }
 
@@ -162,6 +166,7 @@ export class RoundController {
       t: 'scores',
       top: ranked.slice(0, TOP).map(toStanding),
       players: ranked.length,
+      ...this.squadsField(),
     });
     ranked.forEach((p, i) => {
       if (p.rank === i + 1 && p.rankedOf === ranked.length) return;
@@ -177,6 +182,7 @@ export class RoundController {
       t: 'scores',
       top: ranked.slice(0, TOP).map(toStanding),
       players: ranked.length,
+      ...this.squadsField(),
     });
     const rank = ranked.indexOf(player) + 1;
     if (rank > 0) {
@@ -184,6 +190,12 @@ export class RoundController {
       player.rankedOf = ranked.length;
       this.match.sendJson(player, { t: 'standing', rank, players: ranked.length });
     }
+  }
+
+  /** `{ squads }` when the class plays in squads, nothing otherwise. */
+  private squadsField(): { squads: readonly SquadStandingView[] } | Record<string, never> {
+    const squads = this.hooks.squadTable?.();
+    return squads ? { squads } : {};
   }
 
   private ticks(seconds: number): number {

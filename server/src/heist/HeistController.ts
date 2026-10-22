@@ -18,6 +18,7 @@ import { BankingService } from './BankingService';
 import { BountyBoard } from './BountyBoard';
 import { RoundAwards } from './RoundAwards';
 import { StreakKeeper } from './StreakKeeper';
+import { Squads } from './Squads';
 import { FeedReporter } from './FeedReporter';
 import { HeistEvents } from './HeistEvents';
 import type { ChallengeGateway } from './ChallengeGateway';
@@ -79,6 +80,8 @@ export class HeistController implements ArmsControl {
     this.events.subscribe((event) => {
       if (event.type === 'round_end') this.streaks.reset();
     });
+    this.squads = new Squads(match, () => this.settings.squadNames, this.events);
+    this.squads.configure(match.classInfo);
     this.bounties = new BountyBoard(match, settings, this.events);
     this.awards = new RoundAwards(this.events);
     this.banking = new BankingService(match, () => this.settings.bankingSeconds, {
@@ -113,6 +116,7 @@ export class HeistController implements ArmsControl {
         allVaultsEmptied: () =>
           [...this.vaults.all()].every((v) => v.isOpen || v.closed) && this.loot.stakes === 0,
         reset: () => this.resetWorld(),
+        squadTable: () => (this.squads.enabled ? this.squads.table() : undefined),
         awards: () => this.awards.results((id) => this.match.getPlayer(id)),
         onEnd: () => this.banking.cancelAll('round_over'),
         onResult: (result) => this.events.publish({ type: 'round_end', result }),
@@ -175,6 +179,7 @@ export class HeistController implements ArmsControl {
 
   /** A new round: vaults shut, bags gone, scores and players reset. */
   private resetWorld(): void {
+    this.squads.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
@@ -195,6 +200,7 @@ export class HeistController implements ArmsControl {
 
   /** A player just joined: tell them the guns' numbers and where every vault stands. */
   onJoin(player: Player): void {
+    this.squads.place(player);
     this.match.sendJson(player, { t: 'weapons', weapons: this.match.weapons });
     this.match.sendWorld(player);
     this.match.sendJson(player, { t: 'vaults', vaults: this.vaults.views() });
@@ -456,6 +462,8 @@ export class HeistController implements ArmsControl {
   }
 
   private readonly streaks = new StreakKeeper();
+  /** Squads of a class room (Phase 27). */
+  readonly squads: Squads;
 
   /**
    * A correct answer: a clean one (right at the first go) lengthens the player's run and pays the

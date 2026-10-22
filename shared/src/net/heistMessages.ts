@@ -180,10 +180,23 @@ export interface StandingView {
 }
 
 /** The leaders. Broadcast every few seconds; each player also learns their own rank (`standing`). */
+/** A squad's score: its members' banked cash and kills added up (Phase 27.1). */
+export interface SquadStandingView {
+  readonly squad: number;
+  readonly name: string;
+  readonly banked: number;
+  readonly kills: number;
+  /** Vault locks its members opened this round. */
+  readonly locks: number;
+  readonly members: number;
+}
+
 export interface ScoresMessage {
   readonly t: 'scores';
   readonly top: readonly StandingView[];
   readonly players: number;
+  /** Squad table, when the class plays in squads. */
+  readonly squads?: readonly SquadStandingView[];
 }
 
 export interface StandingMessage {
@@ -214,6 +227,8 @@ export type RoundMessage =
       readonly standings: readonly StandingView[];
       /** Only the awards somebody earned this round. */
       readonly awards: readonly AwardView[];
+      /** Squad table, when the class plays in squads. */
+      readonly squads?: readonly SquadStandingView[];
     };
 
 /**

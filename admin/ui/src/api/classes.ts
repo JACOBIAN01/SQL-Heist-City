@@ -94,6 +94,40 @@ export function useSaveClassQuestions(id: number) {
   });
 }
 
+export interface SquadsView {
+  mode: 'off' | 'teacher' | 'self' | 'auto';
+  size: number;
+  /** The most squads there can be. */
+  max: number;
+  /** Student id → squad number. */
+  assignments: Record<string, number>;
+}
+
+export function useSquads(id: number) {
+  return useQuery({
+    queryKey: ['class', id, 'squads'],
+    queryFn: () => api<SquadsView>(`/classes/${id}/squads`),
+  });
+}
+
+export function useSaveSquads(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (assignments: Record<string, number>) =>
+      api<SquadsView>(`/classes/${id}/squads`, { method: 'PUT', body: { assignments } }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['class', id, 'squads'] }),
+  });
+}
+
+export function useBalanceSquads(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api<SquadsView>(`/classes/${id}/squads/balance`, { method: 'POST', body: {} }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['class', id] }),
+  });
+}
+
 export function useRoster(id: number) {
   return useQuery({
     queryKey: ['class', id, 'roster'],

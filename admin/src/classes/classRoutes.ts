@@ -13,6 +13,11 @@ import {
   classInputSchema,
   classUpdateSchema,
   isWeekStart,
+  assignmentProblems,
+  balanceSquads,
+  overallScore,
+  DEFAULT_HEIST_SETTINGS,
+  type AnalyticsSettings,
   type ClassInput,
   type ClassRecord,
 } from '@heist/shared';
@@ -20,6 +25,7 @@ import type { PlayerRepository } from '@heist/server/players/PlayerRepository';
 import type { QuestionStore } from '@heist/server/questions/QuestionStore';
 import { NAME_REASONS, checkDisplayName, type NameRules } from '@heist/shared';
 import type { ClassResultRepository } from '@heist/server/classes/ClassResults';
+import type { ProfileStore } from '@heist/server/analytics/AttemptStore';
 import type { LeagueService } from '@heist/server/progress/LeagueService';
 import type { GameControl, RoomCommand } from './GameControl';
 import { requireLogin, requireUser } from '../auth/middleware';
@@ -45,6 +51,9 @@ export interface ClassRouteDeps {
   readonly results: ClassResultRepository;
   /** The weekly league (26.6). */
   readonly league?: LeagueService;
+  /** Mastery of each student, for balancing squads by it (Phase 27.2). */
+  readonly profiles?: ProfileStore;
+  readonly analytics?: () => Promise<AnalyticsSettings>;
   /** The running game, for the live controls; none when the admin is not wired to a game server. */
   readonly game?: GameControl;
   /** The display-name rules (a teacher's rename obeys them too). */
@@ -202,6 +211,60 @@ export function classRoutes(deps: ClassRouteDeps): Router {
     audit(res, 'questions', record.id, { count: links.length });
     void deps.game?.command(record.id, { action: 'refresh' });
     res.json({ links });
+  });
+
+  // --- squads (Phase 27): the teacher's list, and a balanced one made from mastery ---
+  const maxSquads = (record: ClassRecord) =>
+    Math.min(
+      DEFAULT_HEIST_SETTINGS.squadNames.length,
+      Math.ceil(record.playerCap / record.squadSize),
+    );
+  const squadView = async (record: ClassRecord) => ({
+    mode: record.squadMode,
+    size: record.squadSize,
+    max: maxSquads(record),
+    assignments: await deps.classes.squads(record.id),
+  });
+
+  router.get('/classes/:id/squads', async (req, res) => {
+    res.json(await squadView(await load(res, idParam(req.params.id))));
+  });
+
+  router.put('/classes/:id/squads', async (req, res) => {
+    const record = await load(res, idParam(req.params.id));
+    const { assignments } = parse(
+      z.object({ assignments: z.record(z.string().regex(/^\d+$/), z.number().int().min(1)) }),
+      req.body,
+    );
+    const list = Object.fromEntries(Object.entries(assignments).map(([id, s]) => [Number(id), s]));
+    const problems = assignmentProblems(list, record.squadSize, maxSquads(record));
+    if (problems.length > 0) throw new HttpError(400, 'bad_squads', problems.join('; '));
+    await deps.classes.setSquads(record.id, list);
+    audit(res, 'squads', record.id, { students: Object.keys(list).length });
+    void deps.game?.command(record.id, { action: 'refresh' });
+    res.json(await squadView(record));
+  });
+
+  router.post('/classes/:id/squads/balance', async (req, res) => {
+    const record = await load(res, idParam(req.params.id));
+    if (!deps.profiles || !deps.analytics)
+      throw new HttpError(503, 'unavailable', 'Mastery is not available to balance by');
+    const profiles = deps.profiles;
+    const settings = await deps.analytics();
+    const members = await deps.classes.members(record.id);
+    const students = await Promise.all(
+      members.map(async (m) => ({
+        id: m.playerId,
+        score: overallScore(await profiles.load(m.playerId, { kind: 'all' }), settings),
+      })),
+    );
+    const list = balanceSquads(students, record.squadSize, maxSquads(record));
+    await deps.classes.setSquads(record.id, list);
+    // A balanced list is the "auto" way of forming squads.
+    const updated = (await deps.classes.update(record.id, { squadMode: 'auto' })) ?? record;
+    audit(res, 'squads', record.id, { balanced: students.length });
+    void deps.game?.command(record.id, { action: 'refresh' });
+    res.json(await squadView(updated));
   });
 
   // --- live controls (14.7): what the teacher does while the room runs ---

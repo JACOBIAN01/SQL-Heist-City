@@ -30,6 +30,16 @@ const capField = z.number().int().min(MIN_CLASS_PLAYERS).max(MAX_CLASS_PLAYERS);
 /** The dialect pack whose notes the pop-up shows (the game itself always runs SQLite). */
 const dialectField = z.string().regex(/^[a-z][a-z0-9-]{0,30}$/);
 
+/**
+ * How students are put into squads (Phase 27): `off` plays as individuals; `teacher` uses the
+ * teacher's list; `self` lets students pick a squad in the room; `auto` is balanced by mastery
+ * when the teacher presses the button (and stored like a teacher's list).
+ */
+export const SQUAD_MODES = ['off', 'teacher', 'self', 'auto'] as const;
+export type SquadMode = (typeof SQUAD_MODES)[number];
+const squadModeField = z.enum(SQUAD_MODES);
+const squadSizeField = z.number().int().min(3).max(4);
+
 /** What a teacher sets when making a class. */
 export const classInputSchema = z.object({
   name: nameField,
@@ -38,6 +48,8 @@ export const classInputSchema = z.object({
   roundMinutes: roundField.default(null),
   playerCap: capField.default(100),
   dialect: dialectField.default('sqlite'),
+  squadMode: squadModeField.default('off'),
+  squadSize: squadSizeField.default(4),
 });
 
 /** An edit: only what is given changes (no defaults, so a rename never resets the banks). */
@@ -48,6 +60,8 @@ export const classUpdateSchema = z.object({
   roundMinutes: roundField.optional(),
   playerCap: capField.optional(),
   dialect: dialectField.optional(),
+  squadMode: squadModeField.optional(),
+  squadSize: squadSizeField.optional(),
 });
 
 export type ClassInput = z.infer<typeof classInputSchema>;

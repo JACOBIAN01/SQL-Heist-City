@@ -318,6 +318,7 @@ export class Match implements MatchApi {
     this.classConfig = config;
     this.classTasks = classTaskOptions(config);
     this.heist.setClosedTiers(closedTiers(config.banksOpen));
+    this.heist.squads.configure(config);
     this.broadcastJson({ t: 'vaults', vaults: this.heist.vaults.views() });
   }
 

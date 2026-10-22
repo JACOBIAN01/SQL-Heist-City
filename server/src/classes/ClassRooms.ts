@@ -125,7 +125,11 @@ export class ClassRooms {
   private async config(classId: number) {
     const record = await this.deps.classes.get(classId);
     if (!record) throw new Error(`class ${classId} is gone`);
-    return classMatchConfig(record, await this.deps.classes.questions(classId));
+    return classMatchConfig(
+      record,
+      await this.deps.classes.questions(classId),
+      await this.deps.classes.squads(classId),
+    );
   }
 
   private async start(classId: number): Promise<MatchInfo> {

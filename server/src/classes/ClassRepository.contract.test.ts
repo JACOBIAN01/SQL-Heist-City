@@ -201,4 +201,22 @@ describe.each(implementations)('classes: %s', (_n, make) => {
     expect(await repo.isMember(c.id, ana)).toBe(true);
     expect(await repo.isMember(c.id, 12345)).toBe(false);
   });
+
+  it('keeps squads: off by default, a mode and size that can change, and who is in which', async () => {
+    const { repo, player } = await make();
+    const c = await repo.create(input(), null);
+    expect(c).toMatchObject({ squadMode: 'off', squadSize: 4 });
+    expect((await repo.update(c.id, { squadMode: 'self', squadSize: 3 }))?.squadMode).toBe('self');
+    expect((await repo.get(c.id))?.squadSize).toBe(3);
+    const [ana, ben, cy] = [await player('a1'), await player('b1'), await player('c1')];
+    await repo.addMember(c.id, ana);
+    await repo.addMember(c.id, ben);
+    expect(await repo.squads(c.id)).toEqual({});
+    // cy never joined the class, so is left out rather than refused.
+    await repo.setSquads(c.id, { [ana]: 1, [ben]: 1, [cy]: 2 });
+    expect(await repo.squads(c.id)).toEqual({ [ana]: 1, [ben]: 1 });
+    // A new assignment replaces the old one entirely.
+    await repo.setSquads(c.id, { [ben]: 2 });
+    expect(await repo.squads(c.id)).toEqual({ [ben]: 2 });
+  });
 });

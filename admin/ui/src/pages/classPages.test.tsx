@@ -22,6 +22,8 @@ const record: ClassRecord = {
   roundMinutes: null,
   playerCap: 100,
   dialect: 'sqlite',
+  squadMode: 'off',
+  squadSize: 4,
   locked: false,
   archived: false,
   archivedAt: null,
@@ -125,6 +127,20 @@ function api(user: typeof teacher | typeof admin = teacher, served: ClassRecord 
           },
         ],
       },
+    }),
+    'GET /classes/7/squads': () => ({
+      body: { mode: 'teacher', size: 4, max: 10, assignments: { '3': 2 } },
+    }),
+    'PUT /classes/7/squads': (b) => ({
+      body: {
+        mode: 'teacher',
+        size: 4,
+        max: 10,
+        assignments: (b as { assignments: object }).assignments,
+      },
+    }),
+    'POST /classes/7/squads/balance': () => ({
+      body: { mode: 'auto', size: 4, max: 10, assignments: { '3': 1 } },
     }),
     'GET /classes/7/assessments': () => ({ body: { pre: null, post: null } }),
     'PUT /classes/7/assessments/pre': (b) => ({
@@ -263,6 +279,31 @@ describe('ClassEditorPage', () => {
     await user.click(screen.getByRole('button', { name: 'Save pre-test' }));
     const put = calls.find((c) => c.method === 'PUT' && c.path === '/classes/7/assessments/pre');
     expect(put?.body).toEqual({ questionIds: [1], open: true });
+  });
+
+  it('shows the squad list when the class has squads, saves a change, and can balance (27.2)', async () => {
+    const calls = api(teacher, { ...record, squadMode: 'teacher' });
+    renderEditor();
+    const user = userEvent.setup();
+    const table = await screen.findByRole('table', { name: 'Squad list' });
+    const pick = within(table).getByLabelText('Squad for Ana') as HTMLSelectElement;
+    expect(pick.value).toBe('2'); // from the saved list
+    await user.selectOptions(pick, '3');
+    await user.click(screen.getByRole('button', { name: 'Save squads' }));
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/classes/7/squads');
+    expect(put?.body).toEqual({ assignments: { '3': 3 } });
+    vi.stubGlobal('confirm', () => true);
+    await user.click(screen.getByRole('button', { name: 'Balance by mastery' }));
+    expect(calls.some((c) => c.method === 'POST' && c.path === '/classes/7/squads/balance')).toBe(
+      true,
+    );
+  });
+
+  it('has no squad list for a class that plays as individuals', async () => {
+    api();
+    renderEditor();
+    await screen.findByText('K7M2QX');
+    expect(screen.queryByRole('table', { name: 'Squad list' })).toBeNull();
   });
 
   it('shows the weekly league with learning and cash points apart, and can step a week back (26.6)', async () => {

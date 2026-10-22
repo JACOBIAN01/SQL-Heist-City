@@ -48,7 +48,16 @@ export interface PlayerChanged {
 export interface ClassChanged {
   readonly type: 'class_changed';
   readonly action:
-    'create' | 'update' | 'archive' | 'questions' | 'code' | 'lock' | 'unlock' | 'live' | 'consent';
+    | 'create'
+    | 'update'
+    | 'archive'
+    | 'questions'
+    | 'code'
+    | 'lock'
+    | 'unlock'
+    | 'live'
+    | 'consent'
+    | 'squads';
   readonly classId: number;
   readonly actor: { readonly id: number; readonly email: string };
   readonly detail: Record<string, unknown>;

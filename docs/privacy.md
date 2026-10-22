@@ -98,6 +98,15 @@ XP a student earned during each season (Phase 26.7), which fills the season's fr
 | `season` | Which season (an id from the settings) | technical | with the account |
 | `xp` | XP earned while it ran | record | with the account |
 
+### `class_squads`
+Which squad each student is in, within a class (Phase 27).
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `class_id` | The class | school | with the class |
+| `player_id` | The student | pseudonymous | with the class or the account |
+| `squad` | The squad's number in the class | school | as above |
+
 ### `class_members`
 Which students joined which class (by its code).
 
@@ -244,6 +253,8 @@ A teacher's class.
 | `created_at` | When made | technical | as above |
 | `updated_at` | When last changed | technical | as above |
 | `dialect` | Which SQL dialect notes to show | school | as above |
+| `squad_mode` | How squads are formed (off, teacher, self, auto) | school | as above |
+| `squad_size` | Students per squad (3 or 4) | school | as above |
 | `consent_version` | Which version of the terms the school accepted | school | as above |
 | `consent_user_id` | The teacher who accepted | pseudonymous | as above |
 | `consent_at` | When | school | as above |

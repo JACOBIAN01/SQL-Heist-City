@@ -22,7 +22,10 @@ import {
   useRound,
   useRounds,
   useRoster,
+  useBalanceSquads,
   useSaveClassQuestions,
+  useSaveSquads,
+  useSquads,
   useUpdateClass,
 } from '../api/classes';
 import { useQuestions } from '../api/questions';
@@ -57,6 +60,8 @@ function ClassEditor({ record }: { record: ClassRecord }) {
   const [minutes, setMinutes] = useState(record.roundMinutes?.toString() ?? '');
   const [cap, setCap] = useState(record.playerCap);
   const [dialect, setDialect] = useState(record.dialect);
+  const [squadMode, setSquadMode] = useState(record.squadMode);
+  const [squadSize, setSquadSize] = useState(record.squadSize);
   const packs = useSection('dialects');
   const packNames = Object.entries(
     (packs.data?.current.packs ?? {}) as Record<string, { name?: string }>,
@@ -70,6 +75,8 @@ function ClassEditor({ record }: { record: ClassRecord }) {
       roundMinutes: minutes.trim() === '' ? null : Number(minutes),
       playerCap: cap,
       dialect,
+      squadMode,
+      squadSize,
     });
 
   return (
@@ -139,6 +146,34 @@ function ClassEditor({ record }: { record: ClassRecord }) {
             )}
           </select>
         </label>
+        <fieldset>
+          <legend>Squads</legend>
+          <p className="muted">
+            Squads of 3 or 4 share their score: cash, kills and vault locks add up. Off plays as
+            individuals.
+          </p>
+          <div className="row">
+            <label>
+              How squads are formed
+              <select
+                value={squadMode}
+                onChange={(e) => setSquadMode(e.target.value as typeof squadMode)}
+              >
+                <option value="off">No squads</option>
+                <option value="teacher">I choose who is in which</option>
+                <option value="self">Students pick their own</option>
+                <option value="auto">Balanced by mastery</option>
+              </select>
+            </label>
+            <label>
+              Students per squad
+              <select value={squadSize} onChange={(e) => setSquadSize(Number(e.target.value))}>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
         <label>
           City seed (the same seed gives the same city; leave empty for the default)
           <input value={seed} onChange={(e) => setSeed(e.target.value)} maxLength={64} />
@@ -177,6 +212,7 @@ function ClassEditor({ record }: { record: ClassRecord }) {
       <LiveRoom record={record} />
       <QuestionRelease classId={record.id} />
       <Assessments classId={record.id} />
+      {record.squadMode !== 'off' && <Squads classId={record.id} />}
       <League classId={record.id} />
       <Rounds classId={record.id} />
       <Roster classId={record.id} />
@@ -465,6 +501,97 @@ function LiveRoom({ record }: { record: ClassRecord }) {
 }
 
 /** Finished rounds, kept after the room closes. */
+/** Who is in which squad: the teacher's list, or one balanced by mastery (Phase 27.2). */
+function Squads({ classId }: { classId: number }) {
+  const squads = useSquads(classId);
+  const roster = useRoster(classId);
+  const save = useSaveSquads(classId);
+  const balance = useBalanceSquads(classId);
+  const [draft, setDraft] = useState<Record<string, number>>({});
+  useEffect(() => setDraft(squads.data?.assignments ?? {}), [squads.data]);
+  if (!squads.data) return null;
+  const { mode, max, size } = squads.data;
+  const counts = new Map<number, number>();
+  for (const s of Object.values(draft)) counts.set(s, (counts.get(s) ?? 0) + 1);
+  const over = [...counts].filter(([, n]) => n > size).map(([s]) => s);
+  return (
+    <div className="card stack">
+      <h2>Squads</h2>
+      {mode === 'self' && (
+        <p className="muted">
+          Students pick their own squad in the room (up to {size} each). A list here, if you save
+          one, is used first.
+        </p>
+      )}
+      <div className="row">
+        <button
+          type="button"
+          onClick={() =>
+            window.confirm('Replace the list with one balanced by mastery?') && balance.mutate()
+          }
+        >
+          Balance by mastery
+        </button>
+        <span className="muted">
+          Strong and weak students are spread across{' '}
+          {Math.ceil((roster.data?.length ?? 0) / size) || 1} squads.
+        </span>
+      </div>
+      <ErrorMessage error={save.error ?? balance.error} />
+      {over.length > 0 && (
+        <p className="error">
+          Squad {over.join(', ')} has more than {size} students.
+        </p>
+      )}
+      <table aria-label="Squad list">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Squad</th>
+          </tr>
+        </thead>
+        <tbody>
+          {roster.data?.map((s) => (
+            <tr key={s.playerId}>
+              <td>{s.displayName}</td>
+              <td>
+                <select
+                  aria-label={`Squad for ${s.displayName}`}
+                  value={draft[String(s.playerId)] ?? 0}
+                  onChange={(e) => {
+                    const next = { ...draft };
+                    if (Number(e.target.value) === 0) delete next[String(s.playerId)];
+                    else next[String(s.playerId)] = Number(e.target.value);
+                    setDraft(next);
+                  }}
+                >
+                  <option value={0}>None</option>
+                  {Array.from({ length: max }, (_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      Squad {i + 1}
+                    </option>
+                  ))}
+                </select>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="row">
+        <span className="spacer" />
+        {save.isSuccess && <span className="notice">Saved ✓</span>}
+        <button
+          className="primary"
+          disabled={over.length > 0 || save.isPending}
+          onClick={() => save.mutate(draft)}
+        >
+          Save squads
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** The weekly league: marks earned count for more than cash, which is capped (docs/gameplay.md). */
 function League({ classId }: { classId: number }) {
   const [week, setWeek] = useState<string | undefined>();

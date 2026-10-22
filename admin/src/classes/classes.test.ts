@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { questionTemplateSchema } from '@heist/shared';
+import { emptyTotals, questionTemplateSchema } from '@heist/shared';
 import { sampleQuestion } from '@heist/shared/fixtures';
 import { startAdmin } from '../testing/harness';
 
@@ -190,5 +190,109 @@ describe('weekly league (26.6)', () => {
     expect((await hh.client.get(`/api/classes/${c.id}/league?week=2026-10-12`)).body).toMatchObject(
       { rows: [] },
     );
+  });
+});
+
+describe('squads (27.2)', () => {
+  async function classWithStudents(n: number, extra: object = {}) {
+    await boot();
+    const hh = h as Harness;
+    const c = await make('Squad class', extra);
+    const ids: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const p = await hh.stores.players.upsertFromGoogle({
+        sub: `s${i}`,
+        email: `s${i}@x.test`,
+        name: `S${i}`,
+        domain: null,
+      });
+      await hh.stores.classes.addMember(c.id, p.id);
+      ids.push(p.id);
+    }
+    return { c, ids, hh };
+  }
+
+  it('is off by default, with a mode and size a teacher can set', async () => {
+    const { c, hh } = await classWithStudents(0);
+    const view = await hh.client.get<{ mode: string; size: number; max: number }>(
+      `/api/classes/${c.id}/squads`,
+    );
+    expect(view.body).toMatchObject({ mode: 'off', size: 4, max: 10 });
+    const put = await hh.client.put<{ class: { squadMode: string; squadSize: number } }>(
+      `/api/classes/${c.id}`,
+      {
+        squadMode: 'teacher',
+        squadSize: 3,
+      },
+    );
+    expect(put.body.class).toMatchObject({ squadMode: 'teacher', squadSize: 3 });
+    expect((await hh.client.put(`/api/classes/${c.id}`, { squadSize: 7 })).status).toBe(400);
+  });
+
+  it('saves the teacher’s list, refuses a squad that is too big or out of range, and ignores non-members', async () => {
+    const { c, ids, hh } = await classWithStudents(4, { squadMode: 'teacher', squadSize: 3 });
+    const ok = await hh.client.put<{ assignments: Record<string, number> }>(
+      `/api/classes/${c.id}/squads`,
+      {
+        assignments: {
+          [ids[0] as number]: 1,
+          [ids[1] as number]: 1,
+          [ids[2] as number]: 2,
+          999999: 2,
+        },
+      },
+    );
+    expect(ok.status).toBe(200);
+    expect(ok.body.assignments).toEqual({
+      [ids[0] as number]: 1,
+      [ids[1] as number]: 1,
+      [ids[2] as number]: 2,
+    });
+    const tooBig = await hh.client.put(`/api/classes/${c.id}/squads`, {
+      assignments: Object.fromEntries(ids.map((id) => [id, 1])),
+    });
+    expect(tooBig.status).toBe(400);
+    expect(
+      (
+        await hh.client.put(`/api/classes/${c.id}/squads`, {
+          assignments: { [ids[0] as number]: 99 },
+        })
+      ).status,
+    ).toBe(400);
+    // The failed saves changed nothing.
+    expect(
+      Object.keys(
+        (await hh.client.get<{ assignments: object }>(`/api/classes/${c.id}/squads`)).body
+          .assignments,
+      ),
+    ).toHaveLength(3);
+  });
+
+  it('balances by mastery: strong and weak students are spread, and the class becomes "auto"', async () => {
+    const { c, ids, hh } = await classWithStudents(6, { squadSize: 3 });
+    // Two clearly strong students, two weak, two without enough evidence.
+    const give = async (id: number, earned: number) => {
+      const empty = emptyTotals();
+      await hh.stores.profiles.add(id, [{ kind: 'all' }], {
+        ...empty,
+        rcsbe: { ...empty.rcsbe, R: { earned, available: 100, items: 10 } },
+      });
+    };
+    await give(ids[0] as number, 95);
+    await give(ids[1] as number, 90);
+    await give(ids[2] as number, 20);
+    await give(ids[3] as number, 15);
+    const res = await hh.client.post<{ mode: string; assignments: Record<string, number> }>(
+      `/api/classes/${c.id}/squads/balance`,
+      {},
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.mode).toBe('auto');
+    const a = res.body.assignments;
+    expect(Object.keys(a)).toHaveLength(6);
+    expect(a[String(ids[0])]).not.toBe(a[String(ids[1])]); // the two strongest are split
+    const per = new Map<number, number>();
+    for (const s of Object.values(a)) per.set(s, (per.get(s) ?? 0) + 1);
+    expect([...per.values()].sort()).toEqual([3, 3]);
   });
 });

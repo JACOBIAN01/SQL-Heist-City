@@ -79,3 +79,4 @@ export * from './progress/contracts';
 export * from './progress/league';
 export * from './progress/season';
 export * from './progress/profilePage';
+export * from './classes/squads';

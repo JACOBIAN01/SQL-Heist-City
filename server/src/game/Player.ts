@@ -26,6 +26,8 @@ export class Player {
    * such as the SQL challenge service's attempts and rate limits.
    */
   key = '';
+  /** The squad this player plays in (Phase 27), 0 for none. */
+  squad = 0;
   readonly body: BodyState;
   yaw = 0;
   pitch = 0;

@@ -374,4 +374,17 @@ export const pgMigrations: readonly string[] = [
     PRIMARY KEY (player_id, season)
   );
   `,
+  // 17 — squads inside a class (Phase 27): how they are formed, and who is in which
+  `
+  ALTER TABLE classes ADD COLUMN squad_mode TEXT NOT NULL DEFAULT 'off'
+    CHECK (squad_mode IN ('off', 'teacher', 'self', 'auto'));
+  ALTER TABLE classes ADD COLUMN squad_size INTEGER NOT NULL DEFAULT 4
+    CHECK (squad_size BETWEEN 3 AND 4);
+  CREATE TABLE class_squads (
+    class_id  BIGINT  NOT NULL REFERENCES classes (id) ON DELETE CASCADE,
+    player_id BIGINT  NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    squad     INTEGER NOT NULL CHECK (squad >= 1),
+    PRIMARY KEY (class_id, player_id)
+  );
+  `,
 ];

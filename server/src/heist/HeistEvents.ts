@@ -1,4 +1,4 @@
-import type { AwardView } from '@heist/shared';
+import type { AwardView, SquadStandingView } from '@heist/shared';
 import type { Player } from '../game/Player';
 import type { Vault } from './Vault';
 
@@ -21,6 +21,8 @@ export interface RoundResult {
   readonly endedAt: number;
   readonly standings: readonly PlayerRoundResult[];
   readonly awards: readonly AwardView[];
+  /** Squad table of the round (Phase 27), when the class plays in squads. */
+  readonly squads?: readonly SquadStandingView[];
 }
 
 export type HeistEvent =

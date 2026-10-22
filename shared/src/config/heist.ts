@@ -60,6 +60,11 @@ export const heistSettingsSchema = z.object({
       cap: z.number().int().min(0).default(3_000),
     })
     .default({ minStreak: 3, cashPerStep: 500, cap: 3_000 }),
+  /** Squad names (Phase 27), by squad number: the first for squad 1, and so on. */
+  squadNames: z
+    .array(z.string().min(1).max(20))
+    .min(2)
+    .default(['Red', 'Blue', 'Green', 'Gold', 'Violet', 'Teal', 'Orange', 'Pink', 'Grey', 'Cyan']),
   /** Top speed lost per $100k carried (0.1 = 10%), up to `carrySlowMax`. */
   carrySlowPer100k: z.number().min(0).max(1).default(0.1),
   carrySlowMax: z.number().min(0).max(0.9).default(0.3),

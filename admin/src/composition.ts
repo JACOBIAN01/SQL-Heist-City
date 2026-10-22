@@ -251,6 +251,9 @@ export function buildAdmin(
       classRoutes({
         classes: stores.classes,
         results: stores.classResults,
+        profiles: stores.profiles,
+        analytics: async () =>
+          settingsParsers.analyticsFrom(await stores.settings.get(ANALYTICS_SETTINGS_KEY)),
         league: new LeagueService(
           stores.classResults,
           stores.attempts,

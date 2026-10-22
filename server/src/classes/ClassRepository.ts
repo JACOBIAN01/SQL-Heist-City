@@ -7,6 +7,7 @@ import type {
   ClassQuestionLink,
   ClassRecord,
   QuestionUsage,
+  SquadMode,
 } from '@heist/shared';
 
 // Pattern: Repository — Why: the admin, the lobby and the match all read classes; they depend on this
@@ -42,6 +43,11 @@ export interface ClassRepository {
   addMember(classId: number, playerId: number, now?: Date): Promise<boolean>;
   members(classId: number): Promise<ClassMember[]>;
   isMember(classId: number, playerId: number): Promise<boolean>;
+
+  /** Who is in which squad: student id → squad number (Phase 27). */
+  squads(classId: number): Promise<Record<number, number>>;
+  /** Replaces the whole assignment. Students who are not members of the class are ignored. */
+  setSquads(classId: number, assignments: Readonly<Record<number, number>>): Promise<void>;
 }
 
 export class UnknownClassQuestionsError extends Error {
@@ -61,6 +67,8 @@ interface ClassRow {
   round_minutes: string | null;
   player_cap: number;
   dialect: string;
+  squad_mode: SquadMode;
+  squad_size: number;
   locked: boolean;
   archived: boolean;
   archived_at: Date | null;
@@ -82,6 +90,8 @@ const fromRow = (r: ClassRow): ClassRecord => ({
   roundMinutes: r.round_minutes === null ? null : Number(r.round_minutes),
   playerCap: r.player_cap,
   dialect: r.dialect,
+  squadMode: r.squad_mode,
+  squadSize: r.squad_size,
   locked: r.locked,
   archived: r.archived,
   archivedAt: r.archived_at ? r.archived_at.toISOString() : null,
@@ -109,8 +119,8 @@ export class PgClassRepository implements ClassRepository {
     for (let i = 0; i < CODE_TRIES; i++) {
       try {
         const row = await this.db.one<ClassRow>(
-          `INSERT INTO classes (code, name, owner_user_id, city_seed, banks_open, round_minutes, player_cap, dialect)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+          `INSERT INTO classes (code, name, owner_user_id, city_seed, banks_open, round_minutes, player_cap, dialect, squad_mode, squad_size)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
           [
             this.makeCode(),
             input.name,
@@ -120,6 +130,8 @@ export class PgClassRepository implements ClassRepository {
             input.roundMinutes,
             input.playerCap,
             input.dialect,
+            input.squadMode,
+            input.squadSize,
           ],
         );
         return fromRow(row as ClassRow);
@@ -170,6 +182,8 @@ export class PgClassRepository implements ClassRepository {
     if (changes.roundMinutes !== undefined) set('round_minutes', changes.roundMinutes);
     if (changes.playerCap !== undefined) set('player_cap', changes.playerCap);
     if (changes.dialect !== undefined) set('dialect', changes.dialect);
+    if (changes.squadMode !== undefined) set('squad_mode', changes.squadMode);
+    if (changes.squadSize !== undefined) set('squad_size', changes.squadSize);
     if (sets.length === 0) return this.get(id);
     args.push(id);
     const row = await this.db.one<ClassRow>(
@@ -282,6 +296,27 @@ export class PgClassRepository implements ClassRepository {
       'SELECT 1 FROM class_members WHERE class_id = $1 AND player_id = $2',
       [classId, playerId],
     ));
+  }
+
+  async squads(classId: number): Promise<Record<number, number>> {
+    const rows = await this.db.query<{ player_id: string; squad: number }>(
+      'SELECT player_id, squad FROM class_squads WHERE class_id = $1',
+      [classId],
+    );
+    return Object.fromEntries(rows.map((r) => [Number(r.player_id), r.squad]));
+  }
+
+  async setSquads(classId: number, assignments: Readonly<Record<number, number>>): Promise<void> {
+    await this.db.tx(async (tx) => {
+      await tx.query('DELETE FROM class_squads WHERE class_id = $1', [classId]);
+      for (const [playerId, squad] of Object.entries(assignments))
+        // Only students of the class: anyone else is skipped, not an error.
+        await tx.query(
+          `INSERT INTO class_squads (class_id, player_id, squad)
+           SELECT $1, $2, $3 WHERE EXISTS (SELECT 1 FROM class_members WHERE class_id = $1 AND player_id = $2)`,
+          [classId, Number(playerId), squad],
+        );
+    });
   }
 }
 
@@ -422,5 +457,21 @@ export class InMemoryClassRepository implements ClassRepository {
 
   async isMember(classId: number, playerId: number) {
     return this.joined.get(classId)?.has(playerId) ?? false;
+  }
+
+  private readonly squadRows = new Map<number, Record<number, number>>();
+
+  async squads(classId: number) {
+    return { ...(this.squadRows.get(classId) ?? {}) };
+  }
+
+  async setSquads(classId: number, assignments: Readonly<Record<number, number>>) {
+    const members = this.joined.get(classId);
+    this.squadRows.set(
+      classId,
+      Object.fromEntries(
+        Object.entries(assignments).filter(([id]) => members?.has(Number(id))),
+      ) as Record<number, number>,
+    );
   }
 }

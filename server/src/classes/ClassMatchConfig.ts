@@ -5,6 +5,7 @@ import {
   type ClassRecord,
   type ClassQuestionLink,
   type QuestionUsage,
+  type SquadMode,
 } from '@heist/shared';
 
 /**
@@ -25,11 +26,16 @@ export interface ClassMatchConfig {
   readonly questions: Readonly<Record<QuestionUsage, readonly number[]>>;
   /** The dialect pack whose notes go with each question. */
   readonly dialect: string;
+  /** Squads (Phase 27): how they are formed, their size, and the teacher's list (student id → squad). */
+  readonly squadMode: SquadMode;
+  readonly squadSize: number;
+  readonly squads: Readonly<Record<number, number>>;
 }
 
 export function classMatchConfig(
   record: ClassRecord,
   links: readonly ClassQuestionLink[],
+  squads: Readonly<Record<number, number>> = {},
 ): ClassMatchConfig {
   const questions = Object.fromEntries(
     QUESTION_USAGES.map((u) => [u, links.filter((l) => l.usage === u).map((l) => l.questionId)]),
@@ -44,6 +50,9 @@ export function classMatchConfig(
     banksOpen: record.banksOpen,
     questions,
     dialect: record.dialect,
+    squadMode: record.squadMode,
+    squadSize: record.squadSize,
+    squads,
   };
 }
 
