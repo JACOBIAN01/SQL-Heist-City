@@ -18,6 +18,9 @@ import {
   progressionSettingsSchema,
   DEFAULT_PROGRESSION_SETTINGS,
   type ProgressionSettings,
+  modesSettingsSchema,
+  DEFAULT_MODES_SETTINGS,
+  type ModesSettings,
   type AnalyticsSettings,
   DEFAULT_NAME_RULES,
   DEFAULT_REWARD_ICONS,
@@ -60,6 +63,8 @@ export interface SettingsReader {
   analyticsSettings(): AnalyticsSettings;
   /** XP and ranks (Phase 26). */
   progressionSettings(): ProgressionSettings;
+  /** The game modes a class can pick (Phase 28). */
+  modesSettings(): ModesSettings;
   /** The dialect packs: notes on how other SQL dialects differ from SQLite. */
   dialectSettings(): DialectSettings;
   /** Which picture each reward shows. */
@@ -87,7 +92,12 @@ export class StaticSettings implements SettingsReader {
     private readonly analytics: AnalyticsSettings = DEFAULT_ANALYTICS_SETTINGS,
     private readonly dialects: DialectSettings = DEFAULT_DIALECT_SETTINGS,
     private readonly progression: ProgressionSettings = DEFAULT_PROGRESSION_SETTINGS,
+    private readonly modes: ModesSettings = DEFAULT_MODES_SETTINGS,
   ) {}
+
+  modesSettings(): ModesSettings {
+    return this.modes;
+  }
 
   progressionSettings(): ProgressionSettings {
     return this.progression;
@@ -151,6 +161,7 @@ export const ANALYTICS_SETTINGS_KEY = 'analytics';
 export const DIALECT_SETTINGS_KEY = 'dialects';
 export const PRIVACY_SETTINGS_KEY = 'privacy';
 export const PROGRESSION_SETTINGS_KEY = 'progression';
+export const MODES_SETTINGS_KEY = 'modes';
 
 /** What a match re-reads each round. */
 export function worldSettingsFrom(reader: SettingsReader): WorldSettings {
@@ -215,6 +226,8 @@ export const settingsParsers = {
     sectionFrom(raw, analyticsSettingsSchema, DEFAULT_ANALYTICS_SETTINGS),
   progressionFrom: (raw: unknown): ProgressionSettings =>
     sectionFrom(raw, progressionSettingsSchema, DEFAULT_PROGRESSION_SETTINGS),
+  modesFrom: (raw: unknown): ModesSettings =>
+    sectionFrom(raw, modesSettingsSchema, DEFAULT_MODES_SETTINGS),
   namesFrom: (raw: unknown): NameRules => sectionFrom(raw, nameRulesSchema, DEFAULT_NAME_RULES),
   privacyFrom: (raw: unknown): PrivacySettings =>
     sectionFrom(raw, privacySettingsSchema, DEFAULT_PRIVACY_SETTINGS),
@@ -261,6 +274,10 @@ export class SqliteSettingsReader implements SettingsReader {
 
   progressionSettings(): ProgressionSettings {
     return settingsParsers.progressionFrom(this.raw(PROGRESSION_SETTINGS_KEY));
+  }
+
+  modesSettings(): ModesSettings {
+    return settingsParsers.modesFrom(this.raw(MODES_SETTINGS_KEY));
   }
 
   dialectSettings(): DialectSettings {

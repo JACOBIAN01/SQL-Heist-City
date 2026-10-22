@@ -22,6 +22,7 @@ const record: ClassRecord = {
   roundMinutes: null,
   playerCap: 100,
   dialect: 'sqlite',
+  mode: 'classic',
   squadMode: 'off',
   squadSize: 4,
   locked: false,
@@ -159,6 +160,23 @@ function api(user: typeof teacher | typeof admin = teacher, served: ClassRecord 
       },
     }),
     'GET /questions': () => ({ body: { questions: [question(1, 1, 'a'), question(2, 3, 'b')] } }),
+    'GET /config/modes': () => ({
+      body: {
+        modes: {
+          current: {
+            modes: [
+              { id: 'classic', name: 'Classic heist', description: 'The full city.' },
+              {
+                id: 'smash-and-grab',
+                name: 'Smash and Grab',
+                description: 'Five minutes, one bank.',
+              },
+            ],
+          },
+          defaults: {},
+        },
+      },
+    }),
     'GET /config/dialects': () => ({
       body: {
         dialects: {
@@ -194,6 +212,18 @@ function renderEditor() {
 }
 
 describe('ClassEditorPage', () => {
+  it('lets the teacher pick a game mode, saves it, and describes it (28.1)', async () => {
+    const calls = api();
+    renderEditor();
+    const user = userEvent.setup();
+    await screen.findByRole('option', { name: 'Smash and Grab' });
+    await user.selectOptions(screen.getByLabelText(/Game mode/), 'smash-and-grab');
+    expect(screen.getByText('Five minutes, one bank.')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Save settings' }));
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/classes/7');
+    expect(put?.body).toMatchObject({ mode: 'smash-and-grab' });
+  });
+
   it('closes a bank and saves the settings', async () => {
     const calls = api();
     renderEditor();

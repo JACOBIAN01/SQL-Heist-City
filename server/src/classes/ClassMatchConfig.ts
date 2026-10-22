@@ -5,7 +5,10 @@ import {
   type ClassRecord,
   type ClassQuestionLink,
   type QuestionUsage,
+  type Mode,
   type SquadMode,
+  DEFAULT_MODES,
+  banksForMode,
 } from '@heist/shared';
 
 /**
@@ -30,12 +33,15 @@ export interface ClassMatchConfig {
   readonly squadMode: SquadMode;
   readonly squadSize: number;
   readonly squads: Readonly<Record<number, number>>;
+  /** The game mode the room plays (Phase 28): its heist changes, bank limit and duel rules. */
+  readonly mode: Mode;
 }
 
 export function classMatchConfig(
   record: ClassRecord,
   links: readonly ClassQuestionLink[],
   squads: Readonly<Record<number, number>> = {},
+  mode: Mode = DEFAULT_MODES[0] as Mode,
 ): ClassMatchConfig {
   const questions = Object.fromEntries(
     QUESTION_USAGES.map((u) => [u, links.filter((l) => l.usage === u).map((l) => l.questionId)]),
@@ -47,12 +53,14 @@ export function classMatchConfig(
     playerCap: record.playerCap,
     roundMinutes: record.roundMinutes,
     citySeed: record.citySeed,
-    banksOpen: record.banksOpen,
+    // A mode may limit how many banks are open (Smash and Grab plays on one).
+    banksOpen: banksForMode(record.banksOpen, mode),
     questions,
     dialect: record.dialect,
     squadMode: record.squadMode,
     squadSize: record.squadSize,
     squads,
+    mode,
   };
 }
 

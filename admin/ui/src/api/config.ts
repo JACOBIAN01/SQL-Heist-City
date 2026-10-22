@@ -108,7 +108,8 @@ export type SectionName =
   | 'analytics'
   | 'dialects'
   | 'privacy'
-  | 'progression';
+  | 'progression'
+  | 'modes';
 export type SectionData = { current: Record<string, unknown>; defaults: Record<string, unknown> };
 
 /** Heist rules, cars, time of day or the city: plain numbers, edited by one generic card. */

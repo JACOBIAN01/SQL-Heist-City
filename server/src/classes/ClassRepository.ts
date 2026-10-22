@@ -67,6 +67,7 @@ interface ClassRow {
   round_minutes: string | null;
   player_cap: number;
   dialect: string;
+  mode: string;
   squad_mode: SquadMode;
   squad_size: number;
   locked: boolean;
@@ -90,6 +91,7 @@ const fromRow = (r: ClassRow): ClassRecord => ({
   roundMinutes: r.round_minutes === null ? null : Number(r.round_minutes),
   playerCap: r.player_cap,
   dialect: r.dialect,
+  mode: r.mode,
   squadMode: r.squad_mode,
   squadSize: r.squad_size,
   locked: r.locked,
@@ -119,8 +121,8 @@ export class PgClassRepository implements ClassRepository {
     for (let i = 0; i < CODE_TRIES; i++) {
       try {
         const row = await this.db.one<ClassRow>(
-          `INSERT INTO classes (code, name, owner_user_id, city_seed, banks_open, round_minutes, player_cap, dialect, squad_mode, squad_size)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+          `INSERT INTO classes (code, name, owner_user_id, city_seed, banks_open, round_minutes, player_cap, dialect, squad_mode, squad_size, mode)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
           [
             this.makeCode(),
             input.name,
@@ -132,6 +134,7 @@ export class PgClassRepository implements ClassRepository {
             input.dialect,
             input.squadMode,
             input.squadSize,
+            input.mode,
           ],
         );
         return fromRow(row as ClassRow);
@@ -182,6 +185,7 @@ export class PgClassRepository implements ClassRepository {
     if (changes.roundMinutes !== undefined) set('round_minutes', changes.roundMinutes);
     if (changes.playerCap !== undefined) set('player_cap', changes.playerCap);
     if (changes.dialect !== undefined) set('dialect', changes.dialect);
+    if (changes.mode !== undefined) set('mode', changes.mode);
     if (changes.squadMode !== undefined) set('squad_mode', changes.squadMode);
     if (changes.squadSize !== undefined) set('squad_size', changes.squadSize);
     if (sets.length === 0) return this.get(id);

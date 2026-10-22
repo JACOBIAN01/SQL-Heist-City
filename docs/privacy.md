@@ -253,6 +253,7 @@ A teacher's class.
 | `created_at` | When made | technical | as above |
 | `updated_at` | When last changed | technical | as above |
 | `dialect` | Which SQL dialect notes to show | school | as above |
+| `mode` | Which game mode the room plays (an id from the settings) | school | as above |
 | `squad_mode` | How squads are formed (off, teacher, self, auto) | school | as above |
 | `squad_size` | Students per squad (3 or 4) | school | as above |
 | `consent_version` | Which version of the terms the school accepted | school | as above |

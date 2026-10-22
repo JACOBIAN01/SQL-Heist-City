@@ -90,6 +90,12 @@ export function SettingsPage() {
         editable={isAdmin}
       />
       <SectionCard
+        name="modes"
+        title="Game modes"
+        note="The modes a class can pick: each names the heist settings it changes (round length, locks, overtime…), how many banks are open, and whether the room plays a heist or SQL duels. Keep a mode called classic."
+        editable={isAdmin}
+      />
+      <SectionCard
         name="progression"
         title="XP and ranks"
         note="XP for a solved question by tier, the first-try and hint adjustments, XP for rounds (kills, cash, the podium, with a cap so fighting cannot outrun learning), and the rank names with the XP each needs."

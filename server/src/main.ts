@@ -221,6 +221,7 @@ if (pg && classPool && challenges) {
     }),
     city: () => stack.citySettings(),
     heist: () => stack.heistSettings(),
+    modes: () => stack.modesSettings(),
   });
   log.info('class rooms on: teachers start a room from the admin');
 }

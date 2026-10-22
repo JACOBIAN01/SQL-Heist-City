@@ -1,4 +1,9 @@
-import { consentIsCurrent } from '@heist/shared';
+import {
+  DEFAULT_MODES_SETTINGS,
+  consentIsCurrent,
+  modeById,
+  type ModesSettings,
+} from '@heist/shared';
 import type { HeistSettings, MatchSettings } from '@heist/shared';
 import { cityMapIdFor, citySettingsSchema, type CitySettings } from '@heist/shared';
 import type { MapName } from '../game/maps';
@@ -36,6 +41,8 @@ export interface RoomDeps {
   readonly extras: () => Omit<MatchExtras, 'classConfig'>;
   readonly city: () => CitySettings;
   readonly heist: () => HeistSettings;
+  /** The game modes a class can pick (Phase 28); without it every class plays classic. */
+  readonly modes?: () => ModesSettings;
 }
 
 export type RoomAction =
@@ -129,6 +136,7 @@ export class ClassRooms {
       record,
       await this.deps.classes.questions(classId),
       await this.deps.classes.squads(classId),
+      modeById(this.deps.modes?.() ?? DEFAULT_MODES_SETTINGS, record.mode),
     );
   }
 

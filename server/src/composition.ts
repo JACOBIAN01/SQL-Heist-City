@@ -3,6 +3,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import type {
   AnalyticsSettings,
   ProgressionSettings,
+  ModesSettings,
   CitySettings,
   CombatSettings,
   HeistSettings,
@@ -40,6 +41,8 @@ export interface ChallengeStack {
   analyticsSettings(): AnalyticsSettings;
   /** XP and ranks. */
   progressionSettings(): ProgressionSettings;
+  /** The game modes a class can pick. */
+  modesSettings(): ModesSettings;
   /** Heist rules, cars and time of day, read again at each new round. */
   worldSettings(): WorldSettings;
   /** City generation settings, read when a match is created. */
@@ -103,6 +106,7 @@ export function buildChallengeStack(
     slugOf: (id) => questions.getById(id)?.slug,
     analyticsSettings: () => settings.analyticsSettings(),
     progressionSettings: () => settings.progressionSettings(),
+    modesSettings: () => settings.modesSettings(),
     worldSettings: () => worldSettingsFrom(settings),
     citySettings: () => settings.citySettings(),
     invalidate: () => {

@@ -244,3 +244,38 @@ describe('reward icons API (12.5)', () => {
     ).toBe(400);
   });
 });
+
+describe('game modes settings API (28.1)', () => {
+  it('saves a mode an admin made up, the game reader sees it, and broken lists are refused', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    const classic = { id: 'classic', name: 'Classic heist' };
+    const marathon = {
+      id: 'marathon',
+      name: 'Marathon',
+      heist: { roundMinutes: 40 },
+      bankLimit: 2,
+    };
+    const ok = await h.client.put('/api/config/modes', { modes: { modes: [classic, marathon] } });
+    expect(ok.status).toBe(200);
+    const seen = new SqliteSettingsReader(h.db).modesSettings();
+    expect(seen.modes.map((m) => m.id)).toEqual(['classic', 'marathon']);
+    expect(seen.modes[1]).toMatchObject({
+      heist: { roundMinutes: 40 },
+      bankLimit: 2,
+      kind: 'heist',
+    });
+    for (const bad of [
+      [marathon], // no classic
+      [classic, { ...marathon, heist: { notASetting: 1 } }],
+      [classic, { ...marathon, heist: { locksPerVault: 99 } }],
+      [classic, classic],
+    ])
+      expect((await h.client.put('/api/config/modes', { modes: { modes: bad } })).status).toBe(400);
+    // The refused saves changed nothing.
+    expect(new SqliteSettingsReader(h.db).modesSettings().modes.map((m) => m.id)).toEqual([
+      'classic',
+      'marathon',
+    ]);
+  });
+});

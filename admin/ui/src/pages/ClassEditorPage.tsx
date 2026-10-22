@@ -60,6 +60,12 @@ function ClassEditor({ record }: { record: ClassRecord }) {
   const [minutes, setMinutes] = useState(record.roundMinutes?.toString() ?? '');
   const [cap, setCap] = useState(record.playerCap);
   const [dialect, setDialect] = useState(record.dialect);
+  const [mode, setMode] = useState(record.mode);
+  const modes = useSection('modes');
+  const modeList = (
+    modes.data?.current as
+      { modes?: { id: string; name: string; description: string }[] } | undefined
+  )?.modes ?? [{ id: 'classic', name: 'Classic heist', description: '' }];
   const [squadMode, setSquadMode] = useState(record.squadMode);
   const [squadSize, setSquadSize] = useState(record.squadSize);
   const packs = useSection('dialects');
@@ -75,6 +81,7 @@ function ClassEditor({ record }: { record: ClassRecord }) {
       roundMinutes: minutes.trim() === '' ? null : Number(minutes),
       playerCap: cap,
       dialect,
+      mode,
       squadMode,
       squadSize,
     });
@@ -145,6 +152,17 @@ function ClassEditor({ record }: { record: ClassRecord }) {
               ),
             )}
           </select>
+        </label>
+        <label>
+          Game mode
+          <select value={mode} onChange={(e) => setMode(e.target.value)}>
+            {modeList.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+          <span className="muted">{modeList.find((m) => m.id === mode)?.description ?? ''}</span>
         </label>
         <fieldset>
           <legend>Squads</legend>

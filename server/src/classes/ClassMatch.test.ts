@@ -20,7 +20,13 @@ import {
   closedTiers,
   type ClassMatchConfig,
 } from './ClassMatchConfig';
-import { classInputSchema, usageOfReward, type ClassRecord } from '@heist/shared';
+import {
+  DEFAULT_MODES_SETTINGS,
+  classInputSchema,
+  modeById,
+  usageOfReward,
+  type ClassRecord,
+} from '@heist/shared';
 
 const record: ClassRecord = {
   ...classInputSchema.parse({ name: '9B', banksOpen: [1], roundMinutes: 7, playerCap: 60 }),
@@ -167,5 +173,56 @@ describe('a match for a class', () => {
     );
     await new Promise((res) => setImmediate(res));
     expect([...(gateway.calls[0]?.options?.allowedQuestions ?? [])]).toEqual([99]);
+  });
+});
+
+describe('a room in another game mode (28.1, 28.2, 28.4)', () => {
+  const withMode = (id: string, over: Partial<ClassRecord> = {}) =>
+    classMatchConfig(
+      { ...record, banksOpen: [1, 2, 3], roundMinutes: null, ...over },
+      [],
+      {},
+      modeById(DEFAULT_MODES_SETTINGS, id),
+    );
+  const roundSeconds = (cfg: ClassMatchConfig) => {
+    const { join } = setup(cfg);
+    const { connection } = join();
+    return (connection.jsonOf('round').at(-1) as { endsInSec: number }).endsInSec;
+  };
+
+  it('classic changes nothing: every open bank, the game’s round length', () => {
+    const cfg = withMode('classic');
+    expect(cfg.banksOpen).toEqual([1, 2, 3]);
+    expect(roundSeconds(cfg)).toBe(DEFAULT_HEIST_SETTINGS.roundMinutes * 60);
+  });
+
+  it('smash and grab is a five-minute round on one bank with two locks', () => {
+    const cfg = withMode('smash-and-grab');
+    expect(cfg.banksOpen).toEqual([1]);
+    expect(roundSeconds(cfg)).toBe(5 * 60);
+    const { match } = setup(cfg);
+    expect(match.heist.settings.locksPerVault).toBe(2);
+  });
+
+  it('the teacher’s own round length wins over the mode’s', () => {
+    expect(roundSeconds(withMode('smash-and-grab', { roundMinutes: 8 }))).toBe(8 * 60);
+    expect(roundSeconds(withMode('classic', { roundMinutes: 8 }))).toBe(8 * 60);
+  });
+
+  it('is a mode of settings: one the admin made up works the same way', () => {
+    const custom = {
+      ...modeById(DEFAULT_MODES_SETTINGS, 'classic'),
+      id: 'marathon',
+      heist: { roundMinutes: 40 },
+      bankLimit: 2,
+    };
+    const cfg = classMatchConfig(
+      { ...record, banksOpen: [1, 2, 3, 4], roundMinutes: null },
+      [],
+      {},
+      custom,
+    );
+    expect(cfg.banksOpen).toEqual([1, 2]);
+    expect(roundSeconds(cfg)).toBe(40 * 60);
   });
 });

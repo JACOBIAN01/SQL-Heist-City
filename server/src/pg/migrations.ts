@@ -387,4 +387,8 @@ export const pgMigrations: readonly string[] = [
     PRIMARY KEY (class_id, player_id)
   );
   `,
+  // 18 — the game mode a class plays (Phase 28)
+  `
+  ALTER TABLE classes ADD COLUMN mode TEXT NOT NULL DEFAULT 'classic';
+  `,
 ];

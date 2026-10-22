@@ -1,5 +1,6 @@
 import {
   Button,
+  applyModeHeist,
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
   DEFAULT_ATMOSPHERE_SETTINGS,
@@ -329,8 +330,11 @@ export class Match implements MatchApi {
 
   /** A class's round length wins over the admin's heist setting. */
   private withClassOverrides(heist: HeistSettings): HeistSettings {
-    const minutes = this.classConfig?.roundMinutes;
-    return minutes ? { ...heist, roundMinutes: minutes } : heist;
+    const config = this.classConfig;
+    if (!config) return heist;
+    // The mode's changes go on first; the teacher's own round length still wins over them.
+    const withMode = applyModeHeist(heist, config.mode);
+    return config.roundMinutes ? { ...withMode, roundMinutes: config.roundMinutes } : withMode;
   }
 
   private worldMessage(): WorldMessage {

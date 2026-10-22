@@ -39,6 +39,8 @@ export const SQUAD_MODES = ['off', 'teacher', 'self', 'auto'] as const;
 export type SquadMode = (typeof SQUAD_MODES)[number];
 const squadModeField = z.enum(SQUAD_MODES);
 const squadSizeField = z.number().int().min(3).max(4);
+/** The game mode the room plays (Phase 28); an id from the modes settings. */
+const modeField = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
 /** The roles a squad member may take (Phase 27.3). */
 export const SQUAD_ROLES = ['hacker', 'driver', 'enforcer', 'lookout'] as const;
@@ -54,6 +56,7 @@ export const classInputSchema = z.object({
   dialect: dialectField.default('sqlite'),
   squadMode: squadModeField.default('off'),
   squadSize: squadSizeField.default(4),
+  mode: modeField.default('classic'),
 });
 
 /** An edit: only what is given changes (no defaults, so a rename never resets the banks). */
@@ -66,6 +69,7 @@ export const classUpdateSchema = z.object({
   dialect: dialectField.optional(),
   squadMode: squadModeField.optional(),
   squadSize: squadSizeField.optional(),
+  mode: modeField.optional(),
 });
 
 export type ClassInput = z.infer<typeof classInputSchema>;
