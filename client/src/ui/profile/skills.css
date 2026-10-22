@@ -1,7 +1,7 @@
 .skills {
   position: fixed;
   inset: 5vh 8vw;
-  z-index: 55;
+  z-index: 900;
   overflow: auto;
   padding: 1rem 1.25rem;
   background: rgba(14, 18, 24, 0.96);

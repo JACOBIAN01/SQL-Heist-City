@@ -43,7 +43,7 @@
 | 23 | Game test plan | 🟨 23.1–23.4 built; 23.5–23.7 need people (playtests, students, bug bash) |
 | 24 | Classroom pilot | 🟨 plan ready; the pilot needs schools (#13) |
 | 25 | Launch checklist and release | 🟨 checklist ready; the walk and the deploy wait for the owner |
-| 26 | Progression and the meta-loop | 🟦 26.1–26.8 done |
+| 26 | Progression and the meta-loop | 🟨 built (26.1–26.9) |
 | 27 | Squads and roles | ⬜ |
 | 28 | Game modes | ⬜ |
 | 29 | Living city | ⬜ |
@@ -484,7 +484,7 @@ The release gate. Every line is verified, not assumed.
 | 25.5 | First 30 days: tune tiers, times and rewards from real attempt data | a tuning report and settings changes | ⛔ after launch |
 
 ---
-## Phase 26 — Progression and the meta-loop  🟦
+## Phase 26 — Progression and the meta-loop  🟨
 Post-launch. Audit con 14 and "Rewards" and "Progression" in the GTA audit (target 8–9).
 
 | # | Subphase | Done when | Status |
@@ -497,7 +497,7 @@ Post-launch. Audit con 14 and "Rewards" and "Progression" in the GTA audit (targ
 | 26.6 | Weekly class leagues on mastery as well as cash | league table per class | ✅ per class and week (Monday–Sunday, UTC): points from marks earned (10 a mark), cash (1 a $1,000, **capped at 100 a week** so money alone cannot win) and rounds played (5 each), all admin-editable (`progression.league`); worked out from what is already recorded, nothing new stored. Teachers see it on the class page with a week picker; students in a class room see the top ten with learning and cash apart (**H**), sent on joining and after each round |
 | 26.7 | Seasons: themed content, a free progression track | a season can be configured and run | ✅ `progression.seasons` (id, name, theme, first and last day, a track of XP steps each unlocking a cosmetic; overlaps refused). XP earned while a season runs also fills its track (`player_season_xp`, in the data map, exported and erased with the account); each step unlocks a themed cosmetic for good, even after the season ends; one example season (Autumn Heist, 4 steps, 4 cosmetics) ships. The track is in the wardrobe panel with days left. **Free only: nothing to buy, no paid track** |
 | 26.8 | Share cards: the round's best query, time, haul and award as an image | a card can be saved and shared | ✅ after a round the review panel (**V**) shows a card drawn on the student's own screen: name, place, haul, kills, awards won, and their best query (highest tier solved, fastest) with its time. **Save image** downloads a PNG; **Share…** opens the device's share sheet where it exists. Nothing is uploaded or sent by the game; the model answer is never on it. `progression.share` lets an admin switch cards off or leave the query off. Needs a sign-in (the setting arrives with the player's progress) |
-| 26.9 | Player profile page (rank, mastery, history, cosmetics) | profile shows real data | ⬜ |
+| 26.9 | Player profile page (rank, mastery, history, cosmetics) | profile shows real data | ✅ **My profile** on the menu: rank, XP bar and its split (learning / playing), day streak, the two mastery radars, topics mastered, the last 20 class rounds (place, haul, kills) and what is worn / unlocked. Built from the same records and functions the match uses (`GET /auth/player/profile`, the student's own only), checked against real data in an API test and in the browser. Sessions in the match show the same numbers live (rank bar, **J**, **U**, **L**, **H**) |
 
 ---
 ## Phase 27 — Squads and roles  ⬜

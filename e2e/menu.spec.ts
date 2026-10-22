@@ -7,6 +7,15 @@ test('sign in, change language in settings, and it stays', async ({ page }) => {
 
   // Development sign-ins are marked old enough; the age gate itself is covered by unit tests.
   await expect(page.getByText('Signed in as')).toBeVisible();
+  // The profile page shows the student's own record (a new student: first rank, nothing yet).
+  await page.getByRole('button', { name: 'My profile' }).click();
+  const profile = page.locator('[data-role="profile-page"]');
+  await expect(profile).toContainText('Ana E2E');
+  await expect(profile).toContainText('Rookie · 0 XP');
+  await expect(profile).toContainText('No class rounds yet.');
+  await profile.getByRole('button', { name: 'Close' }).click();
+  await expect(profile).toBeHidden();
+
   await page.getByRole('button', { name: 'Settings' }).click();
   const panel = page.locator('[data-role="settings"]');
   await expect(panel).toBeVisible();

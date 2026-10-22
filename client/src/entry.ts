@@ -4,6 +4,7 @@ import { roomStatus } from './net/classRoom';
 import { ErrorReporter, postReport } from './errors/ErrorReporter';
 import { MainMenu } from './ui/menu/MainMenu';
 import { SettingsPanel } from './ui/settings/SettingsPanel';
+import { ProfilePage } from './ui/menu/ProfilePage';
 import { startSettings } from './settings/bootstrap';
 
 /**
@@ -32,10 +33,12 @@ if (wantsAssessment) {
   const account = new HttpAccountApi(server.account());
   const { store, i18n } = startSettings(account);
   const settingsPanel = new SettingsPanel(store, i18n);
+  const profilePage = new ProfilePage(account, i18n);
   void new MainMenu({
     account,
     i18n,
     openSettings: () => settingsPanel.open(),
+    openProfile: () => void profilePage.open(),
     go: (destination) => {
       location.search =
         destination === 'play' ? '?play' : destination === 'practice' ? '?practice' : '?tutorial';

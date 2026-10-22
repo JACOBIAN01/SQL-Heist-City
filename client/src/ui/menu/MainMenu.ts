@@ -35,6 +35,8 @@ export interface MenuOptions {
   readonly i18n?: I18n;
   /** Opens the settings panel (Phase 22); the button stays off without it. */
   readonly openSettings?: () => void;
+  /** Opens the student's profile page (Phase 26.9); the button is left out without it. */
+  readonly openProfile?: () => void;
 }
 
 const ERRORS: Readonly<Record<string, MessageKey>> = {
@@ -386,6 +388,14 @@ export class MainMenu {
         attrs: { title: this.t('menu.practiceHint') },
         on: { click: () => this.options.go('practice') },
       }),
+      ...(this.options.openProfile
+        ? [
+            h('button', {
+              text: this.t('menu.profile'),
+              on: { click: () => this.options.openProfile?.() },
+            }),
+          ]
+        : []),
       h('button', {
         text: this.t('menu.settings'),
         ...(this.options.openSettings

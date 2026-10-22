@@ -45,6 +45,11 @@ export interface ClassResultRepository {
   ): Promise<{ round: StoredRound; standings: StoredStanding[] } | undefined>;
   /** Per student: cash banked and rounds played in rounds that ended in [from, to). */
   totalsBetween(classId: number, from: Date, to: Date): Promise<PeriodTotal[]>;
+  /** A student's most recent rounds over every class, newest first. */
+  recentForPlayer(
+    playerId: number,
+    limit: number,
+  ): Promise<{ round: StoredRound; standing: StoredStanding }[]>;
   /** A student's results across a class's rounds. */
   forPlayer(
     classId: number,
@@ -108,6 +113,16 @@ export class InMemoryClassResults implements ClassResultRepository {
       }
     }
     return [...totals].map(([playerId, t]) => ({ playerId, ...t }));
+  }
+
+  async recentForPlayer(playerId: number, limit: number) {
+    return this.rows
+      .flatMap((r) => {
+        const standing = r.standings.find((s) => s.playerId === playerId);
+        return standing ? [{ round: r.round, standing }] : [];
+      })
+      .sort((a, b) => b.round.id - a.round.id)
+      .slice(0, limit);
   }
 
   async forPlayer(classId: number, playerId: number) {
@@ -245,6 +260,18 @@ export class PgClassResults implements ClassResultRepository {
       [roundId],
     );
     return { round: toRound(row), standings: standings.map(toStanding) };
+  }
+
+  async recentForPlayer(playerId: number, limit: number) {
+    const rows = await this.db.query<RoundRow & StandingRow>(
+      `SELECT r.*, c.rank, c.player_id, c.name, c.banked, c.kills, c.deaths,
+              (SELECT count(*) FROM class_results x WHERE x.round_id = r.id) AS players,
+              NULL AS winner_name, NULL AS winner_banked
+       FROM class_rounds r JOIN class_results c ON c.round_id = r.id
+       WHERE c.player_id = $1 ORDER BY r.id DESC LIMIT $2`,
+      [playerId, limit],
+    );
+    return rows.map((r) => ({ round: toRound(r), standing: toStanding(r) }));
   }
 
   async forPlayer(classId: number, playerId: number) {

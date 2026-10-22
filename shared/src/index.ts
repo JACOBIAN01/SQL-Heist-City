@@ -78,3 +78,4 @@ export * from './progress/cosmetics';
 export * from './progress/contracts';
 export * from './progress/league';
 export * from './progress/season';
+export * from './progress/profilePage';

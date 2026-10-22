@@ -24,6 +24,7 @@ function menu(who: WhoAmI, over: Partial<MenuOptions> = {}) {
     exportData: async () => '{"data":1}',
     deleteAccount: vi.fn(async () => true),
     loadSettings: async () => undefined,
+    loadProfile: async () => undefined,
     saveSettings: async () => {},
     declareAge: vi.fn(async (year: number) =>
       year > 2015
@@ -274,5 +275,17 @@ describe('joining a class from the menu', () => {
     i18n.setLocale('hi');
     expect(buttons(m)).toContain('साइन आउट');
     expect(buttons(m)).toContain('मेरा डेटा डाउनलोड करें');
+  });
+
+  it('has a My profile button only when it can open one (26.9)', async () => {
+    const openProfile = vi.fn();
+    const withIt = menu({ state: 'signed_in', player: ana }, { openProfile });
+    await withIt.m.show();
+    press(withIt.m, 'My profile');
+    expect(openProfile).toHaveBeenCalled();
+    document.body.replaceChildren();
+    const without = menu({ state: 'signed_in', player: ana });
+    await without.m.show();
+    expect(buttons(without.m)).not.toContain('My profile');
   });
 });

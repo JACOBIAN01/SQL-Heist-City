@@ -57,6 +57,8 @@ export interface PlayerAuthOptions {
   readonly privacy: () => Promise<PrivacySettings>;
   /** Each player's own settings (Phase 22.1). */
   readonly settings: PlayerSettingsStore;
+  /** The student's own profile page (Phase 26.9); the route is off without it. */
+  readonly profile?: (player: Player) => Promise<unknown>;
   readonly now?: () => number;
 }
 
@@ -277,6 +279,21 @@ export function playerRoutes(options: PlayerAuthOptions): Router {
       return;
     }
     res.json((await options.settings.get(player.id)) ?? { settings: null });
+  });
+
+  // The student's own profile page (26.9): rank, mastery, history, wardrobe. Only their own.
+  router.get('/auth/player/profile', async (req, res) => {
+    if (!fromGamePage(req, res)) return;
+    const player = await currentPlayer(req);
+    if (!player) {
+      res.status(401).json({ error: { code: 'unauthorized', message: 'Not signed in' } });
+      return;
+    }
+    if (!options.profile) {
+      res.status(404).json({ error: { code: 'not_found', message: 'No profile page' } });
+      return;
+    }
+    res.json(await options.profile(player));
   });
 
   router.put('/auth/player/settings', express.json({ limit: '16kb' }), async (req, res) => {

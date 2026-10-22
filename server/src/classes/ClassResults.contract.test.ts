@@ -157,4 +157,20 @@ describe.each(implementations)('class results: %s', (_n, make) => {
     expect(byId[b]).toMatchObject({ banked: 4000 + 5000, rounds: 2 });
     expect(await results.totalsBetween(c + 100, new Date(0), new Date('2100-01-01'))).toEqual([]);
   });
+
+  it('lists a student’s latest rounds over every class, newest first, up to a limit', async () => {
+    const { results, newClass, newPlayer } = await make();
+    const [c1, c2] = [await newClass(), await newClass()];
+    const [a, b] = [await newPlayer('a'), await newPlayer('b')];
+    await results.record(c1, result(1, [a, b]));
+    await results.record(c2, result(1, [b, a]));
+    await results.record(c1, result(2, [a]));
+    const recent = await results.recentForPlayer(a, 2);
+    expect(recent.map((r) => [r.round.classId, r.round.number, r.standing.rank])).toEqual([
+      [c1, 2, 1],
+      [c2, 1, 2],
+    ]);
+    expect(await results.recentForPlayer(a, 10)).toHaveLength(3);
+    expect(await results.recentForPlayer(b, 10)).toHaveLength(2);
+  });
 });

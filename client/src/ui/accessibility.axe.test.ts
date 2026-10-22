@@ -45,6 +45,7 @@ describe('structural accessibility (axe)', () => {
         exportData: async () => '',
         deleteAccount: async () => true,
         loadSettings: async () => undefined,
+        loadProfile: async () => undefined,
         saveSettings: async () => {},
         declareAge: async () => ({ error: 'x' }),
         signInUrl: () => '',

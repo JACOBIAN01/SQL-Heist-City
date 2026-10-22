@@ -22,6 +22,7 @@ import { SandboxTemplateValidator } from './questions/TemplateValidator';
 import { QuestionImportService } from './questions/io/QuestionImportService';
 import { SettingsService } from './config/SettingsService';
 import { configRoutes } from './config/routes';
+import { PlayerProfileService } from './players/PlayerProfileService';
 import { LeagueService } from '@heist/server/progress/LeagueService';
 import { PersonalDataRegistry, accountSource } from '@heist/server/players/PersonalData';
 import { HttpGameControl, type GameControl } from './classes/GameControl';
@@ -176,6 +177,20 @@ export function buildAdmin(
   const nameRules = async () =>
     settingsParsers.namesFrom(await stores.settings.get(NAME_RULES_KEY));
 
+  const profiles = new PlayerProfileService({
+    progress: stores.progress,
+    loadout: stores.loadout,
+    contracts: stores.contracts,
+    attempts: stores.attempts,
+    profiles: stores.profiles,
+    results: stores.classResults,
+    progression: async () =>
+      settingsParsers.progressionFrom(await stores.settings.get(PROGRESSION_SETTINGS_KEY)),
+    analytics: async () =>
+      settingsParsers.analyticsFrom(await stores.settings.get(ANALYTICS_SETTINGS_KEY)),
+    now,
+  });
+
   const limits = config.rateLimits ?? DEFAULT_RATE_LIMITS;
   const app = createAdminApp({
     logger,
@@ -192,6 +207,7 @@ export function buildAdmin(
               nameRules: nameRules,
               privacy: privacySettings,
               settings: stores.playerSettings,
+              profile: (player) => profiles.build(player),
               personalData,
               classes: stores.classes,
               sessions: playerSessions,

@@ -794,3 +794,72 @@ describe('development sign-in', () => {
     expect(g.status).toBe(503);
   });
 });
+
+describe('the student profile page (26.9)', () => {
+  beforeEach(() => boot());
+  afterEach(async () => {
+    await h.close();
+    await google.close();
+  });
+  const headers = (cookies: string) => ({ cookie: cookies, origin: GAME, 'x-heist-player': '1' });
+
+  it('is only for the signed-in student and from the game page', async () => {
+    expect(
+      (
+        await fetch(`${base}/auth/player/profile`, {
+          headers: { origin: GAME, 'x-heist-player': '1' },
+        })
+      ).status,
+    ).toBe(401);
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    expect(
+      (await fetch(`${base}/auth/player/profile`, { headers: { cookie: cookies } })).status,
+    ).toBe(403);
+  });
+
+  it('shows real rank, history and wardrobe from the records, and nobody else’s', async () => {
+    google.state.claims = { email: 'ana@school.edu', name: 'Ana' };
+    const { cookies } = await signIn();
+    const me = (await (
+      await fetch(`${base}/auth/player/me`, { headers: headers(cookies) })
+    ).json()) as {
+      player: { id: number };
+    };
+    const id = me.player.id;
+    await h.stores.progress.add(id, { learningXp: 250, playXp: 100 });
+    await h.stores.loadout.put(id, { outfit: 'outfit-crimson', mask: 'mask-balaclava' }); // second one is not earned
+    const ended = Date.now() - 3_600_000;
+    await h.stores.classResults
+      .record(1, {
+        number: 4,
+        startedAt: ended - 900_000,
+        endedAt: ended,
+        awards: [],
+        standings: [{ rank: 2, accountId: id, name: 'Ana', banked: 7000, kills: 3, deaths: 1 }],
+      })
+      .catch(() => undefined); // a class row may not exist in this harness; the history is checked below if it does
+
+    const page = (await (
+      await fetch(`${base}/auth/player/profile`, { headers: headers(cookies) })
+    ).json()) as {
+      name: string;
+      progress: { xp: number; rank: string };
+      skills: { id: string; state: string }[];
+      wardrobe: { choice: Record<string, string>; items: { id: string; unlocked: boolean }[] };
+      streakDays: number;
+      mastery: { rcsbe: unknown[]; bloom: unknown[] };
+      history: { round: number; rank: number; banked: number; kills: number }[];
+    };
+    expect(page.name).toBe('Ana');
+    expect(page.progress).toMatchObject({ xp: 350, rank: 'Runner' });
+    expect(page.skills.find((n) => n.id === 'select')?.state).toBe('open');
+    // The outfit is worn; the balaclava (rank Cracker) is not earned yet and is dropped.
+    expect(page.wardrobe.choice).toEqual({ outfit: 'outfit-crimson' });
+    expect(page.wardrobe.items.find((i) => i.id === 'outfit-street')?.unlocked).toBe(true);
+    expect(page.history).toMatchObject([{ round: 4, rank: 2, banked: 7000, kills: 3 }]);
+    expect(page.streakDays).toBe(0);
+    expect(page.mastery.rcsbe.length).toBeGreaterThan(0);
+    expect(page.mastery.bloom.length).toBeGreaterThan(0);
+  });
+});

@@ -1,4 +1,4 @@
-import { readPlayerSettings, type PlayerSettings } from '@heist/shared';
+import { readPlayerSettings, type PlayerProfilePage, type PlayerSettings } from '@heist/shared';
 
 /** A signed-in player as the account service describes them. */
 export interface AccountPlayer {
@@ -33,6 +33,8 @@ export interface AccountApi {
   /** Their settings on the account (the same on every device). */
   loadSettings(): Promise<{ settings: PlayerSettings; updatedAt: string } | undefined>;
   saveSettings(settings: PlayerSettings): Promise<void>;
+  /** Their profile page: rank, mastery, round history, wardrobe (Phase 26.9). */
+  loadProfile(): Promise<PlayerProfilePage | undefined>;
   /** The age gate: the year they were born. Only the verdict is kept. */
   declareAge(birthYear: number): Promise<AccountPlayer | { error: string; tooYoung?: boolean }>;
   /** Where to send the browser to sign in; it returns to `returnTo`. */
@@ -115,6 +117,15 @@ export class HttpAccountApi implements AccountApi {
       return body.settings && body.updatedAt
         ? { settings: readPlayerSettings(body.settings), updatedAt: body.updatedAt }
         : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  async loadProfile(): Promise<PlayerProfilePage | undefined> {
+    try {
+      const res = await this.call('/auth/player/profile');
+      return res.ok ? ((await res.json()) as PlayerProfilePage) : undefined;
     } catch {
       return undefined;
     }
