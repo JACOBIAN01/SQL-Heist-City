@@ -29,6 +29,8 @@ import { LeagueView } from './ui/profile/LeagueView';
 import { ShareCardView } from './ui/share/ShareCardView';
 import { SquadView } from './ui/hud/SquadView';
 import { DuelView } from './ui/hud/DuelView';
+import { CrowdModel } from './world/crowd/CrowdModel';
+import { CrowdRenderer } from './world/crowd/CrowdRenderer';
 import { foeMarkers, mateMarkers } from './ui/minimap/minimapModel';
 import type { ProgressMessage, ReviewMessage, RoundMessage } from '@heist/shared';
 import type { LookView } from '@heist/shared';
@@ -391,6 +393,13 @@ const duelView = new DuelView(i18n, {
   },
 });
 document.body.appendChild(duelView.root);
+// The street crowd (Phase 29.1): scenery on the sidewalks, who run from gunfire. Not part of the game.
+const crowdSettings = () => liveWorld.atmosphere.crowd;
+const crowd =
+  MAP.city && crowdSettings().count > 0
+    ? new CrowdModel(MAP.city, crowdSettings, String(MAP.id ?? 'city'))
+    : undefined;
+const crowdArt = crowd ? new CrowdRenderer(scene, crowd, crowdSettings) : undefined;
 const leagueView = new LeagueView(i18n);
 document.body.appendChild(leagueView.root);
 /** How everyone looks, as the server last said (cosmetics). */
@@ -549,6 +558,11 @@ client.subscribe({
     remotes.onEvent(event);
     feedback.onEvent(event);
     audio.onEvent(event);
+    if (event.e === 'shot') {
+      // Gunfire sends the crowd running: from the shooter, or from where you stand when it is you.
+      const from = event.shooter === client.playerId ? drawPos : remotes.positionOf(event.shooter);
+      if (from) crowd?.alarm(from.x, from.z);
+    }
   },
   closed: (reason) => {
     // The server said why (round under way, match full, out of date): show it and stay on screen.
@@ -1064,6 +1078,7 @@ renderer.setAnimationLoop((now) => {
     minimap.draw(me, markers, now / 1000);
     if (fullMap.isOpen) fullMap.draw(me, hospital ? [...markers, hospital] : markers, now / 1000);
   }
+  crowdArt?.update(drawPos, frameMs / 1000);
   lighting.frame(camera);
   lighting.follow(myCar ? myCar.model.object : model.object);
   postFx.render(scene, camera);

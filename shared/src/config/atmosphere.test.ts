@@ -11,7 +11,7 @@ describe('hourAt', () => {
 
   it('wraps past midnight and never goes negative', () => {
     expect(hourAt(20 * 60_000, s)).toBeCloseTo(1);
-    expect(hourAt(-60_000, { dayMinutes: 24, startHour: 0 })).toBeCloseTo(23);
+    expect(hourAt(-60_000, { ...s, dayMinutes: 24, startHour: 0 })).toBeCloseTo(23);
   });
 
   it('rejects impossible settings', () => {
