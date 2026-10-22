@@ -539,6 +539,8 @@ client.subscribe({
     else if (message.t === 'review') {
       review.update(message);
       hud.toast('Round review ready — press V');
+    } else if (message.t === 'season') {
+      wardrobeView.updateSeason(message);
     } else if (message.t === 'league') {
       leagueView.update(message);
     } else if (message.t === 'contracts') {

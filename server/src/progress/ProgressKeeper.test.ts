@@ -114,4 +114,26 @@ describe('ProgressKeeper', () => {
     await k.settled();
     expect(errors).toHaveLength(1);
   });
+
+  it('fills the season track with the XP earned while a season runs, and not outside it', async () => {
+    const store = new InMemoryProgressStore();
+    const clock = { now: Date.UTC(2026, 9, 20) }; // inside Autumn Heist
+    const k = new ProgressKeeper(
+      store,
+      () => DEFAULT_PROGRESSION_SETTINGS,
+      async () => new Set(['joins']),
+      () => {},
+      () => {},
+      () => clock.now,
+    );
+    k.item(item(), {});
+    await k.settled();
+    const earned = Math.round(35 * 1.25);
+    expect(await store.seasonXp(7)).toEqual({ 'autumn-heist': earned });
+    clock.now = Date.UTC(2027, 0, 15); // after it ended
+    k.item(item({ challengeId: 'later' }), {});
+    await k.settled();
+    expect(await store.seasonXp(7)).toEqual({ 'autumn-heist': earned });
+    expect((await store.get(7)).learningXp).toBe(earned * 2);
+  });
 });

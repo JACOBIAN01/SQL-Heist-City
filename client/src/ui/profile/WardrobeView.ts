@@ -1,4 +1,9 @@
-import { COSMETIC_SLOTS, type CosmeticView, type WardrobeMessage } from '@heist/shared';
+import {
+  COSMETIC_SLOTS,
+  type CosmeticView,
+  type SeasonMessage,
+  type WardrobeMessage,
+} from '@heist/shared';
 import type { I18n } from '../../i18n/I18n';
 import type { MessageKey } from '../../i18n/en';
 import { clear, h } from '../dom';
@@ -16,6 +21,7 @@ export class WardrobeView {
     attrs: { 'data-role': 'wardrobe', role: 'dialog', hidden: '' },
   });
   private last: WardrobeMessage | undefined;
+  private season: SeasonMessage['season'];
 
   constructor(
     private readonly i18n: I18n,
@@ -38,6 +44,12 @@ export class WardrobeView {
     this.draw();
   }
 
+  /** The current season's track, shown with the wardrobe it fills. */
+  updateSeason(message: SeasonMessage): void {
+    this.season = message.season;
+    this.draw();
+  }
+
   private t(key: MessageKey, params?: Record<string, string | number>): string {
     return this.i18n.t(key, params);
   }
@@ -54,6 +66,7 @@ export class WardrobeView {
         h('button', { text: this.t('wardrobe.close'), on: { click: () => (this.hidden = true) } }),
       ),
       h('p', { class: 'skills-help', text: this.t('wardrobe.help') }),
+      ...this.seasonSection(),
       ...COSMETIC_SLOTS.map((slot) => {
         const worn = this.last?.choice[slot];
         return h(
@@ -80,11 +93,46 @@ export class WardrobeView {
     );
   }
 
+  /** The season's free track: where the student is, and what each step gives. */
+  private seasonSection(): HTMLElement[] {
+    const s = this.season;
+    if (!s) return [];
+    return [
+      h(
+        'div',
+        { class: 'season', attrs: { 'data-role': 'season' } },
+        h('h3', { text: this.t('season.title', { name: s.name }) }),
+        h('p', { class: 'skills-help', text: this.t('season.help') }),
+        h('p', {
+          class: 'skills-help',
+          text: `${this.t('season.level', { level: s.level, total: s.track.length, xp: s.xp })} · ${
+            s.active ? this.t('season.daysLeft', { days: s.daysLeft }) : this.t('season.ended')
+          }`,
+        }),
+        h(
+          'ol',
+          { class: 'season-track' },
+          ...s.track.map((step) =>
+            h(
+              'li',
+              { attrs: { 'data-unlocked': String(step.unlocked) } },
+              `${this.t('season.step', { xp: step.xp, name: step.cosmeticName })} — `,
+              h('strong', { text: this.t(step.unlocked ? 'season.unlocked' : 'season.locked') }),
+            ),
+          ),
+        ),
+      ),
+    ];
+  }
+
   private item(i: CosmeticView, worn: boolean): HTMLElement {
     const need = i.needs
       ? [
           i.needs.rank ? this.t('wardrobe.needRank', { rank: i.needs.rank }) : '',
           i.needs.skill ? this.t('wardrobe.needSkill', { skill: i.needs.skill }) : '',
+          i.needs.season
+            ? this.t('wardrobe.needSeason', { xp: i.needs.season.xp, season: i.needs.season.name })
+            : '',
         ]
           .filter(Boolean)
           .join(' · ')

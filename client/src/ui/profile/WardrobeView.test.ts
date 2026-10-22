@@ -61,4 +61,52 @@ describe('WardrobeView', () => {
     });
     expect(r.violations.map((x) => x.id)).toEqual([]);
   });
+
+  it('shows the season track, with what each step gives and how far the student has got', () => {
+    const v = new WardrobeView(new I18n('en'), () => {});
+    document.body.append(v.root);
+    v.update(message());
+    v.updateSeason({
+      t: 'season',
+      season: {
+        id: 'autumn-heist',
+        name: 'Autumn Heist',
+        theme: 'autumn',
+        start: '2026-09-22',
+        end: '2026-12-21',
+        daysLeft: 12,
+        active: true,
+        xp: 150,
+        level: 1,
+        track: [
+          {
+            level: 1,
+            xp: 100,
+            cosmetic: 'outfit-autumn',
+            cosmeticName: 'Autumn jacket',
+            unlocked: true,
+          },
+          {
+            level: 2,
+            xp: 300,
+            cosmetic: 'mask-pumpkin',
+            cosmeticName: 'Pumpkin mask',
+            unlocked: false,
+          },
+        ],
+      },
+    });
+    const section = v.root.querySelector('[data-role="season"]') as HTMLElement;
+    expect(section.textContent).toContain('Autumn Heist');
+    expect(section.textContent).toContain('Step 1 of 2 · 150 season XP · 12 days left');
+    const steps = [...section.querySelectorAll('li')].map((li) => li.getAttribute('data-unlocked'));
+    expect(steps).toEqual(['true', 'false']);
+    expect(section.textContent).toContain('300 XP: Pumpkin mask');
+    expect(v.root.querySelector('[data-cosmetic="mask-pumpkin"]')?.textContent).toContain(
+      'Earn 300 season XP (Autumn Heist)',
+    );
+    // Between seasons the section goes.
+    v.updateSeason({ t: 'season' });
+    expect(v.root.querySelector('[data-role="season"]')).toBeNull();
+  });
 });

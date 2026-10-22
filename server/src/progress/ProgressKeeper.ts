@@ -1,4 +1,6 @@
 import {
+  activeSeason,
+  dayOf,
   learningXp,
   playXp,
   progressView,
@@ -30,6 +32,7 @@ export class ProgressKeeper implements AttemptSink {
     private readonly solvedTopics: (accountId: number) => Promise<ReadonlySet<string>>,
     private readonly deliver: (accountId: number, message: ProgressMessage) => void,
     private readonly onError: (err: unknown) => void = () => {},
+    private readonly now: () => number = Date.now,
   ) {}
 
   event(_event: AttemptEvent): void {}
@@ -101,6 +104,9 @@ export class ProgressKeeper implements AttemptSink {
     why: 'solve' | 'round' | 'contract',
   ): Promise<void> {
     const stored = await this.store.add(accountId, delta);
+    // While a season runs, the same XP fills its free track.
+    const season = activeSeason(this.settings(), dayOf(this.now()));
+    if (season) await this.store.addSeason(accountId, season.id, amount);
     this.deliver(accountId, {
       t: 'progress',
       progress: progressView(stored.learningXp, stored.playXp, this.settings()),

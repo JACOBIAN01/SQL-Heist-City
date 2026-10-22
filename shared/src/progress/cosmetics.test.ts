@@ -63,7 +63,9 @@ describe('cosmetics', () => {
     }
     // Nothing is for sale or random: every item names an earned condition, except the free first outfit.
     expect(
-      DEFAULT_COSMETICS.filter((c) => !c.unlock.rank && !c.unlock.skill).map((c) => c.id),
+      DEFAULT_COSMETICS.filter((c) => !c.unlock.rank && !c.unlock.skill && !c.unlock.season).map(
+        (c) => c.id,
+      ),
     ).toEqual(['outfit-street']);
   });
 
@@ -75,5 +77,19 @@ describe('cosmetics', () => {
       ],
     };
     expect(wardrobe(view(99999), none, odd)[0]?.unlocked).toBe(false);
+  });
+
+  it('unlocks a season item by season XP, for good, and not for a season that is gone', () => {
+    const at = (xp: number, settings = S) =>
+      wardrobe(view(0), none, settings, { 'autumn-heist': xp }).find(
+        (i) => i.id === 'outfit-autumn',
+      );
+    expect(at(50)).toMatchObject({
+      unlocked: false,
+      needs: { season: { name: 'Autumn Heist', xp: 100 } },
+    });
+    expect(at(100)?.unlocked).toBe(true);
+    // The season has ended and been taken out of the settings: the item cannot be got any more.
+    expect(at(5000, { ...S, seasons: [] })?.unlocked).toBe(false);
   });
 });

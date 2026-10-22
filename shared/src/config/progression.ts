@@ -117,6 +117,8 @@ export const cosmeticSchema = z.object({
       rank: z.string().optional(),
       /** A skill-tree node id; mastering it unlocks the item. */
       skill: z.string().optional(),
+      /** A season track level: earning that much XP in the season unlocks it for good (26.7). */
+      season: z.object({ id: z.string(), xp: z.number().int().min(0) }).optional(),
     })
     .default({}),
 });
@@ -146,6 +148,24 @@ export const DEFAULT_COSMETICS: readonly Cosmetic[] = [
   item('paint-blue', 'paint', 'Deep blue', 0x2c5aa0, { skill: 'aggregates' }),
   item('paint-black', 'paint', 'Matte black', 0x2b2b2b, { rank: 'Fixer' }),
   item('paint-gold', 'paint', 'Gold', 0xd4a017, { rank: 'Mastermind' }),
+  // Autumn Heist track (26.7)
+  item('outfit-autumn', 'outfit', 'Autumn jacket', 0xb7570b, {
+    season: { id: 'autumn-heist', xp: 100 },
+  }),
+  item(
+    'mask-pumpkin',
+    'mask',
+    'Pumpkin mask',
+    0xe67e22,
+    { season: { id: 'autumn-heist', xp: 300 } },
+    'clown',
+  ),
+  item('paint-autumn', 'paint', 'Maple orange', 0xc8641c, {
+    season: { id: 'autumn-heist', xp: 600 },
+  }),
+  item('outfit-harvest', 'outfit', 'Harvest coat', 0x6e4b1f, {
+    season: { id: 'autumn-heist', xp: 1000 },
+  }),
 ];
 
 /**
@@ -190,6 +210,43 @@ export const DEFAULT_CONTRACTS: readonly ContractTemplate[] = [
   contract('tier3-2', 'tier', 2, 80, { tier: 3 }),
   contract('clean-3', 'clean', 3, 50),
   contract('clean-5', 'clean', 5, 90),
+];
+
+/**
+ * A season (Phase 26.7): a few weeks with a theme and a free track. XP earned while it runs fills
+ * the track; each step unlocks a cosmetic for good. There is nothing to buy and no second, paid
+ * track.
+ */
+export const seasonSchema = z.object({
+  id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  name: z.string().min(1).max(40),
+  /** A word or two for the look of the season ("autumn"), shown with it. */
+  theme: z.string().max(30).default(''),
+  /** First and last day (UTC, `YYYY-MM-DD`). */
+  start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  /** The track: season XP needed for each step, in order, and the cosmetic it unlocks. */
+  track: z
+    .array(z.object({ xp: z.number().int().min(1), cosmetic: z.string() }))
+    .min(1)
+    .max(30),
+});
+export type Season = z.infer<typeof seasonSchema>;
+
+export const DEFAULT_SEASONS: readonly Season[] = [
+  {
+    id: 'autumn-heist',
+    name: 'Autumn Heist',
+    theme: 'autumn',
+    start: '2026-09-22',
+    end: '2026-12-21',
+    track: [
+      { xp: 100, cosmetic: 'outfit-autumn' },
+      { xp: 300, cosmetic: 'mask-pumpkin' },
+      { xp: 600, cosmetic: 'paint-autumn' },
+      { xp: 1000, cosmetic: 'outfit-harvest' },
+    ],
+  },
 ];
 
 export const progressionSettingsSchema = z.object({
@@ -278,6 +335,15 @@ export const progressionSettingsSchema = z.object({
       pointsPerRound: 5,
       show: 30,
     }),
+  /** Seasons (26.7): the track runs while one is current. Dates may not overlap. */
+  seasons: z
+    .array(seasonSchema)
+    .refine(
+      (all) =>
+        all.every((a, i) => all.every((b, j) => i === j || a.end < b.start || b.end < a.start)),
+      'seasons may not overlap',
+    )
+    .default([...DEFAULT_SEASONS]),
   /** What can be unlocked by rank or by mastering a skill (26.3). */
   cosmetics: z
     .array(cosmeticSchema)

@@ -89,6 +89,15 @@ How many days in a row a student finished a contract.
 | `last_day` | The last day a contract was finished | record | with the account |
 | `updated_at` | When it last changed | technical | with the account |
 
+### `player_season_xp`
+XP a student earned during each season (Phase 26.7), which fills the season's free track.
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `player_id` | The student | pseudonymous | with the account |
+| `season` | Which season (an id from the settings) | technical | with the account |
+| `xp` | XP earned while it ran | record | with the account |
+
 ### `class_members`
 Which students joined which class (by its code).
 

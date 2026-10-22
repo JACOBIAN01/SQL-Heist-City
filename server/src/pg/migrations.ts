@@ -365,4 +365,13 @@ export const pgMigrations: readonly string[] = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   `,
+  // 16 — season XP (Phase 26.7): XP earned while a season ran, kept per season
+  `
+  CREATE TABLE player_season_xp (
+    player_id BIGINT NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    season    TEXT   NOT NULL,
+    xp        BIGINT NOT NULL DEFAULT 0 CHECK (xp >= 0),
+    PRIMARY KEY (player_id, season)
+  );
+  `,
 ];

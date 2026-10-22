@@ -61,4 +61,16 @@ describe.each(implementations)('ProgressStore (%s)', (_name, make) => {
     await store.remove(id);
     expect(await store.get(id)).toEqual({ learningXp: 0, playXp: 0 });
   });
+
+  it('keeps season XP apart per season, adds up, and goes with the player', async () => {
+    const { store, player } = await make();
+    const id = await player();
+    expect(await store.seasonXp(id)).toEqual({});
+    await store.addSeason(id, 'autumn', 40);
+    await store.addSeason(id, 'autumn', 10);
+    await store.addSeason(id, 'spring', 5);
+    expect(await store.seasonXp(id)).toEqual({ autumn: 50, spring: 5 });
+    await store.remove(id);
+    expect(await store.seasonXp(id)).toEqual({});
+  });
 });

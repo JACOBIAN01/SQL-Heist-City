@@ -6,6 +6,7 @@ import type { AxisScore } from '../analytics/profile';
 import type { ProgressView } from '../progress/xp';
 import type { SkillView } from '../progress/skills';
 import type { ContractView } from '../progress/contracts';
+import type { SeasonView } from '../progress/season';
 import type { CosmeticView, LookChoice, LookView } from '../progress/cosmetics';
 import { COSMETIC_SLOTS } from '../config/progression';
 import type { VehicleSettings } from '../config/vehicles';
@@ -367,6 +368,12 @@ export interface LeagueMessage {
   }[];
 }
 
+/** The current season and how far the student's free track has got (Phase 26.7); absent between seasons. */
+export interface SeasonMessage {
+  readonly t: 'season';
+  readonly season?: SeasonView;
+}
+
 /** One question a student met this round, with what they wrote and the model answer. */
 export interface ReviewItem {
   readonly title: string;
@@ -415,6 +422,7 @@ export type HeistServerMessage =
   | SkillsMessage
   | ContractsMessage
   | LeagueMessage
+  | SeasonMessage
   | WardrobeMessage
   | LooksMessage
   | WorldMessage

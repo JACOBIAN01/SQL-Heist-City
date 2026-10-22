@@ -43,7 +43,7 @@
 | 23 | Game test plan | 🟨 23.1–23.4 built; 23.5–23.7 need people (playtests, students, bug bash) |
 | 24 | Classroom pilot | 🟨 plan ready; the pilot needs schools (#13) |
 | 25 | Launch checklist and release | 🟨 checklist ready; the walk and the deploy wait for the owner |
-| 26 | Progression and the meta-loop | 🟦 26.1–26.6 done |
+| 26 | Progression and the meta-loop | 🟦 26.1–26.7 done |
 | 27 | Squads and roles | ⬜ |
 | 28 | Game modes | ⬜ |
 | 29 | Living city | ⬜ |
@@ -495,7 +495,7 @@ Post-launch. Audit con 14 and "Rewards" and "Progression" in the GTA audit (targ
 | 26.4 | In-round streak bonus for consecutive correct answers (in gameplay.md, never built) | bonus paid; settings-driven | ✅ `heist.streak` (min run 3, $500 a step, cap $3,000, 0 switches it off): clean answers in a row pay carried cash from the third on, with a "Streak ×N: +$X" notice; a wrong submit or a death ends the run, a new round starts at zero, the tutorial pays nothing. Server-side, tested |
 | 26.5 | Daily contracts (three short SQL jobs a day) and day streaks | contracts refresh daily; streak tracked | ✅ 11 contract templates (topic / tier / clean; admin-editable) dealt three a day, the same for a student on the same day and different between students; filled by finished questions (never the tutorial or tests), paying XP; day streak of consecutive days with a finished contract adds +10 % contract XP a day up to 7 days, and ends after a missed day. Stored in `player_contracts` / `player_streaks` (data map, export, erase; old days cleared after 30). Panel on **L**, toast when one is done |
 | 26.6 | Weekly class leagues on mastery as well as cash | league table per class | ✅ per class and week (Monday–Sunday, UTC): points from marks earned (10 a mark), cash (1 a $1,000, **capped at 100 a week** so money alone cannot win) and rounds played (5 each), all admin-editable (`progression.league`); worked out from what is already recorded, nothing new stored. Teachers see it on the class page with a week picker; students in a class room see the top ten with learning and cash apart (**H**), sent on joining and after each round |
-| 26.7 | Seasons: themed content, a free progression track | a season can be configured and run | ⬜ |
+| 26.7 | Seasons: themed content, a free progression track | a season can be configured and run | ✅ `progression.seasons` (id, name, theme, first and last day, a track of XP steps each unlocking a cosmetic; overlaps refused). XP earned while a season runs also fills its track (`player_season_xp`, in the data map, exported and erased with the account); each step unlocks a themed cosmetic for good, even after the season ends; one example season (Autumn Heist, 4 steps, 4 cosmetics) ships. The track is in the wardrobe panel with days left. **Free only: nothing to buy, no paid track** |
 | 26.8 | Share cards: the round's best query, time, haul and award as an image | a card can be saved and shared | ⬜ |
 | 26.9 | Player profile page (rank, mastery, history, cosmetics) | profile shows real data | ⬜ |
 

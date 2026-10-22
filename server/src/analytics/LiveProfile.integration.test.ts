@@ -190,6 +190,9 @@ describe.skipIf(!TEST_DATABASE_URL)('live profile, end to end (15.2, 15.6, 15.8)
     expect(league.week.start).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(Array.isArray(league.rows)).toBe(true);
 
+    // The season message arrives on joining (its content depends on the date, so only that it comes).
+    await until(() => json.some((m) => m.t === 'season'));
+
     // What the student wears: free and earned items can be worn, locked ones cannot, and the whole
     // match is told how everyone looks.
     await until(() => json.some((m) => m.t === 'wardrobe'));

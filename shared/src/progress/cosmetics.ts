@@ -22,7 +22,12 @@ export interface CosmeticView {
   readonly shape?: MaskShape;
   readonly unlocked: boolean;
   /** For a locked one: what is missing (a rank name, a skill's name), for the client to word in the player's language. */
-  readonly needs?: { readonly rank?: string; readonly skill?: string };
+  readonly needs?: {
+    readonly rank?: string;
+    readonly skill?: string;
+    /** A season item: the season's name and the season XP it takes. */
+    readonly season?: { readonly name: string; readonly xp: number };
+  };
 }
 
 /** Every cosmetic with whether this player has earned it. */
@@ -30,10 +35,16 @@ export function wardrobe(
   progress: ProgressView,
   skills: readonly SkillView[],
   settings: ProgressionSettings,
+  /** Season XP earned so far, by season id. Earned track steps stay earned after the season ends. */
+  seasonXp: Readonly<Record<string, number>> = {},
 ): CosmeticView[] {
   const ranks = [...settings.ranks].sort((a, b) => a.minXp - b.minXp);
   return settings.cosmetics.map((c) => {
-    const needs: { rank?: string; skill?: string } = {};
+    const needs: {
+      rank?: string;
+      skill?: string;
+      season?: { name: string; xp: number };
+    } = {};
     if (c.unlock.rank) {
       const at = ranks.findIndex((r) => r.name === c.unlock.rank);
       // An unknown rank name never unlocks: a typo in the admin is visible, not a free item.
@@ -42,6 +53,12 @@ export function wardrobe(
     if (c.unlock.skill) {
       const node = skills.find((s) => s.id === c.unlock.skill);
       if (node?.state !== 'mastered') needs.skill = node?.name ?? c.unlock.skill;
+    }
+    if (c.unlock.season) {
+      const { id, xp } = c.unlock.season;
+      // A season that is not in the settings (removed) never unlocks: it is visible, not free.
+      const season = settings.seasons.find((x) => x.id === id);
+      if (!season || (seasonXp[id] ?? 0) < xp) needs.season = { name: season?.name ?? id, xp };
     }
     return {
       id: c.id,

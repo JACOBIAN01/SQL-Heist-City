@@ -1,7 +1,11 @@
 import {
+  activeSeason,
+  dayOf,
+  seasonView,
   skillTree,
   type LookView,
   type ProgressionSettings,
+  type SeasonMessage,
   type SkillView,
   type TopicMarks,
 } from '@heist/shared';
@@ -55,9 +59,11 @@ export class ProgressBinding {
       deps.solvedTopics,
       (accountId, message) => {
         this.match?.sendProgress(accountId, message);
+        void this.sendSeason(accountId);
         this.refreshWardrobe(accountId);
       },
       (err) => deps.log('could not save XP', err),
+      deps.now ?? Date.now,
     );
     this.contracts = new ContractKeeper(
       deps.contractStore,
@@ -75,12 +81,33 @@ export class ProgressBinding {
       deps.settings,
       async (accountId) => (await this.keeper.messageOf(accountId)).progress,
       (accountId) => this.skillsOf(accountId),
+      (accountId) => deps.progressStore.seasonXp(accountId),
     );
   }
 
   /** The XP listener for the attempt sinks. */
   get sink(): AttemptSink {
     return new FanOutSink([this.keeper, this.contracts]);
+  }
+
+  /** The current season and the student's place on its free track (no season: an empty message). */
+  async seasonMessageOf(accountId: number): Promise<SeasonMessage> {
+    const settings = this.deps.settings();
+    const today = dayOf((this.deps.now ?? Date.now)());
+    const season = activeSeason(settings, today);
+    if (!season) return { t: 'season' };
+    const xp = (await this.deps.progressStore.seasonXp(accountId))[season.id] ?? 0;
+    return { t: 'season', season: seasonView(season, xp, today, settings) };
+  }
+
+  private async sendSeason(accountId: number): Promise<void> {
+    try {
+      const message = await this.seasonMessageOf(accountId);
+      for (const p of this.match?.playersOfAccount(accountId) ?? [])
+        this.match?.sendJson(p, message);
+    } catch (err) {
+      this.deps.log('could not send the season', err);
+    }
   }
 
   skillsOf(accountId: number): SkillView[] {
@@ -134,6 +161,7 @@ export class ProgressBinding {
       for (const p of match.playersOfAccount(accountId))
         match.sendJson(p, await this.contracts.messageOf(accountId));
       void this.sendLeague(match, player);
+      void this.sendSeason(accountId);
       await new Promise<void>((resolve) =>
         this.inOrder(accountId, async () => {
           try {

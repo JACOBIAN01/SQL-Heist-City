@@ -13,6 +13,10 @@ export interface ProgressStore {
   get(playerId: number): Promise<StoredProgress>;
   /** Adds to a player's XP. Additive, so two matches writing at once never overwrite each other. */
   add(playerId: number, delta: Partial<StoredProgress>): Promise<StoredProgress>;
+  /** XP earned in each season so far, by season id. */
+  seasonXp(playerId: number): Promise<Record<string, number>>;
+  /** Adds to a player's XP for a season (additive). */
+  addSeason(playerId: number, seasonId: string, xp: number): Promise<void>;
   /** Removes it (the database also does this with the account). */
   remove(playerId: number): Promise<void>;
 }
@@ -51,13 +55,31 @@ export class PgProgressStore implements ProgressStore {
     return fromRow(row as Row);
   }
 
+  async seasonXp(playerId: number) {
+    const rows = await this.db.query<{ season: string; xp: string }>(
+      'SELECT season, xp FROM player_season_xp WHERE player_id = $1',
+      [playerId],
+    );
+    return Object.fromEntries(rows.map((r) => [r.season, Number(r.xp)]));
+  }
+
+  async addSeason(playerId: number, seasonId: string, xp: number) {
+    await this.db.query(
+      `INSERT INTO player_season_xp (player_id, season, xp) VALUES ($1, $2, $3)
+       ON CONFLICT (player_id, season) DO UPDATE SET xp = player_season_xp.xp + excluded.xp`,
+      [playerId, seasonId, xp],
+    );
+  }
+
   async remove(playerId: number) {
     await this.db.query('DELETE FROM player_progress WHERE player_id = $1', [playerId]);
+    await this.db.query('DELETE FROM player_season_xp WHERE player_id = $1', [playerId]);
   }
 }
 
 export class InMemoryProgressStore implements ProgressStore {
   private readonly rows = new Map<number, StoredProgress>();
+  private readonly seasons = new Map<string, number>();
 
   async get(playerId: number) {
     return this.rows.get(playerId) ?? NO_PROGRESS;
@@ -73,7 +95,21 @@ export class InMemoryProgressStore implements ProgressStore {
     return next;
   }
 
+  async seasonXp(playerId: number) {
+    const out: Record<string, number> = {};
+    for (const [key, xp] of this.seasons)
+      if (key.startsWith(`${playerId}|`)) out[key.slice(String(playerId).length + 1)] = xp;
+    return out;
+  }
+
+  async addSeason(playerId: number, seasonId: string, xp: number) {
+    const key = `${playerId}|${seasonId}`;
+    this.seasons.set(key, (this.seasons.get(key) ?? 0) + xp);
+  }
+
   async remove(playerId: number) {
     this.rows.delete(playerId);
+    for (const key of [...this.seasons.keys()])
+      if (key.startsWith(`${playerId}|`)) this.seasons.delete(key);
   }
 }

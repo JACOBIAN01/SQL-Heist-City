@@ -28,6 +28,9 @@ export class LoadoutKeeper {
     private readonly settings: () => ProgressionSettings,
     private readonly progressOf: (accountId: number) => Promise<ProgressView>,
     private readonly skillsOf: (accountId: number) => readonly SkillView[],
+    private readonly seasonXpOf: (
+      accountId: number,
+    ) => Promise<Record<string, number>> = async () => ({}),
   ) {}
 
   /** The student's wardrobe, with a stored choice that is no longer valid quietly dropped. */
@@ -36,6 +39,7 @@ export class LoadoutKeeper {
       await this.progressOf(accountId),
       this.skillsOf(accountId),
       this.settings(),
+      await this.seasonXpOf(accountId),
     );
     const stored = await this.store.get(accountId);
     return { items, choice: validChoice(stored, items) };

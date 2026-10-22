@@ -163,6 +163,16 @@ export const en = {
   'wardrobe.needRank': 'Reach rank {rank}',
   'wardrobe.needSkill': 'Master {skill}',
   'wardrobe.close': 'Close',
+  'wardrobe.needSeason': 'Earn {xp} season XP ({season})',
+  'season.title': '{name}',
+  'season.help':
+    'A free track: every XP you earn this season fills it, and each step is yours for good. Nothing to buy.',
+  'season.level': 'Step {level} of {total} · {xp} season XP',
+  'season.daysLeft': '{days} days left',
+  'season.ended': 'Ended',
+  'season.step': '{xp} XP: {name}',
+  'season.unlocked': 'Reached',
+  'season.locked': 'Not yet',
   // --- daily contracts --------------------------------------------------------------------
   'contracts.title': 'Daily contracts',
   'contracts.help':
