@@ -36,6 +36,11 @@ import { taskHandler } from './tasks/handlers';
 export interface IssueOptions {
   /** Always this question (by slug) with this seed: the same tables and parameters every time. */
   readonly fixed?: { readonly slug: string; readonly seed: string };
+  /**
+   * The same question and variant for everyone who asks with this seed (a duel's draw). Nobody's
+   * skill easing or history applies, so both sides face exactly the same task; `maxTier` caps it.
+   */
+  readonly shared?: { readonly seed: string; readonly maxTier?: number };
   /** Send the reference query with the task, and make its hints free. */
   readonly revealSolution?: boolean;
   /** Whose attempt this is, for the learning record. */
@@ -180,8 +185,14 @@ export class ChallengeService {
     }
     const baseTiers = request.tiers ?? this.deps.settings.rewardTiers(request.rewardKey);
     if (!baseTiers) return { ok: false, reason: 'unknown_reward' };
-    const skill = request.fixed ? undefined : request.skill;
-    const tiers = skill ? shiftTiers(baseTiers, skill.tierShift) : baseTiers;
+    const skill = request.fixed || request.shared ? undefined : request.skill;
+    const shiftedTiers = skill ? shiftTiers(baseTiers, skill.tierShift) : baseTiers;
+    const tiers = request.shared?.maxTier
+      ? {
+          min: Math.min(shiftedTiers.min, request.shared.maxTier),
+          max: Math.min(shiftedTiers.max, request.shared.maxTier),
+        }
+      : shiftedTiers;
     this.lastRequestAt.set(request.player, now);
 
     // Switching task: the previous challenge is dropped; its question is used up.
@@ -197,22 +208,31 @@ export class ChallengeService {
         this.deps.logger?.warn('fixed question missing or disabled, picking another', {
           slug: request.fixed.slug,
         });
-      const seed =
-        fixed && request.fixed
+      const seed = request.shared
+        ? i === 0
+          ? request.shared.seed
+          : `${request.shared.seed}#${i}`
+        : fixed && request.fixed
           ? request.fixed.seed
           : seedOf(this.deps.matchSeed, request.player, request.rewardKey, attempt);
-      const question =
-        fixed ??
-        this.deps.selector.select(
-          request.player,
-          request.rewardKey,
-          tiers,
-          new SeededRng(`${seed}/select`),
-          request.allowedQuestions,
-          this.focusFor(request, seed),
-          request.onlyTopics?.length ? new Set(request.onlyTopics) : undefined,
-          kindsFor(settings, request.rewardKey),
-        );
+      const question = request.shared
+        ? this.deps.selector.selectShared(
+            tiers,
+            new SeededRng(`${seed}/select`),
+            request.allowedQuestions,
+            kindsFor(settings, request.rewardKey),
+          )
+        : (fixed ??
+          this.deps.selector.select(
+            request.player,
+            request.rewardKey,
+            tiers,
+            new SeededRng(`${seed}/select`),
+            request.allowedQuestions,
+            this.focusFor(request, seed),
+            request.onlyTopics?.length ? new Set(request.onlyTopics) : undefined,
+            kindsFor(settings, request.rewardKey),
+          ));
       if (!question) return { ok: false, reason: 'no_questions' };
 
       const variant = this.deps.variants.build(question.template, seed);

@@ -362,3 +362,71 @@ describe('ChallengeService.issue with a fixed question (the tutorial)', () => {
     expect(warnings).toContain('fixed question missing or disabled, picking another');
   });
 });
+
+describe('a shared task for a duel (28.3)', () => {
+  const second = questionTemplateSchema.parse({
+    ...sampleQuestion,
+    slug: 'second',
+    title: 'Second',
+  });
+  const third = questionTemplateSchema.parse({ ...sampleQuestion, slug: 'third', title: 'Third' });
+
+  it('gives two players the same question and the same variant, whatever each has seen before', async () => {
+    repo.create(second, null);
+    repo.create(third, null);
+    // Ana has already met a question; Ben has not.
+    await service.issue({ player: 'ana', rewardKey: 'heal:small' });
+    clock += 60_000; // past the cooldown between requests
+    const shared = { seed: 'duel-1-draw-1' };
+    const [a, b] = await Promise.all([
+      service.issue({ player: 'ana', rewardKey: 'duel:draw', shared }),
+      service.issue({ player: 'ben', rewardKey: 'duel:draw', shared }),
+    ]);
+    if (!a.ok || !b.ok) throw new Error('issue failed');
+    expect(a.challenge.title).toBe(b.challenge.title);
+    expect(a.challenge.story).toBe(b.challenge.story);
+    expect(a.challenge.tables).toEqual(b.challenge.tables);
+    expect(a.challenge.id).not.toBe(b.challenge.id); // still each player's own attempt
+  });
+
+  it('a new seed can bring a different question, and the same seed always the same one', async () => {
+    repo.create(second, null);
+    repo.create(third, null);
+    const titles = new Set<string>();
+    for (let n = 0; n < 12; n++) {
+      const r = await service.issue({
+        player: `p${n}`,
+        rewardKey: 'duel:draw',
+        shared: { seed: `s${n}` },
+      });
+      if (!r.ok) throw new Error('issue failed');
+      titles.add(r.challenge.title);
+      const again = await service.issue({
+        player: `q${n}`,
+        rewardKey: 'duel:draw',
+        shared: { seed: `s${n}` },
+      });
+      if (!again.ok) throw new Error('issue failed');
+      expect(again.challenge.title).toBe(r.challenge.title);
+    }
+    expect(titles.size).toBeGreaterThan(1);
+  });
+
+  it('only draws from the allowed questions, and says so when there are none', async () => {
+    const stored = repo.create(second, null);
+    const only = await service.issue({
+      player: 'p',
+      rewardKey: 'duel:draw',
+      shared: { seed: 'x' },
+      allowedQuestions: new Set([stored.id]),
+    });
+    expect(only.ok && only.challenge.title).toBe('Second');
+    const none = await service.issue({
+      player: 'p2',
+      rewardKey: 'duel:draw',
+      shared: { seed: 'x' },
+      allowedQuestions: new Set(),
+    });
+    expect(none).toMatchObject({ ok: false, reason: 'no_questions' });
+  });
+});

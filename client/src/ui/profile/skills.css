@@ -170,3 +170,39 @@
 .squad-roles li {
   margin: 0.35rem 0;
 }
+
+/* SQL Quick Draw (Phase 28.3): the strip that says where the duel stands. */
+.duel {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 950;
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.35rem 0.9rem;
+  border-radius: 0.4rem;
+  background: rgba(14, 18, 24, 0.92);
+  border: 2px solid var(--c-accent, #4da3ff);
+  color: #fff;
+  font:
+    0.9rem system-ui,
+    sans-serif;
+  pointer-events: none;
+}
+.duel[hidden] {
+  display: none;
+}
+.duel-title {
+  color: var(--c-accent, #4da3ff);
+}
+.duel-draw {
+  border-color: var(--c-warn, #ffb02e);
+}
+.duel-win {
+  border-color: var(--c-good, #7be08f);
+}
+.duel-lose {
+  border-color: var(--c-bad, #ff6b6b);
+}

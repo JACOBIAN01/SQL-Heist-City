@@ -79,6 +79,8 @@ export const DEFAULT_REWARD_TIERS: Readonly<Record<string, TierRange>> = {
   'gun:shotgun': { min: 3, max: 3 },
   'gun:rifle': { min: 4, max: 4 },
   'gun:sniper': { min: 5, max: 5 },
+  /** A SQL Quick Draw duel's question (Phase 28.3): quick ones. */
+  'duel:draw': { min: 1, max: 2 },
   /** Planning the next heist between rounds: an open brief (Phase 17.10). */
   'brief:plan': { min: 1, max: 5 },
 };

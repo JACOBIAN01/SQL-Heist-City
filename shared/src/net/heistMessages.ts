@@ -71,6 +71,30 @@ export interface LooksMessage {
   readonly looks: Readonly<Record<string, LookView>>;
 }
 
+/**
+ * Where a student stands in SQL Quick Draw (Phase 28.3): waiting for an opponent, the countdown,
+ * a question being drawn, the pause after it, or the end of the duel. Sent on every change.
+ */
+export interface DuelMessage {
+  readonly t: 'duel';
+  readonly state: 'waiting' | 'countdown' | 'draw' | 'between' | 'over';
+  readonly opponent: string | null;
+  /** Points each side has won so far. */
+  readonly you: number;
+  readonly them: number;
+  /** The draw now being played (1-based) out of how many. */
+  readonly draw: number;
+  readonly draws: number;
+  /** Counts up with every question drawn, so the client can tell a new draw from the last. */
+  readonly drawId: number;
+  /** Whole seconds left in this state (countdown, draw), else 0. */
+  readonly seconds: number;
+  /** Who won the draw just played, once it is over. */
+  readonly last?: 'you' | 'them' | 'none';
+  /** The result of the duel, when it is over. */
+  readonly result?: 'win' | 'lose' | 'tie';
+}
+
 /** Join a squad (1…), or leave with 0 (Phase 27.2); only in classes where students pick their own. */
 export const squadJoinMessageSchema = z.object({
   t: z.literal('squad_join'),
@@ -516,6 +540,7 @@ export type HeistServerMessage =
   | SkillsMessage
   | ContractsMessage
   | SquadMessage
+  | DuelMessage
   | RadarMessage
   | LeagueMessage
   | SeasonMessage

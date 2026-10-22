@@ -28,6 +28,7 @@ import { ContractsView } from './ui/profile/ContractsView';
 import { LeagueView } from './ui/profile/LeagueView';
 import { ShareCardView } from './ui/share/ShareCardView';
 import { SquadView } from './ui/hud/SquadView';
+import { DuelView } from './ui/hud/DuelView';
 import { foeMarkers, mateMarkers } from './ui/minimap/minimapModel';
 import type { ProgressMessage, ReviewMessage, RoundMessage } from '@heist/shared';
 import type { LookView } from '@heist/shared';
@@ -375,6 +376,21 @@ const squadView = new SquadView(i18n, (m) => client.sendJson(m));
 document.body.append(squadView.hud, squadView.panel);
 /** Rivals the squad's lookout can see (minimap). */
 let radarFoes: readonly { x: number; z: number }[] = [];
+/** True while the open question is a duel's, so the pop-up is closed when the draw ends. */
+let duelTaskOpen = false;
+const duelView = new DuelView(i18n, {
+  onDraw: () => {
+    pointer.release();
+    duelTaskOpen = true;
+    void sqlTasks.start({ key: 'duel:draw', label: i18n.t('duel.task'), group: 'Duel' });
+  },
+  onEnd: () => {
+    if (!duelTaskOpen) return;
+    duelTaskOpen = false;
+    sqlPanel.close();
+  },
+});
+document.body.appendChild(duelView.root);
 const leagueView = new LeagueView(i18n);
 document.body.appendChild(leagueView.root);
 /** How everyone looks, as the server last said (cosmetics). */
@@ -585,6 +601,8 @@ client.subscribe({
       lastReview = message;
       refreshShareCard();
       hud.toast('Round review ready — press V');
+    } else if (message.t === 'duel') {
+      duelView.update(message);
     } else if (message.t === 'squad') {
       squadView.update(message);
       scoreboard.mySquad = message.squad;

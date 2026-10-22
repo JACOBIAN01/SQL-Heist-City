@@ -45,7 +45,7 @@
 | 25 | Launch checklist and release | 🟨 checklist ready; the walk and the deploy wait for the owner |
 | 26 | Progression and the meta-loop | 🟨 built (26.1–26.9) |
 | 27 | Squads and roles | 🟨 built; role balance waits for a playtest |
-| 28 | Game modes | ⬜ |
+| 28 | Game modes | 🟨 built |
 | 29 | Living city | ⬜ |
 | 30 | Exploration and freedom | ⬜ |
 | 31 | Missions and heist structure | ⬜ |
@@ -512,15 +512,15 @@ Post-launch. Audit con 13. No chat (out of scope).
 | 27.5 | Squad awards and squad leaderboard | shown at round end | ✅ squad table at round end and on the scoreboard (**hold B**), and four squad awards — Top Haul, Lock Breakers, Wolfpack, Brain Trust — each to the squad with the most (above zero; ties to the lower squad number). Also in the round's result record |
 
 ---
-## Phase 28 — Game modes  ⬜
+## Phase 28 — Game modes  🟨
 Post-launch. Audit con 16.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 28.1 | Mode framework: a class picks a mode; rules as settings | modes switch without code changes | ⬜ |
-| 28.2 | Smash and Grab: a 5-minute round, one bank | playable end to end | ⬜ |
-| 28.3 | SQL Quick Draw: 1v1 duel, the same question, the first correct answer wins the shot | playable end to end | ⬜ |
-| 28.4 | Classic heist (today's mode), with teacher-picked length | unchanged behaviour under the framework | ⬜ |
+| 28.1 | Mode framework: a class picks a mode; rules as settings | modes switch without code changes | ✅ `modes` settings (admin-editable list: id, name, description, kind, any heist settings it changes, a limit on open banks, duel rules; validated — a `classic` mode must exist, changes must be real heist settings) and a **Game mode** picker on the class page. A class's mode is applied by the room: heist changes on top of the game's numbers (the teacher's own round length still wins), banks cut to the mode's limit. An admin-made mode works the same as the shipped ones, with no code change |
+| 28.2 | Smash and Grab: a 5-minute round, one bank | playable end to end | ✅ a preset of the framework: 5-minute round, two locks per vault, 20 s overtime, a short join window and intermission, on the lowest bank the class has open. Tested in a room (round length, locks, banks) |
+| 28.3 | SQL Quick Draw: 1v1 duel, the same question, the first correct answer wins the shot | playable end to end | ✅ a duel-kind mode: students queue and are paired (not straight back to the last opponent), get a countdown, then **the very same question and variant** (`shared` issuing, chosen from the class's released set, capped at tier 2, no hints); the first correct answer wins the draw — counted as a kill so it shows on the scoreboard and in the feed — and the loser's question is taken away; best of five; a quitter forfeits; the room plays its whole round (no early finish for want of vaults). The pop-up opens by itself for each draw. Tested in the match and with two browsers end to end |
+| 28.4 | Classic heist (today's mode), with teacher-picked length | unchanged behaviour under the framework | ✅ `classic` changes nothing (a test compares the heist settings before and after), every bank the class has open, and the teacher's round length still decides |
 
 ---
 ## Phase 29 — Living city (world immersion)  ⬜

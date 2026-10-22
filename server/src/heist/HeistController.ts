@@ -19,6 +19,8 @@ import { BountyBoard } from './BountyBoard';
 import { RoundAwards } from './RoundAwards';
 import { StreakKeeper } from './StreakKeeper';
 import { Squads } from './Squads';
+import { DuelManager } from './DuelManager';
+import { DuelRule } from './DuelRule';
 import { FeedReporter } from './FeedReporter';
 import { HeistEvents } from './HeistEvents';
 import type { ChallengeGateway } from './ChallengeGateway';
@@ -88,6 +90,13 @@ export class HeistController implements ArmsControl {
       (player) => this.openTasks.get(player.key),
     );
     this.squads.configure(match.classInfo);
+    this.duels = new DuelManager(
+      match,
+      () => (match.classInfo?.mode.kind === 'duel' ? match.classInfo.mode.duel : undefined),
+      this.events,
+      `${match.classInfo?.classId ?? 0}-${Date.now()}`,
+      () => this.challenges,
+    );
     this.bounties = new BountyBoard(match, settings, this.events);
     this.awards = new RoundAwards(this.events);
     this.banking = new BankingService(match, () => this.settings.bankingSeconds, {
@@ -115,12 +124,16 @@ export class HeistController implements ArmsControl {
       .add(new HealRule(match, settings))
       .add(new GunRule(match, this))
       .add(new AmmoRule(match, this))
-      .add(new PlanningRule(settings, () => this.roundOver));
+      .add(new PlanningRule(settings, () => this.roundOver))
+      .add(new DuelRule(this.duels));
     this.refreshDoors();
     if ((match.map.vaults?.length ?? 0) > 0) {
       this.round = new RoundController(match, settings, {
+        // A duel room has no vaults to empty: its round runs for its whole length.
         allVaultsEmptied: () =>
-          [...this.vaults.all()].every((v) => v.isOpen || v.closed) && this.loot.stakes === 0,
+          !this.duels.enabled &&
+          [...this.vaults.all()].every((v) => v.isOpen || v.closed) &&
+          this.loot.stakes === 0,
         reset: () => this.resetWorld(),
         squadTable: () => (this.squads.enabled ? this.squads.table() : undefined),
         squadAwards: () => this.squads.awards(),
@@ -187,6 +200,7 @@ export class HeistController implements ArmsControl {
   /** A new round: vaults shut, bags gone, scores and players reset. */
   private resetWorld(): void {
     this.squads.reset();
+    this.duels.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
@@ -209,6 +223,7 @@ export class HeistController implements ArmsControl {
   onJoin(player: Player): void {
     this.squads.place(player);
     this.squads.send(player);
+    this.duels.onJoin(player);
     this.match.sendJson(player, { t: 'weapons', weapons: this.match.weapons });
     this.match.sendWorld(player);
     this.match.sendJson(player, { t: 'vaults', vaults: this.vaults.views() });
@@ -223,6 +238,7 @@ export class HeistController implements ArmsControl {
   onTick(): void {
     this.round?.onTick();
     this.squads.onTick();
+    this.duels.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -403,6 +419,7 @@ export class HeistController implements ArmsControl {
   /** A player left: their challenge state goes with them. */
   onLeave(player: Player): void {
     this.openTasks.delete(player.key);
+    this.duels.onLeave(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
     this.onDeath(player); // cash does not vanish with a disconnect
@@ -445,6 +462,11 @@ export class HeistController implements ArmsControl {
     }
     const base =
       message.t === 'challenge_request' ? this.taskOptions?.(message.rewardKey) : undefined;
+    // A duel's question is the same for both sides (and from the class's whole released set).
+    const duel =
+      message.t === 'challenge_request' && message.rewardKey === 'duel:draw'
+        ? this.duels.optionsFor(player)
+        : undefined;
     // Whose attempt this is, for the learning record.
     // A struggling student gets easier questions and more time (and smaller heals) for this task.
     const skill = message.t === 'challenge_request' ? this.skillOf?.(player) : undefined;
@@ -454,6 +476,7 @@ export class HeistController implements ArmsControl {
       message.t === 'challenge_request'
         ? {
             ...base,
+            ...duel,
             ...(skill ? { skill } : {}),
             ...(focusTopics?.length ? { focusTopics } : {}),
             who: {
@@ -479,7 +502,7 @@ export class HeistController implements ArmsControl {
           const { rewardKey, target } = reply.result;
           this.tasks.find(rewardKey)?.grant(player, rewardKey, target);
           this.openTasks.delete(player.key);
-          this.payStreak(player);
+          if (!rewardKey.startsWith('duel:')) this.payStreak(player);
           const issued = this.issuedAt.get(player.key);
           this.issuedAt.delete(player.key);
           this.events.publish({
@@ -499,6 +522,8 @@ export class HeistController implements ArmsControl {
   private readonly openTasks = new Map<string, string>();
   /** Squads of a class room (Phase 27). */
   readonly squads: Squads;
+  /** SQL Quick Draw duels, in a class whose mode is the duel kind (Phase 28.3). */
+  readonly duels: DuelManager;
 
   /**
    * A correct answer: a clean one (right at the first go) lengthens the player's run and pays the

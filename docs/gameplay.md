@@ -211,3 +211,9 @@ A teacher can run a class in **squads of 3 or 4** (class setting: none, teacher'
 **Roles.** Each member of a squad may take one role, each role once per squad (press **G**): *Hacker* (hints cost half), *Driver* (40 % less damage in a car), *Enforcer* (15 % less damage on foot), *Lookout* (rivals within 60 m show on their minimap). The perks are small and live in `heist.roles`; they have not been balanced in a real playtest yet.
 
 **Squad HUD.** Squad-mates appear under the minimap with their health and what they are solving, and on the minimap and full map. No chat (out of scope).
+
+## Game modes (Phase 28)
+A class picks a **mode**; a mode is only settings (`modes` in the admin): which heist numbers it changes, how many banks are open, and whether the room plays a heist or duels. The teacher's own round length still wins over a mode's.
+- **Classic heist** — the full game as before.
+- **Smash and Grab** — five minutes, one bank (the lowest the class has open), two locks per vault, a short overtime.
+- **SQL Quick Draw** — one against one. Students wait in a queue and are paired; after a short countdown both get *the same question* (from the class's released set, quick ones, no hints). The first correct answer wins the draw — a shot, counted as a kill — and the duel goes to whoever wins more than half of five draws. Nobody solving a draw in time scores for nobody; a student who leaves forfeits. There is no cash and no vault in this mode.

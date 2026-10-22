@@ -76,6 +76,21 @@ export class QuestionSelector {
     }
   }
 
+  /**
+   * The same question for everyone who asks with the same rng (a duel's draw): chosen from the
+   * candidates in id order, ignoring what each player has already seen, so two players can never
+   * be handed different questions by their own history.
+   */
+  selectShared(
+    tiers: TierRange,
+    rng: Rng,
+    allowed?: ReadonlySet<number>,
+    kinds?: ReadonlySet<TaskKind>,
+  ): StoredQuestion | undefined {
+    const found = this.candidates(tiers, allowed, kinds).sort((a, b) => a.id - b.id);
+    return found.length === 0 ? undefined : found[rng.int(0, found.length - 1)];
+  }
+
   private candidates(
     tiers: TierRange,
     allowed?: ReadonlySet<number>,
