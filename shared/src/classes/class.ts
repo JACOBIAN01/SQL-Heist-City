@@ -40,6 +40,10 @@ export type SquadMode = (typeof SQUAD_MODES)[number];
 const squadModeField = z.enum(SQUAD_MODES);
 const squadSizeField = z.number().int().min(3).max(4);
 
+/** The roles a squad member may take (Phase 27.3). */
+export const SQUAD_ROLES = ['hacker', 'driver', 'enforcer', 'lookout'] as const;
+export type SquadRole = (typeof SQUAD_ROLES)[number];
+
 /** What a teacher sets when making a class. */
 export const classInputSchema = z.object({
   name: nameField,

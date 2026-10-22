@@ -9,6 +9,8 @@ import type { ContractView } from '../progress/contracts';
 import type { SeasonView } from '../progress/season';
 import type { CosmeticView, LookChoice, LookView } from '../progress/cosmetics';
 import { COSMETIC_SLOTS } from '../config/progression';
+import type { SquadAwardView } from '../config/squadAwards';
+import { SQUAD_ROLES, type SquadMode, type SquadRole } from '../classes/class';
 import type { VehicleSettings } from '../config/vehicles';
 import { challengeClientMessageSchema, type ChallengeServerMessage } from './challengeMessages';
 
@@ -69,6 +71,72 @@ export interface LooksMessage {
   readonly looks: Readonly<Record<string, LookView>>;
 }
 
+/** Join a squad (1…), or leave with 0 (Phase 27.2); only in classes where students pick their own. */
+export const squadJoinMessageSchema = z.object({
+  t: z.literal('squad_join'),
+  squad: z.number().int().min(0).max(50),
+});
+export type SquadJoinMessage = z.infer<typeof squadJoinMessageSchema>;
+
+/** Take a role in the squad, or give it up with null (Phase 27.3). */
+export const rolePickMessageSchema = z.object({
+  t: z.literal('role_pick'),
+  role: z.enum(SQUAD_ROLES).nullable(),
+});
+export type RolePickMessage = z.infer<typeof rolePickMessageSchema>;
+
+/** A squad-mate as the squad HUD shows them (Phase 27.4). */
+export interface SquadMemberView {
+  readonly id: number;
+  readonly name: string;
+  readonly hp: number;
+  readonly alive: boolean;
+  readonly x: number;
+  readonly z: number;
+  /** The reward the member has open in the SQL pop-up (`heal:small`, `vault:…`), if any. */
+  readonly task: string | null;
+  readonly you: boolean;
+  readonly role: SquadRole | null;
+}
+
+/** A squad to pick in a self-pick class. */
+export interface SquadChoice {
+  readonly squad: number;
+  readonly name: string;
+  readonly members: number;
+  readonly full: boolean;
+}
+
+/**
+ * Where a student stands with squads: sent on joining, when anything changes, and about once a
+ * second to squad members (their positions, health and tasks for the HUD).
+ */
+export interface SquadMessage {
+  readonly t: 'squad';
+  readonly mode: SquadMode;
+  readonly size: number;
+  /** The student's squad, 0 for none. */
+  readonly squad: number;
+  readonly name: string;
+  /** True when this student may pick or leave a squad now. */
+  readonly canPick: boolean;
+  readonly choices: readonly SquadChoice[];
+  readonly members: readonly SquadMemberView[];
+  /** This student's role in the squad. */
+  readonly role: SquadRole | null;
+  /** Which roles are free, and who has the others. */
+  readonly roles: readonly { readonly role: SquadRole; readonly takenBy: string | null }[];
+  /** Why the last request was refused. */
+  readonly denied?:
+    'full' | 'not_allowed' | 'unknown_squad' | 'has_banked' | 'role_taken' | 'no_squad';
+}
+
+/** Rivals near a squad's lookout, for their minimap (Phase 27.3). */
+export interface RadarMessage {
+  readonly t: 'radar';
+  readonly foes: readonly { readonly x: number; readonly z: number }[];
+}
+
 /** Everything a client may send as JSON. The server validates it again; this is the shape check. */
 export const jsonClientMessageSchema = z.union([
   challengeClientMessageSchema,
@@ -76,6 +144,8 @@ export const jsonClientMessageSchema = z.union([
   equipMessageSchema,
   vehicleMessageSchema,
   setLookMessageSchema,
+  squadJoinMessageSchema,
+  rolePickMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -188,6 +258,8 @@ export interface SquadStandingView {
   readonly kills: number;
   /** Vault locks its members opened this round. */
   readonly locks: number;
+  /** SQL tasks its members solved this round. */
+  readonly solves: number;
   readonly members: number;
 }
 
@@ -229,6 +301,7 @@ export type RoundMessage =
       readonly awards: readonly AwardView[];
       /** Squad table, when the class plays in squads. */
       readonly squads?: readonly SquadStandingView[];
+      readonly squadAwards?: readonly SquadAwardView[];
     };
 
 /**
@@ -442,6 +515,8 @@ export type HeistServerMessage =
   | ProgressMessage
   | SkillsMessage
   | ContractsMessage
+  | SquadMessage
+  | RadarMessage
   | LeagueMessage
   | SeasonMessage
   | WardrobeMessage

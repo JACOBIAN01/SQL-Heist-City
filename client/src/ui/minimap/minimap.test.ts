@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { HEIST_MAP, box, mapById, type GameMap } from '@heist/shared';
 import { MinimapView, drawStreetPlan } from './MinimapView';
-import { markersFor, objectiveMarker, pinToRim, project, VaultAlerts } from './minimapModel';
+import {
+  foeMarkers,
+  markersFor,
+  mateMarkers,
+  objectiveMarker,
+  pinToRim,
+  project,
+  VaultAlerts,
+} from './minimapModel';
 
 describe('project', () => {
   it('puts what is ahead above the centre and what is to the right on the right', () => {
@@ -154,5 +162,28 @@ describe('MinimapView', () => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
     const view = new MinimapView(document.createElement('div'), HEIST_MAP);
     expect(() => view.draw({ x: 0, z: 0, yaw: 0 }, [], 0)).not.toThrow();
+  });
+});
+
+describe('squad markers (27.3, 27.4)', () => {
+  it('marks squad-mates who are up, not yourself or the fallen', () => {
+    const m = mateMarkers([
+      { id: 1, name: 'Ana', x: 5, z: 6, alive: true, you: true },
+      { id: 2, name: 'ben', x: 10, z: 20, alive: true, you: false },
+      { id: 3, name: 'Cy', x: 1, z: 1, alive: false, you: false },
+    ]);
+    expect(m).toEqual([{ kind: 'mate', id: 'mate-2', x: 10, z: 20, name: 'ben', pinned: false }]);
+  });
+
+  it('marks the rivals a lookout sees, and keeps them off the rim', () => {
+    const f = foeMarkers([
+      { x: 3, z: 4 },
+      { x: 9, z: 9 },
+    ]);
+    expect(f.map((x) => [x.kind, x.pinned])).toEqual([
+      ['foe', false],
+      ['foe', false],
+    ]);
+    expect(f[1]).toMatchObject({ x: 9, z: 9 });
   });
 });

@@ -1,17 +1,31 @@
-import { AWARDS, type AwardUnit, type AwardView, type StandingView } from '@heist/shared';
+import {
+  AWARDS,
+  SQUAD_AWARDS,
+  type AwardUnit,
+  type AwardView,
+  type SquadAwardView,
+  type SquadStandingView,
+  type StandingView,
+} from '@heist/shared';
 import { h } from '../dom';
 import { formatMoney } from './Hud';
 
 /** What the round logic may ask of the scoreboard UI (an interface so logic is tested without a DOM). */
 export interface RoundView {
   setTimer(text: string | undefined): void;
-  setScores(top: readonly StandingView[], players: number): void;
+  setScores(
+    top: readonly StandingView[],
+    players: number,
+    squads?: readonly SquadStandingView[],
+  ): void;
   setStanding(rank: number, players: number): void;
   setBoardVisible(visible: boolean): void;
   showResults(
     winner: StandingView | null,
     standings: readonly StandingView[],
     awards: readonly AwardView[],
+    squads?: readonly SquadStandingView[],
+    squadAwards?: readonly SquadAwardView[],
   ): void;
   setNextIn(seconds: number): void;
   hideResults(): void;
@@ -38,6 +52,72 @@ function awardCards(awards: readonly AwardView[], myId: number | undefined): HTM
         h('div', {
           class: 'hud-award-name',
           text: a.playerId === myId ? `${a.name} (you)` : a.name,
+        }),
+        h('div', { class: 'hud-award-value', text: formatAward(a.value, info.unit) }),
+        h('div', { class: 'hud-award-for', text: info.for }),
+      );
+    }),
+  );
+}
+
+/** The squads' table: each squad's cash, kills, locks and solved tasks added up (Phase 27.5). */
+export function squadTable(
+  rows: readonly SquadStandingView[],
+  mySquad: number | undefined,
+): HTMLElement {
+  return h(
+    'table',
+    { class: 'hud-table hud-squads', attrs: { 'aria-label': 'Squad scores' } },
+    h(
+      'thead',
+      {},
+      h(
+        'tr',
+        {},
+        h('th', { text: '#' }),
+        h('th', { text: 'Squad' }),
+        h('th', { text: 'Banked' }),
+        h('th', { text: 'Kills' }),
+        h('th', { text: 'Locks' }),
+        h('th', { text: 'Solved' }),
+      ),
+    ),
+    h(
+      'tbody',
+      {},
+      ...rows.map((r, i) =>
+        h(
+          'tr',
+          { class: r.squad === mySquad ? 'me' : '' },
+          h('td', { text: String(i + 1) }),
+          h('td', { text: `${r.name} (${r.members})` }),
+          h('td', { text: formatMoney(r.banked) }),
+          h('td', { text: String(r.kills) }),
+          h('td', { text: String(r.locks) }),
+          h('td', { text: String(r.solves) }),
+        ),
+      ),
+    ),
+  );
+}
+
+/** The squads' awards as cards, like the players' ones. */
+function squadAwardCards(
+  awards: readonly SquadAwardView[],
+  mySquad: number | undefined,
+): HTMLElement {
+  return h(
+    'div',
+    { class: 'hud-awards hud-squad-awards' },
+    ...awards.map((a) => {
+      const info = SQUAD_AWARDS[a.id];
+      return h(
+        'div',
+        { class: a.squad === mySquad ? 'hud-award me' : 'hud-award' },
+        h('div', { class: 'hud-award-title', text: info.title }),
+        h('div', {
+          class: 'hud-award-name',
+          text: a.squad === mySquad ? `${a.name} (your squad)` : a.name,
         }),
         h('div', { class: 'hud-award-value', text: formatAward(a.value, info.unit) }),
         h('div', { class: 'hud-award-for', text: info.for }),
@@ -91,6 +171,9 @@ export class ScoreboardView implements RoundView {
   private readonly nextIn: HTMLElement;
   private readonly action: HTMLElement;
   private top: readonly StandingView[] = [];
+  private squads: readonly SquadStandingView[] = [];
+  /** The squad this player is in (0 none); set by the squad messages. */
+  mySquad = 0;
 
   constructor(
     host: HTMLElement,
@@ -129,9 +212,17 @@ export class ScoreboardView implements RoundView {
     this.timer.textContent = text ?? '';
   }
 
-  setScores(top: readonly StandingView[], players: number): void {
+  setScores(
+    top: readonly StandingView[],
+    players: number,
+    squads: readonly SquadStandingView[] = [],
+  ): void {
     this.top = top;
-    this.boardBody.replaceChildren(table(top, this.myId()));
+    this.squads = squads;
+    this.boardBody.replaceChildren(
+      table(top, this.myId()),
+      ...(squads.length ? [squadTable(squads, this.mySquad)] : []),
+    );
     this.board.dataset.players = String(players);
   }
 
@@ -142,13 +233,19 @@ export class ScoreboardView implements RoundView {
   setBoardVisible(visible: boolean): void {
     this.board.hidden = !visible;
     // The "you" highlight needs our id, which is only known after the welcome.
-    if (visible) this.boardBody.replaceChildren(table(this.top, this.myId()));
+    if (visible)
+      this.boardBody.replaceChildren(
+        table(this.top, this.myId()),
+        ...(this.squads.length ? [squadTable(this.squads, this.mySquad)] : []),
+      );
   }
 
   showResults(
     winner: StandingView | null,
     standings: readonly StandingView[],
     awards: readonly AwardView[] = [],
+    squads: readonly SquadStandingView[] = [],
+    squadAwards: readonly SquadAwardView[] = [],
   ): void {
     this.resultsBody.replaceChildren(
       h('div', {
@@ -159,6 +256,8 @@ export class ScoreboardView implements RoundView {
       }),
       ...(awards.length > 0 ? [awardCards(awards, this.myId())] : []),
       table(standings, this.myId()),
+      ...(squads.length > 0 ? [h('h2', { text: 'Squads' }), squadTable(squads, this.mySquad)] : []),
+      ...(squadAwards.length > 0 ? [squadAwardCards(squadAwards, this.mySquad)] : []),
     );
     this.results.hidden = false;
   }

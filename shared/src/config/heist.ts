@@ -60,6 +60,27 @@ export const heistSettingsSchema = z.object({
       cap: z.number().int().min(0).default(3_000),
     })
     .default({ minStreak: 3, cashPerStep: 500, cap: 3_000 }),
+  /**
+   * Roles in a squad (Phase 27.3): each member may take one, each role once per squad. The perks
+   * are small on purpose; they reward working as a team, not winning alone.
+   */
+  roles: z
+    .object({
+      /** Hacker: hints cost this share of the normal price. */
+      hackerHintCostScale: z.number().min(0).max(1).default(0.5),
+      /** Driver: damage taken while in a car is multiplied by this. */
+      driverCarDamageScale: z.number().min(0.1).max(1).default(0.6),
+      /** Enforcer: damage taken on foot is multiplied by this. */
+      enforcerDamageScale: z.number().min(0.1).max(1).default(0.85),
+      /** Lookout: rivals within this many metres show on their minimap (0 switches it off)… */
+      lookoutRadarMetres: z.number().min(0).max(300).default(60),
+    })
+    .default({
+      hackerHintCostScale: 0.5,
+      driverCarDamageScale: 0.6,
+      enforcerDamageScale: 0.85,
+      lookoutRadarMetres: 60,
+    }),
   /** Squad names (Phase 27), by squad number: the first for squad 1, and so on. */
   squadNames: z
     .array(z.string().min(1).max(20))

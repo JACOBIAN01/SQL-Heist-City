@@ -105,3 +105,68 @@
 .season-track li {
   margin: 0.2rem 0;
 }
+
+/* Squads (Phase 27): the compact list of squad-mates under the minimap, and the squad panel. */
+.squad-hud {
+  position: fixed;
+  left: 16px;
+  top: 200px;
+  z-index: 20;
+  min-width: 180px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  font:
+    0.75rem system-ui,
+    sans-serif;
+  color: #fff;
+  pointer-events: none;
+}
+.squad-hud[hidden] {
+  display: none;
+}
+.squad-hud-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.squad-mate {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 8px;
+  margin: 3px 0;
+}
+.squad-mate.down {
+  opacity: 0.55;
+}
+.squad-mate-role,
+.squad-mate-task {
+  color: #9aa6b8;
+  font-size: 0.7rem;
+}
+.squad-hp {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+.squad-hp-fill {
+  height: 100%;
+  background: var(--c-good, #7be08f);
+}
+.squad-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0;
+}
+.squad-choices button[aria-pressed='true'] {
+  border-color: var(--c-good, #7be08f);
+}
+.squad-roles {
+  list-style: none;
+  padding: 0;
+}
+.squad-roles li {
+  margin: 0.35rem 0;
+}

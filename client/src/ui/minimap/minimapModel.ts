@@ -26,7 +26,17 @@ export function pinToRim(p: MapPoint, radius: number): MapPoint & { readonly pin
   return { x: (p.x / d) * radius, y: (p.y / d) * radius, pinned: true };
 }
 
-export type MarkerKind = 'bank' | 'safehouse' | 'hospital' | 'bag' | 'wanted' | 'objective';
+export type MarkerKind =
+  | 'bank'
+  | 'safehouse'
+  | 'hospital'
+  | 'bag'
+  | 'wanted'
+  | 'objective'
+  /** A squad-mate (Phase 27.4). */
+  | 'mate'
+  /** A rival the squad's lookout can see (Phase 27.3). */
+  | 'foe';
 
 export interface Marker {
   readonly kind: MarkerKind;
@@ -120,6 +130,40 @@ export function markersFor(
         pinned: true,
       });
   return out;
+}
+
+/** Squad-mates (not yourself) as map markers, with their first letter; a mate who is down is left off. */
+export function mateMarkers(
+  members: readonly {
+    id: number;
+    name: string;
+    x: number;
+    z: number;
+    alive: boolean;
+    you: boolean;
+  }[],
+): Marker[] {
+  return members
+    .filter((m) => !m.you && m.alive)
+    .map((m) => ({
+      kind: 'mate' as const,
+      id: `mate-${m.id}`,
+      x: m.x,
+      z: m.z,
+      name: m.name,
+      pinned: false,
+    }));
+}
+
+/** Rivals the squad's lookout can see, as small red markers. */
+export function foeMarkers(foes: readonly { x: number; z: number }[]): Marker[] {
+  return foes.map((f, i) => ({
+    kind: 'foe' as const,
+    id: `foe-${i}`,
+    x: f.x,
+    z: f.z,
+    pinned: false,
+  }));
 }
 
 /** Where the tutorial wants you next (pinned: it is where to go). */

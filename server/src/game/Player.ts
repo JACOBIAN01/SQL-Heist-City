@@ -6,6 +6,7 @@ import {
   type BodyState,
   type InputCommand,
   type SpawnPoint,
+  type SquadRole,
   weaponToWire,
 } from '@heist/shared';
 
@@ -28,6 +29,8 @@ export class Player {
   key = '';
   /** The squad this player plays in (Phase 27), 0 for none. */
   squad = 0;
+  /** The squad role this player took (Phase 27.3), if any. */
+  role: SquadRole | null = null;
   readonly body: BodyState;
   yaw = 0;
   pitch = 0;

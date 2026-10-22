@@ -11,6 +11,8 @@ export const MAP_COLOURS = {
   hospital: '#e5484d',
   bag: '#ffd34d',
   wanted: '#ff6a00',
+  mate: '#3ec1d3',
+  foe: '#ff4d4d',
   objective: '#ffd34d',
   player: '#ffffff',
 };
@@ -54,6 +56,24 @@ export function drawMarker(
       ctx.closePath();
       ctx.fill();
       label('$', '#1a0a00', 9);
+      return;
+    case 'mate':
+      // A squad-mate: a teal disc with their initial.
+      ctx.fillStyle = MAP_COLOURS.mate;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, 6, 0, Math.PI * 2);
+      ctx.fill();
+      label((m.name ?? '?').slice(0, 1).toUpperCase(), '#04262b', 9);
+      return;
+    case 'foe':
+      // A rival the lookout sees: a small red triangle.
+      ctx.fillStyle = MAP_COLOURS.foe;
+      ctx.beginPath();
+      ctx.moveTo(at.x, at.y - 5);
+      ctx.lineTo(at.x + 4.5, at.y + 4);
+      ctx.lineTo(at.x - 4.5, at.y + 4);
+      ctx.closePath();
+      ctx.fill();
       return;
     case 'objective':
       // The tutorial's "go here": a pulsing yellow ring.

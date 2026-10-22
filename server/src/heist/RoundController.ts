@@ -1,4 +1,4 @@
-import type { AwardView, HeistSettings, SquadStandingView } from '@heist/shared';
+import type { AwardView, HeistSettings, SquadAwardView, SquadStandingView } from '@heist/shared';
 import type { Player } from '../game/Player';
 import type { MatchApi } from './MatchApi';
 import type { RoundResult } from './HeistEvents';
@@ -17,6 +17,8 @@ export interface RoundHooks {
   awards(): readonly AwardView[];
   /** Squad scores, when the class plays in squads. */
   squadTable?(): readonly SquadStandingView[] | undefined;
+  /** The squads' awards for the round just ended. */
+  squadAwards?(): readonly SquadAwardView[] | undefined;
   /** The finished round's full result (for the class record). */
   onResult(result: RoundResult): void;
 }
@@ -129,6 +131,7 @@ export class RoundController {
       })),
       awards: this.hooks.awards(),
       ...this.squadsField(),
+      ...this.squadAwardsField(),
     });
     this.match.broadcastJson(this.roundMessage());
     this.publishScores();
@@ -156,6 +159,7 @@ export class RoundController {
       standings: ranked.slice(0, TOP).map(toStanding),
       awards: this.hooks.awards(),
       ...this.squadsField(),
+      ...this.squadAwardsField(),
     };
   }
 
@@ -196,6 +200,11 @@ export class RoundController {
   private squadsField(): { squads: readonly SquadStandingView[] } | Record<string, never> {
     const squads = this.hooks.squadTable?.();
     return squads ? { squads } : {};
+  }
+
+  private squadAwardsField(): { squadAwards: readonly SquadAwardView[] } | Record<string, never> {
+    const squadAwards = this.hooks.squadAwards?.();
+    return squadAwards && squadAwards.length > 0 ? { squadAwards } : {};
   }
 
   private ticks(seconds: number): number {

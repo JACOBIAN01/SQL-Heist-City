@@ -80,7 +80,13 @@ export class HeistController implements ArmsControl {
     this.events.subscribe((event) => {
       if (event.type === 'round_end') this.streaks.reset();
     });
-    this.squads = new Squads(match, () => this.settings.squadNames, this.events);
+    this.squads = new Squads(
+      match,
+      () => this.settings.squadNames,
+      () => this.settings.roles,
+      this.events,
+      (player) => this.openTasks.get(player.key),
+    );
     this.squads.configure(match.classInfo);
     this.bounties = new BountyBoard(match, settings, this.events);
     this.awards = new RoundAwards(this.events);
@@ -117,6 +123,7 @@ export class HeistController implements ArmsControl {
           [...this.vaults.all()].every((v) => v.isOpen || v.closed) && this.loot.stakes === 0,
         reset: () => this.resetWorld(),
         squadTable: () => (this.squads.enabled ? this.squads.table() : undefined),
+        squadAwards: () => this.squads.awards(),
         awards: () => this.awards.results((id) => this.match.getPlayer(id)),
         onEnd: () => this.banking.cancelAll('round_over'),
         onResult: (result) => this.events.publish({ type: 'round_end', result }),
@@ -201,6 +208,7 @@ export class HeistController implements ArmsControl {
   /** A player just joined: tell them the guns' numbers and where every vault stands. */
   onJoin(player: Player): void {
     this.squads.place(player);
+    this.squads.send(player);
     this.match.sendJson(player, { t: 'weapons', weapons: this.match.weapons });
     this.match.sendWorld(player);
     this.match.sendJson(player, { t: 'vaults', vaults: this.vaults.views() });
@@ -214,6 +222,7 @@ export class HeistController implements ArmsControl {
   /** Every tick: players walking over a bag pick it up. */
   onTick(): void {
     this.round?.onTick();
+    this.squads.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -234,6 +243,7 @@ export class HeistController implements ArmsControl {
   /** A player died: what they carried drops where they fell. */
   onDeath(victim: Player, killer?: Player): void {
     this.streaks.broke(victim.key);
+    this.openTasks.delete(victim.key);
     this.banking.cancel(victim, 'died');
     this.challenges?.playerDied?.(victim.key); // an open question ends with the life
     // The killer of a wanted player collects the bounty on top of the kill bonus.
@@ -369,6 +379,16 @@ export class HeistController implements ArmsControl {
       this.match.sendJson(player, this.match.vehicleRequest(player, message));
       return;
     }
+    if (message.t === 'squad_join') {
+      const result = this.squads.pick(player, message.squad);
+      this.squads.send(player, result === 'ok' ? undefined : result);
+      return;
+    }
+    if (message.t === 'role_pick') {
+      const result = this.squads.pickRole(player, message.role);
+      this.squads.send(player, result === 'ok' ? undefined : result);
+      return;
+    }
     if (message.t === 'set_look') {
       this.onLook?.(player, message);
       return;
@@ -382,6 +402,7 @@ export class HeistController implements ArmsControl {
 
   /** A player left: their challenge state goes with them. */
   onLeave(player: Player): void {
+    this.openTasks.delete(player.key);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
     this.onDeath(player); // cash does not vanish with a disconnect
@@ -393,7 +414,14 @@ export class HeistController implements ArmsControl {
    * challenge system; a correct answer applies the reward.
    */
   private onChallenge(player: Player, message: JsonClientMessage, raw: unknown): void {
-    if (message.t === 'interact' || message.t === 'equip' || message.t === 'set_look') return;
+    if (
+      message.t === 'interact' ||
+      message.t === 'equip' ||
+      message.t === 'set_look' ||
+      message.t === 'squad_join' ||
+      message.t === 'role_pick'
+    )
+      return;
     if (message.t === 'challenge_request' && !this.tasks.find(message.rewardKey)) {
       this.match.reportAnomaly(player, 'impossible_action', { task: message.rewardKey });
       return this.reply(player, this.refuse(message.ref, 'unknown_reward'));
@@ -440,12 +468,17 @@ export class HeistController implements ArmsControl {
       .then((reply) => {
         if (reply.t === 'challenge_hint' && reply.result.ok && reply.result.hint.charged)
           this.chargeHint(player, reply.result.hint.cost, reply.result.hint.costMode);
-        if (reply.t === 'challenge' && reply.result.ok) this.issuedAt.set(player.key, reply.now);
+        if (reply.t === 'challenge' && reply.result.ok) {
+          this.issuedAt.set(player.key, reply.now);
+          this.openTasks.set(player.key, reply.result.challenge.rewardKey);
+        }
+        if (reply.t === 'challenge_abandoned') this.openTasks.delete(player.key);
         if (reply.t === 'challenge_result' && reply.result.status === 'wrong')
           this.streaks.broke(player.key);
         if (reply.t === 'challenge_result' && reply.result.status === 'correct') {
           const { rewardKey, target } = reply.result;
           this.tasks.find(rewardKey)?.grant(player, rewardKey, target);
+          this.openTasks.delete(player.key);
           this.payStreak(player);
           const issued = this.issuedAt.get(player.key);
           this.issuedAt.delete(player.key);
@@ -462,6 +495,8 @@ export class HeistController implements ArmsControl {
   }
 
   private readonly streaks = new StreakKeeper();
+  /** The reward each player has open in the SQL pop-up (shown to their squad). */
+  private readonly openTasks = new Map<string, string>();
   /** Squads of a class room (Phase 27). */
   readonly squads: Squads;
 
@@ -483,7 +518,8 @@ export class HeistController implements ArmsControl {
 
   /** A hint costs carried cash (a fraction of it, or a fixed amount); never more than the player has. */
   private chargeHint(player: Player, cost: number, mode: 'fraction' | 'absolute'): void {
-    const price = mode === 'fraction' ? Math.round(player.cash * cost) : Math.round(cost);
+    const raw = mode === 'fraction' ? player.cash * cost : cost;
+    const price = Math.round(raw * this.squads.hintScale(player));
     if (price > 0) this.setCash(player, player.cash - Math.min(price, player.cash));
   }
 

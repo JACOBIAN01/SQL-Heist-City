@@ -35,7 +35,7 @@ describe('RoundUi', () => {
       { t: 'round', phase: 'ended', nextInSec: 20, winner, standings: [winner], awards },
       0,
     );
-    expect(view.showResults).toHaveBeenCalledWith(winner, [winner], awards);
+    expect(view.showResults).toHaveBeenCalledWith(winner, [winner], awards, undefined, undefined);
     expect(last(view.setTimer)).toBeUndefined();
     ui.update(5_000);
     expect(last(view.setNextIn)).toBeCloseTo(15, 0);
@@ -56,7 +56,7 @@ describe('RoundUi', () => {
     const { view, ui } = setup();
     ui.onScores({ t: 'scores', top: [], players: 3 });
     ui.onStanding({ t: 'standing', rank: 2, players: 3 });
-    expect(view.setScores).toHaveBeenCalledWith([], 3);
+    expect(view.setScores).toHaveBeenCalledWith([], 3, undefined);
     expect(view.setStanding).toHaveBeenCalledWith(2, 3);
   });
 
@@ -65,5 +65,29 @@ describe('RoundUi', () => {
     ui.update(1_000);
     expect(view.setTimer).not.toHaveBeenCalled();
     expect(view.setNextIn).not.toHaveBeenCalled();
+  });
+
+  it('passes the squad table and squad awards along when the class plays in squads (27.5)', () => {
+    const { view, ui } = setup();
+    const squads = [
+      { squad: 1, name: 'Red', banked: 1, kills: 0, locks: 0, solves: 0, members: 3 },
+    ];
+    const squadAwards = [{ id: 'top_haul' as const, squad: 1, name: 'Red', value: 1 }];
+    ui.onRound(
+      {
+        t: 'round',
+        phase: 'ended',
+        nextInSec: 5,
+        winner: null,
+        standings: [],
+        awards: [],
+        squads,
+        squadAwards,
+      },
+      0,
+    );
+    expect(view.showResults).toHaveBeenCalledWith(null, [], [], squads, squadAwards);
+    ui.onScores({ t: 'scores', top: [], players: 2, squads });
+    expect(view.setScores).toHaveBeenCalledWith([], 2, squads);
   });
 });

@@ -12,6 +12,11 @@ async function setUpClass(request: APIRequestContext) {
   expect(login.ok()).toBe(true);
   const created = await request.post(`${ADMIN}/classes`, { headers, data: { name: 'E2E 9B' } });
   const { class: record } = (await created.json()) as { class: { id: number; code: string } };
+  // Students pick their own squads in this class (Phase 27.2).
+  await request.put(`${ADMIN}/classes/${record.id}`, {
+    headers,
+    data: { squadMode: 'self', squadSize: 3 },
+  });
   await request.post(`${ADMIN}/classes/${record.id}/consent`, {
     headers,
     data: { version: CONSENT_VERSION, accepted: CONSENT_STATEMENTS.map((s) => s.id) },
@@ -77,8 +82,21 @@ test('a student joins with the code, waits, and is let in when the teacher start
   await expect(wardrobe.locator('[data-cosmetic="outfit-street"] button')).toHaveText('Worn');
   await page.keyboard.press('Escape');
 
+  // Squads (Phase 27): the student picks one and takes a role; the server checks both.
+  await page.keyboard.press('KeyG');
+  const squad = page.locator('[data-role="squad"]');
+  await expect(squad).toBeVisible();
+  await expect(squad).toContainText('You are not in a squad.');
+  await squad.getByRole('button', { name: 'Join Red (0/3)' }).click();
+  await expect(squad).toContainText('You are in the Red squad.');
+  await squad.getByRole('button', { name: 'Take Hacker' }).click();
+  await expect(squad.locator('.squad-members')).toContainText('Hacker');
+  await page.keyboard.press('Escape');
+
   // The teacher ends the round; the student sees the round end.
   const ended = await request.post(`${ADMIN}/classes/${klass.id}/live/end-round`, { headers });
   expect(ended.ok()).toBe(true);
   await expect(page.locator('body')).toContainText(/round (over|ended)|final|winner/i);
+  // The squad's score is in the round results.
+  await expect(page.locator('.hud-results .hud-squads')).toContainText('Red (1)');
 });

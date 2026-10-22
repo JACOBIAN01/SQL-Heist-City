@@ -44,7 +44,7 @@
 | 24 | Classroom pilot | 🟨 plan ready; the pilot needs schools (#13) |
 | 25 | Launch checklist and release | 🟨 checklist ready; the walk and the deploy wait for the owner |
 | 26 | Progression and the meta-loop | 🟨 built (26.1–26.9) |
-| 27 | Squads and roles | ⬜ |
+| 27 | Squads and roles | 🟨 built; role balance waits for a playtest |
 | 28 | Game modes | ⬜ |
 | 29 | Living city | ⬜ |
 | 30 | Exploration and freedom | ⬜ |
@@ -500,16 +500,16 @@ Post-launch. Audit con 14 and "Rewards" and "Progression" in the GTA audit (targ
 | 26.9 | Player profile page (rank, mastery, history, cosmetics) | profile shows real data | ✅ **My profile** on the menu: rank, XP bar and its split (learning / playing), day streak, the two mastery radars, topics mastered, the last 20 class rounds (place, haul, kills) and what is worn / unlocked. Built from the same records and functions the match uses (`GET /auth/player/profile`, the student's own only), checked against real data in an API test and in the browser. Sessions in the match show the same numbers live (rank bar, **J**, **U**, **L**, **H**) |
 
 ---
-## Phase 27 — Squads and roles  ⬜
+## Phase 27 — Squads and roles  🟨
 Post-launch. Audit con 13. No chat (out of scope).
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 27.1 | Squads of 3–4 inside a class; shared vault progress and shared banked cash | squads score as one | ⬜ |
-| 27.2 | Squad forming: teacher picks, self-pick, or auto-balance by mastery | all three ways work | ⬜ |
-| 27.3 | Roles (hacker, driver, enforcer, lookout) with small perks, tuned in settings | each role's perk works and is balanced in a playtest | ⬜ |
-| 27.4 | Squad HUD: teammates on the minimap, their task and health | visible in play | ⬜ |
-| 27.5 | Squad awards and squad leaderboard | shown at round end | ⬜ |
+| 27.1 | Squads of 3–4 inside a class; shared vault progress and shared banked cash | squads score as one | ✅ per-class `squadMode` (off / teacher / self / auto) and `squadSize` (3 or 4), stored in `classes` and `class_squads` (data map, cascade-deleted). A squad's score is its members' banked cash, kills, vault locks opened and tasks solved added up; the scoreboard and the round end show the squad table. Vault progress was already shared by everyone in the match, so a lock any member opens counts for the squad too. Tested in the match, in the repositories and in the browser |
+| 27.2 | Squad forming: teacher picks, self-pick, or auto-balance by mastery | all three ways work | ✅ **teacher:** a list per student on the class page (squad sizes and numbers checked); **self:** students pick or leave in the room (**G**), up to the size, and not after banking cash this round (so cash cannot be carried between squads); **auto:** "Balance by mastery" deals students out strongest-first in a snake, unknown scores counted as average, and stores the list. A teacher's edit reaches the running room at once |
+| 27.3 | Roles (hacker, driver, enforcer, lookout) with small perks, tuned in settings | each role's perk works and is balanced in a playtest | 🟨 each role once per squad, picked in the squad panel; perks in `heist.roles`: **hacker** hints cost half, **driver** takes 40 % less damage in a car, **enforcer** takes 15 % less on foot, **lookout** sees rivals within 60 m on the minimap. All server-side and tested. **Balance needs a real playtest** (23.5) — the numbers are a first guess |
+| 27.4 | Squad HUD: teammates on the minimap, their task and health | visible in play | ✅ a compact list under the minimap (name, role, health bar, what they are solving), squad-mates as teal discs on the minimap and the full map, the lookout's rivals as red triangles; positions, health and tasks sent to the squad once a second and to nobody else |
+| 27.5 | Squad awards and squad leaderboard | shown at round end | ✅ squad table at round end and on the scoreboard (**hold B**), and four squad awards — Top Haul, Lock Breakers, Wolfpack, Brain Trust — each to the squad with the most (above zero; ties to the lower squad number). Also in the round's result record |
 
 ---
 ## Phase 28 — Game modes  ⬜

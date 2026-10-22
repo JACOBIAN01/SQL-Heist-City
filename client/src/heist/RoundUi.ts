@@ -24,12 +24,18 @@ export class RoundUi {
     this.phase = 'ended';
     this.deadline = nowMs + message.nextInSec * 1000;
     this.view.setTimer(undefined);
-    this.view.showResults(message.winner, message.standings, message.awards);
+    this.view.showResults(
+      message.winner,
+      message.standings,
+      message.awards,
+      message.squads,
+      message.squadAwards,
+    );
     this.update(nowMs);
   }
 
   onScores(message: ScoresMessage): void {
-    this.view.setScores(message.top, message.players);
+    this.view.setScores(message.top, message.players, message.squads);
   }
 
   onStanding(message: StandingMessage): void {

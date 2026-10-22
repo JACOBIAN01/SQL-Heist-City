@@ -110,3 +110,49 @@ describe('ScoreboardView', () => {
     expect(el.querySelector('img')).toBeNull();
   });
 });
+
+describe('ScoreboardView with squads (27.5)', () => {
+  const squads = [
+    { squad: 1, name: 'Red', banked: 9000, kills: 3, locks: 2, solves: 7, members: 3 },
+    { squad: 2, name: 'Blue', banked: 4000, kills: 6, locks: 1, solves: 2, members: 4 },
+  ];
+
+  it('adds a squad table to the board, with your squad marked, and none without squads', () => {
+    const el = host();
+    const view = new ScoreboardView(el, () => 1);
+    view.mySquad = 2;
+    view.setScores([row(1, 'Ana', 5000)], 1);
+    expect(el.querySelector('.hud-squads')).toBeNull();
+    view.setScores([row(1, 'Ana', 5000)], 1, squads);
+    const rows = [...el.querySelectorAll('.hud-squads tbody tr')];
+    expect(rows.map((r) => r.textContent)).toEqual(['1Red (3)$9,000327', '2Blue (4)$4,000612']);
+    expect(rows[1]?.className).toBe('me');
+  });
+
+  it('shows the squad table and the squads’ awards when the round is over', () => {
+    const el = host();
+    const view = new ScoreboardView(el, () => 1);
+    view.mySquad = 1;
+    view.showResults(
+      { id: 1, name: 'Ana', banked: 5000, kills: 1 },
+      [row(1, 'Ana', 5000)],
+      [],
+      squads,
+      [
+        { id: 'top_haul', squad: 1, name: 'Red', value: 9000 },
+        { id: 'wolfpack', squad: 2, name: 'Blue', value: 6 },
+      ],
+    );
+    const results = el.querySelector('.hud-results') as HTMLElement;
+    expect(results.textContent).toContain('Squads');
+    expect(results.querySelector('.hud-squads')).not.toBeNull();
+    const cards = [...results.querySelectorAll('.hud-squad-awards .hud-award')];
+    expect(cards.map((c) => c.querySelector('.hud-award-title')?.textContent)).toEqual([
+      'Top Haul',
+      'Wolfpack',
+    ]);
+    expect(cards[0]?.textContent).toContain('Red (your squad)');
+    expect(cards[0]?.className).toContain('me');
+    expect(cards[1]?.className).not.toContain('me');
+  });
+});

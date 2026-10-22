@@ -21,6 +21,7 @@ const SHOWN: readonly Action[] = [
   'wardrobe',
   'contracts',
   'league',
+  'squad',
   'review',
   'mute',
   'settings',

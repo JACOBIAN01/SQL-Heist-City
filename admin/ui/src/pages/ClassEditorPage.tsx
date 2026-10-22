@@ -559,10 +559,9 @@ function Squads({ classId }: { classId: number }) {
                   aria-label={`Squad for ${s.displayName}`}
                   value={draft[String(s.playerId)] ?? 0}
                   onChange={(e) => {
-                    const next = { ...draft };
-                    if (Number(e.target.value) === 0) delete next[String(s.playerId)];
-                    else next[String(s.playerId)] = Number(e.target.value);
-                    setDraft(next);
+                    const { [String(s.playerId)]: _was, ...rest } = draft;
+                    const squad = Number(e.target.value);
+                    setDraft(squad === 0 ? rest : { ...rest, [String(s.playerId)]: squad });
                   }}
                 >
                   <option value={0}>None</option>

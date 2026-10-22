@@ -319,6 +319,7 @@ export class Match implements MatchApi {
     this.classTasks = classTaskOptions(config);
     this.heist.setClosedTiers(closedTiers(config.banksOpen));
     this.heist.squads.configure(config);
+    for (const p of this.players.values()) this.heist.squads.send(p);
     this.broadcastJson({ t: 'vaults', vaults: this.heist.vaults.views() });
   }
 
@@ -927,7 +928,7 @@ export class Match implements MatchApi {
   /** Applies damage and handles a kill; public for tests and for rules that hurt players (none yet). */
   damage(victim: Player, amount: number, attacker: Player): void {
     if (!victim.alive || this.isProtected(victim) || this.heist.roundOver) return;
-    victim.hp = Math.max(0, victim.hp - Math.round(amount));
+    victim.hp = Math.max(0, victim.hp - Math.round(amount * this.heist.squads.damageScale(victim)));
     this.heist.onDamaged(victim);
     if (victim.hp > 0) return;
     victim.alive = false;
