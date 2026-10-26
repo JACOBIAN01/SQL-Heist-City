@@ -95,6 +95,13 @@ export interface DuelMessage {
   readonly result?: 'win' | 'lose' | 'tie';
 }
 
+/** The student's wanted level (Phase 29.4): how many stars, and the most there can be. */
+export interface PoliceMessage {
+  readonly t: 'police';
+  readonly stars: number;
+  readonly max: number;
+}
+
 /** Join a squad (1…), or leave with 0 (Phase 27.2); only in classes where students pick their own. */
 export const squadJoinMessageSchema = z.object({
   t: z.literal('squad_join'),
@@ -540,6 +547,7 @@ export type HeistServerMessage =
   | SkillsMessage
   | ContractsMessage
   | SquadMessage
+  | PoliceMessage
   | DuelMessage
   | RadarMessage
   | LeagueMessage

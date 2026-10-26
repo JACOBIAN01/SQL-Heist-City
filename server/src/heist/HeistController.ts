@@ -22,6 +22,7 @@ import { StreakKeeper } from './StreakKeeper';
 import { Squads } from './Squads';
 import { DuelManager } from './DuelManager';
 import { GuardSystem } from './GuardSystem';
+import { PoliceSystem } from './PoliceSystem';
 import { DuelRule } from './DuelRule';
 import { FeedReporter } from './FeedReporter';
 import { HeistEvents } from './HeistEvents';
@@ -97,6 +98,14 @@ export class HeistController implements ArmsControl {
       () => this.settings.guards,
       this.events,
       new SeededRng(`guards:${match.classInfo?.classId ?? 0}`),
+    );
+    // No police in the tutorial (its questions are fixed) or in a duel room.
+    this.police = new PoliceSystem(
+      match,
+      () => this.settings.police,
+      this.events,
+      new SeededRng(`police:${match.classInfo?.classId ?? 0}`),
+      () => !this.taskOptions && !this.duels.enabled,
     );
     this.duels = new DuelManager(
       match,
@@ -210,6 +219,7 @@ export class HeistController implements ArmsControl {
     this.squads.reset();
     this.duels.reset();
     this.guards.reset();
+    this.police.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
@@ -249,6 +259,7 @@ export class HeistController implements ArmsControl {
     this.squads.onTick();
     this.duels.onTick();
     this.guards.onTick();
+    this.police.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -271,8 +282,14 @@ export class HeistController implements ArmsControl {
     this.streaks.broke(victim.key);
     this.openTasks.delete(victim.key);
     this.banking.cancel(victim, 'died');
+    this.police.clear(victim); // dying clears the record
+    if (victim.isPolice) {
+      this.police.officerDown(victim, killer);
+      return;
+    }
     // A guard brought down pays whoever did it, and drops nothing.
     if (victim.isGuard) {
+      if (killer) this.police.crime(killer, 'guard');
       if (killer && !killer.isDummy && killer.alive)
         this.setCash(killer, killer.cash + this.settings.guards.killBonus);
       return;
@@ -436,6 +453,7 @@ export class HeistController implements ArmsControl {
   onLeave(player: Player): void {
     this.openTasks.delete(player.key);
     this.duels.onLeave(player);
+    this.police.clear(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
     this.onDeath(player); // cash does not vanish with a disconnect
@@ -540,6 +558,8 @@ export class HeistController implements ArmsControl {
   readonly squads: Squads;
   /** Bank guards (Phase 29.3). */
   readonly guards: GuardSystem;
+  /** The police (Phase 29.4). */
+  readonly police: PoliceSystem;
   /** SQL Quick Draw duels, in a class whose mode is the duel kind (Phase 28.3). */
   readonly duels: DuelManager;
 

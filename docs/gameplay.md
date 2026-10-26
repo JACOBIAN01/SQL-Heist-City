@@ -217,3 +217,7 @@ A class picks a **mode**; a mode is only settings (`modes` in the admin): which 
 - **Classic heist** — the full game as before.
 - **Smash and Grab** — five minutes, one bank (the lowest the class has open), two locks per vault, a short overtime.
 - **SQL Quick Draw** — one against one. Students wait in a queue and are paired; after a short countdown both get *the same question* (from the class's released set, quick ones, no hints). The first correct answer wins the draw — a shot, counted as a kill — and the duel goes to whoever wins more than half of five draws. Nobody solving a draw in time scores for nobody; a student who leaves forfeits. There is no cash and no vault in this mode.
+
+## Police and the wanted level (Phase 29.4)
+
+Cracking a lock, killing a player, a bank guard or an officer earns stars (`heist.police.crimeStars`, up to `maxStars`). Each star sends `perStar` officers, who appear out of sight 45–85 m away, follow the streets and shoot on sight; from `roadblockFromStars` two officers also block the street ahead. Stay out of every officer's sight for `escapeSeconds` to lose a star; at zero they go home. Dying, leaving or a new round clears it. Tutorial and duel rooms have no police. All numbers are settings.

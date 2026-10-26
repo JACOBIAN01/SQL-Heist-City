@@ -31,6 +31,8 @@ export class Player {
   squad = 0;
   /** A bank guard (Phase 29.3): a computer-driven target that shoots back. */
   isGuard = false;
+  /** A police officer (Phase 29.4): a guard-like gunman that comes and goes with someone's wanted level. */
+  isPolice = false;
   /** The gun a guard carries (kept across rounds). */
   guardWeapon = '';
   /** The floor level this player starts and respawns at (a guard upstairs), 0 for the street. */

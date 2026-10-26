@@ -9,6 +9,7 @@ import {
   raycastMap,
   type GameMap,
   type HeistSettings,
+  type MapAnchor,
 } from '@heist/shared';
 import { Match } from '../game/Match';
 import { FakeConnection } from '../game/testing';
@@ -50,8 +51,9 @@ function setup(guards: Partial<HeistSettings['guards']> = {}, over: { maxPlayers
 
 const first = vaults[0];
 if (!first) throw new Error('the city has no vaults');
-const console1 = findAnchor(city, first.consoleId);
-if (!console1) throw new Error('no console');
+const foundConsole = findAnchor(city, first.consoleId);
+if (!foundConsole) throw new Error('no console');
+const console1: MapAnchor = foundConsole;
 
 /** Puts a player in a clear spot on the console's floor, `d` metres from it along the first clear direction. */
 function spotAt(d: number): { x: number; z: number } {
@@ -59,16 +61,16 @@ function spotAt(d: number): { x: number; z: number } {
     const a = (k / 16) * Math.PI * 2;
     const wall = raycastMap(
       city,
-      console1!.x,
-      console1!.y + 1.5,
-      console1!.z,
+      console1.x,
+      console1.y + 1.5,
+      console1.z,
       Math.cos(a),
       0,
       Math.sin(a),
       d + 0.5,
     );
     if (wall === undefined)
-      return { x: console1!.x + Math.cos(a) * d, z: console1!.z + Math.sin(a) * d };
+      return { x: console1.x + Math.cos(a) * d, z: console1.z + Math.sin(a) * d };
   }
   throw new Error('no clear line from the console');
 }

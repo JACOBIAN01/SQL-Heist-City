@@ -537,3 +537,41 @@
   color: var(--c-good, #7be08f);
   font-weight: 600;
 }
+
+/* Wanted level (Phase 29.4): stars under the minimap, pulsing while the police are after you. */
+.wanted {
+  position: fixed;
+  left: 16px;
+  top: 168px;
+  z-index: 20;
+  display: flex;
+  gap: 2px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: 1.1rem;
+  pointer-events: none;
+}
+.wanted[hidden] {
+  display: none;
+}
+.wanted-star {
+  color: rgba(255, 255, 255, 0.25);
+}
+.wanted-star.on {
+  color: #ffd23f;
+  animation: wanted-pulse 0.9s ease-in-out infinite alternate;
+}
+@keyframes wanted-pulse {
+  from {
+    color: #ffd23f;
+  }
+  to {
+    color: #e5484d;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wanted-star.on {
+    animation: none;
+  }
+}

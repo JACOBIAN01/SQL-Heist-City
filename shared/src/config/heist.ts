@@ -103,6 +103,61 @@ export const heistSettingsSchema = z.object({
       activeRange: 90,
     }),
   /**
+   * The police (Phase 29.4): crimes earn a wanted level (stars). Officers come for anyone who has
+   * stars, on foot, from beyond sight; at the higher levels some set up a roadblock ahead. Break
+   * away for long enough and a star goes; at no stars the officers leave. Dying clears it.
+   */
+  police: z
+    .object({
+      enabled: z.boolean().default(true),
+      /** The gun an officer carries. */
+      weapon: z.string().default('pistol'),
+      /** Officers sent after you for each star. */
+      perStar: z.number().int().min(0).max(5).default(1),
+      maxStars: z.number().int().min(1).max(5).default(5),
+      /** Stars each crime adds. */
+      crimeStars: z
+        .object({
+          /** Cracking a vault lock (the alarm). */
+          lock: z.number().int().min(0).max(5).default(1),
+          /** Bringing down a bank guard. */
+          guard: z.number().int().min(0).max(5).default(1),
+          /** Killing another player. */
+          kill: z.number().int().min(0).max(5).default(1),
+          /** Killing an officer. */
+          officer: z.number().int().min(0).max(5).default(1),
+        })
+        .default({ lock: 1, guard: 1, kill: 1, officer: 1 }),
+      /** Walking pace as a share of a player's (they can catch a walker, not a sprinter). */
+      speed: z.number().min(0.1).max(1).default(0.85),
+      sightRange: z.number().positive().max(100).default(30),
+      aimErrorDegrees: z.number().min(0).max(30).default(7),
+      /** Officers appear this far (m) from you, out of sight where they can. */
+      spawnMin: z.number().positive().max(300).default(45),
+      spawnMax: z.number().positive().max(400).default(85),
+      /** Out of every officer's sight for this long (s) and you lose a star. */
+      escapeSeconds: z.number().positive().max(300).default(25),
+      /** From this many stars, two officers hold a roadblock ahead of you. */
+      roadblockFromStars: z.number().int().min(1).max(6).default(4),
+      /** Officers who are further than this (m) from you are not simulated (they stand still). */
+      activeRange: z.number().positive().max(500).default(220),
+    })
+    .default({
+      enabled: true,
+      weapon: 'pistol',
+      perStar: 1,
+      maxStars: 5,
+      crimeStars: { lock: 1, guard: 1, kill: 1, officer: 1 },
+      speed: 0.85,
+      sightRange: 30,
+      aimErrorDegrees: 7,
+      spawnMin: 45,
+      spawnMax: 85,
+      escapeSeconds: 25,
+      roadblockFromStars: 4,
+      activeRange: 220,
+    }),
+  /**
    * Roles in a squad (Phase 27.3): each member may take one, each role once per squad. The perks
    * are small on purpose; they reward working as a team, not winning alone.
    */

@@ -28,6 +28,7 @@ import { ContractsView } from './ui/profile/ContractsView';
 import { LeagueView } from './ui/profile/LeagueView';
 import { ShareCardView } from './ui/share/ShareCardView';
 import { SquadView } from './ui/hud/SquadView';
+import { PoliceStars } from './ui/hud/PoliceStars';
 import { DuelView } from './ui/hud/DuelView';
 import { CrowdModel } from './world/crowd/CrowdModel';
 import { CrowdRenderer } from './world/crowd/CrowdRenderer';
@@ -376,6 +377,8 @@ const contractsView = new ContractsView(i18n);
 document.body.appendChild(contractsView.root);
 const squadView = new SquadView(i18n, (m) => client.sendJson(m));
 document.body.append(squadView.hud, squadView.panel);
+const policeStars = new PoliceStars(i18n);
+document.body.append(policeStars.root);
 /** Rivals the squad's lookout can see (minimap). */
 let radarFoes: readonly { x: number; z: number }[] = [];
 /** True while the open question is a duel's, so the pop-up is closed when the draw ends. */
@@ -617,6 +620,8 @@ client.subscribe({
       hud.toast('Round review ready — press V');
     } else if (message.t === 'duel') {
       duelView.update(message);
+    } else if (message.t === 'police') {
+      policeStars.update(message);
     } else if (message.t === 'squad') {
       squadView.update(message);
       scoreboard.mySquad = message.squad;

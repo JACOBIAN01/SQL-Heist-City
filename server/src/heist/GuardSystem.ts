@@ -1,31 +1,23 @@
 import {
-  Button,
   findAnchor,
   raycastMap,
   type GameMap,
   type HeistSettings,
-  type InputCommand,
   type MapAnchor,
   type MapVault,
   type Rng,
 } from '@heist/shared';
+import { CHEST, EYE, driveNpc, nearestVisible, newNpcState, type NpcState } from './NpcDriver';
 import type { Player } from '../game/Player';
 import type { HeistEvents } from './HeistEvents';
 import type { MatchApi } from './MatchApi';
 
-/** Eye height for lines of sight, and the height of the chest guards aim at (m above the floor). */
-const EYE = 1.5;
-const CHEST = 1.2;
 /** Guards close to this distance (m) on a target, and no further: they shoot, they do not charge. */
 const STAND_OFF = 7;
 /** Arrived, for a waypoint or the console (m). */
 const ARRIVED = 1.2;
 /** Seconds a guard keeps looking where it last saw someone. */
 const LOOK_SECONDS = 4;
-/** Ticks without moving, while trying to, before the guard gives up on that waypoint. */
-const STUCK_TICKS = 25;
-/** The vertical gap (m) beyond which a guard cannot see a player: another floor. */
-const SAME_FLOOR = 2.5;
 
 interface Guard {
   readonly player: Player;
@@ -38,9 +30,7 @@ interface Guard {
   /** Tick until which the guard is on alert at its console (an alarm rang). */
   alertUntil: number;
   seen: { x: number; z: number; tick: number } | undefined;
-  stillTicks: number;
-  last: { x: number; z: number };
-  seq: number;
+  npc: NpcState;
 }
 
 /**
@@ -141,9 +131,7 @@ export class GuardSystem {
           waitUntil: 0,
           alertUntil: 0,
           seen: undefined,
-          stillTicks: 0,
-          last: { x: spot.x, z: spot.z },
-          seq: 0,
+          npc: newNpcState(spot),
         });
       }
     }
@@ -167,19 +155,18 @@ export class GuardSystem {
   private think(g: Guard, people: readonly Player[], s: HeistSettings['guards']): void {
     const me = g.player.body;
     const tick = this.match.tick;
-    const target = this.nearestVisible(g, people, s.sightRange);
+    const target = nearestVisible(this.match, g.player, people, s.sightRange);
     let goal: { x: number; z: number } | undefined;
     let aim: { x: number; y: number; z: number } | undefined;
     let fire = false;
-    let hold = false;
 
     if (target) {
       g.seen = { x: target.body.x, z: target.body.z, tick };
       aim = { x: target.body.x, y: target.body.y + CHEST, z: target.body.z };
-      const d = Math.hypot(target.body.x - me.x, target.body.z - me.z);
       fire = true;
-      if (d > STAND_OFF) goal = { x: target.body.x, z: target.body.z };
-      else hold = true;
+      // Close enough to shoot: hold, rather than charge.
+      if (Math.hypot(target.body.x - me.x, target.body.z - me.z) > STAND_OFF)
+        goal = { x: target.body.x, z: target.body.z };
     } else if (g.seen && tick - g.seen.tick < this.ticks(LOOK_SECONDS)) {
       goal = { x: g.seen.x, z: g.seen.z };
     } else if (tick < g.alertUntil) {
@@ -188,34 +175,20 @@ export class GuardSystem {
     } else {
       goal = this.beatGoal(g, tick, 1.5);
     }
+    if (goal && Math.hypot(goal.x - me.x, goal.z - me.z) <= ARRIVED) goal = undefined;
 
-    const forward = goal && Math.hypot(goal.x - me.x, goal.z - me.z) > ARRIVED && !hold;
-    const face = aim ?? goal ?? { x: me.x, z: me.z };
-    const dx = face.x - me.x;
-    const dz = face.z - me.z;
-    const horizontal = Math.hypot(dx, dz);
-    // Aim wanders a little, so a guard is dangerous but not deadly.
-    const wander = (s.aimErrorDegrees * Math.PI) / 180;
-    const yaw =
-      horizontal > 0.01
-        ? Math.atan2(-dx, -dz) + (aim ? (this.rng.next() * 2 - 1) * wander : 0)
-        : g.player.yaw;
-    const pitch = aim ? Math.atan2(aim.y - (me.y + EYE), Math.max(0.1, horizontal)) : 0;
-    this.trackProgress(g, forward ?? false);
-
-    const commands: InputCommand[] = [];
-    const n = Math.max(1, Math.round(60 / this.match.tickRate));
-    for (let i = 0; i < n; i++)
-      commands.push({
-        seq: (g.seq = (g.seq + 1) & 0xffff),
-        moveX: 0,
-        moveY: forward ? Math.round(127 * s.speed) : 0,
-        yaw,
-        pitch,
-        buttons: fire ? Button.Fire : 0,
-        viewLagMs: 0,
-      });
-    this.match.drive(g.player, commands);
+    const { stuck } = driveNpc(
+      this.match,
+      g.player,
+      g.npc,
+      { goal, speed: s.speed, aim, fire, aimErrorDegrees: s.aimErrorDegrees },
+      this.rng,
+    );
+    // A guard that cannot get to its waypoint (a doorway the beat did not allow for) moves on.
+    if (stuck) {
+      g.at = (g.at + 1) % g.beat.length;
+      g.npc.stillTicks = 0;
+    }
   }
 
   /** Where the guard is walking on its beat (alert: the beat is tighter and slower). */
@@ -230,48 +203,6 @@ export class GuardSystem {
       }
     }
     return g.beat[g.at] as { x: number; z: number };
-  }
-
-  /** A guard that cannot get to its waypoint (a doorway the beat did not allow for) moves on to the next. */
-  private trackProgress(g: Guard, wantsToMove: boolean): void {
-    const me = g.player.body;
-    const moved = Math.hypot(me.x - g.last.x, me.z - g.last.z);
-    g.last = { x: me.x, z: me.z };
-    g.stillTicks = wantsToMove && moved < 0.02 ? g.stillTicks + 1 : 0;
-    if (g.stillTicks > STUCK_TICKS) {
-      g.at = (g.at + 1) % g.beat.length;
-      g.stillTicks = 0;
-    }
-  }
-
-  /** The nearest living player the guard can see: close enough, on its floor, with nothing in the way. */
-  private nearestVisible(g: Guard, people: readonly Player[], range: number): Player | undefined {
-    const me = g.player.body;
-    let best: Player | undefined;
-    let bestD = Infinity;
-    for (const p of people) {
-      if (Math.abs(p.body.y - me.y) > SAME_FLOOR) continue;
-      const dx = p.body.x - me.x;
-      const dz = p.body.z - me.z;
-      const dy = p.body.y + CHEST - (me.y + EYE);
-      const d = Math.hypot(dx, dz);
-      if (d > range || d >= bestD) continue;
-      const len = Math.hypot(dx, dy, dz) || 1;
-      const wall = raycastMap(
-        this.match.map,
-        me.x,
-        me.y + EYE,
-        me.z,
-        dx / len,
-        dy / len,
-        dz / len,
-        len,
-      );
-      if (wall !== undefined && wall < len - 0.3) continue;
-      best = p;
-      bestD = d;
-    }
-    return best;
   }
 
   private ticks(seconds: number): number {

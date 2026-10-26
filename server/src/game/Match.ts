@@ -464,7 +464,7 @@ export class Match implements MatchApi {
       return { ok: false, code: CLOSE_PROTOCOL, reason: 'Client is out of date, reload the page' };
     }
     const cap = Math.min(this.deps.settings.maxPlayers, this.classConfig?.playerCap ?? Infinity);
-    // Guards and target dummies are not players: they take no seat.
+    // Guards and police are not players: they take no seat.
     if (this.humanCount >= cap) {
       return { ok: false, code: CLOSE_FULL, reason: 'Match is full' };
     }
@@ -563,10 +563,10 @@ export class Match implements MatchApi {
     return player;
   }
 
-  /** People in the match (everyone but guards and dummies). */
+  /** People in the match: everyone but bank guards and police, who take no seat. */
   get humanCount(): number {
     let n = 0;
-    for (const p of this.players.values()) if (!p.isDummy) n++;
+    for (const p of this.players.values()) if (!p.isGuard) n++;
     return n;
   }
 
@@ -579,6 +579,10 @@ export class Match implements MatchApi {
     this.teleport(guard, spot.x, floor, spot.z);
     this.equipStartingGear(guard, true);
     return guard;
+  }
+
+  removeNpc(player: Player): void {
+    this.leave(player.id);
   }
 
   /** Puts commands in a computer-driven player's queue, as a client would send them. */

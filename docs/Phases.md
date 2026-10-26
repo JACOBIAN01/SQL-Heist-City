@@ -46,7 +46,7 @@
 | 26 | Progression and the meta-loop | 🟨 built (26.1–26.9) |
 | 27 | Squads and roles | 🟨 built; role balance waits for a playtest |
 | 28 | Game modes | 🟨 built |
-| 29 | Living city | 🟦 29.1–29.2 done |
+| 29 | Living city | 🟦 29.1–29.4 done |
 | 30 | Exploration and freedom | ⬜ |
 | 31 | Missions and heist structure | ⬜ |
 | 32 | Story and characters | ⬜ |
@@ -530,8 +530,8 @@ Post-launch. GTA audit "World immersion" from 5 to 8–9.
 |---|---|---|---|
 | 29.1 | Pedestrians: a cheap crowd (instanced, LOD), react to gunfire and flee | crowd at budget; reacts to shots | ✅ 300 people (setting `atmosphere.crowd`) strolling the sidewalk ring of every block, deterministic from the city, drawn in two instanced meshes (a body near, a plain box far; only those within 110 m are placed) — two draw calls however many there are, 36 triangles a person. Gunfire within 45 m sends them running away from it for 8 s, then back to strolling. Scenery only: not part of the game state, nothing can hurt them. Tested on the model (paths, pace, fleeing, range) and in the renderer (draw calls, triangles) |
 | 29.2 | Traffic on the lanes, obeying junctions, reacting to crashes | traffic flows; server-owned and cheap | ✅ 24 self-driving cars (`vehicles.traffic`) on the right-hand lanes of the city's streets, driven by the server with the same physics as a player's car (so every client already shows them). They slow for the car or person ahead, stop at red lights (signals offset between junctions, green then all-red clearing), turn left or right or go on at junctions, turn round at the city's edge, stand still for 6 s after being hit, and are put back on the road if stuck out of sight. They only move while a player is within 180 m; a player who takes the wheel makes it an ordinary car. Tested in the real city: lanes, speed, spacing, lights, crashes, cost per tick |
-| 29.3 | Bank guards (PvE) that patrol and respond to alarms | guards fight back; numbers in settings | ⬜ |
-| 29.4 | Police response: wanted level from alarms and kills, chases, roadblocks | escaping the police is a real challenge | ⬜ |
+| 29.3 | Bank guards (PvE) that patrol and respond to alarms | guards fight back; numbers in settings | ✅ Guards (`heist.guards`, per bank tier) are players driven through the normal input queue (`NpcDriver`), so walls, spread, fire rate and damage are the real rules: they patrol a beat, shoot what they see, hold the vault when an alarm sounds, take no seat in the room, come back after a kill and pay a bounty (`killBonus`). Tested in the real city |
+| 29.4 | Police response: wanted level from alarms and kills, chases, roadblocks | escaping the police is a real challenge | ✅ Wanted stars (`heist.police`) from cracking a lock, killing a player, a guard or an officer; officers spawn out of sight 45–85 m away (one per star × `perStar`), keep to the streets, shoot on sight with a pistol, and from 4 stars set a two-officer roadblock ahead. Staying unseen for `escapeSeconds` drops a star; at none they leave. Dying, leaving or a new round clears the record; off in tutorial and duel rooms. The client shows the stars under the minimap (`PoliceStars`). Tested: crimes, spawn distance, chase and damage, escape, roadblock, off switches |
 | 29.5 | Weather (rain, fog) and richer ambient sound | weather cycles; budgets kept | ⬜ |
 | 29.6 | Shops and vendors: spend cash on armour, ammo and cosmetics | buying works and is server-checked | ⬜ |
 | 29.7 | Car radio | stations play in cars | ⬜ |

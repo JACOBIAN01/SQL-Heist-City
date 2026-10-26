@@ -40,6 +40,8 @@ export interface MatchApi {
   playersNear(x: number, z: number, radius: number): Player[];
   /** Adds a bank guard standing on `floor`; the guard system drives it (Phase 29.3). */
   addGuard(name: string, spot: SpawnPoint, floor: number, weapon: string): Player;
+  /** Takes a computer-driven player out of the match (a police officer who is no longer needed). */
+  removeNpc(player: Player): void;
   /** Queues moves for a computer-driven player, as a client would send them. */
   drive(player: Player, commands: readonly InputCommand[]): void;
   /** One JSON message to one player. */

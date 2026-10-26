@@ -306,6 +306,8 @@ export const en = {
   'caption.metres': '{n} m',
   // --- in the game ------------------------------------------------------------------------
   'game.hint': 'Click to play — {keys} · Esc release mouse',
+  // --- police (29.4) ----------------------------------------------------------------------
+  'wanted.label': 'Wanted level {stars}',
   'game.guns': 'guns',
   'game.settingsButton': 'Settings ({key})',
 } as const;
