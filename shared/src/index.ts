@@ -82,3 +82,4 @@ export * from './progress/profilePage';
 export * from './classes/squads';
 export * from './config/squadAwards';
 export * from './config/modes';
+export * from './sim/traffic';

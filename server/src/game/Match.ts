@@ -1,5 +1,6 @@
 import {
   Button,
+  SeededRng,
   applyModeHeist,
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
@@ -60,6 +61,7 @@ import {
 import { classTaskOptions, closedTiers, type ClassMatchConfig } from '../classes/ClassMatchConfig';
 import { RunOverRule } from './RunOverRule';
 import { VehicleFleet, type Vehicle } from './VehicleFleet';
+import { TrafficSystem } from './TrafficSystem';
 import type { ChallengeGateway } from '../heist/ChallengeGateway';
 import type { IssueOptions } from '../challenges/ChallengeService';
 import { HeistController } from '../heist/HeistController';
@@ -161,6 +163,7 @@ export class Match implements MatchApi {
   readonly heist: HeistController;
   /** Every car in the match; the server drives them (docs/gameplay.md "Vehicles"). */
   readonly vehicles: VehicleFleet;
+  private readonly roadTraffic: TrafficSystem | undefined;
   private readonly runOver: RunOverRule;
   private vehicleSettings: VehicleSettings;
   private atmosphere: AtmosphereSettings;
@@ -243,6 +246,16 @@ export class Match implements MatchApi {
     this.atmosphere = deps.atmosphere ?? DEFAULT_ATMOSPHERE_SETTINGS;
     this.rewardIcons = deps.rewardIcons ?? DEFAULT_REWARD_ICONS;
     this.vehicles = new VehicleFleet(deps.map, vehicleSettings);
+    // Cars that drive themselves along the streets (Phase 29.2), on maps that are cities.
+    this.roadTraffic =
+      deps.map.city && vehicleSettings.traffic.count > 0
+        ? new TrafficSystem(
+            this.vehicles,
+            deps.map.city,
+            () => this.vehicleSettings.traffic,
+            new SeededRng(`traffic:${deps.seed ?? 'match'}`),
+          )
+        : undefined;
     this.runOver = new RunOverRule(
       vehicleSettings.runOver,
       deps.settings.tickRate,
@@ -673,6 +686,11 @@ export class Match implements MatchApi {
     this.notePositions();
     for (const player of this.players.values()) this.applyInput(player);
     this.checkSpeeds();
+    this.roadTraffic?.tick(
+      this.collisionMap,
+      this.players.values(),
+      this.tick / this.deps.settings.tickRate,
+    );
     this.vehicles.coast(this.collisionMap, 1 / this.deps.settings.tickRate);
     this.vehicles.settle();
     // Drivers sit exactly where their (settled) car is.

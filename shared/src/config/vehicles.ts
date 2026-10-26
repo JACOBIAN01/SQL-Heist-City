@@ -48,7 +48,32 @@ export const runOverSchema = z.object({
 
 export type RunOverSettings = z.infer<typeof runOverSchema>;
 
+/**
+ * Traffic (Phase 29.2): cars that drive themselves along the city's streets, keeping to their
+ * lane, stopping at red lights and for what is in front, and standing still for a while after a
+ * crash. The server drives them (they are ordinary cars to every client); they only move while a
+ * player is near, so they cost almost nothing.
+ */
+export const trafficSettingsSchema = z.object({
+  /** Cars on the roads; 0 switches traffic off. */
+  count: z.number().int().min(0).max(200).default(24),
+  /** Speed on an open road (m/s; 8 is about 30 km/h). */
+  cruiseSpeed: z.number().positive().max(25).default(8),
+  /** How hard they brake for lights and cars ahead (m/s²). */
+  comfortBrake: z.number().positive().max(20).default(5),
+  /** Seconds each direction of a junction has a green light, and the pause between them with all red. */
+  greenSeconds: z.number().positive().max(120).default(12),
+  clearSeconds: z.number().min(0).max(20).default(2),
+  /** Seconds a car stands still after a crash before it moves on. */
+  crashSeconds: z.number().min(0).max(120).default(6),
+  /** Cars further than this (m) from every player stand still. */
+  activeRange: z.number().positive().max(500).default(180),
+});
+export type TrafficSettings = z.infer<typeof trafficSettingsSchema>;
+
 export const vehicleSettingsSchema = z.object({
+  /** Cars that drive themselves along the streets (29.2). */
+  traffic: trafficSettingsSchema.default(() => trafficSettingsSchema.parse({})),
   /** Run-over damage (12.3). */
   runOver: runOverSchema.default(() => runOverSchema.parse({})),
   /** How close to a car's side (m, from its footprint) a player must stand to get in. */

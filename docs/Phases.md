@@ -46,7 +46,7 @@
 | 26 | Progression and the meta-loop | 🟨 built (26.1–26.9) |
 | 27 | Squads and roles | 🟨 built; role balance waits for a playtest |
 | 28 | Game modes | 🟨 built |
-| 29 | Living city | ⬜ |
+| 29 | Living city | 🟦 29.1–29.2 done |
 | 30 | Exploration and freedom | ⬜ |
 | 31 | Missions and heist structure | ⬜ |
 | 32 | Story and characters | ⬜ |
@@ -523,13 +523,13 @@ Post-launch. Audit con 16.
 | 28.4 | Classic heist (today's mode), with teacher-picked length | unchanged behaviour under the framework | ✅ `classic` changes nothing (a test compares the heist settings before and after), every bank the class has open, and the teacher's round length still decides |
 
 ---
-## Phase 29 — Living city (world immersion)  ⬜
+## Phase 29 — Living city (world immersion)  🟦
 Post-launch. GTA audit "World immersion" from 5 to 8–9.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 29.1 | Pedestrians: a cheap crowd (instanced, LOD), react to gunfire and flee | crowd at budget; reacts to shots | ⬜ |
-| 29.2 | Traffic on the lanes, obeying junctions, reacting to crashes | traffic flows; server-owned and cheap | ⬜ |
+| 29.1 | Pedestrians: a cheap crowd (instanced, LOD), react to gunfire and flee | crowd at budget; reacts to shots | ✅ 300 people (setting `atmosphere.crowd`) strolling the sidewalk ring of every block, deterministic from the city, drawn in two instanced meshes (a body near, a plain box far; only those within 110 m are placed) — two draw calls however many there are, 36 triangles a person. Gunfire within 45 m sends them running away from it for 8 s, then back to strolling. Scenery only: not part of the game state, nothing can hurt them. Tested on the model (paths, pace, fleeing, range) and in the renderer (draw calls, triangles) |
+| 29.2 | Traffic on the lanes, obeying junctions, reacting to crashes | traffic flows; server-owned and cheap | ✅ 24 self-driving cars (`vehicles.traffic`) on the right-hand lanes of the city's streets, driven by the server with the same physics as a player's car (so every client already shows them). They slow for the car or person ahead, stop at red lights (signals offset between junctions, green then all-red clearing), turn left or right or go on at junctions, turn round at the city's edge, stand still for 6 s after being hit, and are put back on the road if stuck out of sight. They only move while a player is within 180 m; a player who takes the wheel makes it an ordinary car. Tested in the real city: lanes, speed, spacing, lights, crashes, cost per tick |
 | 29.3 | Bank guards (PvE) that patrol and respond to alarms | guards fight back; numbers in settings | ⬜ |
 | 29.4 | Police response: wanted level from alarms and kills, chases, roadblocks | escaping the police is a real challenge | ⬜ |
 | 29.5 | Weather (rain, fog) and richer ambient sound | weather cycles; budgets kept | ⬜ |

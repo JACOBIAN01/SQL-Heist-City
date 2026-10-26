@@ -23,6 +23,10 @@ export class Vehicle {
   state: VehicleState;
   /** Player id at the wheel, 0 when empty. */
   driver = 0;
+  /** A car that belongs to the traffic (Phase 29.2); a player taking the wheel makes it an ordinary car. */
+  readonly traffic: boolean = false;
+  /** Driven by the traffic system right now. */
+  ai = false;
 
   constructor(
     readonly id: number,
@@ -30,7 +34,10 @@ export class Vehicle {
     readonly variant: number,
     public spec: VehicleSpec,
     readonly home: ParkedCar,
+    traffic = false,
   ) {
+    this.traffic = traffic;
+    this.ai = traffic;
     this.state = createVehicle(home.x, home.z, home.yaw);
   }
 
@@ -82,6 +89,21 @@ export class VehicleFleet {
 
   get size(): number {
     return this.cars.size;
+  }
+
+  /** Adds a car that drives itself along the streets; it replicates like any other car. */
+  addTraffic(home: ParkedCar): Vehicle {
+    const id = Math.max(0, ...this.cars.keys()) + 1;
+    const car = new Vehicle(
+      id,
+      home.kind,
+      home.variant,
+      this.settings.kinds[home.kind],
+      home,
+      true,
+    );
+    this.cars.set(id, car);
+    return car;
   }
 
   get(id: number): Vehicle | undefined {
@@ -137,6 +159,7 @@ export class VehicleFleet {
     for (const car of this.cars.values()) {
       car.state = createVehicle(car.home.x, car.home.z, car.home.yaw);
       car.driver = 0;
+      car.ai = car.traffic;
     }
   }
 
