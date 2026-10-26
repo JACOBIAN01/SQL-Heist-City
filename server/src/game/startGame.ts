@@ -92,7 +92,7 @@ export function startGame(
     match,
     loop,
     metrics: () => ({
-      players: match.players.size,
+      players: match.humanCount,
       tick: match.tick,
       tickMs: {
         p50: loop.stats.percentile(50),
@@ -102,7 +102,7 @@ export function startGame(
       },
       bytesPerSecond: bytes.perSecond,
       snapshotsPerSecond: snapshots.perSecond,
-      bytesPerPlayerPerSecond: bytes.perSecond / Math.max(1, match.players.size),
+      bytesPerPlayerPerSecond: bytes.perSecond / Math.max(1, match.humanCount),
       anomalies: match.anomalies.counts(),
     }),
     async stop() {

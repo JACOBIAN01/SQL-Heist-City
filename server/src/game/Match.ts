@@ -432,7 +432,7 @@ export class Match implements MatchApi {
           [...this.players.values()].filter((o) => o !== p && o.alive).map((o) => o.body),
         );
       this.lagComp.forget(p.id);
-      Object.assign(p.body, createBody(spawn.x, 0, spawn.z));
+      Object.assign(p.body, createBody(spawn.x, p.homeY, spawn.z));
       p.yaw = spawn.yaw;
       this.equipStartingGear(p, p.isDummy);
       p.protectedUntilTick = p.isDummy
@@ -464,7 +464,8 @@ export class Match implements MatchApi {
       return { ok: false, code: CLOSE_PROTOCOL, reason: 'Client is out of date, reload the page' };
     }
     const cap = Math.min(this.deps.settings.maxPlayers, this.classConfig?.playerCap ?? Infinity);
-    if (this.players.size >= cap) {
+    // Guards and target dummies are not players: they take no seat.
+    if (this.humanCount >= cap) {
       return { ok: false, code: CLOSE_FULL, reason: 'Match is full' };
     }
     const held = accountId === undefined ? undefined : this.heldSeatFor(accountId);
@@ -539,6 +540,11 @@ export class Match implements MatchApi {
    */
   private equipStartingGear(player: Player, alwaysArmed = false): void {
     player.disarm();
+    if (player.isGuard && player.guardWeapon) {
+      player.infiniteAmmo = true;
+      player.giveWeapon(player.guardWeapon, this.combat.weapons[player.guardWeapon]?.magSize ?? 0);
+      return;
+    }
     if (this.deps.map.unarmedStart && !alwaysArmed) return;
     const id = this.combat.sandboxWeapon;
     player.infiniteAmmo = true;
@@ -555,6 +561,29 @@ export class Match implements MatchApi {
     this.players.set(player.id, player);
     this.broadcast({ e: 'joined', id: player.id, name }, player.id);
     return player;
+  }
+
+  /** People in the match (everyone but guards and dummies). */
+  get humanCount(): number {
+    let n = 0;
+    for (const p of this.players.values()) if (!p.isDummy) n++;
+    return n;
+  }
+
+  /** Adds a bank guard (Phase 29.3): a target with a gun, driven by the guard system, never idle-dropped. */
+  addGuard(name: string, spot: SpawnPoint, floor: number, weapon: string): Player {
+    const guard = this.addDummy(name, spot);
+    guard.isGuard = true;
+    guard.guardWeapon = weapon;
+    guard.homeY = floor;
+    this.teleport(guard, spot.x, floor, spot.z);
+    this.equipStartingGear(guard, true);
+    return guard;
+  }
+
+  /** Puts commands in a computer-driven player's queue, as a client would send them. */
+  drive(player: Player, commands: readonly InputCommand[]): void {
+    player.enqueue(commands, this.deps.settings.maxCommandsPerTick * 4);
   }
 
   leave(id: number): void {
@@ -950,7 +979,11 @@ export class Match implements MatchApi {
   /** Applies damage and handles a kill; public for tests and for rules that hurt players (none yet). */
   damage(victim: Player, amount: number, attacker: Player): void {
     if (!victim.alive || this.isProtected(victim) || this.heist.roundOver) return;
-    victim.hp = Math.max(0, victim.hp - Math.round(amount * this.heist.squads.damageScale(victim)));
+    const armour = victim.isGuard ? this.heist.settings.guards.damageTakenScale : 1;
+    victim.hp = Math.max(
+      0,
+      victim.hp - Math.round(amount * armour * this.heist.squads.damageScale(victim)),
+    );
     this.heist.onDamaged(victim);
     if (victim.hp > 0) return;
     victim.alive = false;
@@ -972,7 +1005,7 @@ export class Match implements MatchApi {
           [...this.players.values()].filter((o) => o !== p && o.alive).map((o) => o.body),
         );
       this.lagComp.forget(p.id);
-      Object.assign(p.body, createBody(spawn.x, 0, spawn.z));
+      Object.assign(p.body, createBody(spawn.x, p.homeY, spawn.z));
       p.yaw = spawn.yaw;
       p.hp = this.combat.respawnHp;
       p.alive = true;

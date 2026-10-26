@@ -29,6 +29,12 @@ export class Player {
   key = '';
   /** The squad this player plays in (Phase 27), 0 for none. */
   squad = 0;
+  /** A bank guard (Phase 29.3): a computer-driven target that shoots back. */
+  isGuard = false;
+  /** The gun a guard carries (kept across rounds). */
+  guardWeapon = '';
+  /** The floor level this player starts and respawns at (a guard upstairs), 0 for the street. */
+  homeY = 0;
   /** The squad role this player took (Phase 27.3), if any. */
   role: SquadRole | null = null;
   readonly body: BodyState;

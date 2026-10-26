@@ -2,6 +2,7 @@ import {
   ANCHOR_REACH_Y,
   DEFAULT_HEIST_SETTINGS,
   carrySpeedScale,
+  SeededRng,
   streakBonus,
   jsonClientMessageSchema,
   mapWithClosedDoors,
@@ -20,6 +21,7 @@ import { RoundAwards } from './RoundAwards';
 import { StreakKeeper } from './StreakKeeper';
 import { Squads } from './Squads';
 import { DuelManager } from './DuelManager';
+import { GuardSystem } from './GuardSystem';
 import { DuelRule } from './DuelRule';
 import { FeedReporter } from './FeedReporter';
 import { HeistEvents } from './HeistEvents';
@@ -90,6 +92,12 @@ export class HeistController implements ArmsControl {
       (player) => this.openTasks.get(player.key),
     );
     this.squads.configure(match.classInfo);
+    this.guards = new GuardSystem(
+      match,
+      () => this.settings.guards,
+      this.events,
+      new SeededRng(`guards:${match.classInfo?.classId ?? 0}`),
+    );
     this.duels = new DuelManager(
       match,
       () => (match.classInfo?.mode.kind === 'duel' ? match.classInfo.mode.duel : undefined),
@@ -201,6 +209,7 @@ export class HeistController implements ArmsControl {
   private resetWorld(): void {
     this.squads.reset();
     this.duels.reset();
+    this.guards.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
@@ -239,6 +248,7 @@ export class HeistController implements ArmsControl {
     this.round?.onTick();
     this.squads.onTick();
     this.duels.onTick();
+    this.guards.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -261,6 +271,12 @@ export class HeistController implements ArmsControl {
     this.streaks.broke(victim.key);
     this.openTasks.delete(victim.key);
     this.banking.cancel(victim, 'died');
+    // A guard brought down pays whoever did it, and drops nothing.
+    if (victim.isGuard) {
+      if (killer && !killer.isDummy && killer.alive)
+        this.setCash(killer, killer.cash + this.settings.guards.killBonus);
+      return;
+    }
     this.challenges?.playerDied?.(victim.key); // an open question ends with the life
     // The killer of a wanted player collects the bounty on top of the kill bonus.
     if (killer && killer !== victim && !victim.isDummy)
@@ -522,6 +538,8 @@ export class HeistController implements ArmsControl {
   private readonly openTasks = new Map<string, string>();
   /** Squads of a class room (Phase 27). */
   readonly squads: Squads;
+  /** Bank guards (Phase 29.3). */
+  readonly guards: GuardSystem;
   /** SQL Quick Draw duels, in a class whose mode is the duel kind (Phase 28.3). */
   readonly duels: DuelManager;
 

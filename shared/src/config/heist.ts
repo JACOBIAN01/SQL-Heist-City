@@ -61,6 +61,48 @@ export const heistSettingsSchema = z.object({
     })
     .default({ minStreak: 3, cashPerStep: 500, cap: 3_000 }),
   /**
+   * Bank guards (Phase 29.3): armed staff who walk a short beat around the vault console, hold the
+   * room when a lock is cracked, and shoot at anyone they can see. They are small in number and
+   * beatable; a guard brought down pays a little, and is back next round.
+   */
+  guards: z
+    .object({
+      /** Guards in a bank, by its tier ("1"–"5"); 0 or missing means none. */
+      perBankTier: z
+        .record(z.string(), z.number().int().min(0).max(8))
+        .default({ '1': 1, '2': 1, '3': 2, '4': 2, '5': 3 }),
+      /** The gun they carry (a key of the combat settings' weapons). */
+      weapon: z.string().default('pistol'),
+      /** Walking pace as a share of a player's. */
+      speed: z.number().min(0.1).max(1).default(0.55),
+      /** They see a player this far (m) if nothing is in the way. */
+      sightRange: z.number().positive().max(80).default(22),
+      /** Their aim wanders by up to this many degrees, so they miss. */
+      aimErrorDegrees: z.number().min(0).max(30).default(5),
+      /** The beat is a ring this many metres round the console. */
+      beatRadius: z.number().positive().max(15).default(4),
+      /** After an alarm they hold the console for this many seconds. */
+      alertSeconds: z.number().min(0).max(300).default(30),
+      /** Damage they take is multiplied by this (1 is the same as a player). */
+      damageTakenScale: z.number().min(0.1).max(3).default(1),
+      /** Cash a player is paid for bringing one down. */
+      killBonus: z.number().int().min(0).default(500),
+      /** Guards further than this (m) from every player stand still. */
+      activeRange: z.number().positive().max(300).default(90),
+    })
+    .default({
+      perBankTier: { '1': 1, '2': 1, '3': 2, '4': 2, '5': 3 },
+      weapon: 'pistol',
+      speed: 0.55,
+      sightRange: 22,
+      aimErrorDegrees: 5,
+      beatRadius: 4,
+      alertSeconds: 30,
+      damageTakenScale: 1,
+      killBonus: 500,
+      activeRange: 90,
+    }),
+  /**
    * Roles in a squad (Phase 27.3): each member may take one, each role once per squad. The perks
    * are small on purpose; they reward working as a team, not winning alone.
    */

@@ -2,7 +2,9 @@ import type { AnomalyKind } from '../game/AnomalyLog';
 import type { ClassMatchConfig } from '../classes/ClassMatchConfig';
 import type {
   GameMap,
+  InputCommand,
   JsonServerMessage,
+  SpawnPoint,
   VehicleMessage,
   VehicleReply,
   WeaponSpec,
@@ -36,6 +38,10 @@ export interface MatchApi {
   playerList(): Iterable<Player>;
   /** Players within `radius` metres of a point on the ground plane (alive or not). */
   playersNear(x: number, z: number, radius: number): Player[];
+  /** Adds a bank guard standing on `floor`; the guard system drives it (Phase 29.3). */
+  addGuard(name: string, spot: SpawnPoint, floor: number, weapon: string): Player;
+  /** Queues moves for a computer-driven player, as a client would send them. */
+  drive(player: Player, commands: readonly InputCommand[]): void;
   /** One JSON message to one player. */
   sendJson(player: Player, message: JsonServerMessage): void;
   /** Same message to every player. */
