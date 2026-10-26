@@ -78,10 +78,10 @@ describe('synthesised sounds', () => {
     expect(low('shot-shotgun')).toBeGreaterThan(low('shot-smg'));
   });
 
-  it('stays small: under 2 s of samples for most sounds, about 2 MB in memory all told', () => {
+  it('stays small: under 2 s of samples for most sounds, under 3 MB in memory all told', () => {
     let total = 0;
     for (const list of all.values()) for (const pcm of list) total += pcm.length;
-    expect(total * 4).toBeLessThan(2.5e6);
+    expect(total * 4).toBeLessThan(2.8e6);
   });
 });
 

@@ -28,6 +28,7 @@ export const SOUND_NAMES = [
   'bank',
   'engine',
   'wind',
+  'rain',
   'siren',
   'alarm',
   'vault-crack',
@@ -36,7 +37,7 @@ export const SOUND_NAMES = [
 export type SoundName = (typeof SOUND_NAMES)[number];
 
 /** Sounds made to repeat seamlessly (engines, wind, sirens, alarms). */
-export const LOOPS: ReadonlySet<SoundName> = new Set(['engine', 'wind', 'siren', 'alarm']);
+export const LOOPS: ReadonlySet<SoundName> = new Set(['engine', 'wind', 'rain', 'siren', 'alarm']);
 
 type Rng = () => number;
 
@@ -381,6 +382,18 @@ function wind(rng: Rng): Float32Array {
   return normalise(out, 0.5);
 }
 
+/** Rain, 2 s: a steady hiss of high noise with a faint patter that comes and goes. */
+function rain(rng: Rng): Float32Array {
+  const raw = noise(samples(2).length, rng);
+  const out = circular(raw, (b) => highpass(lowpass(b, 7000), 900));
+  for (let i = 0; i < out.length; i++) {
+    const patter =
+      0.8 + 0.2 * Math.sin((TAU * 9 * i) / out.length) * Math.sin((TAU * 2 * i) / out.length);
+    out[i] = (out[i] as number) * patter;
+  }
+  return normalise(out, 0.5);
+}
+
 /**
  * Police siren wail, 2 s: pitch up and back down. The average pitch times the
  * length is a whole number of cycles, so the wave meets itself at the seam.
@@ -434,6 +447,7 @@ export const VARIANTS: Readonly<Record<SoundName, number>> = {
   bank: 1,
   engine: 1,
   wind: 1,
+  rain: 1,
   siren: 1,
   alarm: 1,
   'vault-crack': 1,
@@ -459,6 +473,7 @@ const RECIPES: Readonly<Record<SoundName, (rng: Rng) => Float32Array>> = {
   bank: () => chime([1046.5, 1318.5, 1568, 2093], 0.075, 0.18, 0.8),
   engine,
   wind,
+  rain,
   siren,
   alarm,
   'vault-crack': vaultCrack,

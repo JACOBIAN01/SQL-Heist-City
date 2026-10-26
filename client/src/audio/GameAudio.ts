@@ -49,6 +49,8 @@ export interface HearingFrame {
   /** Players at the wheel (no footsteps: they sit in their cars). */
   readonly drivers: ReadonlySet<number>;
   readonly cars: Iterable<HeardCar>;
+  /** How hard it is raining, 0 to 1 (Phase 29.5). */
+  readonly rain?: number;
 }
 
 export interface GameAudioDeps {
@@ -86,6 +88,9 @@ interface Alarm {
   ends: number;
 }
 
+/** Rain is a hiss, so it can be a lot louder than the wind for the same feel. */
+const RAIN_GAIN = 3;
+
 /**
  * What the game sounds like: turns game facts (shots, steps, cars, vaults,
  * cash) into sounds at the right place and loudness.
@@ -102,6 +107,7 @@ export class GameAudio {
   private readonly alarms = new Map<string, Alarm>();
   private vaultsSeen: Map<string, number> | undefined;
   private wind: LoopHandle | undefined;
+  private rain: LoopHandle | undefined;
   private siren: { loop: LoopHandle | undefined; ends: number } | undefined;
   private nextSiren: number;
   private lastDryFire = -Infinity;
@@ -185,7 +191,18 @@ export class GameAudio {
     this.time += frame.dt;
     this.listenerAt = frame.listener.at;
     out.setListener(frame.listener.at, frame.listener.forward, frame.listener.up);
-    this.wind ??= out.loop('wind', { volume: settings.ambienceVolume });
+    const wind = (this.wind ??= out.loop('wind', { volume: settings.ambienceVolume }));
+    const wet = Math.max(0, Math.min(1, frame.rain ?? 0));
+    if (wet > 0.02) {
+      this.rain ??= out.loop('rain', { volume: 0 });
+      this.rain?.setVolume(settings.ambienceVolume * RAIN_GAIN * wet);
+      // A storm also blows harder.
+      wind?.setVolume(settings.ambienceVolume * (1 + wet));
+    } else if (this.rain) {
+      this.rain.stop();
+      this.rain = undefined;
+      wind?.setVolume(settings.ambienceVolume);
+    }
     this.footsteps(frame);
     this.carSounds(frame.cars);
     this.alarmBells();

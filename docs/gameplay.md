@@ -221,3 +221,7 @@ A class picks a **mode**; a mode is only settings (`modes` in the admin): which 
 ## Police and the wanted level (Phase 29.4)
 
 Cracking a lock, killing a player, a bank guard or an officer earns stars (`heist.police.crimeStars`, up to `maxStars`). Each star sends `perStar` officers, who appear out of sight 45–85 m away, follow the streets and shoot on sight; from `roadblockFromStars` two officers also block the street ahead. Stay out of every officer's sight for `escapeSeconds` to lose a star; at zero they go home. Dying, leaving or a new round clears it. Tutorial and duel rooms have no police. All numbers are settings.
+
+## Weather (Phase 29.5)
+
+The match clock is cut into spells of `atmosphere.weather.spellMinutes`, each clear, foggy, rainy or stormy by `weights`, the same for everyone and blended over `blendSeconds`. Fog shortens how far you see; rain draws streaks and adds a rain sound. It changes nothing about shooting, damage or grading.

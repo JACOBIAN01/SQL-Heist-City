@@ -279,4 +279,15 @@ describe('GameAudio: heist and ambience', () => {
     expect(out.live('siren')).toHaveLength(0);
     expect(out.live('wind')).toHaveLength(1);
   });
+
+  it('adds the sound of rain, and a harder wind, only while it rains', () => {
+    const { out, audio } = setup();
+    audio.update(frame());
+    expect(out.live('rain')).toHaveLength(0);
+    audio.update({ ...frame(), rain: 0.8 });
+    expect(out.live('rain')).toHaveLength(1);
+    expect(out.live('wind')).toHaveLength(1);
+    audio.update({ ...frame(), rain: 0 });
+    expect(out.live('rain')).toHaveLength(0);
+  });
 });

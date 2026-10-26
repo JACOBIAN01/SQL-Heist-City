@@ -4,6 +4,8 @@ import {
   DEFAULT_COMBAT_SETTINGS,
   DEFAULT_MOVEMENT_SETTINGS,
   hourAt,
+  weatherAt,
+  DEFAULT_ATMOSPHERE_SETTINGS,
   SIM_DT,
   TEST_MAP,
   BANK_LAYOUTS,
@@ -105,6 +107,7 @@ import { VehicleControls } from './vehicles/VehicleControls';
 import { FrameBudget, PostFx } from './render/PostFx';
 import { QUALITY_PRESETS, QualityLadder, type QualityRung } from './render/quality';
 import { addLighting } from './render/lighting';
+import { WeatherFx, pinnedWeather } from './render/WeatherFx';
 import { computeViewport } from './render/viewport';
 import { sceneBudget } from './render/sceneBudget';
 import { ChannelChallengeApi } from './net/ChannelChallengeApi';
@@ -144,6 +147,7 @@ const { store: settings, i18n } = startSettings(account);
 const bindings = bindingsFrom(() => settings.current);
 // ?tutorial plays the tutorial: a private room on the tutorial map, with a guide.
 const tutorial = params.has('tutorial');
+const weatherPin = params.get('weather');
 // Without ?map the page builds the default city (the server's default too, so no reload).
 // ?class=<id> plays the city of that class's room, whatever the page was opened with.
 const classId = Number(params.get('class') ?? 0) || undefined;
@@ -163,6 +167,7 @@ document.body.appendChild(renderer.domElement);
 
 const scene = new Scene();
 const lighting = addLighting(scene);
+const weatherFx = new WeatherFx(scene, lighting, DEFAULT_ATMOSPHERE_SETTINGS.weather);
 /** Re-light the scene when the hour has moved this much (~10 s of a 30-minute day). */
 const SKY_STEP_HOURS = 0.005;
 /** How quickly the chase camera turns after the car (1/s), and how far it looks down (rad). */
@@ -1046,7 +1051,14 @@ renderer.setAnimationLoop((now) => {
   bankLod.update(player.body.x, player.body.y, player.body.z);
   camera.getWorldDirection(earForward);
   earUp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  // Weather from the same clock as the sky (?weather=clear|fog|rain|storm pins it).
+  const weather = pinnedWeather(
+    weatherPin,
+    weatherAt(serverClock.ready ? serverClock.serverTimeAt(now) : 0, MAP.id, liveWorld.atmosphere),
+  );
+  weatherFx.set(weather);
   audio.update({
+    rain: weather.rain,
     dt: frameMs / 1000,
     listener: { at: camera.position, forward: earForward, up: earUp },
     me: {
@@ -1085,6 +1097,7 @@ renderer.setAnimationLoop((now) => {
   }
   crowdArt?.update(drawPos, frameMs / 1000);
   lighting.frame(camera);
+  weatherFx.frame(frameMs / 1000, camera);
   lighting.follow(myCar ? myCar.model.object : model.object);
   postFx.render(scene, camera);
 
