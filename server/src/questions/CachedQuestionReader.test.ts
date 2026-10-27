@@ -38,6 +38,7 @@ describe('CachedSettingsReader', () => {
       analyticsSettings: () => (calls++, inner.analyticsSettings()),
       progressionSettings: () => (calls++, inner.progressionSettings()),
       modesSettings: () => (calls++, inner.modesSettings()),
+      storySettings: () => (calls++, inner.storySettings()),
       dialectSettings: () => (calls++, inner.dialectSettings()),
       rewardTiers: (k: string) => (calls++, inner.rewardTiers(k)),
     };

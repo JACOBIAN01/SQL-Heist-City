@@ -4,6 +4,7 @@ import type {
   AnalyticsSettings,
   ProgressionSettings,
   ModesSettings,
+  StorySettings,
   CitySettings,
   CombatSettings,
   HeistSettings,
@@ -43,6 +44,8 @@ export interface ChallengeStack {
   progressionSettings(): ProgressionSettings;
   /** The game modes a class can pick. */
   modesSettings(): ModesSettings;
+  /** The story's fixers, chains, scenes and barks. */
+  storySettings(): StorySettings;
   /** Heist rules, cars and time of day, read again at each new round. */
   worldSettings(): WorldSettings;
   /** City generation settings, read when a match is created. */
@@ -107,6 +110,7 @@ export function buildChallengeStack(
     analyticsSettings: () => settings.analyticsSettings(),
     progressionSettings: () => settings.progressionSettings(),
     modesSettings: () => settings.modesSettings(),
+    storySettings: () => settings.storySettings(),
     worldSettings: () => worldSettingsFrom(settings),
     citySettings: () => settings.citySettings(),
     invalidate: () => {

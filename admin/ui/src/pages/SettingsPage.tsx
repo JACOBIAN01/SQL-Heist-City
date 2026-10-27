@@ -96,6 +96,12 @@ export function SettingsPage() {
         editable={isAdmin}
       />
       <SectionCard
+        name="story"
+        title="Story"
+        note="The crew's story: a fixer and a chain of three steps for each bank, the scenes that play when a chain starts and ends, the short lines the fixers say, and the line shown above each question. See docs/story.md."
+        editable={isAdmin}
+      />
+      <SectionCard
         name="progression"
         title="XP and ranks"
         note="XP for a solved question by tier, the first-try and hint adjustments, XP for rounds (kills, cash, the podium, with a cap so fighting cannot outrun learning), and the rank names with the XP each needs."

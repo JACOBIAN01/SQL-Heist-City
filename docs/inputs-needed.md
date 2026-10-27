@@ -31,7 +31,7 @@ What the phases need that code cannot invent. Work goes ahead without waiting: e
 
 | # | What | Phase |
 |---|---|---|
-| 16 | Story direction: tone, setting and whether a crew with named characters suits your classes (I will draft a bible for you to approve) | 32 |
+| 16 | Approval of the story: tone, setting, the crew and the arc. **The bible is drafted** in `docs/story.md` and its words are in admin → Settings → Story. Also decide whether the 268 questions' own stories should be rewritten to match, and a Hindi translation of the story lines | 32 |
 | 17 | Music for the car radio and any extra sound or art you want (licensed or created; the current sounds are generated in code) | 29.7, 35 |
 | 18 | Countries and currencies for the localised themes | 34.7 |
 | 19 | Sponsor or school branding for seasons and cosmetics, if any | 26 |

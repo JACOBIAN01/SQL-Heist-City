@@ -49,7 +49,7 @@
 | 29 | Living city | ✅ done, awaiting approval |
 | 30 | Exploration and freedom | ✅ done, awaiting approval |
 | 31 | Missions and heist structure | ✅ done, awaiting approval |
-| 32 | Story and characters | ⬜ |
+| 32 | Story and characters | 🟦 32.1 drafted |
 | 33 | SQL in the world: queries as superpowers | ⬜ |
 | 34 | Breakthrough features | ⬜ |
 | 35 | Polish | ⬜ |
@@ -565,12 +565,12 @@ Post-launch. GTA audit "Missions" from 3 to 8–9.
 | 31.5 | Review: re-score Missions | ≥ 8 | ✅ [docs/review/missions.md](review/missions.md): Missions 3 → 8 by the author's own assessment, with a screenshot of the act line, a contract in progress, the contract board and the payout screen (a dev-only `missions.html` preview). The gaps are listed (intel is one question, contracts repeat, not played through). The playtest-backed score is 36.1 |
 
 ---
-## Phase 32 — Story and characters  ⬜
+## Phase 32 — Story and characters  🟦
 Post-launch. GTA audit "Story" from 1 to 8–9.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 32.1 | Story bible: the city, the crew, a fixer per bank, the arc across tiers | approved | ⬜ |
+| 32.1 | Story bible: the city, the crew, a fixer per bank, the arc across tiers | approved | 🟨 [docs/story.md](story.md) is written (the premise, five fixers, the antagonist, the arc across the tiers, how a chain plays, rules for the words) and its data is in the `story` settings with defaults for all five chains, ten scenes, barks and question frames, editable in admin → Settings → Story. Waiting for the owner's approval of the story itself |
 | 32.2 | Story missions (solo or co-op), one chain per bank | five chains playable | ⬜ |
 | 32.3 | In-engine cut-scenes and character barks (text) | scenes play and can be skipped | ⬜ |
 | 32.4 | Question stories rewritten to follow the arc | stories match the chain they appear in | ⬜ |

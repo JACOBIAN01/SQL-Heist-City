@@ -18,6 +18,8 @@ import {
   progressionSettingsSchema,
   DEFAULT_MODES_SETTINGS,
   modesSettingsSchema,
+  storySettingsSchema,
+  DEFAULT_STORY_SETTINGS,
   privacySettingsSchema,
   dialectSettingsSchema,
   analyticsSettingsSchema,
@@ -44,6 +46,7 @@ import {
   PRIVACY_SETTINGS_KEY,
   PROGRESSION_SETTINGS_KEY,
   MODES_SETTINGS_KEY,
+  STORY_SETTINGS_KEY,
   HEIST_SETTINGS_KEY,
   NAME_RULES_KEY,
   REWARD_ICONS_KEY,
@@ -280,7 +283,8 @@ export type SectionName =
   | 'dialects'
   | 'privacy'
   | 'progression'
-  | 'modes';
+  | 'modes'
+  | 'story';
 export const SECTION_NAMES: readonly SectionName[] = [
   'heist',
   'vehicles',
@@ -293,6 +297,7 @@ export const SECTION_NAMES: readonly SectionName[] = [
   'privacy',
   'progression',
   'modes',
+  'story',
 ];
 
 interface SectionSpec {
@@ -352,6 +357,12 @@ const SECTIONS: Readonly<Record<SectionName, SectionSpec>> = {
     schema: progressionSettingsSchema,
     defaults: DEFAULT_PROGRESSION_SETTINGS,
     parse: settingsParsers.progressionFrom,
+  },
+  story: {
+    key: STORY_SETTINGS_KEY,
+    schema: storySettingsSchema,
+    defaults: DEFAULT_STORY_SETTINGS,
+    parse: settingsParsers.storyFrom,
   },
   modes: {
     key: MODES_SETTINGS_KEY,

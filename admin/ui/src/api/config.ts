@@ -109,7 +109,8 @@ export type SectionName =
   | 'dialects'
   | 'privacy'
   | 'progression'
-  | 'modes';
+  | 'modes'
+  | 'story';
 export type SectionData = { current: Record<string, unknown>; defaults: Record<string, unknown> };
 
 /** Heist rules, cars, time of day or the city: plain numbers, edited by one generic card. */
