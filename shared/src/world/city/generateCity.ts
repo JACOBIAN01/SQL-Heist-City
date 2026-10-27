@@ -7,12 +7,14 @@ import type {
   CityBlock,
   CityBuilding,
   CityLayout,
+  DistrictSite,
   HospitalSite,
   Lot,
   LotUse,
   Rect,
   SafehouseSite,
 } from './CityLayout';
+import { DEFAULT_DISTRICTS, districtOf } from './districts';
 
 /** Width × depth a bank of a tier needs; the generator leaves room for it. */
 export type BankFootprint = (tier: number) => { readonly width: number; readonly depth: number };
@@ -99,8 +101,16 @@ export function generateCity(settings: CitySettings, bankFootprint: BankFootprin
         buildings: use === 'plaza' ? [] : buildings(rect, s, blockRng, centrality),
       };
     });
-    return { ix: cell.ix, iz: cell.iz, outer: cell.outer, inner: cell.inner, lots };
+    return {
+      ix: cell.ix,
+      iz: cell.iz,
+      outer: cell.outer,
+      inner: cell.inner,
+      lots,
+      district: districtOf(cell.ix, cell.iz, n).id,
+    };
   });
+  const { blocks: withLandmarks, districts } = placeDistricts(blocks, s);
 
   if (!hospital) throw new Error('city: no hospital site');
   return {
@@ -108,13 +118,76 @@ export function generateCity(settings: CitySettings, bankFootprint: BankFootprin
     halfSize,
     streetLinesX: lines,
     streetLinesZ: lines,
-    blocks,
+    blocks: withLandmarks,
+    districts,
     banks: banks.sort((a, b) => a.tier - b.tier),
     safehouses: safehouses.sort((a, b) => a.id.localeCompare(b.id)),
     hospital,
     spawns: streetSpawns(lines),
     parkedCars: parkedCars(lines, s, rng.fork('parking')),
   };
+}
+
+/**
+ * Names the districts and raises each one's landmark: the largest plain building in the block
+ * nearest the district's spot becomes a tower. Done after the lots exist, so nothing the seeded
+ * stream drew changes: the same seed gives the same city, with a few buildings taller.
+ */
+function placeDistricts(
+  blocks: readonly CityBlock[],
+  s: CitySettings,
+): { blocks: CityBlock[]; districts: DistrictSite[] } {
+  const out = blocks.map((b) => ({ ...b, lots: [...b.lots] }));
+  const districts: DistrictSite[] = [];
+  const span = Math.max(1, s.blocks - 1);
+  for (const def of DEFAULT_DISTRICTS) {
+    const mine = out.filter((b) => b.district === def.id);
+    if (mine.length === 0) continue;
+    const middle = mine.reduce(
+      (acc, b) => ({
+        x: acc.x + centre(b.inner).x / mine.length,
+        z: acc.z + centre(b.inner).z / mine.length,
+      }),
+      { x: 0, z: 0 },
+    );
+    const near = [...mine].sort(
+      (a, b) =>
+        Math.hypot(a.ix / span - def.u, a.iz / span - def.v) -
+        Math.hypot(b.ix / span - def.u, b.iz / span - def.v),
+    );
+    let landmark: DistrictSite['landmark'];
+    for (const block of near) {
+      let pick = -1;
+      let area = 0;
+      block.lots.forEach((lot, i) => {
+        const first = lot.buildings[0];
+        if (lot.use !== 'building' || !first) return;
+        const a = (first.rect.maxX - first.rect.minX) * (first.rect.maxZ - first.rect.minZ);
+        if (a > area) [pick, area] = [i, a];
+      });
+      const lot = block.lots[pick];
+      const first = lot?.buildings[0];
+      if (!lot || !first) continue;
+      const tower: CityBuilding = {
+        ...first,
+        storeys: Math.max(first.storeys, s.landmarkStoreys),
+        landmark: def.landmark,
+      };
+      block.lots[pick] = { ...lot, buildings: [tower, ...lot.buildings.slice(1)] };
+      const c = centre(first.rect);
+      landmark = { name: def.landmark, x: c.x, z: c.z };
+      break;
+    }
+    districts.push({
+      id: def.id,
+      name: def.name,
+      tint: def.tint,
+      facades: def.facades,
+      ...middle,
+      ...(landmark ? { landmark } : {}),
+    });
+  }
+  return { blocks: out, districts };
 }
 
 /**

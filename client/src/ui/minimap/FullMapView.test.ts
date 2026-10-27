@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { HEIST_MAP, mapById } from '@heist/shared';
-import { FullMapView, captionFor, fitMap, toScreen } from './FullMapView';
+import { FullMapView, captionFor, drawDistricts, fitMap, toScreen } from './FullMapView';
 import { hospitalMarker, type Marker } from './minimapModel';
 
 const bank = (opened: number, locks = 3): Marker => ({
@@ -78,5 +78,26 @@ describe('FullMapView', () => {
     view.setOpen(false);
     expect(view.root.hidden).toBe(true);
     expect(host.textContent).toContain('safehouse');
+  });
+});
+
+describe('drawDistricts', () => {
+  it('washes every block in its district colour and writes each name and landmark', () => {
+    const city = mapById('city')?.city;
+    if (!city) throw new Error('no city');
+    const texts: string[] = [];
+    const fills: string[] = [];
+    const ctx = {
+      fillRect: () => fills.push(String(ctx.fillStyle)),
+      fillText: (t: string) => texts.push(t),
+      strokeText: () => {},
+      fillStyle: '',
+    } as unknown as CanvasRenderingContext2D;
+    drawDistricts(ctx, fitMap(city.halfSize, 800, 800), city);
+    expect(fills).toHaveLength(city.blocks.length);
+    for (const d of city.districts) {
+      expect(texts).toContain(d.name.toUpperCase());
+      if (d.landmark) expect(texts).toContain(`★ ${d.landmark.name}`);
+    }
   });
 });

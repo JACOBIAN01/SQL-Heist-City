@@ -30,6 +30,8 @@ export const citySettingsSchema = z
     safehouses: z.number().int().min(1).max(6).default(3),
     /** Hospital beds: where the dead come back. */
     hospitalBeds: z.number().int().min(1).max(32).default(8),
+    /** Storeys of each district's landmark tower (Phase 30.1). */
+    landmarkStoreys: z.number().int().min(2).max(30).default(12),
     /** Chance each kerbside parking slot (four per street side per block) holds a car. */
     parkedCarChance: z.number().min(0).max(1).default(0.12),
   })

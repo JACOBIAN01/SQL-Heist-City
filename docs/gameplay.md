@@ -233,3 +233,7 @@ A counter stands beside every safehouse. Press F to open it and spend the cash y
 ## Car radio (Phase 29.7)
 
 At the wheel, R steps the radio through three stations and off. The tunes are made by the sound synth, so they cost no download. It follows the ambience volume in Settings.
+
+## Districts (Phase 30.1)
+
+The city is five districts, each with its own building style, a landmark tower you can see across the rooftops, and a colour on the full map (M): Financial District (glass towers), Old Town (brick), The Docks, Market Row, Campus Heights.

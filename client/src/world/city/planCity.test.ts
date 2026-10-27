@@ -121,6 +121,7 @@ describe('planCity', () => {
       .reduce((a, pl) => a + (kit.pieces[pl.piece]?.tris ?? 0), 0);
     // ≈ 35k per block on average (the taller banks of Phase 9 included); streaming and
     // impostors (8.4) keep what is drawn under 400k. A jump past this means a facade bloated.
-    expect(tris).toBeLessThan(1_000_000);
+    // Districts (30.1) added five landmark towers and steer facades to one family each.
+    expect(tris).toBeLessThan(1_150_000);
   });
 });

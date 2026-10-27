@@ -145,7 +145,14 @@ export function planChunk(
   }
 
   for (const b of buildings) {
-    const style = FACADE_STYLES[b.style ?? (rng.pick(STYLE_IDS) as keyof typeof FACADE_STYLES)];
+    // A district favours some families of facade; the draw is taken either way, so the rest of the plan does not shift.
+    const families = city.districts.find((d) => d.id === block.district)?.facades;
+    const drawn = rng.pick(STYLE_IDS) as keyof typeof FACADE_STYLES;
+    const picked =
+      families && families.length > 0
+        ? (families[STYLE_IDS.indexOf(drawn) % families.length] as keyof typeof FACADE_STYLES)
+        : drawn;
+    const style = FACADE_STYLES[b.style ?? picked];
     const facade: FacadeBuilding = {
       rect: b.rect,
       storeys: b.storeys,

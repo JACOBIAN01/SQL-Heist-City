@@ -47,7 +47,7 @@
 | 27 | Squads and roles | 🟨 built; role balance waits for a playtest |
 | 28 | Game modes | 🟨 built |
 | 29 | Living city | ✅ done, awaiting approval |
-| 30 | Exploration and freedom | ⬜ |
+| 30 | Exploration and freedom | 🟦 30.1 done |
 | 31 | Missions and heist structure | ⬜ |
 | 32 | Story and characters | ⬜ |
 | 33 | SQL in the world: queries as superpowers | ⬜ |
@@ -538,12 +538,12 @@ Post-launch. GTA audit "World immersion" from 5 to 8–9.
 | 29.8 | Immersion review: re-score World immersion | scored ≥ 8 in a review with screenshots | ✅ [docs/review/immersion.md](review/immersion.md): 5 → 8 by the author's own assessment with four screenshots (clear, fog, rain, night storm) at 49–53 draw calls; gaps listed (not seen in motion, plain pedestrians, no police cars). The playtest-backed score is 36.1 |
 
 ---
-## Phase 30 — Exploration and freedom  ⬜
+## Phase 30 — Exploration and freedom  🟦
 Post-launch. GTA audit "Exploration" (3) and "Freedom" (5) to 8–9.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 30.1 | Districts with their own look and landmarks | each district recognisable on sight and on the map | ⬜ |
+| 30.1 | Districts with their own look and landmarks | each district recognisable on sight and on the map | ✅ Five districts (`DEFAULT_DISTRICTS`: Financial District, Old Town, The Docks, Market Row, Campus Heights), each block belonging to the nearest spot on the grid. Each has its own facade family (metal glass downtown, brick in Old Town, …), one landmark tower (`citySettings.landmarkStoreys`, 12 storeys) and its own colour; the full map washes every block in its district colour and writes the district names and landmark names. Lot layout is untouched (districts are a layer added after the lots). Tested across seeds and sizes |
 | 30.2 | Points of interest and hidden caches (found through SQL intel, see Phase 33) | caches spawn and pay out | ⬜ |
 | 30.3 | Collectibles tied to SQL trivia | collectibles tracked per player | ⬜ |
 | 30.4 | Safehouse properties and upgrades bought with banked cash | upgrades persist and matter | ⬜ |

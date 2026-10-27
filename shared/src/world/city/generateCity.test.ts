@@ -56,7 +56,7 @@ describe.each(SWEEP)('generateCity invariants ($blocks blocks, seed $seed)', (op
         for (const bld of lot.buildings) {
           expect(inside(bld.rect, lot.rect)).toBe(true);
           expect(bld.storeys).toBeGreaterThanOrEqual(1);
-          expect(bld.storeys).toBeLessThanOrEqual(s.maxStoreys);
+          expect(bld.storeys).toBeLessThanOrEqual(bld.landmark ? s.landmarkStoreys : s.maxStoreys);
         }
       }
     }
@@ -151,5 +151,41 @@ describe('citySettingsSchema', () => {
     expect(() => citySettingsSchema.parse({ blocks: 9 })).toThrow();
     expect(() => citySettingsSchema.parse({ blockPitch: 40 })).toThrow(/two lots/);
     expect(() => citySettingsSchema.parse({ minStoreys: 5, maxStoreys: 2 })).toThrow();
+  });
+});
+
+describe('generateCity: districts (30.1)', () => {
+  for (const { blocks, seed } of SWEEP) {
+    it(`names every block's district and gives each district one taller landmark (${blocks} blocks, seed ${seed})`, () => {
+      const c = city({ blocks, seed });
+      const ids = new Set(c.districts.map((d) => d.id));
+      expect(c.districts.length).toBeGreaterThanOrEqual(3);
+      for (const b of c.blocks) expect(ids.has(b.district)).toBe(true);
+      for (const d of c.districts) {
+        const towers = c.blocks
+          .filter((b) => b.district === d.id)
+          .flatMap((b) => b.lots.flatMap((l) => l.buildings))
+          .filter((x) => x.landmark);
+        expect(towers.length, d.id).toBeLessThanOrEqual(1);
+        if (d.landmark) {
+          expect(towers).toHaveLength(1);
+          expect(towers[0]?.storeys).toBeGreaterThanOrEqual(c.settings.landmarkStoreys);
+        }
+      }
+    });
+  }
+
+  it('puts the corners in different districts and downtown in the middle', () => {
+    const c = city({ blocks: 5 });
+    const at = (ix: number, iz: number) =>
+      c.blocks.find((b) => b.ix === ix && b.iz === iz)?.district;
+    expect(at(2, 2)).toBe('downtown');
+    expect(new Set([at(0, 0), at(4, 0), at(0, 4), at(4, 4)]).size).toBe(4);
+  });
+
+  it('does not change where the lots are: districts are a layer on top', () => {
+    const c = city({ seed: 'keep' });
+    const rects = c.blocks.flatMap((b) => b.lots.map((l) => l.rect));
+    expect(rects).toEqual(city({ seed: 'keep' }).blocks.flatMap((b) => b.lots.map((l) => l.rect)));
   });
 });

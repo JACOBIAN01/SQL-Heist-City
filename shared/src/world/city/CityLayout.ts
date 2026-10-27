@@ -27,6 +27,8 @@ export interface Lot {
 export interface CityBuilding {
   readonly rect: Rect;
   readonly storeys: number;
+  /** Set on a district's landmark: what it is called (Phase 30.1). */
+  readonly landmark?: string;
 }
 
 export interface CityBlock {
@@ -38,6 +40,8 @@ export interface CityBlock {
   /** Inside the sidewalk: where lots are. */
   readonly inner: Rect;
   readonly lots: readonly Lot[];
+  /** The district this block belongs to (an id in `CityLayout.districts`). */
+  readonly district: string;
 }
 
 export interface BankSite {
@@ -64,6 +68,18 @@ export interface HospitalSite {
   readonly beds: readonly SpawnPoint[];
 }
 
+/** A district as the map shows it (Phase 30.1). */
+export interface DistrictSite {
+  readonly id: string;
+  readonly name: string;
+  readonly tint: number;
+  readonly facades: readonly string[];
+  /** Where its name is written: the middle of its blocks. */
+  readonly x: number;
+  readonly z: number;
+  readonly landmark?: { readonly name: string; readonly x: number; readonly z: number };
+}
+
 export interface CityLayout {
   readonly settings: CitySettings;
   /** The city spans [-halfSize, halfSize] on x and z, outer street included. */
@@ -72,6 +88,7 @@ export interface CityLayout {
   readonly streetLinesX: readonly number[];
   readonly streetLinesZ: readonly number[];
   readonly blocks: readonly CityBlock[];
+  readonly districts: readonly DistrictSite[];
   readonly banks: readonly BankSite[];
   readonly safehouses: readonly SafehouseSite[];
   readonly hospital: HospitalSite;

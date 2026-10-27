@@ -1,4 +1,4 @@
-import { BANK_LAYOUTS, type GameMap } from '@heist/shared';
+import { BANK_LAYOUTS, type CityLayout, type GameMap } from '@heist/shared';
 import { h } from '../dom';
 import { drawMarker, MAP_COLOURS } from './markerArt';
 import type { MapPoint, Marker } from './minimapModel';
@@ -113,6 +113,7 @@ export class FullMapView {
     ctx.fillStyle = MAP_COLOURS.street;
     ctx.fillRect(fit.ox, fit.oy, fit.half * 2 * fit.scale, fit.half * 2 * fit.scale);
     ctx.drawImage(this.plan, fit.ox, fit.oy, fit.half * 2 * fit.scale, fit.half * 2 * fit.scale);
+    if (this.map.city) drawDistricts(ctx, fit, this.map.city);
     for (const m of markers) {
       const at = toScreen(fit, m.x, m.z);
       drawMarker(ctx, m, at, now);
@@ -155,6 +156,43 @@ export class FullMapView {
     ctx.strokeText(text, at.x + 13, at.y);
     ctx.fillStyle = m.kind === 'wanted' ? MAP_COLOURS.wanted : '#fff';
     ctx.fillText(text, at.x + 13, at.y);
+  }
+}
+
+const css = (tint: number, alpha: number): string =>
+  `rgba(${(tint >> 16) & 255},${(tint >> 8) & 255},${tint & 255},${alpha})`;
+
+/**
+ * Districts on the full map (Phase 30.1): each block washed in its district's colour, the district's
+ * name across its middle and a star with the name of its landmark, so places can be told apart and
+ * named at a glance.
+ */
+export function drawDistricts(ctx: CanvasRenderingContext2D, fit: MapFit, city: CityLayout): void {
+  const tint = new Map(city.districts.map((d) => [d.id, d.tint]));
+  for (const b of city.blocks) {
+    const colour = tint.get(b.district);
+    if (colour === undefined) continue;
+    const a = toScreen(fit, b.outer.minX, b.outer.minZ);
+    const z = toScreen(fit, b.outer.maxX, b.outer.maxZ);
+    ctx.fillStyle = css(colour, 0.28);
+    ctx.fillRect(a.x, a.y, z.x - a.x, z.y - a.y);
+  }
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+  for (const d of city.districts) {
+    const at = toScreen(fit, d.x, d.z);
+    ctx.font = '700 15px system-ui, sans-serif';
+    ctx.strokeText(d.name.toUpperCase(), at.x, at.y);
+    ctx.fillStyle = css(d.tint, 1);
+    ctx.fillText(d.name.toUpperCase(), at.x, at.y);
+    if (!d.landmark) continue;
+    const l = toScreen(fit, d.landmark.x, d.landmark.z);
+    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.strokeText(`★ ${d.landmark.name}`, l.x, l.y);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(`★ ${d.landmark.name}`, l.x, l.y);
   }
 }
 
