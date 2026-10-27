@@ -133,6 +133,13 @@ export class HeistController implements ArmsControl {
       new SeededRng(`jobs:${match.classInfo?.classId ?? 0}`),
       (player, amount) => this.setCash(player, player.cash + amount),
       () => !this.taskOptions && !this.duels.enabled,
+      {
+        grantIntel: (player, bank) => this.acts.grantIntel(player, bank),
+        blind: (bank, seconds) => this.guards.blind(bank, seconds),
+        crime: (player) => this.police.crime(player, 'lock'),
+        spawnVip: (at) => this.spawnVip(at),
+        removeVip: (vip) => this.match.removeNpc(vip),
+      },
     );
     // The three acts of a heist: intel at the terminal, the locks, the getaway.
     this.acts = new ActsSystem(
@@ -375,6 +382,11 @@ export class HeistController implements ArmsControl {
       this.police.officerDown(victim, killer);
       return;
     }
+    // An escort killed fails the contract and pays nobody.
+    if (victim.isVip) {
+      this.jobs.vipDown(victim);
+      return;
+    }
     // A guard brought down pays whoever did it, and drops nothing.
     if (victim.isGuard) {
       if (killer) this.police.crime(killer, 'guard');
@@ -396,6 +408,18 @@ export class HeistController implements ArmsControl {
     const bag = this.loot.add(victim.body.x, victim.body.y, victim.body.z, victim.cash - kept);
     this.setCash(victim, kept);
     this.match.broadcastJson({ t: 'loot', add: [bag], remove: [] });
+  }
+
+  /** A person to escort, standing at `at` on the street. */
+  private spawnVip(at: { x: number; z: number }): Player | undefined {
+    const vip = this.match.addGuard(
+      'Escort',
+      { x: at.x, z: at.z, yaw: 0 },
+      0,
+      this.settings.guards.weapon,
+    );
+    vip.isVip = true;
+    return vip;
   }
 
   /** Spawn armour from the safehouse upgrade; never takes armour away. */
@@ -566,6 +590,10 @@ export class HeistController implements ArmsControl {
       this.match.sendJson(player, this.match.vehicleRequest(player, message));
       return;
     }
+    if (message.t === 'job_take') {
+      this.jobs.take(player, message.board, message.kind);
+      return;
+    }
     if (message.t === 'approach') {
       this.setApproach(player, message.mode);
       return;
@@ -630,6 +658,7 @@ export class HeistController implements ArmsControl {
       message.t === 'shop_buy' ||
       message.t === 'upgrade_buy' ||
       message.t === 'approach' ||
+      message.t === 'job_take' ||
       message.t === 'role_pick'
     )
       return;

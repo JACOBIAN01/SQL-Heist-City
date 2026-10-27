@@ -1,5 +1,31 @@
 import { z } from 'zod';
 
+/** The kinds of contract on a district's board (Phases 30.6 and 31.2). */
+export const JOB_KINDS = ['delivery', 'race', 'intel', 'sabotage', 'data_theft', 'escort'] as const;
+export type JobKind = (typeof JOB_KINDS)[number];
+
+const DEFAULT_BOARDS: Record<string, JobKind[]> = {
+  downtown: ['delivery', 'data_theft', 'sabotage'],
+  'old-town': ['race', 'intel', 'escort'],
+  docks: ['delivery', 'escort', 'sabotage'],
+  market: ['delivery', 'intel', 'data_theft'],
+  heights: ['race', 'intel', 'escort'],
+};
+
+/** Every job number at its default (a function, as the schema is built before it can parse itself). */
+function jobsDefaults() {
+  return {
+    enabled: true,
+    boards: DEFAULT_BOARDS,
+    delivery: { seconds: 150, reward: 3_000, minDistance: 120, radius: 4 },
+    race: { seconds: 100, checkpoints: 4, reward: 4_500, radius: 7 },
+    intel: { seconds: 180, reward: 3_500, banks: 2, radius: 4 },
+    sabotage: { seconds: 150, reward: 4_000, dwellSeconds: 5, blindSeconds: 60, radius: 3 },
+    dataTheft: { seconds: 150, reward: 6_000, dwellSeconds: 8, radius: 3 },
+    escort: { seconds: 170, reward: 5_000, minDistance: 120, radius: 5, together: 14, speed: 0.7 },
+  };
+}
+
 /** One safehouse upgrade (Phase 30.4): the banked-cash price of each level, and what a level is worth. */
 const upgradeSpec = (prices: number[], perLevel: number) =>
   z
@@ -361,14 +387,8 @@ export const heistSettingsSchema = z.object({
   jobs: z
     .object({
       enabled: z.boolean().default(true),
-      /** Which job each district's board offers. */
-      boards: z.record(z.string(), z.enum(['delivery', 'race'])).default({
-        downtown: 'delivery',
-        'old-town': 'race',
-        docks: 'delivery',
-        market: 'delivery',
-        heights: 'race',
-      }),
+      /** The contracts each district's board offers (the player picks one). */
+      boards: z.record(z.string(), z.array(z.enum(JOB_KINDS)).min(1)).default(DEFAULT_BOARDS),
       delivery: z
         .object({
           seconds: z.number().positive().default(150),
@@ -386,19 +406,55 @@ export const heistSettingsSchema = z.object({
           radius: z.number().positive().default(7),
         })
         .default({ seconds: 100, checkpoints: 4, reward: 4_500, radius: 7 }),
+      /** Recon: walk to the intel terminals of other banks; each visit is an intel point on that bank. */
+      intel: z
+        .object({
+          seconds: z.number().positive().default(180),
+          reward: z.number().int().min(0).default(3_500),
+          banks: z.number().int().min(1).max(4).default(2),
+          radius: z.number().positive().default(4),
+        })
+        .default({ seconds: 180, reward: 3_500, banks: 2, radius: 4 }),
+      /** Sabotage: stand at a bank's vault console while you cut its guards' cameras (they go blind for a while). */
+      sabotage: z
+        .object({
+          seconds: z.number().positive().default(150),
+          reward: z.number().int().min(0).default(4_000),
+          dwellSeconds: z.number().positive().default(5),
+          blindSeconds: z.number().positive().default(60),
+          radius: z.number().positive().default(3),
+        })
+        .default({ seconds: 150, reward: 4_000, dwellSeconds: 5, blindSeconds: 60, radius: 3 }),
+      /** Data theft: copy a bank's records at its console. Pays well, and the police are told. */
+      dataTheft: z
+        .object({
+          seconds: z.number().positive().default(150),
+          reward: z.number().int().min(0).default(6_000),
+          dwellSeconds: z.number().positive().default(8),
+          radius: z.number().positive().default(3),
+        })
+        .default({ seconds: 150, reward: 6_000, dwellSeconds: 8, radius: 3 }),
+      /** Escort: a person follows you to another district. Lose them and the contract fails. */
+      escort: z
+        .object({
+          seconds: z.number().positive().default(170),
+          reward: z.number().int().min(0).default(5_000),
+          minDistance: z.number().positive().default(120),
+          radius: z.number().positive().default(5),
+          /** The escort must be this close (m) to you at the drop. */
+          together: z.number().positive().default(14),
+          speed: z.number().min(0.2).max(1).default(0.7),
+        })
+        .default({
+          seconds: 170,
+          reward: 5_000,
+          minDistance: 120,
+          radius: 5,
+          together: 14,
+          speed: 0.7,
+        }),
     })
-    .default(() => ({
-      enabled: true,
-      boards: {
-        downtown: 'delivery' as const,
-        'old-town': 'race' as const,
-        docks: 'delivery' as const,
-        market: 'delivery' as const,
-        heights: 'race' as const,
-      },
-      delivery: { seconds: 150, reward: 3_000, minDistance: 120, radius: 4 },
-      race: { seconds: 100, checkpoints: 4, reward: 4_500, radius: 7 },
-    })),
+    .default(() => jobsDefaults()),
   /**
    * Safehouse upgrades (Phase 30.4), bought at the shop counter with *banked* cash (so each costs
    * some of the round's score) and kept with the student's account. `perLevel` is what each level

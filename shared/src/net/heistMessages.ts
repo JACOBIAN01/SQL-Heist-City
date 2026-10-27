@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { JOB_KINDS, type JobKind } from '../config/heist';
 import type { AwardId } from '../config/awards';
 import type { AtmosphereSettings } from '../config/atmosphere';
 import type { WeaponSpec } from '../config/combat';
@@ -139,10 +140,18 @@ export interface DiscoveryMessage {
   readonly districts: readonly string[];
 }
 
+/** Take a contract from the board you are standing at (Phase 31.2). */
+export const jobTakeMessageSchema = z.object({
+  t: z.literal('job_take'),
+  board: z.string().min(1).max(64),
+  kind: z.enum(JOB_KINDS),
+});
+export type JobTakeMessage = z.infer<typeof jobTakeMessageSchema>;
+
 /** The student's side job, if any (Phase 30.6). */
 export interface JobMessage {
   readonly t: 'job';
-  readonly kind: 'delivery' | 'race';
+  readonly kind: JobKind;
   /** `claim`: the run is done, answer the question to be paid. */
   readonly status: 'active' | 'claim' | 'done' | 'failed' | 'none';
   /** Where to go: the drop, or the checkpoints in order. */
@@ -151,6 +160,8 @@ export interface JobMessage {
   readonly index: number;
   readonly secondsLeft: number;
   readonly reward: number;
+  /** Dwelling at a target (sabotage, data theft): how far through, 0 to 1. */
+  readonly dwell?: number;
 }
 
 /** Choose how to break in: quiet and slow, or loud (Phase 30.7). */
@@ -299,6 +310,7 @@ export const jsonClientMessageSchema = z.union([
   shopBuyMessageSchema,
   upgradeBuyMessageSchema,
   approachMessageSchema,
+  jobTakeMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -319,7 +331,8 @@ export type InteractResult =
   | { readonly action: 'moved'; readonly storey: number }
   | { readonly action: 'banking'; readonly seconds: number }
   | { readonly action: 'open_shop' }
-  | { readonly action: 'job_started'; readonly kind: 'delivery' | 'race' }
+  | { readonly action: 'job_started'; readonly kind: JobKind }
+  | { readonly action: 'open_board'; readonly board: string; readonly kinds: readonly JobKind[] }
   | { readonly action: 'open_task'; readonly rewardKey: string; readonly target: string }
   | { readonly action: 'denied'; readonly reason: InteractDenial };
 

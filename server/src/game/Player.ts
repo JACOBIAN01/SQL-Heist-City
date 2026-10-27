@@ -33,6 +33,8 @@ export class Player {
   isGuard = false;
   /** A police officer (Phase 29.4): a guard-like gunman that comes and goes with someone's wanted level. */
   isPolice = false;
+  /** Somebody being escorted on a contract (Phase 31.2). */
+  isVip = false;
   /** The gun a guard carries (kept across rounds). */
   guardWeapon = '';
   /** The floor level this player starts and respawns at (a guard upstairs), 0 for the street. */

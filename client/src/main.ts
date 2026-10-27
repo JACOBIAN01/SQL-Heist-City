@@ -33,6 +33,7 @@ import { SquadView } from './ui/hud/SquadView';
 import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
 import { ActsView } from './ui/hud/ActsView';
+import { BoardView } from './ui/hud/BoardView';
 import { ApproachBadge } from './ui/hud/ApproachBadge';
 import { JobView } from './ui/hud/JobView';
 import { ShopView } from './ui/hud/ShopView';
@@ -398,6 +399,8 @@ document.body.append(collectionView.panel);
 const actsView = new ActsView(i18n);
 document.body.append(actsView.root);
 let intelGuards: readonly { x: number; z: number }[] = [];
+const boardView = new BoardView(i18n, (m) => client.sendJson(m));
+document.body.append(boardView.panel);
 const approachBadge = new ApproachBadge(i18n);
 document.body.append(approachBadge.root);
 let stealthOn = false;
@@ -789,6 +792,10 @@ const interactions = new Interactions({
   map: MAP,
   send: (message) => client.sendJson(message),
   view: hud,
+  onOpenBoard: (board, kinds) => {
+    pointer.release();
+    boardView.open(board, kinds);
+  },
   onOpenShop: () => {
     pointer.release();
     shopView.open();
@@ -852,6 +859,7 @@ const hotkeys = new Hotkeys(window, bindings)
     leagueView.hidden = true;
     squadView.hidden = true;
     shopView.hidden = true;
+    boardView.hidden = true;
     collectionView.hidden = true;
   })
   .onAction('radio', () => {

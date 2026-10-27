@@ -267,3 +267,7 @@ Press X to move quietly: you are 25% slower, but a vault lock cracked while no g
 1. **Setup.** Use the intel terminal on the pavement outside a bank and answer a question. Each correct answer is an intel point (up to 3): the first shows the bank's guards on your map, the second makes the alarm die down faster, the third adds 10% to the vault's cash.
 2. **The heist.** Crack the vault's locks.
 3. **The getaway.** Pick up the cash and get it to a safehouse before anyone stops you. Banking it completes the heist.
+
+## Contracts (Phase 31.2)
+
+Each district's board offers a choice of contracts: a delivery, a street race, recon of other banks, sabotage, data theft or an escort. All end with a SQL question; answer it correctly to be paid. Sabotage blinds a bank's guards for a minute; data theft pays most but brings the police; an escort fails if the person you are walking dies.

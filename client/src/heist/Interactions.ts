@@ -2,6 +2,7 @@ import {
   nearestAnchor,
   type GameMap,
   type InteractResult,
+  type JobKind,
   type JsonClientMessage,
   type JsonServerMessage,
   type MapAnchor,
@@ -52,6 +53,8 @@ export interface InteractionsDeps {
   readonly onOpenTask: (rewardKey: string, target: string) => void;
   /** F at a shop counter (Phase 29.6). */
   readonly onOpenShop?: () => void;
+  /** F at a contract board (Phase 31.2). */
+  readonly onOpenBoard?: (board: string, kinds: readonly JobKind[]) => void;
 }
 
 /**
@@ -117,7 +120,9 @@ export class Interactions {
       case 'banking':
         break; // the progress bar is driven by the server's banking messages
       case 'job_started':
-        this.deps.view.toast(result.kind === 'delivery' ? 'Delivery started' : 'Race started: go!');
+        break;
+      case 'open_board':
+        this.deps.onOpenBoard?.(result.board, result.kinds);
         break;
       case 'open_shop':
         this.deps.onOpenShop?.();

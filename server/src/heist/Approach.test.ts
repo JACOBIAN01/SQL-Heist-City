@@ -135,6 +135,43 @@ describe('approach: stealth or loud (30.7)', () => {
     expect(player.cash).toBe(A.loudBonus);
   });
 
+  it('lets a sabotaged bank’s guards see nothing until the blindness wears off', () => {
+    const { match, player, heist } = setup(true);
+    const guard = heist.guards
+      .all()
+      .find((g) => Math.hypot(g.body.x - console1.x, g.body.z - console1.z) < 6);
+    if (!guard) throw new Error('no guard at the console');
+    for (let k = 0; k < 24; k++) {
+      const a = (k / 24) * Math.PI * 2;
+      const clear =
+        raycastMap(
+          city,
+          guard.body.x,
+          guard.body.y + 1.5,
+          guard.body.z,
+          Math.cos(a),
+          -0.1,
+          Math.sin(a),
+          6.5,
+        ) === undefined;
+      if (!clear) continue;
+      match.teleport(
+        player,
+        guard.body.x + Math.cos(a) * 6,
+        guard.body.y,
+        guard.body.z + Math.sin(a) * 6,
+      );
+      break;
+    }
+    expect(heist.guards.canSee(player)).toBe(true);
+    heist.guards.blind(`bank-${vault.tier}`, 10);
+    expect(heist.guards.canSee(player)).toBe(false);
+    for (let i = 0; i < 11 * match.tickRate; i++) match.step();
+    match.teleport(player, player.body.x, player.body.y, player.body.z);
+    player.alive = true;
+    expect(heist.guards.canSee(player)).toBe(true);
+  });
+
   it('pay a ghost vault more than a loud one', () => {
     const quiet = setup(false);
     quiet.heist.setApproach(quiet.player, 'stealth');

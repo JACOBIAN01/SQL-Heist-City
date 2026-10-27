@@ -68,6 +68,8 @@ export function beatAround(
 export class GuardSystem {
   private guards: Guard[] = [];
   private placed = false;
+  /** Banks whose guards are blinded, until this tick. */
+  private readonly blindUntil = new Map<string, number>();
 
   constructor(
     private readonly match: MatchApi,
@@ -89,11 +91,23 @@ export class GuardSystem {
     return this.guards.length;
   }
 
+  /** A bank's guards cannot see anyone for a while (a sabotage contract). */
+  blind(bank: string, seconds: number): void {
+    this.blindUntil.set(bank, this.match.tick + this.ticks(seconds));
+  }
+
+  private isBlind(g: { vault: { tier: number } }): boolean {
+    return this.match.tick < (this.blindUntil.get(`bank-${g.vault.tier}`) ?? 0);
+  }
+
   /** Whether any guard on duty can see this player right now (for stealth). */
   canSee(player: Player): boolean {
     const range = this.settings().sightRange;
     return this.guards.some(
-      (g) => g.player.alive && nearestVisible(this.match, g.player, [player], range) !== undefined,
+      (g) =>
+        g.player.alive &&
+        !this.isBlind(g) &&
+        nearestVisible(this.match, g.player, [player], range) !== undefined,
     );
   }
 
@@ -110,6 +124,7 @@ export class GuardSystem {
 
   /** A new round: the alarm is over and every guard is back on its beat. */
   reset(): void {
+    this.blindUntil.clear();
     for (const g of this.guards) {
       g.alertUntil = 0;
       g.seen = undefined;
@@ -172,7 +187,9 @@ export class GuardSystem {
   private think(g: Guard, people: readonly Player[], s: HeistSettings['guards']): void {
     const me = g.player.body;
     const tick = this.match.tick;
-    const target = nearestVisible(this.match, g.player, people, s.sightRange);
+    const target = this.isBlind(g)
+      ? undefined
+      : nearestVisible(this.match, g.player, people, s.sightRange);
     let goal: { x: number; z: number } | undefined;
     let aim: { x: number; y: number; z: number } | undefined;
     let fire = false;

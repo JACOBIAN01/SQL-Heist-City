@@ -54,10 +54,12 @@ export class JobView {
     else if (m.status === 'claim') this.root.textContent = this.t('job.claim');
     else {
       const left = Math.max(0, Math.ceil(m.secondsLeft - (now - this.receivedAt) / 1000));
-      const what =
-        m.kind === 'delivery'
-          ? this.t('job.delivery')
-          : this.t('job.race', { n: m.index + 1, total: m.targets.length });
+      const params = {
+        n: m.index + 1,
+        total: m.targets.length,
+        pct: Math.round((m.dwell ?? 0) * 100),
+      };
+      const what = this.t(`job.${m.kind}` as MessageKey, params);
       this.root.textContent = `${what} · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} · $${money}`;
     }
   }

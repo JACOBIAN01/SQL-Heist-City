@@ -85,6 +85,10 @@ export const DEFAULT_REWARD_TIERS: Readonly<Record<string, TierRange>> = {
   /** A delivery's receipt and a street race's stewards' check (Phase 30.6). */
   'job:delivery': { min: 1, max: 3 },
   'job:race': { min: 2, max: 3 },
+  'job:intel': { min: 2, max: 3 },
+  'job:sabotage': { min: 3, max: 4 },
+  'job:data_theft': { min: 3, max: 4 },
+  'job:escort': { min: 2, max: 3 },
   'brief:plan': { min: 1, max: 5 },
 };
 

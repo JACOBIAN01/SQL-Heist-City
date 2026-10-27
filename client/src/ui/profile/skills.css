@@ -246,3 +246,17 @@
 .collection-card p {
   margin: 0;
 }
+
+/* Contract board (Phase 31.2). */
+.board-contract {
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid #9b7bff;
+}
+.board-contract h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+}
+.board-contract p {
+  margin: 0 0 0.3rem;
+}

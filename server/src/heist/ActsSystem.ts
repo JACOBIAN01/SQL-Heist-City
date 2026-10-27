@@ -100,7 +100,12 @@ export class ActsSystem implements InteractionHandler, TaskRule {
 
   grant(player: Player, rewardKey: string): void {
     const bank = INTEL_KEY.exec(rewardKey)?.[1];
-    if (!bank) return;
+    if (bank) this.grantIntel(player, bank);
+  }
+
+  /** One more intel point on a bank (from the terminal's question, or a recon contract). */
+  grantIntel(player: Player, bank: string): void {
+    if (!/^bank-[1-5]$/.test(bank)) return;
     const mine = this.intel.get(player) ?? new Map<string, number>();
     this.intel.set(player, mine);
     mine.set(bank, Math.min(this.settings().intelMax, (mine.get(bank) ?? 0) + 1));
