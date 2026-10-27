@@ -575,3 +575,23 @@
     animation: none;
   }
 }
+
+/* Side job in progress (Phase 30.6). */
+.job-hud {
+  position: fixed;
+  left: 50%;
+  top: 56px;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #d8c9ff;
+  font:
+    700 0.85rem system-ui,
+    sans-serif;
+  pointer-events: none;
+}
+.job-hud[hidden] {
+  display: none;
+}

@@ -19,6 +19,7 @@ const ANCHOR_COLOR: Readonly<Record<AnchorKind, number>> = {
   vault_console: 0xf2b134,
   safehouse: 0x6bd36b,
   shop: 0xe8a33d,
+  job_board: 0x9b7bff,
 };
 
 const DOOR_COLOR = 0x9aa3ad;

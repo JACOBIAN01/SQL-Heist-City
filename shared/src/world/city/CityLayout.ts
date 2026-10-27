@@ -78,6 +78,8 @@ export interface DistrictSite {
   readonly x: number;
   readonly z: number;
   readonly landmark?: { readonly name: string; readonly x: number; readonly z: number };
+  /** Open ground in the district where its job board stands (Phase 30.6). */
+  readonly board: { readonly x: number; readonly z: number };
 }
 
 export interface CityLayout {

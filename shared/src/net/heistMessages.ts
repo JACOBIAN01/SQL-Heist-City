@@ -139,6 +139,20 @@ export interface DiscoveryMessage {
   readonly districts: readonly string[];
 }
 
+/** The student's side job, if any (Phase 30.6). */
+export interface JobMessage {
+  readonly t: 'job';
+  readonly kind: 'delivery' | 'race';
+  /** `claim`: the run is done, answer the question to be paid. */
+  readonly status: 'active' | 'claim' | 'done' | 'failed' | 'none';
+  /** Where to go: the drop, or the checkpoints in order. */
+  readonly targets: readonly { readonly x: number; readonly z: number }[];
+  /** Which target is next. */
+  readonly index: number;
+  readonly secondsLeft: number;
+  readonly reward: number;
+}
+
 /** What a street shop sells (Phase 29.6). */
 export const SHOP_ITEMS = ['armour', 'ammo'] as const;
 export type ShopItem = (typeof SHOP_ITEMS)[number];
@@ -259,6 +273,8 @@ export type InteractDenial =
   | 'cooldown'
   | 'nothing_to_bank'
   | 'round_over'
+  | 'busy'
+  | 'need_car'
   | 'not_available';
 
 /** What using an anchor did. `open_task` tells the client to open the SQL panel on this reward. */
@@ -266,6 +282,7 @@ export type InteractResult =
   | { readonly action: 'moved'; readonly storey: number }
   | { readonly action: 'banking'; readonly seconds: number }
   | { readonly action: 'open_shop' }
+  | { readonly action: 'job_started'; readonly kind: 'delivery' | 'race' }
   | { readonly action: 'open_task'; readonly rewardKey: string; readonly target: string }
   | { readonly action: 'denied'; readonly reason: InteractDenial };
 
@@ -625,6 +642,7 @@ export type HeistServerMessage =
   | CachesMessage
   | CollectionMessage
   | DiscoveryMessage
+  | JobMessage
   | DuelMessage
   | RadarMessage
   | LeagueMessage

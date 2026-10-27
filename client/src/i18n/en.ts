@@ -316,6 +316,12 @@ export const en = {
   'collection.close': 'Close',
   'collection.none': 'No data chips in this city. Look around the streets for glowing blue cards.',
   'collection.count': 'Found {found} of {total}. Each chip holds a piece of SQL trivia.',
+  // --- jobs (30.6) -------------------------------------------------------------------------
+  'job.delivery': 'Delivery: get to the drop',
+  'job.race': 'Race: checkpoint {n} of {total}',
+  'job.claim': 'Run finished: answer the question to be paid',
+  'job.done': 'Job done! +${reward}',
+  'job.failed': 'Job failed',
   // --- shop (29.6) -------------------------------------------------------------------------
   'shop.title': 'Shop',
   'shop.close': 'Close',

@@ -40,7 +40,7 @@ export interface SpawnPoint {
  * coordinates; what each kind does is decided server-side (InteractionService),
  * the client only shows a prompt when one is close.
  */
-export type AnchorKind = 'elevator' | 'vault_console' | 'safehouse' | 'shop';
+export type AnchorKind = 'elevator' | 'vault_console' | 'safehouse' | 'shop' | 'job_board';
 
 export interface MapAnchor {
   /** Unique within the map, e.g. "bank-1:lift:0". */

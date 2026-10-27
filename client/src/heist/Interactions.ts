@@ -19,6 +19,8 @@ export function promptText(anchor: MapAnchor): string {
       return 'Bank your cash';
     case 'shop':
       return 'Shop';
+    case 'job_board':
+      return 'Take a job';
   }
 }
 
@@ -28,6 +30,8 @@ export const DENIAL_TEXT: Readonly<Record<string, string>> = {
   dead: 'You are dead',
   cooldown: 'Slow down',
   nothing_to_bank: 'You are not carrying any cash',
+  busy: 'Finish your current job first',
+  need_car: 'You need a car for this one',
   not_available: 'Not available right now',
 };
 
@@ -109,6 +113,9 @@ export class Interactions {
         break;
       case 'banking':
         break; // the progress bar is driven by the server's banking messages
+      case 'job_started':
+        this.deps.view.toast(result.kind === 'delivery' ? 'Delivery started' : 'Race started: go!');
+        break;
       case 'open_shop':
         this.deps.onOpenShop?.();
         break;

@@ -82,6 +82,9 @@ export const DEFAULT_REWARD_TIERS: Readonly<Record<string, TierRange>> = {
   /** A SQL Quick Draw duel's question (Phase 28.3): quick ones. */
   'duel:draw': { min: 1, max: 2 },
   /** Planning the next heist between rounds: an open brief (Phase 17.10). */
+  /** A delivery's receipt and a street race's stewards' check (Phase 30.6). */
+  'job:delivery': { min: 1, max: 3 },
+  'job:race': { min: 2, max: 3 },
   'brief:plan': { min: 1, max: 5 },
 };
 

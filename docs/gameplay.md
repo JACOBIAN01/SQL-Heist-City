@@ -253,3 +253,7 @@ At a shop counter you can spend banked cash on lasting upgrades: faster banking,
 ## Exploring (Phase 30.5)
 
 The full map (M) starts covered in fog except for the district you spawned in. Walk into a district to uncover it and learn its name and landmark. Signed-in students keep what they have uncovered.
+
+## Side jobs (Phase 30.6)
+
+Every district has a job board (a purple marker). Press F: some give a **delivery** (run a parcel to another district) and some a **street race** (a lap through junction checkpoints, in a car). Reach the end in time, then answer a SQL question to be paid. Dying or running out of time fails the job.

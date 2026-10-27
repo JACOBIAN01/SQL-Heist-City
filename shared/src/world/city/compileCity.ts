@@ -116,6 +116,18 @@ export function compileCity(
     });
   }
 
+  // A job board in the open at the middle of every district (Phase 30.6).
+  for (const d of city.districts)
+    anchors.push({
+      id: `${d.id}:board`,
+      kind: 'job_board',
+      x: d.board.x,
+      y: 0,
+      z: d.board.z,
+      radius: SAFEHOUSE_RADIUS,
+      storey: 0,
+    });
+
   return {
     id,
     halfSize: h,

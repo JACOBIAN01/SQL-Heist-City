@@ -36,6 +36,7 @@ import { RoundController } from './RoundController';
 import { CacheSystem } from './CacheSystem';
 import { CollectibleSystem } from './CollectibleSystem';
 import { DiscoverySystem } from './DiscoverySystem';
+import { JobSystem } from './JobSystem';
 import { ShopService } from './ShopService';
 import { UpgradeSystem } from './UpgradeSystem';
 import { SafehouseHandler } from './SafehouseHandler';
@@ -123,6 +124,14 @@ export class HeistController implements ArmsControl {
       (p) => this.upgrades.intelRange(p),
     );
     this.discovery = new DiscoverySystem(match, () => !this.taskOptions && !this.duels.enabled);
+    // Side jobs: deliveries and street races from the districts' boards.
+    this.jobs = new JobSystem(
+      match,
+      () => this.settings.jobs,
+      new SeededRng(`jobs:${match.classInfo?.classId ?? 0}`),
+      (player, amount) => this.setCash(player, player.cash + amount),
+      () => !this.taskOptions && !this.duels.enabled,
+    );
     // No police in the tutorial (its questions are fixed) or in a duel room.
     this.police = new PoliceSystem(
       match,
@@ -170,6 +179,7 @@ export class HeistController implements ArmsControl {
     this.interactions = new InteractionService(match)
       .register('safehouse', new SafehouseHandler(this.banking))
       .register('shop', this.shop)
+      .register('job_board', this.jobs)
       .register('elevator', new ElevatorHandler())
       .register('vault_console', new VaultConsoleHandler(this.vaults));
     this.tasks.add(
@@ -185,7 +195,8 @@ export class HeistController implements ArmsControl {
       .add(new GunRule(match, this))
       .add(new AmmoRule(match, this))
       .add(new PlanningRule(settings, () => this.roundOver))
-      .add(new DuelRule(this.duels));
+      .add(new DuelRule(this.duels))
+      .add(this.jobs);
     this.refreshDoors();
     if ((match.map.vaults?.length ?? 0) > 0) {
       this.round = new RoundController(match, settings, {
@@ -264,6 +275,7 @@ export class HeistController implements ArmsControl {
     this.guards.reset();
     this.police.reset();
     this.caches.reset();
+    this.jobs.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
@@ -308,6 +320,7 @@ export class HeistController implements ArmsControl {
     this.caches.onTick();
     this.collectibles.onTick();
     this.discovery.onTick();
+    this.jobs.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -331,6 +344,7 @@ export class HeistController implements ArmsControl {
     this.openTasks.delete(victim.key);
     this.banking.cancel(victim, 'died');
     this.police.clear(victim); // dying clears the record
+    this.jobs.fail(victim);
     if (victim.isPolice) {
       this.police.officerDown(victim, killer);
       return;
@@ -527,6 +541,7 @@ export class HeistController implements ArmsControl {
     this.upgrades.forget(player);
     this.collectibles.forget(player);
     this.discovery.forget(player);
+    this.jobs.clear(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
     this.onDeath(player); // cash does not vanish with a disconnect
@@ -629,6 +644,7 @@ export class HeistController implements ArmsControl {
   readonly caches: CacheSystem;
   readonly collectibles: CollectibleSystem;
   readonly discovery: DiscoverySystem;
+  readonly jobs: JobSystem;
   readonly shop: ShopService;
   readonly upgrades: UpgradeSystem;
   private readonly streaks = new StreakKeeper();

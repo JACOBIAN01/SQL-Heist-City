@@ -178,11 +178,21 @@ function placeDistricts(
       landmark = { name: def.landmark, x: c.x, z: c.z };
       break;
     }
+    // The job board stands at the alley crossing of the block nearest the middle: open ground.
+    const boardBlock = [...mine].sort(
+      (a, b) =>
+        Math.hypot(centre(a.inner).x - middle.x, centre(a.inner).z - middle.z) -
+        Math.hypot(centre(b.inner).x - middle.x, centre(b.inner).z - middle.z),
+    )[0] as CityBlock;
     districts.push({
       id: def.id,
       name: def.name,
       tint: def.tint,
       facades: def.facades,
+      board: {
+        x: Math.round(centre(boardBlock.inner).x),
+        z: Math.round(centre(boardBlock.inner).z),
+      },
       ...middle,
       ...(landmark ? { landmark } : {}),
     });

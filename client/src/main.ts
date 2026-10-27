@@ -32,6 +32,7 @@ import { ShareCardView } from './ui/share/ShareCardView';
 import { SquadView } from './ui/hud/SquadView';
 import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
+import { JobView } from './ui/hud/JobView';
 import { ShopView } from './ui/hud/ShopView';
 import { DuelView } from './ui/hud/DuelView';
 import { CrowdModel } from './world/crowd/CrowdModel';
@@ -392,6 +393,10 @@ const policeStars = new PoliceStars(i18n);
 document.body.append(policeStars.root);
 const collectionView = new CollectionView(i18n);
 document.body.append(collectionView.panel);
+const jobView = new JobView(i18n);
+const jobBeacon = new TutorialBeacon();
+scene.add(jobBeacon.object);
+document.body.append(jobView.root);
 const shopView = new ShopView(i18n, (m) => client.sendJson(m));
 document.body.append(shopView.panel, shopView.bar);
 /** Rivals the squad's lookout can see (minimap). */
@@ -635,6 +640,12 @@ client.subscribe({
       hud.toast('Round review ready — press V');
     } else if (message.t === 'duel') {
       duelView.update(message);
+    } else if (message.t === 'job') {
+      jobView.update(message, performance.now());
+      const next = message.status === 'active' ? message.targets[message.index] : undefined;
+      objective = next ? { x: next.x, y: 0, z: next.z } : undefined;
+      jobBeacon.setTarget(objective);
+      if (message.status === 'claim') openTask(`job:${message.kind}`, '');
     } else if (message.t === 'discovery') {
       fullMap.explored = new Set(message.districts);
     } else if (message.t === 'caches') {
@@ -749,6 +760,16 @@ world.onChange((map, closedDoors) => {
   setClosedDoors(mapObject, closedDoors);
 });
 // F uses whatever is in reach (lift, vault console…); the server decides if it works.
+function openTask(rewardKey: string, target: string): void {
+  // The panel needs the mouse (the world keeps running behind it).
+  pointer.release();
+  void sqlTasks.start({
+    key: rewardKey,
+    label: rewardLabel(rewardKey),
+    group: rewardKey.split(':')[0] ?? 'Task',
+    target,
+  });
+}
 const interactions = new Interactions({
   map: MAP,
   send: (message) => client.sendJson(message),
@@ -757,16 +778,7 @@ const interactions = new Interactions({
     pointer.release();
     shopView.open();
   },
-  onOpenTask: (rewardKey, target) => {
-    // The panel needs the mouse (the world keeps running behind it).
-    pointer.release();
-    void sqlTasks.start({
-      key: rewardKey,
-      label: rewardLabel(rewardKey),
-      group: rewardKey.split(':')[0] ?? 'Task',
-      target,
-    });
-  },
+  onOpenTask: (rewardKey, target) => openTask(rewardKey, target),
 });
 // F uses what is in reach; the number keys hold a gun you own (the server confirms in the next snapshot).
 const settingsPanel = new SettingsPanel(settings, i18n);
@@ -1005,6 +1017,8 @@ renderer.setAnimationLoop((now) => {
   cacheBeacons.update(now / 1000);
   chipBeacons.update(now / 1000);
   beacon?.update(now / 1000);
+  jobBeacon.update(now / 1000);
+  jobView.frame(now);
   vaultArt?.update(now / 1000, frameMs / 1000, (id) => vaultAlerts.isAlert(id, now / 1000));
   bankingProgress.update(now);
   roundUi.update(now);

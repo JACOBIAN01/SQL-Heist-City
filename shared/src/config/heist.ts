@@ -321,6 +321,53 @@ export const heistSettingsSchema = z.object({
    */
   collectibles: collectiblesSchema.default(() => collectiblesSchema.parse({})),
   /**
+   * Side jobs (Phase 30.6): each district's job board offers one kind of job, for cash. A delivery
+   * is a run to another district's board; a street race is a lap through checkpoints in a car.
+   * Both end at a SQL question: the delivery receipt or the race stewards' check. Wrong answers can
+   * be retried until time runs out.
+   */
+  jobs: z
+    .object({
+      enabled: z.boolean().default(true),
+      /** Which job each district's board offers. */
+      boards: z.record(z.string(), z.enum(['delivery', 'race'])).default({
+        downtown: 'delivery',
+        'old-town': 'race',
+        docks: 'delivery',
+        market: 'delivery',
+        heights: 'race',
+      }),
+      delivery: z
+        .object({
+          seconds: z.number().positive().default(150),
+          reward: z.number().int().min(0).default(3_000),
+          /** The drop is at least this far (m) from the board. */
+          minDistance: z.number().positive().default(120),
+          radius: z.number().positive().default(4),
+        })
+        .default({ seconds: 150, reward: 3_000, minDistance: 120, radius: 4 }),
+      race: z
+        .object({
+          seconds: z.number().positive().default(100),
+          checkpoints: z.number().int().min(2).max(8).default(4),
+          reward: z.number().int().min(0).default(4_500),
+          radius: z.number().positive().default(7),
+        })
+        .default({ seconds: 100, checkpoints: 4, reward: 4_500, radius: 7 }),
+    })
+    .default(() => ({
+      enabled: true,
+      boards: {
+        downtown: 'delivery' as const,
+        'old-town': 'race' as const,
+        docks: 'delivery' as const,
+        market: 'delivery' as const,
+        heights: 'race' as const,
+      },
+      delivery: { seconds: 150, reward: 3_000, minDistance: 120, radius: 4 },
+      race: { seconds: 100, checkpoints: 4, reward: 4_500, radius: 7 },
+    })),
+  /**
    * Safehouse upgrades (Phase 30.4), bought at the shop counter with *banked* cash (so each costs
    * some of the round's score) and kept with the student's account. `perLevel` is what each level
    * adds: banking time cut (share), armour you spawn with, share of carried cash kept on death,

@@ -35,6 +35,8 @@ export const REWARD_ICON_KEYS = [
   'gun:sniper',
   'brief:plan',
   'duel:draw',
+  'job:delivery',
+  'job:race',
   'vault',
 ] as const;
 
@@ -60,6 +62,8 @@ export const DEFAULT_REWARD_ICONS: RewardIcons = {
   'gun:sniper': 'sniper',
   'brief:plan': 'plan',
   'duel:draw': 'pistol',
+  'job:delivery': 'plan',
+  'job:race': 'lock',
   vault: 'vault',
 };
 
