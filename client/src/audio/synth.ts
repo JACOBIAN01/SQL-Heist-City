@@ -29,6 +29,9 @@ export const SOUND_NAMES = [
   'engine',
   'wind',
   'rain',
+  'radio-1',
+  'radio-2',
+  'radio-3',
   'siren',
   'alarm',
   'vault-crack',
@@ -37,7 +40,16 @@ export const SOUND_NAMES = [
 export type SoundName = (typeof SOUND_NAMES)[number];
 
 /** Sounds made to repeat seamlessly (engines, wind, sirens, alarms). */
-export const LOOPS: ReadonlySet<SoundName> = new Set(['engine', 'wind', 'rain', 'siren', 'alarm']);
+export const LOOPS: ReadonlySet<SoundName> = new Set([
+  'engine',
+  'wind',
+  'rain',
+  'radio-1',
+  'radio-2',
+  'radio-3',
+  'siren',
+  'alarm',
+]);
 
 type Rng = () => number;
 
@@ -394,6 +406,112 @@ function rain(rng: Rng): Float32Array {
   return normalise(out, 0.5);
 }
 
+/** One radio station's tune (Phase 29.7): tempo, key, a chord for each bar and the drum pattern. */
+interface StationSpec {
+  readonly bpm: number;
+  readonly root: number;
+  /** Semitones above the root for the three notes of each bar's chord. */
+  readonly chords: readonly (readonly [number, number, number])[];
+  /** Sixteen steps a bar: x = hit. */
+  readonly kick: string;
+  readonly hat: string;
+  /** Lead notes are every `lead` steps (2 = eighths); 0 for none. */
+  readonly lead: number;
+  /** Bass plays on these steps. */
+  readonly bass: string;
+}
+
+const STATIONS: readonly StationSpec[] = [
+  // Heist FM: driving minor pop.
+  {
+    bpm: 128,
+    root: 110,
+    chords: [
+      [0, 3, 7],
+      [8, 12, 15],
+      [5, 8, 12],
+      [10, 14, 17],
+    ],
+    kick: 'x...x...x...x...',
+    hat: '..x...x...x...x.',
+    lead: 2,
+    bass: 'x..xx..xx..xx.x.',
+  },
+  // Query Hits: slow, swung and low.
+  {
+    bpm: 84,
+    root: 98,
+    chords: [
+      [0, 4, 7],
+      [5, 9, 12],
+      [7, 11, 14],
+      [5, 9, 12],
+    ],
+    kick: 'x.....x...x.....',
+    hat: 'x.x.x.x.x.x.x.x.',
+    lead: 4,
+    bass: 'x.......x.x.....',
+  },
+  // Night Shift: fast and bright, no lead.
+  {
+    bpm: 150,
+    root: 123.5,
+    chords: [
+      [0, 7, 12],
+      [3, 10, 15],
+      [5, 12, 17],
+      [7, 14, 19],
+    ],
+    kick: 'x..x..x...x..x..',
+    hat: 'xxxxxxxxxxxxxxxx',
+    lead: 1,
+    bass: 'x.x.x.x.x.x.x.x.',
+  },
+];
+
+const semitone = (root: number, n: number): number => root * 2 ** (n / 12);
+
+/** A short looping tune: kick, hats, bass, a chord pad and an arpeggio, four bars long. */
+function station(spec: StationSpec, rng: Rng): Float32Array {
+  const stepSeconds = 60 / spec.bpm / 4;
+  const stepLen = Math.round(stepSeconds * SYNTH_RATE);
+  const bars = spec.chords.length;
+  const out = new Float32Array(stepLen * 16 * bars);
+  for (let bar = 0; bar < bars; bar++) {
+    const chord = spec.chords[bar] as readonly [number, number, number];
+    for (let step = 0; step < 16; step++) {
+      const at = (bar * 16 + step) * stepLen;
+      if (spec.kick[step] === 'x')
+        mixInto(out, envelope(sweep(stepLen * 3, 140, 45, 0.06), 0.002, 0.09), 0.9, at);
+      if (spec.hat[step] === 'x')
+        mixInto(out, envelope(highpass(noise(stepLen * 2, rng), 6000), 0.001, 0.02), 0.25, at);
+      if (spec.bass[step] === 'x')
+        mixInto(
+          out,
+          envelope(tone(stepLen * 3, semitone(spec.root / 2, chord[0])), 0.004, 0.12),
+          0.7,
+          at,
+        );
+      if (spec.lead > 0 && step % spec.lead === 0) {
+        const note = chord[(bar * 16 + step) % 3] as number;
+        mixInto(
+          out,
+          envelope(tone(stepLen * 4, semitone(spec.root * 2, note)), 0.004, 0.09),
+          0.3,
+          at,
+        );
+      }
+    }
+    // The pad holds the chord for the whole bar, softly.
+    const pad = new Float32Array(stepLen * 16);
+    for (const n of chord) mixInto(pad, tone(pad.length, semitone(spec.root, n)), 0.12);
+    for (let i = 0; i < pad.length; i++)
+      pad[i] = (pad[i] as number) * Math.min(1, i / 400, (pad.length - i) / 400);
+    mixInto(out, pad, 1, bar * 16 * stepLen);
+  }
+  return normalise(out, 0.5);
+}
+
 /**
  * Police siren wail, 2 s: pitch up and back down. The average pitch times the
  * length is a whole number of cycles, so the wave meets itself at the seam.
@@ -448,6 +566,9 @@ export const VARIANTS: Readonly<Record<SoundName, number>> = {
   engine: 1,
   wind: 1,
   rain: 1,
+  'radio-1': 1,
+  'radio-2': 1,
+  'radio-3': 1,
   siren: 1,
   alarm: 1,
   'vault-crack': 1,
@@ -474,6 +595,9 @@ const RECIPES: Readonly<Record<SoundName, (rng: Rng) => Float32Array>> = {
   engine,
   wind,
   rain,
+  'radio-1': (rng) => station(STATIONS[0] as StationSpec, rng),
+  'radio-2': (rng) => station(STATIONS[1] as StationSpec, rng),
+  'radio-3': (rng) => station(STATIONS[2] as StationSpec, rng),
   siren,
   alarm,
   'vault-crack': vaultCrack,

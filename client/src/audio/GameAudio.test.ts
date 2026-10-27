@@ -290,4 +290,26 @@ describe('GameAudio: heist and ambience', () => {
     audio.update({ ...frame(), rain: 0 });
     expect(out.live('rain')).toHaveLength(0);
   });
+
+  it('plays the chosen radio station only while you drive, and remembers the dial', () => {
+    const { out, audio } = setup();
+    const driving = { ...frame(), me: { ...frame().me, driving: true } };
+    audio.update(driving);
+    expect(out.live('radio-1')).toHaveLength(0); // radio starts off
+    expect(audio.nextStation()).toBe(1);
+    audio.update(driving);
+    expect(out.live('radio-1')).toHaveLength(1);
+    audio.update(frame()); // stepped out
+    expect(out.live('radio-1')).toHaveLength(0);
+    audio.update(driving);
+    expect(out.live('radio-1')).toHaveLength(1);
+    audio.nextStation();
+    audio.update(driving);
+    expect(out.live('radio-1')).toHaveLength(0);
+    expect(out.live('radio-2')).toHaveLength(1);
+    audio.nextStation();
+    expect(audio.nextStation()).toBe(0); // 3 then off
+    audio.update(driving);
+    expect(out.live('radio-3')).toHaveLength(0);
+  });
 });

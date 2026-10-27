@@ -137,6 +137,8 @@ export const en = {
   'action.squad': 'Squad',
   'action.review': 'Review the round',
   'action.mute': 'Mute sound',
+  'action.radio': 'Radio',
+  'radio.off': 'Radio off',
   'action.settings': 'Settings',
   'action.weapon1': 'Gun 1',
   'action.weapon2': 'Gun 2',

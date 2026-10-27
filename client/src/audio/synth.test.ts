@@ -78,10 +78,24 @@ describe('synthesised sounds', () => {
     expect(low('shot-shotgun')).toBeGreaterThan(low('shot-smg'));
   });
 
-  it('stays small: under 2 s of samples for most sounds, under 3 MB in memory all told', () => {
+  it('stays small: under 2 s of samples for most sounds, under 5 MB in memory all told, radio tunes included', () => {
     let total = 0;
     for (const list of all.values()) for (const pcm of list) total += pcm.length;
-    expect(total * 4).toBeLessThan(2.8e6);
+    expect(total * 4).toBeLessThan(5.2e6);
+  });
+});
+
+describe('radio stations', () => {
+  it('are three different tunes of several seconds that loop', () => {
+    const tunes = (['radio-1', 'radio-2', 'radio-3'] as const).map(
+      (n) => all.get(n)?.[0] as Float32Array,
+    );
+    for (const t of tunes) {
+      expect(t.length).toBeGreaterThan(5 * SYNTH_RATE);
+      expect(LOOPS.has('radio-1')).toBe(true);
+      expect(rms(t)).toBeGreaterThan(0.05);
+    }
+    expect(new Set(tunes.map((t) => t.length)).size).toBe(3);
   });
 });
 

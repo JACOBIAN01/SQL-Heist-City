@@ -47,6 +47,12 @@ export const audioSettingsSchema = z.object({
   echoSend: z.number().min(0).max(1).default(0.35),
   /** Background wind volume, 0–1 (kept low: it plays the whole time), and seconds between far-off sirens (min, max). */
   ambienceVolume: z.number().min(0).max(1).default(0.08),
+  /** Car radio (Phase 29.7): the names of its three stations, and how loud it plays in the car, 0–1. */
+  radioNames: z
+    .array(z.string().min(1).max(24))
+    .length(3)
+    .default(['Heist FM', 'Query Hits', 'Night Shift']),
+  radioVolume: z.number().min(0).max(1).default(0.3),
   sirenMinSeconds: z.number().positive().default(45),
   sirenMaxSeconds: z.number().positive().default(120),
 });

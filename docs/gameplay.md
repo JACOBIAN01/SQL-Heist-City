@@ -229,3 +229,7 @@ The match clock is cut into spells of `atmosphere.weather.spellMinutes`, each cl
 ## Shops (Phase 29.6)
 
 A counter stands beside every safehouse. Press F to open it and spend the cash you are carrying (not banked cash) on body armour, which soaks damage before health until it runs out or you die, or on a full reload of the gun you hold. Prices and amounts are in `heist.shop`. Spending carried cash lowers what you could have banked, so buying is a risk against score.
+
+## Car radio (Phase 29.7)
+
+At the wheel, R steps the radio through three stations and off. The tunes are made by the sound synth, so they cost no download. It follows the ambience volume in Settings.

@@ -51,7 +51,7 @@ export type Channel = 'master' | 'effects' | 'ambience';
 
 /** Which group a sound belongs to. */
 export const channelOf = (name: SoundName): Exclude<Channel, 'master'> =>
-  name === 'wind' ? 'ambience' : 'effects';
+  name === 'wind' || name === 'rain' || name.startsWith('radio-') ? 'ambience' : 'effects';
 
 /** How loud a sound `distance` m away is, 0–1: the inverse-distance fade the panners use. */
 export function distanceGain(distance: number, s: AudioSettings, reach = s.refDistance): number {

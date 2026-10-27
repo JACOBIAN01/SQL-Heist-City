@@ -801,6 +801,13 @@ const hotkeys = new Hotkeys(window, bindings)
     squadView.hidden = true;
     shopView.hidden = true;
   })
+  .onAction('radio', () => {
+    if (!myCar) return;
+    const n = audio.nextStation();
+    hud.toast(
+      n === 0 ? i18n.t('radio.off') : `♪ ${DEFAULT_AUDIO_SETTINGS.radioNames[n - 1] ?? ''}`,
+    );
+  })
   .onAction('mute', () => hud.toast(sound.toggleMute() ? 'Sound off' : 'Sound on'))
   .onAction('use', () => {
     if (!feedback.isAlive) return;

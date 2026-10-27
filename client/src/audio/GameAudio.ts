@@ -90,6 +90,8 @@ interface Alarm {
 
 /** Rain is a hiss, so it can be a lot louder than the wind for the same feel. */
 const RAIN_GAIN = 3;
+/** Stations on the car radio. */
+const RADIO_STATIONS = 3;
 
 /**
  * What the game sounds like: turns game facts (shots, steps, cars, vaults,
@@ -108,6 +110,8 @@ export class GameAudio {
   private vaultsSeen: Map<string, number> | undefined;
   private wind: LoopHandle | undefined;
   private rain: LoopHandle | undefined;
+  private station = 0;
+  private radio: { station: number; loop: LoopHandle | undefined } | undefined;
   private siren: { loop: LoopHandle | undefined; ends: number } | undefined;
   private nextSiren: number;
   private lastDryFire = -Infinity;
@@ -203,10 +207,31 @@ export class GameAudio {
       this.rain = undefined;
       wind?.setVolume(settings.ambienceVolume);
     }
+    this.radioSound(frame.me.driving && frame.me.alive);
     this.footsteps(frame);
     this.carSounds(frame.cars);
     this.alarmBells();
     this.distantSirens();
+  }
+
+  /** The next station on the car radio (0 is off, then 1…3 and round); the dial keeps its place between drives. */
+  nextStation(): number {
+    this.station = (this.station + 1) % (RADIO_STATIONS + 1);
+    return this.station;
+  }
+
+  /** Plays the chosen station while you are at the wheel, and stops when you step out. */
+  private radioSound(inCar: boolean): void {
+    const { out, settings } = this.deps;
+    const want = inCar ? this.station : 0;
+    if (this.radio && this.radio.station !== want) {
+      this.radio.loop?.stop();
+      this.radio = undefined;
+    }
+    if (want > 0 && !this.radio) {
+      const name = `radio-${want}` as 'radio-1' | 'radio-2' | 'radio-3';
+      this.radio = { station: want, loop: out.loop(name, { volume: settings.radioVolume }) };
+    }
   }
 
   private footsteps(frame: HearingFrame): void {

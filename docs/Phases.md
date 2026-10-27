@@ -46,7 +46,7 @@
 | 26 | Progression and the meta-loop | 🟨 built (26.1–26.9) |
 | 27 | Squads and roles | 🟨 built; role balance waits for a playtest |
 | 28 | Game modes | 🟨 built |
-| 29 | Living city | 🟦 29.1–29.6 done |
+| 29 | Living city | 🟦 29.1–29.7 done |
 | 30 | Exploration and freedom | ⬜ |
 | 31 | Missions and heist structure | ⬜ |
 | 32 | Story and characters | ⬜ |
@@ -534,7 +534,7 @@ Post-launch. GTA audit "World immersion" from 5 to 8–9.
 | 29.4 | Police response: wanted level from alarms and kills, chases, roadblocks | escaping the police is a real challenge | ✅ Wanted stars (`heist.police`) from cracking a lock, killing a player, a guard or an officer; officers spawn out of sight 45–85 m away (one per star × `perStar`), keep to the streets, shoot on sight with a pistol, and from 4 stars set a two-officer roadblock ahead. Staying unseen for `escapeSeconds` drops a star; at none they leave. Dying, leaving or a new round clears the record; off in tutorial and duel rooms. The client shows the stars under the minimap (`PoliceStars`). Tested: crimes, spawn distance, chase and damage, escape, roadblock, off switches |
 | 29.5 | Weather (rain, fog) and richer ambient sound | weather cycles; budgets kept | ✅ The match clock is cut into spells (`atmosphere.weather`: `spellMinutes`, `blendSeconds`, `weights`), each clear, fog, rain or storm, chosen from the map seed so every player sees the same sky and blends between spells (`weatherAt`, shared). The client pulls in and greys the fog and draws rain as one line-segment draw call that follows the camera (`WeatherFx`, `rainDrops` 900); a rain loop is added to the ambience and the wind rises with it. Never touches gameplay. `?weather=storm` pins it for testing. Tested: schedule, blending, fog, streak counts, audio |
 | 29.6 | Shops and vendors: spend cash on armour, ammo and cosmetics | buying works and is server-checked | ✅ A shop counter stands beside every safehouse (anchor kind `shop`; press F). It sells body armour (`heist.shop`: +50 points, up to 100, soaks damage before health, lost on death) and a full reload of the held gun, for the cash you are *carrying* (banked cash is untouched), at prices in settings. The client only asks (`shop_buy`); the server checks alive, at a counter, the item is useful, the cash covers it. Window `ShopView`, armour bar under the minimap. Cosmetics are not sold: wardrobe unlocks stay earned with XP so they persist between matches, which a per-match cash purse cannot buy. Tested: counters, purchase, limits, refusals, reload, armour soaking |
-| 29.7 | Car radio | stations play in cars | ⬜ |
+| 29.7 | Car radio | stations play in cars | ✅ Three stations (names in `audio.radioNames`, volume `audio.radioVolume`) made by the synth like every other sound — no audio files, so nothing added to the download: Heist FM (driving minor pop), Query Hits (slow and low), Night Shift (fast and bright). Press R (rebindable action `radio`) in a car to step off → 1 → 2 → 3 → off; it plays only while you drive, on the ambience volume, and the dial keeps its place. Tested: tunes loop and differ, plays only at the wheel |
 | 29.8 | Immersion review: re-score World immersion | scored ≥ 8 in a review with screenshots | ⬜ |
 
 ---
