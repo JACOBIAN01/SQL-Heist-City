@@ -48,7 +48,7 @@
 | 28 | Game modes | 🟨 built |
 | 29 | Living city | ✅ done, awaiting approval |
 | 30 | Exploration and freedom | ✅ done, awaiting approval |
-| 31 | Missions and heist structure | 🟦 31.1–31.4 done |
+| 31 | Missions and heist structure | ✅ done, awaiting approval |
 | 32 | Story and characters | ⬜ |
 | 33 | SQL in the world: queries as superpowers | ⬜ |
 | 34 | Breakthrough features | ⬜ |
@@ -553,7 +553,7 @@ Post-launch. GTA audit "Exploration" (3) and "Freedom" (5) to 8–9.
 | 30.8 | Review: re-score Exploration and Freedom | both ≥ 8 | ✅ [docs/review/exploration.md](review/exploration.md): Exploration 3 → 8 and Freedom 5 → 8 by the author's own assessment, with a fresh-join map (fog) and five district street views; the gaps are listed (district street life, one stealth rule, two job kinds). The playtest-backed score is 36.1 |
 
 ---
-## Phase 31 — Missions and heist structure  🟦
+## Phase 31 — Missions and heist structure  ✅
 Post-launch. GTA audit "Missions" from 3 to 8–9.
 
 | # | Subphase | Done when | Status |
@@ -562,7 +562,7 @@ Post-launch. GTA audit "Missions" from 3 to 8–9.
 | 31.2 | Contract board with varied jobs (intel, sabotage, data theft, escort) | at least four contract types | ✅ Each district's contract board (F) now offers a choice (`heist.jobs.boards`; panel picks one, `job_take`): **delivery**, **street race** (30.6), **recon** (visit other banks' intel terminals, each leaves an intel point), **sabotage** (stay 5 s at a bank's vault console: its guards go blind for 60 s), **data theft** (8 s at a console: $6,000, but the police are told) and **escort** (a person follows you across the city; they are a seatless, killable NPC and if they die the contract fails, with no bounty for the killer). Every kind ends in an SQL question on its own reward key (`job:<kind>`, tiers 2–4, retunable under reward tiers) and pays only on a correct answer. Tested: each kind, plus guard blindness |
 | 31.3 | Getaway: police roadblocks placed by what your intel queries revealed | intel changes the getaway | ✅ On the getaway (act 3) the police guess where the cash is going — the nearest safehouse — and set their roadblock on that way (otherwise ahead of where you are running). With intel on the bank you robbed (`heist.police.intelRevealLevel`, 1) you are told where it is, as a red cross on your minimap; with full intel (`intelThinLevel`, 3) it is held by one officer instead of two. The roadblock leaves your map when the wanted level goes. Tested |
 | 31.4 | Payout screen: the take split, bonuses, mastery gained | shown after every heist | ✅ A payout screen opens when a heist ends (`heist.payout`): banked in the bank, it lists the vault cash, the ghost bonus, the intel bonus, the loud-lock bonuses, anything else banked, and the total; a getaway that ends in death shows what was lost. Mastery XP is earned too (40 per bank tier, +25 for a ghost job) and added to the student's XP through the progress keeper (`heist_complete` event). The server builds every number. Tested |
-| 31.5 | Review: re-score Missions | ≥ 8 | ⬜ |
+| 31.5 | Review: re-score Missions | ≥ 8 | ✅ [docs/review/missions.md](review/missions.md): Missions 3 → 8 by the author's own assessment, with a screenshot of the act line, a contract in progress, the contract board and the payout screen (a dev-only `missions.html` preview). The gaps are listed (intel is one question, contracts repeat, not played through). The playtest-backed score is 36.1 |
 
 ---
 ## Phase 32 — Story and characters  ⬜

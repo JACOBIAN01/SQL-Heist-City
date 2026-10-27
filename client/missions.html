@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Missions preview</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(#1b2330, #0b0d10);
+        color: #e8ebf0;
+        font:
+          14px system-ui,
+          sans-serif;
+      }
+      /* The panels are fixed to the game's screen; here each sits in its own column. */
+      .skills {
+        position: static !important;
+        transform: none !important;
+        margin: 16px;
+        max-width: 420px;
+      }
+      #row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .job-hud,
+      .acts-hud {
+        position: static !important;
+        transform: none !important;
+        display: inline-block;
+        margin: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Development only (not in the build): the mission screens with sample data. -->
+    <div id="row"></div>
+    <script type="module" src="/src/missionsPreview.ts"></script>
+  </body>
+</html>
