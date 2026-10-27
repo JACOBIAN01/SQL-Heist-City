@@ -17,6 +17,8 @@ export function promptText(anchor: MapAnchor): string {
       return 'Crack the vault lock';
     case 'safehouse':
       return 'Bank your cash';
+    case 'shop':
+      return 'Shop';
   }
 }
 
@@ -41,6 +43,8 @@ export interface InteractionsDeps {
   readonly view: InteractionsView;
   /** The server says this use starts a SQL task. */
   readonly onOpenTask: (rewardKey: string, target: string) => void;
+  /** F at a shop counter (Phase 29.6). */
+  readonly onOpenShop?: () => void;
 }
 
 /**
@@ -105,6 +109,9 @@ export class Interactions {
         break;
       case 'banking':
         break; // the progress bar is driven by the server's banking messages
+      case 'open_shop':
+        this.deps.onOpenShop?.();
+        break;
       case 'open_task':
         this.deps.onOpenTask(result.rewardKey, result.target);
         break;

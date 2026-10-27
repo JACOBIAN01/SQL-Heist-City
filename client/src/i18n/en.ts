@@ -308,6 +308,21 @@ export const en = {
   'game.hint': 'Click to play — {keys} · Esc release mouse',
   // --- police (29.4) ----------------------------------------------------------------------
   'wanted.label': 'Wanted level {stars}',
+  // --- shop (29.6) -------------------------------------------------------------------------
+  'shop.title': 'Shop',
+  'shop.close': 'Close',
+  'shop.help': 'Spend the cash you are carrying. Banked cash is safe from the shop.',
+  'shop.buy': 'Buy',
+  'shop.armour': 'Armour {armour}/{max}',
+  'shop.bought': 'You bought {item}.',
+  'shop.item.armour': 'Body armour',
+  'shop.item.ammo': 'Full reload',
+  'shop.denied.no_cash': 'You are not carrying enough cash.',
+  'shop.denied.full': 'You do not need that right now.',
+  'shop.denied.too_far': 'Step up to the counter.',
+  'shop.denied.dead': 'You are dead.',
+  'shop.denied.closed': 'The shop is closed.',
+  'shop.denied.unknown_item': 'They do not sell that.',
   'game.guns': 'guns',
   'game.settingsButton': 'Settings ({key})',
 } as const;

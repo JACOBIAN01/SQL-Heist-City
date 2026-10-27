@@ -99,10 +99,12 @@ Errors: `{error: {code, message, details?}}`, standard HTTP codes.
 Low-rate messages travel as `json` frames inside the binary protocol: client `0x04` and server `0x86`, followed by UTF-8 JSON (at most 24 KB). They may sit in a bundle. Binary input/snapshot frames are unchanged, and any other binary message still has to match its exact layout.
 
 Client → server: the challenge messages (`challenge_request`, `challenge_run`, `challenge_submit`, `challenge_hint`, `challenge_abandon`; see above) and
-- `interact { ref, anchor }`: use the map anchor with this id (lift, vault console, safehouse).
+- `interact { ref, anchor }`: use the map anchor with this id (lift, vault console, safehouse, shop).
 
 Server → client: the challenge replies and
-- `interact_result { ref, anchor, result }` where `result` is `{action:'moved', storey}`, `{action:'open_task', rewardKey, target}` or `{action:'denied', reason}` (`unknown_anchor`, `too_far`, `dead`, `cooldown`, `not_available`).
+- `interact_result { ref, anchor, result }` where `result` is `{action:'moved', storey}`, `{action:'open_task', rewardKey, target}`, `{action:'open_shop'}` or `{action:'denied', reason}` (`unknown_anchor`, `too_far`, `dead`, `cooldown`, `not_available`).
+
+- `shop_buy { item }` (client → server, `armour` or `ammo`): buy at the counter you stand at. Answer: `shop { offers, armour, armourMax, result? }` with `result { item, ok, reason? }` (`no_cash`, `full`, `too_far`, `dead`, `closed`). Opening a shop sends the same message without `result`.
 
 The server validates every use: the anchor exists, the player is alive and within its radius (+0.75 m slack) on the same storey, and a 0.75 s per-player cooldown has passed. Anything that fails the shape check is ignored.
 

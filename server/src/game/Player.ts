@@ -80,6 +80,8 @@ export class Player {
   healScale = 1;
   /** Earliest tick this player may use an anchor again. */
   interactReadyTick = 0;
+  /** Body armour (Phase 29.6): soaks damage before health, lost on death. */
+  armour = 0;
   /** Cash on the player: dropped as a bag on death, banked at a safehouse. */
   cash = 0;
   /** Cash that is safe; what the round is won on. */

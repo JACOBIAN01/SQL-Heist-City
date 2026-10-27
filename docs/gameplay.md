@@ -225,3 +225,7 @@ Cracking a lock, killing a player, a bank guard or an officer earns stars (`heis
 ## Weather (Phase 29.5)
 
 The match clock is cut into spells of `atmosphere.weather.spellMinutes`, each clear, foggy, rainy or stormy by `weights`, the same for everyone and blended over `blendSeconds`. Fog shortens how far you see; rain draws streaks and adds a rain sound. It changes nothing about shooting, damage or grading.
+
+## Shops (Phase 29.6)
+
+A counter stands beside every safehouse. Press F to open it and spend the cash you are carrying (not banked cash) on body armour, which soaks damage before health until it runs out or you die, or on a full reload of the gun you hold. Prices and amounts are in `heist.shop`. Spending carried cash lowers what you could have banked, so buying is a risk against score.

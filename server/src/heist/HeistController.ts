@@ -33,6 +33,7 @@ import { LootManager } from './LootManager';
 import { ElevatorHandler } from './ElevatorHandler';
 import { InteractionService } from './InteractionService';
 import { RoundController } from './RoundController';
+import { ShopService } from './ShopService';
 import { SafehouseHandler } from './SafehouseHandler';
 import { TaskRules } from './TaskRule';
 import { PlanningRule } from './PlanningRule';
@@ -125,8 +126,15 @@ export class HeistController implements ArmsControl {
         return amount;
       },
     });
+    this.shop = new ShopService({
+      match,
+      settings: () => this.settings.shop,
+      setCash: (p, cash) => this.setCash(p, cash),
+      refillAmmo: (p) => this.refillAmmo(p),
+    });
     this.interactions = new InteractionService(match)
       .register('safehouse', new SafehouseHandler(this.banking))
+      .register('shop', this.shop)
       .register('elevator', new ElevatorHandler())
       .register('vault_console', new VaultConsoleHandler(this.vaults));
     this.tasks.add(
@@ -428,6 +436,10 @@ export class HeistController implements ArmsControl {
       this.match.sendJson(player, this.match.vehicleRequest(player, message));
       return;
     }
+    if (message.t === 'shop_buy') {
+      this.shop.buy(player, message.item);
+      return;
+    }
     if (message.t === 'squad_join') {
       const result = this.squads.pick(player, message.squad);
       this.squads.send(player, result === 'ok' ? undefined : result);
@@ -470,6 +482,7 @@ export class HeistController implements ArmsControl {
       message.t === 'equip' ||
       message.t === 'set_look' ||
       message.t === 'squad_join' ||
+      message.t === 'shop_buy' ||
       message.t === 'role_pick'
     )
       return;
@@ -551,6 +564,7 @@ export class HeistController implements ArmsControl {
       .catch(() => this.reply(player, this.refuse(message.ref, 'unavailable')));
   }
 
+  readonly shop: ShopService;
   private readonly streaks = new StreakKeeper();
   /** The reward each player has open in the SQL pop-up (shown to their squad). */
   private readonly openTasks = new Map<string, string>();

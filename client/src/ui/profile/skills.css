@@ -206,3 +206,29 @@
 .duel-lose {
   border-color: var(--c-bad, #ff6b6b);
 }
+
+/* Street shop (Phase 29.6). */
+.shop-offer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 0.4rem 0;
+}
+.armour-bar {
+  position: fixed;
+  left: 16px;
+  top: 140px;
+  z-index: 20;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #8ecbff;
+  font:
+    700 0.8rem system-ui,
+    sans-serif;
+  pointer-events: none;
+}
+.armour-bar[hidden] {
+  display: none;
+}

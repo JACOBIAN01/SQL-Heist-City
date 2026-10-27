@@ -102,6 +102,27 @@ export interface PoliceMessage {
   readonly max: number;
 }
 
+/** What a street shop sells (Phase 29.6). */
+export const SHOP_ITEMS = ['armour', 'ammo'] as const;
+export type ShopItem = (typeof SHOP_ITEMS)[number];
+export type ShopDenial = 'no_cash' | 'full' | 'too_far' | 'dead' | 'closed' | 'unknown_item';
+
+/** Buy something at the shop you are standing at. */
+export const shopBuyMessageSchema = z.object({
+  t: z.literal('shop_buy'),
+  item: z.enum(SHOP_ITEMS),
+});
+export type ShopBuyMessage = z.infer<typeof shopBuyMessageSchema>;
+
+/** The shop's window: what is for sale and your armour; `result` answers the last purchase. */
+export interface ShopMessage {
+  readonly t: 'shop';
+  readonly offers: readonly { readonly item: ShopItem; readonly price: number }[];
+  readonly armour: number;
+  readonly armourMax: number;
+  readonly result?: { readonly item: ShopItem; readonly ok: boolean; readonly reason?: ShopDenial };
+}
+
 /** Join a squad (1…), or leave with 0 (Phase 27.2); only in classes where students pick their own. */
 export const squadJoinMessageSchema = z.object({
   t: z.literal('squad_join'),
@@ -177,6 +198,7 @@ export const jsonClientMessageSchema = z.union([
   setLookMessageSchema,
   squadJoinMessageSchema,
   rolePickMessageSchema,
+  shopBuyMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -193,6 +215,7 @@ export type InteractDenial =
 export type InteractResult =
   | { readonly action: 'moved'; readonly storey: number }
   | { readonly action: 'banking'; readonly seconds: number }
+  | { readonly action: 'open_shop' }
   | { readonly action: 'open_task'; readonly rewardKey: string; readonly target: string }
   | { readonly action: 'denied'; readonly reason: InteractDenial };
 
@@ -548,6 +571,7 @@ export type HeistServerMessage =
   | ContractsMessage
   | SquadMessage
   | PoliceMessage
+  | ShopMessage
   | DuelMessage
   | RadarMessage
   | LeagueMessage

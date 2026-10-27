@@ -19,6 +19,8 @@ export const CLOSED_BANK_STOREYS = 3;
 /** Edge of the world: tall enough that nobody jumps it. */
 const BOUNDARY_HEIGHT = 8;
 const SAFEHOUSE_RADIUS = 3;
+/** How far beside a safehouse its shop counter stands (m). */
+const SHOP_OFFSET = 7;
 
 const rectBox = (kind: MapBox['kind'], r: Rect, height: number, bottom = 0): MapBox => ({
   kind,
@@ -96,6 +98,17 @@ export function compileCity(
       id: s.id,
       kind: 'safehouse',
       x: s.x,
+      y: 0,
+      z: s.z,
+      radius: SAFEHOUSE_RADIUS,
+      storey: 0,
+    });
+    // The shop counter beside it (Phase 29.6).
+    boxes.push(box('building', s.x + SHOP_OFFSET, s.z - 3.6, 4, 2.4, 0.6));
+    anchors.push({
+      id: `${s.id}:shop`,
+      kind: 'shop',
+      x: s.x + SHOP_OFFSET,
       y: 0,
       z: s.z,
       radius: SAFEHOUSE_RADIUS,

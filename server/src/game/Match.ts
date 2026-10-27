@@ -540,6 +540,7 @@ export class Match implements MatchApi {
    */
   private equipStartingGear(player: Player, alwaysArmed = false): void {
     player.disarm();
+    player.armour = 0;
     if (player.isGuard && player.guardWeapon) {
       player.infiniteAmmo = true;
       player.giveWeapon(player.guardWeapon, this.combat.weapons[player.guardWeapon]?.magSize ?? 0);
@@ -984,10 +985,11 @@ export class Match implements MatchApi {
   damage(victim: Player, amount: number, attacker: Player): void {
     if (!victim.alive || this.isProtected(victim) || this.heist.roundOver) return;
     const armour = victim.isGuard ? this.heist.settings.guards.damageTakenScale : 1;
-    victim.hp = Math.max(
-      0,
-      victim.hp - Math.round(amount * armour * this.heist.squads.damageScale(victim)),
-    );
+    const dealt = Math.round(amount * armour * this.heist.squads.damageScale(victim));
+    // Body armour soaks damage first.
+    const soaked = Math.min(victim.armour, dealt);
+    victim.armour -= soaked;
+    victim.hp = Math.max(0, victim.hp - (dealt - soaked));
     this.heist.onDamaged(victim);
     if (victim.hp > 0) return;
     victim.alive = false;

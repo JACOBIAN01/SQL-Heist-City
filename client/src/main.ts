@@ -31,6 +31,7 @@ import { LeagueView } from './ui/profile/LeagueView';
 import { ShareCardView } from './ui/share/ShareCardView';
 import { SquadView } from './ui/hud/SquadView';
 import { PoliceStars } from './ui/hud/PoliceStars';
+import { ShopView } from './ui/hud/ShopView';
 import { DuelView } from './ui/hud/DuelView';
 import { CrowdModel } from './world/crowd/CrowdModel';
 import { CrowdRenderer } from './world/crowd/CrowdRenderer';
@@ -384,6 +385,8 @@ const squadView = new SquadView(i18n, (m) => client.sendJson(m));
 document.body.append(squadView.hud, squadView.panel);
 const policeStars = new PoliceStars(i18n);
 document.body.append(policeStars.root);
+const shopView = new ShopView(i18n, (m) => client.sendJson(m));
+document.body.append(shopView.panel, shopView.bar);
 /** Rivals the squad's lookout can see (minimap). */
 let radarFoes: readonly { x: number; z: number }[] = [];
 /** True while the open question is a duel's, so the pop-up is closed when the draw ends. */
@@ -625,6 +628,8 @@ client.subscribe({
       hud.toast('Round review ready — press V');
     } else if (message.t === 'duel') {
       duelView.update(message);
+    } else if (message.t === 'shop') {
+      shopView.update(message);
     } else if (message.t === 'police') {
       policeStars.update(message);
     } else if (message.t === 'squad') {
@@ -730,6 +735,10 @@ const interactions = new Interactions({
   map: MAP,
   send: (message) => client.sendJson(message),
   view: hud,
+  onOpenShop: () => {
+    pointer.release();
+    shopView.open();
+  },
   onOpenTask: (rewardKey, target) => {
     // The panel needs the mouse (the world keeps running behind it).
     pointer.release();
@@ -790,6 +799,7 @@ const hotkeys = new Hotkeys(window, bindings)
     contractsView.hidden = true;
     leagueView.hidden = true;
     squadView.hidden = true;
+    shopView.hidden = true;
   })
   .onAction('mute', () => hud.toast(sound.toggleMute() ? 'Sound off' : 'Sound on'))
   .onAction('use', () => {

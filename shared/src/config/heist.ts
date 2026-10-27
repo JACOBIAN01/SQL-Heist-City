@@ -183,6 +183,28 @@ export const heistSettingsSchema = z.object({
     .array(z.string().min(1).max(20))
     .min(2)
     .default(['Red', 'Blue', 'Green', 'Gold', 'Violet', 'Teal', 'Orange', 'Pink', 'Grey', 'Cyan']),
+  /**
+   * Street shops (Phase 29.6), a counter beside every safehouse. They sell for cash you are
+   * carrying (so spending is a risk-free way to lose it from your score): body armour, which
+   * soaks damage before health, and a full reload. Prices and amounts are all here.
+   */
+  shop: z
+    .object({
+      enabled: z.boolean().default(true),
+      armourPrice: z.number().int().min(0).default(2_000),
+      /** Armour points one purchase adds. */
+      armourPoints: z.number().int().positive().default(50),
+      /** The most armour a player can wear. */
+      armourMax: z.number().int().positive().default(100),
+      ammoPrice: z.number().int().min(0).default(500),
+    })
+    .default({
+      enabled: true,
+      armourPrice: 2_000,
+      armourPoints: 50,
+      armourMax: 100,
+      ammoPrice: 500,
+    }),
   /** Top speed lost per $100k carried (0.1 = 10%), up to `carrySlowMax`. */
   carrySlowPer100k: z.number().min(0).max(1).default(0.1),
   carrySlowMax: z.number().min(0).max(0.9).default(0.3),
