@@ -249,3 +249,7 @@ Glowing blue cards lie in fixed places around the city. Walk over one for a litt
 ## Safehouse upgrades (Phase 30.4)
 
 At a shop counter you can spend banked cash on lasting upgrades: faster banking, armour when you spawn, keeping part of your cash when you die, and seeing hidden caches and chips from further away. They stay with your account. The price comes off the cash you banked this round, so each one is a bet on the future.
+
+## Exploring (Phase 30.5)
+
+The full map (M) starts covered in fog except for the district you spawned in. Walk into a district to uncover it and learn its name and landmark. Signed-in students keep what they have uncovered.

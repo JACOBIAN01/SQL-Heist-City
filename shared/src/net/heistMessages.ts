@@ -133,6 +133,12 @@ export const upgradeBuyMessageSchema = z.object({
 });
 export type UpgradeBuyMessage = z.infer<typeof upgradeBuyMessageSchema>;
 
+/** The districts this student has explored (Phase 30.5); the map keeps the rest under fog. */
+export interface DiscoveryMessage {
+  readonly t: 'discovery';
+  readonly districts: readonly string[];
+}
+
 /** What a street shop sells (Phase 29.6). */
 export const SHOP_ITEMS = ['armour', 'ammo'] as const;
 export type ShopItem = (typeof SHOP_ITEMS)[number];
@@ -618,6 +624,7 @@ export type HeistServerMessage =
   | ShopMessage
   | CachesMessage
   | CollectionMessage
+  | DiscoveryMessage
   | DuelMessage
   | RadarMessage
   | LeagueMessage

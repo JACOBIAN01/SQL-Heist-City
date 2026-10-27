@@ -71,12 +71,12 @@ Which unlocked cosmetics a student wears (outfit, mask, car paint), so other pla
 | `updated_at` | When they last changed it | technical | with the account |
 
 ### `player_collectibles`
-Which data chips (hidden SQL trivia cards) a student has found in the city (Phase 30.3).
+Which data chips (hidden SQL trivia cards) a student has found in the city (Phase 30.3), and which districts of the city they have explored (Phase 30.5).
 
 | Column | What it holds | Kind | Kept |
 |---|---|---|---|
 | `player_id` | The student | pseudonymous | with the account |
-| `chip` | Which chip: the city seed and its number (no free text) | record | with the account |
+| `chip` | Which chip (the city seed and its number) or which district (`district:` and the city seed and its name); no free text | record | with the account |
 | `found_at` | When they found it | technical | with the account |
 
 ### `player_upgrades`

@@ -35,6 +35,7 @@ import { InteractionService } from './InteractionService';
 import { RoundController } from './RoundController';
 import { CacheSystem } from './CacheSystem';
 import { CollectibleSystem } from './CollectibleSystem';
+import { DiscoverySystem } from './DiscoverySystem';
 import { ShopService } from './ShopService';
 import { UpgradeSystem } from './UpgradeSystem';
 import { SafehouseHandler } from './SafehouseHandler';
@@ -121,6 +122,7 @@ export class HeistController implements ArmsControl {
       () => !this.taskOptions && !this.duels.enabled,
       (p) => this.upgrades.intelRange(p),
     );
+    this.discovery = new DiscoverySystem(match, () => !this.taskOptions && !this.duels.enabled);
     // No police in the tutorial (its questions are fixed) or in a duel room.
     this.police = new PoliceSystem(
       match,
@@ -305,6 +307,7 @@ export class HeistController implements ArmsControl {
     this.police.onTick();
     this.caches.onTick();
     this.collectibles.onTick();
+    this.discovery.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -523,6 +526,7 @@ export class HeistController implements ArmsControl {
     this.caches.forget(player);
     this.upgrades.forget(player);
     this.collectibles.forget(player);
+    this.discovery.forget(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
     this.onDeath(player); // cash does not vanish with a disconnect
@@ -624,6 +628,7 @@ export class HeistController implements ArmsControl {
 
   readonly caches: CacheSystem;
   readonly collectibles: CollectibleSystem;
+  readonly discovery: DiscoverySystem;
   readonly shop: ShopService;
   readonly upgrades: UpgradeSystem;
   private readonly streaks = new StreakKeeper();

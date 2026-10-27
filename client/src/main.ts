@@ -635,6 +635,8 @@ client.subscribe({
       hud.toast('Round review ready — press V');
     } else if (message.t === 'duel') {
       duelView.update(message);
+    } else if (message.t === 'discovery') {
+      fullMap.explored = new Set(message.districts);
     } else if (message.t === 'caches') {
       cacheBeacons.apply(message.caches);
       if (message.found)

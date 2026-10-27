@@ -54,6 +54,8 @@ export class FullMapView {
   private plan: HTMLCanvasElement | undefined;
   private readonly planPxPerM: number;
   private shown = false;
+  /** Districts explored so far (Phase 30.5); undefined shows the whole map. */
+  explored: ReadonlySet<string> | undefined;
 
   constructor(
     host: HTMLElement,
@@ -113,7 +115,7 @@ export class FullMapView {
     ctx.fillStyle = MAP_COLOURS.street;
     ctx.fillRect(fit.ox, fit.oy, fit.half * 2 * fit.scale, fit.half * 2 * fit.scale);
     ctx.drawImage(this.plan, fit.ox, fit.oy, fit.half * 2 * fit.scale, fit.half * 2 * fit.scale);
-    if (this.map.city) drawDistricts(ctx, fit, this.map.city);
+    if (this.map.city) drawDistricts(ctx, fit, this.map.city, this.explored);
     for (const m of markers) {
       const at = toScreen(fit, m.x, m.z);
       drawMarker(ctx, m, at, now);
@@ -167,14 +169,22 @@ const css = (tint: number, alpha: number): string =>
  * name across its middle and a star with the name of its landmark, so places can be told apart and
  * named at a glance.
  */
-export function drawDistricts(ctx: CanvasRenderingContext2D, fit: MapFit, city: CityLayout): void {
+export function drawDistricts(
+  ctx: CanvasRenderingContext2D,
+  fit: MapFit,
+  city: CityLayout,
+  /** The districts explored so far; everything else stays under fog. Omit to show all. */
+  explored?: ReadonlySet<string>,
+): void {
   const tint = new Map(city.districts.map((d) => [d.id, d.tint]));
+  const known = (id: string) => explored === undefined || explored.has(id);
   for (const b of city.blocks) {
     const colour = tint.get(b.district);
     if (colour === undefined) continue;
     const a = toScreen(fit, b.outer.minX, b.outer.minZ);
     const z = toScreen(fit, b.outer.maxX, b.outer.maxZ);
-    ctx.fillStyle = css(colour, 0.28);
+    // Unexplored: a dark cloud over the streets, not the district's colour.
+    ctx.fillStyle = known(b.district) ? css(colour, 0.28) : 'rgba(12,16,22,0.88)';
     ctx.fillRect(a.x, a.y, z.x - a.x, z.y - a.y);
   }
   ctx.textAlign = 'center';
@@ -184,6 +194,11 @@ export function drawDistricts(ctx: CanvasRenderingContext2D, fit: MapFit, city: 
   for (const d of city.districts) {
     const at = toScreen(fit, d.x, d.z);
     ctx.font = '700 15px system-ui, sans-serif';
+    if (!known(d.id)) {
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillText('?', at.x, at.y);
+      continue;
+    }
     ctx.strokeText(d.name.toUpperCase(), at.x, at.y);
     ctx.fillStyle = css(d.tint, 1);
     ctx.fillText(d.name.toUpperCase(), at.x, at.y);

@@ -84,3 +84,24 @@ export function districtOf(
   }
   return best;
 }
+
+/** The district at a point: the one whose block centre is nearest (streets belong to the block beside them). */
+export function districtAtPoint(
+  blocks: readonly {
+    readonly inner: { minX: number; maxX: number; minZ: number; maxZ: number };
+    readonly district: string;
+  }[],
+  x: number,
+  z: number,
+): string | undefined {
+  let best: string | undefined;
+  let bestD = Infinity;
+  for (const b of blocks) {
+    const d = Math.hypot(
+      (b.inner.minX + b.inner.maxX) / 2 - x,
+      (b.inner.minZ + b.inner.maxZ) / 2 - z,
+    );
+    if (d < bestD) [best, bestD] = [b.district, d];
+  }
+  return best;
+}

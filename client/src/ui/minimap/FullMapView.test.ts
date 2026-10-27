@@ -100,4 +100,27 @@ describe('drawDistricts', () => {
       if (d.landmark) expect(texts).toContain(`★ ${d.landmark.name}`);
     }
   });
+
+  it('keeps unexplored districts under fog, with only a question mark for a name', () => {
+    const city = mapById('city')?.city;
+    if (!city) throw new Error('no city');
+    const texts: string[] = [];
+    const fills: string[] = [];
+    const ctx = {
+      fillRect: () => fills.push(String(ctx.fillStyle)),
+      fillText: (t: string) => texts.push(t),
+      strokeText: () => {},
+      fillStyle: '',
+    } as unknown as CanvasRenderingContext2D;
+    const first = city.districts[0];
+    if (!first) throw new Error('no district');
+    drawDistricts(ctx, fitMap(city.halfSize, 800, 800), city, new Set([first.id]));
+    expect(texts).toContain(first.name.toUpperCase());
+    for (const d of city.districts.slice(1)) {
+      expect(texts).not.toContain(d.name.toUpperCase());
+      if (d.landmark) expect(texts).not.toContain(`★ ${d.landmark.name}`);
+    }
+    expect(texts.filter((t) => t === '?')).toHaveLength(city.districts.length - 1);
+    expect(fills.filter((f) => f.includes('0.88')).length).toBeGreaterThan(0);
+  });
 });

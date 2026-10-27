@@ -127,6 +127,7 @@ export class ProgressBinding {
   bind(match: Match): void {
     this.match = match;
     match.heist.collectibles.bindStore(this.deps.collectionStore);
+    match.heist.discovery.bindStore(this.deps.collectionStore);
     match.heist.upgrades.bindStore(this.deps.upgradeStore);
     match.heist.events.subscribe((event) => {
       if (event.type === 'round_end') {
