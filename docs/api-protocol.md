@@ -109,6 +109,7 @@ Server → client: the challenge replies and
 - `upgrade_buy { upgrade }` (client → server, `banking`, `armour`, `stash`, `intel`): buy the next level at a shop counter with banked cash. The shop window (`shop`) lists `upgrades: [{id, level, max, price?}]` and answers with `upgradeResult { upgrade, ok, reason? }` (`no_cash`, `max`, `too_far`, `dead`, `closed`, `not_ready`).
 - `discovery { districts: [id] }` (server → client): the districts this student has explored; the full map keeps the others under fog. Sent on joining and when a new one is explored.
 - `job { kind, status, targets, index, secondsLeft, reward }` (server → client): the side job in progress (`active`, `claim` when the run is over and the question must be answered, `done`, `failed`). `interact_result` for a board is `{action:'job_started', kind}`, or `denied` with `busy` or `need_car`.
+- `approach { mode: 'loud'|'stealth' }` (client → server): choose how to break in; answered by `approach_state { mode }`. A lock cracked quietly sets `quiet: true` on the vault's entry in `vaults`.
 - `caches { caches: [{id,x,z}], found?: {amount} }` (server → client): the hidden caches this player can see now (near, or revealed by intel); sent when that set changes, and with `found` when they take one.
 
 - `collection { near: [{id,x,z}], found: [{id,title,fact}], total, latest? }` (server → client): the data chips in sight, every chip this student has found with its trivia, and the id of the one just picked up.

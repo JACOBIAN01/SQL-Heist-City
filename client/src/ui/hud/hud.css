@@ -595,3 +595,23 @@
 .job-hud[hidden] {
   display: none;
 }
+
+/* Stealth badge (Phase 30.7). */
+.approach-badge {
+  position: fixed;
+  left: 16px;
+  bottom: 110px;
+  z-index: 20;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(20, 60, 40, 0.75);
+  color: #7dffb0;
+  font:
+    800 0.75rem system-ui,
+    sans-serif;
+  letter-spacing: 0.1em;
+  pointer-events: none;
+}
+.approach-badge[hidden] {
+  display: none;
+}

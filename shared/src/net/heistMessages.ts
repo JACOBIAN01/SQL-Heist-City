@@ -153,6 +153,19 @@ export interface JobMessage {
   readonly reward: number;
 }
 
+/** Choose how to break in: quiet and slow, or loud (Phase 30.7). */
+export const approachMessageSchema = z.object({
+  t: z.literal('approach'),
+  mode: z.enum(['loud', 'stealth']),
+});
+export type ApproachMessage = z.infer<typeof approachMessageSchema>;
+
+/** Which approach the server has set for you (it only sends this to confirm). */
+export interface ApproachState {
+  readonly t: 'approach_state';
+  readonly mode: 'loud' | 'stealth';
+}
+
 /** What a street shop sells (Phase 29.6). */
 export const SHOP_ITEMS = ['armour', 'ammo'] as const;
 export type ShopItem = (typeof SHOP_ITEMS)[number];
@@ -263,6 +276,7 @@ export const jsonClientMessageSchema = z.union([
   rolePickMessageSchema,
   shopBuyMessageSchema,
   upgradeBuyMessageSchema,
+  approachMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -302,6 +316,8 @@ export interface VaultView {
   readonly opened: number;
   /** The teacher closed this bank: its vault cannot be worked this match. */
   readonly closed?: boolean;
+  /** The last lock fell quietly (stealth): no alarm on the map. */
+  readonly quiet?: boolean;
 }
 
 /** Every vault's progress: sent on join and whenever a lock opens. */
@@ -643,6 +659,7 @@ export type HeistServerMessage =
   | CollectionMessage
   | DiscoveryMessage
   | JobMessage
+  | ApproachState
   | DuelMessage
   | RadarMessage
   | LeagueMessage

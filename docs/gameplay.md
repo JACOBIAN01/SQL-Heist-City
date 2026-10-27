@@ -257,3 +257,7 @@ The full map (M) starts covered in fog except for the district you spawned in. W
 ## Side jobs (Phase 30.6)
 
 Every district has a job board (a purple marker). Press F: some give a **delivery** (run a parcel to another district) and some a **street race** (a lap through junction checkpoints, in a car). Reach the end in time, then answer a SQL question to be paid. Dying or running out of time fails the job.
+
+## Stealth or loud (Phase 30.7)
+
+Press X to move quietly: you are 25% slower, but a vault lock cracked while no guard or officer can see you sets off no alarm and brings no police. Crack every lock of a vault that way and its cash is 30% bigger. Go loud (the default) and the alarm rings and the guards come, but each lock pays you $500 on the spot.

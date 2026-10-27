@@ -76,7 +76,7 @@ export class GuardSystem {
     private readonly rng: Rng,
   ) {
     events.subscribe((event) => {
-      if (event.type !== 'lock_opened') return;
+      if (event.type !== 'lock_opened' || event.quiet) return;
       const until = this.match.tick + this.ticks(this.settings().alertSeconds);
       for (const g of this.guards) if (g.vault.id === event.vault.spec.id) g.alertUntil = until;
     });
@@ -84,6 +84,14 @@ export class GuardSystem {
 
   get count(): number {
     return this.guards.length;
+  }
+
+  /** Whether any guard on duty can see this player right now (for stealth). */
+  canSee(player: Player): boolean {
+    const range = this.settings().sightRange;
+    return this.guards.some(
+      (g) => g.player.alive && nearestVisible(this.match, g.player, [player], range) !== undefined,
+    );
   }
 
   /** The guards, for tests and the debug overlay. */

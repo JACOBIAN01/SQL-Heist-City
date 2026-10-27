@@ -65,7 +65,8 @@ export class PoliceSystem {
     private readonly active: () => boolean,
   ) {
     events.subscribe((event) => {
-      if (event.type === 'lock_opened' && event.player) this.crime(event.player, 'lock');
+      if (event.type === 'lock_opened' && event.player && !event.quiet)
+        this.crime(event.player, 'lock');
       if (event.type === 'kill' && !event.victim.isDummy && event.killer !== event.victim)
         this.crime(event.killer, 'kill');
     });
@@ -74,6 +75,14 @@ export class PoliceSystem {
   /** Stars a player has now. */
   starsOf(player: Player): number {
     return this.heat.get(player)?.stars ?? 0;
+  }
+
+  /** Whether any officer chasing this player can see them (for stealth). */
+  canSee(player: Player): boolean {
+    const range = this.settings().sightRange;
+    return this.officers().some(
+      (o) => o.alive && nearestVisible(this.match, o, [player], range) !== undefined,
+    );
   }
 
   /** Officers on the street right now (for tests and the debug overlay). */

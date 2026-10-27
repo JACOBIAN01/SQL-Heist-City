@@ -417,8 +417,25 @@ export class HeistController implements ArmsControl {
   /** The one place cash changes: keeps the speed penalty and the player's purse display in step. */
   setCash(player: Player, cash: number): void {
     player.cash = Math.max(0, Math.floor(cash));
-    player.speedScale = carrySpeedScale(player.cash, this.settings);
+    this.refreshSpeed(player);
     this.sendPurse(player);
+  }
+
+  /** Top speed from the cash carried, slowed while moving quietly. */
+  private refreshSpeed(player: Player): void {
+    const quiet = this.stealth.has(player) ? this.settings.approach.stealthSpeed : 1;
+    player.speedScale = carrySpeedScale(player.cash, this.settings) * quiet;
+  }
+
+  /** The player chose to move quietly or loudly. */
+  setApproach(player: Player, mode: 'loud' | 'stealth'): void {
+    if (mode === 'stealth' && this.settings.approach.enabled) this.stealth.add(player);
+    else this.stealth.delete(player);
+    this.refreshSpeed(player);
+    this.match.sendJson(player, {
+      t: 'approach_state',
+      mode: this.stealth.has(player) ? 'stealth' : 'loud',
+    });
   }
 
   private sendPurse(player: Player): void {
@@ -437,9 +454,25 @@ export class HeistController implements ArmsControl {
   openLock(vaultId: string, lock: number, by?: Player): boolean {
     const vault = this.vaults.get(vaultId);
     if (!vault || vault.openLock(lock) !== 'opened') return false;
+    // Quiet only if the cracker chose stealth and no guard or officer can see them.
+    const quiet =
+      by !== undefined &&
+      this.settings.approach.enabled &&
+      this.stealth.has(by) &&
+      !this.guards.canSee(by) &&
+      !this.police.canSee(by);
+    vault.noteLock(quiet);
+    if (by && !quiet && this.settings.approach.enabled)
+      this.setCash(by, by.cash + this.settings.approach.loudBonus);
     this.refreshDoors();
     this.match.broadcastJson({ t: 'vaults', vaults: this.vaults.views() });
-    this.events.publish({ type: 'lock_opened', vault, lock, ...(by ? { player: by } : {}) });
+    this.events.publish({
+      type: 'lock_opened',
+      vault,
+      lock,
+      ...(by ? { player: by } : {}),
+      ...(quiet ? { quiet: true } : {}),
+    });
     if (vault.isOpen) {
       this.spillLoot(vault);
       this.events.publish({ type: 'vault_opened', vault });
@@ -450,7 +483,9 @@ export class HeistController implements ArmsControl {
   /** The last lock fell: the vault's cash lies in bags at its loot spots. */
   private spillLoot(vault: Vault): void {
     const spots = vault.spec.loot;
-    const total = this.settings.vaultLootByTier[String(vault.spec.tier)] ?? 0;
+    const base = this.settings.vaultLootByTier[String(vault.spec.tier)] ?? 0;
+    // A ghost job (every lock quiet) pays more.
+    const total = vault.ghost ? Math.round(base * (1 + this.settings.approach.ghostBonus)) : base;
     const bags = LootManager.split(total, spots.length).flatMap((amount, i) => {
       const spot = spots[i];
       return spot && amount > 0 ? [this.loot.add(spot.x, spot.y, spot.z, amount)] : [];
@@ -503,6 +538,10 @@ export class HeistController implements ArmsControl {
       this.match.sendJson(player, this.match.vehicleRequest(player, message));
       return;
     }
+    if (message.t === 'approach') {
+      this.setApproach(player, message.mode);
+      return;
+    }
     if (message.t === 'upgrade_buy') {
       this.upgrades.buy(player, message.upgrade);
       return;
@@ -542,6 +581,7 @@ export class HeistController implements ArmsControl {
     this.collectibles.forget(player);
     this.discovery.forget(player);
     this.jobs.clear(player);
+    this.stealth.delete(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
     this.onDeath(player); // cash does not vanish with a disconnect
@@ -560,6 +600,7 @@ export class HeistController implements ArmsControl {
       message.t === 'squad_join' ||
       message.t === 'shop_buy' ||
       message.t === 'upgrade_buy' ||
+      message.t === 'approach' ||
       message.t === 'role_pick'
     )
       return;
@@ -645,6 +686,8 @@ export class HeistController implements ArmsControl {
   readonly collectibles: CollectibleSystem;
   readonly discovery: DiscoverySystem;
   readonly jobs: JobSystem;
+  /** Who has chosen to break in quietly (Phase 30.7). */
+  private readonly stealth = new Set<Player>();
   readonly shop: ShopService;
   readonly upgrades: UpgradeSystem;
   private readonly streaks = new StreakKeeper();

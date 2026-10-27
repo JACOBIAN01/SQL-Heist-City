@@ -47,7 +47,7 @@
 | 27 | Squads and roles | 🟨 built; role balance waits for a playtest |
 | 28 | Game modes | 🟨 built |
 | 29 | Living city | ✅ done, awaiting approval |
-| 30 | Exploration and freedom | 🟦 30.1–30.6 done |
+| 30 | Exploration and freedom | 🟦 30.1–30.7 done |
 | 31 | Missions and heist structure | ⬜ |
 | 32 | Story and characters | ⬜ |
 | 33 | SQL in the world: queries as superpowers | ⬜ |
@@ -549,7 +549,7 @@ Post-launch. GTA audit "Exploration" (3) and "Freedom" (5) to 8–9.
 | 30.4 | Safehouse properties and upgrades bought with banked cash | upgrades persist and matter | ✅ Four safehouse upgrades (`heist.upgrades`; prices and effect per level are settings), bought at the shop counter with *banked* cash so each costs part of the round's score: Fast banking (banking time −15% a level), Armour locker (spawn with +20 armour a level), Hidden stash (keep 15% of carried cash a level when killed), Street intel (hidden caches and chips show from +12 m a level). Levels are kept per account (`player_upgrades`, migration 20, `UpgradeStore` with Pg and in-memory versions under one contract test, in the privacy data map); a guest has them for the match. Each effect is read by the system it changes. Tested |
 | 30.5 | Map discovery (fog over unexplored districts) on the full-screen map | discovery persists per player | ✅ A district is explored the first time a student stands in it (the server checks every half second against the nearest block). The full map (M) keeps unexplored districts under a dark fog with only a `?` for a name and hides their landmark; banks, safehouses and other markers stay visible. A signed-in student's explored districts are kept with their account (same `player_collectibles` table, `district:` keys, listed in the privacy map); a guest explores afresh each match. Tested |
 | 30.6 | Side activities: street races, deliveries, each with an SQL twist | two side activities playable | ✅ A job board stands in the open at the middle of every district (anchor `job_board`; `heist.jobs.boards` says which job each offers). **Delivery:** F takes a parcel to another district's board (≥120 m away) in 150 s. **Street race:** F in a car starts a lap through 4 street junctions in 100 s (checkpoints count only while driving; the nearest is always next). Both end with an SQL twist: arriving turns up a question (`job:delivery` tier 1–3, `job:race` tier 2–3, ordinary reward keys so teachers can retune the tiers) and only a correct answer pays ($3,000 / $4,500, settings); wrong answers can be retried until the clock ends. Death, running out of time or a new round fails the job. HUD timer, world beacon and map objective for the target. Tested |
-| 30.7 | Approach choice in heists: stealth versus loud, each with its own payoff | both approaches can win | ⬜ |
+| 30.7 | Approach choice in heists: stealth versus loud, each with its own payoff | both approaches can win | ✅ A toggle (X, badge on screen) picks how you break in (`heist.approach`). **Stealth:** you move 25% slower, and a lock cracked while no guard or officer can see you is *quiet*: no guard alarm, no police star, no flashing bank on anyone's map. A vault whose every lock was quiet is a **ghost job** and its loot is 30% bigger. **Loud** (default): the alarm rings and guards and police come, but each lock pays $500 to its cracker at once. Seen by a guard while going quiet, it turns loud. Both can win; the ghost route trades speed and risk for a bigger take. Tested |
 | 30.8 | Review: re-score Exploration and Freedom | both ≥ 8 | ⬜ |
 
 ---

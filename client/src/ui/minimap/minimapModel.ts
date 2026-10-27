@@ -74,7 +74,8 @@ export class VaultAlerts {
     this.seen = new Map(vaults.map((v) => [v.id, v.opened]));
     if (!before) return;
     for (const v of vaults)
-      if (v.opened > (before.get(v.id) ?? 0)) this.crackedAt.set(v.id, nowSeconds);
+      // A lock cracked quietly (stealth) rings no alarm.
+      if (v.opened > (before.get(v.id) ?? 0) && !v.quiet) this.crackedAt.set(v.id, nowSeconds);
   }
 
   isAlert(vaultId: string, nowSeconds: number): boolean {

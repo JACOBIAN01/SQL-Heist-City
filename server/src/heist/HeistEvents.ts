@@ -35,6 +35,8 @@ export type HeistEvent =
       readonly lock: number;
       /** Who solved it (absent when a tool or test opened it). */
       readonly player?: Player;
+      /** Cracked quietly (stealth, and nobody saw): no alarm, no police. */
+      readonly quiet?: boolean;
     }
   | { readonly type: 'vault_opened'; readonly vault: Vault }
   | { readonly type: 'banked'; readonly player: Player; readonly amount: number }

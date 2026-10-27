@@ -321,6 +321,20 @@ export const heistSettingsSchema = z.object({
    */
   collectibles: collectiblesSchema.default(() => collectiblesSchema.parse({})),
   /**
+   * How to break in (Phase 30.7). **Stealth** (a toggle): you move slower, and a lock cracked while
+   * no guard or officer can see you is *quiet*: no alarm, no police, nothing on the map. A vault
+   * whose every lock was quiet is a *ghost* job and pays `ghostBonus` more. **Loud** (the default):
+   * the alarm rings and the guards and police come, but each lock pays `loudBonus` at once.
+   */
+  approach: z
+    .object({
+      enabled: z.boolean().default(true),
+      stealthSpeed: z.number().min(0.2).max(1).default(0.75),
+      ghostBonus: z.number().min(0).max(2).default(0.3),
+      loudBonus: z.number().int().min(0).default(500),
+    })
+    .default({ enabled: true, stealthSpeed: 0.75, ghostBonus: 0.3, loudBonus: 500 }),
+  /**
    * Side jobs (Phase 30.6): each district's job board offers one kind of job, for cash. A delivery
    * is a run to another district's board; a street race is a lap through checkpoints in a car.
    * Both end at a SQL question: the delivery receipt or the race stewards' check. Wrong answers can

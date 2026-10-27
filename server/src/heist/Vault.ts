@@ -11,6 +11,9 @@ export class Vault {
   private opened = 0;
   /** Closed by the teacher: not part of this match. */
   closed = false;
+  /** Locks cracked quietly (stealth), and whether the last one was. */
+  private quiet = 0;
+  private lastQuiet = false;
 
   constructor(
     readonly spec: MapVault,
@@ -47,9 +50,22 @@ export class Vault {
     return 'opened';
   }
 
+  /** Records how the lock just opened was cracked. */
+  noteLock(quiet: boolean): void {
+    if (quiet) this.quiet++;
+    this.lastQuiet = quiet;
+  }
+
+  /** Every lock so far was cracked quietly: a ghost job, if the vault is open. */
+  get ghost(): boolean {
+    return this.opened > 0 && this.quiet === this.opened;
+  }
+
   /** A new round: every lock closed again. */
   reset(): void {
     this.opened = 0;
+    this.quiet = 0;
+    this.lastQuiet = false;
   }
 
   view(): VaultView {
@@ -59,6 +75,7 @@ export class Vault {
       locks: this.lockCount,
       opened: this.opened,
       ...(this.closed ? { closed: true } : {}),
+      ...(this.lastQuiet ? { quiet: true } : {}),
     };
   }
 }

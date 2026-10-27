@@ -43,6 +43,13 @@ describe('VaultAlerts', () => {
     expect(alerts.isAlert('v', 10)).toBe(true);
     expect(alerts.isAlert('v', 24)).toBe(false);
   });
+
+  it('stays quiet for a lock cracked quietly (stealth)', () => {
+    const alerts = new VaultAlerts(18);
+    alerts.observe([{ id: 'v', tier: 1, locks: 3, opened: 1 }], 0);
+    alerts.observe([{ id: 'v', tier: 1, locks: 3, opened: 2, quiet: true }], 5);
+    expect(alerts.isAlert('v', 6)).toBe(false);
+  });
 });
 
 describe('objectiveMarker', () => {

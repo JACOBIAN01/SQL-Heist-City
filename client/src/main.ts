@@ -32,6 +32,7 @@ import { ShareCardView } from './ui/share/ShareCardView';
 import { SquadView } from './ui/hud/SquadView';
 import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
+import { ApproachBadge } from './ui/hud/ApproachBadge';
 import { JobView } from './ui/hud/JobView';
 import { ShopView } from './ui/hud/ShopView';
 import { DuelView } from './ui/hud/DuelView';
@@ -393,6 +394,9 @@ const policeStars = new PoliceStars(i18n);
 document.body.append(policeStars.root);
 const collectionView = new CollectionView(i18n);
 document.body.append(collectionView.panel);
+const approachBadge = new ApproachBadge(i18n);
+document.body.append(approachBadge.root);
+let stealthOn = false;
 const jobView = new JobView(i18n);
 const jobBeacon = new TutorialBeacon();
 scene.add(jobBeacon.object);
@@ -640,6 +644,9 @@ client.subscribe({
       hud.toast('Round review ready — press V');
     } else if (message.t === 'duel') {
       duelView.update(message);
+    } else if (message.t === 'approach_state') {
+      stealthOn = message.mode === 'stealth';
+      approachBadge.update(message);
     } else if (message.t === 'job') {
       jobView.update(message, performance.now());
       const next = message.status === 'active' ? message.targets[message.index] : undefined;
@@ -804,6 +811,9 @@ const hotkeys = new Hotkeys(window, bindings)
     pointer.release();
     squadView.hidden = !squadView.hidden;
   })
+  .onAction('approach', () =>
+    client.sendJson({ t: 'approach', mode: stealthOn ? 'loud' : 'stealth' }),
+  )
   .onAction('collection', () => {
     pointer.release();
     collectionView.hidden = !collectionView.hidden;

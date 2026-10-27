@@ -137,6 +137,8 @@ export const en = {
   'action.squad': 'Squad',
   'action.review': 'Review the round',
   'action.mute': 'Mute sound',
+  'action.approach': 'Stealth',
+  'approach.stealth': 'STEALTH',
   'action.collection': 'Chips',
   'action.radio': 'Radio',
   'radio.off': 'Radio off',
