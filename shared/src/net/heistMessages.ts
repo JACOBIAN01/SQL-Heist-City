@@ -193,6 +193,23 @@ export interface ActsMessage {
   readonly take: number;
 }
 
+/**
+ * What a heist came to (Phase 31.4), shown after every one: the take, what it was made of, what was
+ * banked and the mastery XP it earned. `failed` is a getaway that did not make it.
+ */
+export interface PayoutMessage {
+  readonly t: 'payout';
+  readonly outcome: 'complete' | 'failed';
+  readonly bank: string;
+  /** Banked cash (complete) or the take that was lost (failed). */
+  readonly total: number;
+  readonly lines: readonly {
+    readonly id: 'vault' | 'ghost' | 'intel' | 'locks' | 'other' | 'lost';
+    readonly amount: number;
+  }[];
+  readonly mastery: number;
+}
+
 /** Where the police have set roadblocks for you, when your intel has told you (Phase 31.3). */
 export interface RoadblocksMessage {
   readonly t: 'roadblocks';
@@ -601,7 +618,10 @@ export interface ProgressMessage {
   readonly t: 'progress';
   readonly progress: ProgressView;
   /** XP just earned, and for what, so the HUD can show "+45 XP". */
-  readonly gained?: { readonly amount: number; readonly why: 'solve' | 'round' | 'contract' };
+  readonly gained?: {
+    readonly amount: number;
+    readonly why: 'solve' | 'round' | 'contract' | 'heist';
+  };
   /** What the share card may show (Phase 26.8); sent with the first progress message. */
   readonly share?: {
     readonly enabled: boolean;
@@ -704,6 +724,7 @@ export type HeistServerMessage =
   | ActsMessage
   | IntelGuardsMessage
   | RoadblocksMessage
+  | PayoutMessage
   | ApproachState
   | DuelMessage
   | RadarMessage

@@ -275,3 +275,7 @@ Each district's board offers a choice of contracts: a delivery, a street race, r
 ## The getaway and intel (Phase 31.3)
 
 Once you carry the vault's cash, the police guess you will run for the nearest safehouse, and set their roadblock on that way. The intel you gathered outside the bank pays off here: with some, you are shown the roadblock on your minimap; with full intel it is held by one officer, not two.
+
+## The payout (Phase 31.4)
+
+When you bank a vault's cash, a payout screen shows what it was made of (vault cash, ghost and intel bonuses, loud-lock bonuses), what you banked, and the mastery XP you earned (more for a higher bank and for a ghost job). If you die on the getaway, it shows the take you lost.

@@ -371,6 +371,17 @@ export const heistSettingsSchema = z.object({
     })
     .default({ enabled: true, intelMax: 3, alertScale: 0.5, lootBonus: 0.1, mapRange: 90 }),
   /**
+   * The payout screen (Phase 31.4) and what a finished heist teaches: mastery XP is
+   * `masteryXpPerTier` for each tier of the bank, plus `ghostXp` for a ghost job.
+   */
+  payout: z
+    .object({
+      enabled: z.boolean().default(true),
+      masteryXpPerTier: z.number().int().min(0).default(40),
+      ghostXp: z.number().int().min(0).default(25),
+    })
+    .default({ enabled: true, masteryXpPerTier: 40, ghostXp: 25 }),
+  /**
    * How to break in (Phase 30.7). **Stealth** (a toggle): you move slower, and a lock cracked while
    * no guard or officer can see you is *quiet*: no alarm, no police, nothing on the map. A vault
    * whose every lock was quiet is a *ghost* job and pays `ghostBonus` more. **Loud** (the default):

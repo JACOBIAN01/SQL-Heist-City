@@ -260,3 +260,21 @@
 .board-contract p {
   margin: 0 0 0.3rem;
 }
+
+/* Payout screen (Phase 31.4). */
+.payout-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+.payout-table td {
+  padding: 0.25rem 0.4rem;
+}
+.payout-table td:last-child {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.payout-total td {
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  font-weight: 700;
+}

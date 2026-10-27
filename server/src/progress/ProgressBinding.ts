@@ -130,6 +130,9 @@ export class ProgressBinding {
     match.heist.discovery.bindStore(this.deps.collectionStore);
     match.heist.upgrades.bindStore(this.deps.upgradeStore);
     match.heist.events.subscribe((event) => {
+      // A finished heist teaches something too (Phase 31.4): mastery XP, over and above the question XP.
+      if (event.type === 'heist_complete' && event.player.accountId !== undefined)
+        void this.keeper.bonus(event.player.accountId, event.mastery, 'heist');
       if (event.type === 'round_end') {
         this.keeper.roundEnded(event.result);
         // The round's cash is saved a moment after it ends; the table is sent a little later.

@@ -33,6 +33,7 @@ import { SquadView } from './ui/hud/SquadView';
 import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
 import { ActsView } from './ui/hud/ActsView';
+import { PayoutView } from './ui/hud/PayoutView';
 import { BoardView } from './ui/hud/BoardView';
 import { ApproachBadge } from './ui/hud/ApproachBadge';
 import { JobView } from './ui/hud/JobView';
@@ -400,6 +401,8 @@ const actsView = new ActsView(i18n);
 document.body.append(actsView.root);
 let intelGuards: readonly { x: number; z: number }[] = [];
 let roadblocks: readonly { x: number; z: number }[] = [];
+const payoutView = new PayoutView(i18n);
+document.body.append(payoutView.panel);
 const boardView = new BoardView(i18n, (m) => client.sendJson(m));
 document.body.append(boardView.panel);
 const approachBadge = new ApproachBadge(i18n);
@@ -654,6 +657,9 @@ client.subscribe({
       duelView.update(message);
     } else if (message.t === 'acts') {
       actsView.update(message, performance.now());
+    } else if (message.t === 'payout') {
+      pointer.release();
+      payoutView.show(message);
     } else if (message.t === 'roadblocks') {
       roadblocks = message.posts;
     } else if (message.t === 'intel_guards') {
@@ -863,6 +869,7 @@ const hotkeys = new Hotkeys(window, bindings)
     squadView.hidden = true;
     shopView.hidden = true;
     boardView.hidden = true;
+    payoutView.hidden = true;
     collectionView.hidden = true;
   })
   .onAction('radio', () => {

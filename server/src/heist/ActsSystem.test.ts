@@ -9,6 +9,7 @@ import {
   type GameMap,
   type IntelGuardsMessage,
   type MapAnchor,
+  type PayoutMessage,
 } from '@heist/shared';
 import { Match } from '../game/Match';
 import { FakeConnection } from '../game/testing';
@@ -49,12 +50,13 @@ function setup() {
   const last = () => connection.jsonOf('acts').at(-1) as unknown as ActsMessage | undefined;
   const intelGuards = () =>
     connection.jsonOf('intel_guards').at(-1) as unknown as IntelGuardsMessage | undefined;
+  const payout = () => connection.jsonOf('payout').at(-1) as unknown as PayoutMessage | undefined;
   const solve = () => {
     const rule = match.heist.tasks.find(`intel:${bank}`);
     expect(rule?.check(player, `intel:${bank}`, bank)).toBeUndefined();
     rule?.grant(player, `intel:${bank}`, bank);
   };
-  return { match, player, heist: match.heist, last, intelGuards, solve };
+  return { match, player, heist: match.heist, last, intelGuards, solve, payout };
 }
 
 describe('a heist in three acts (31.1)', () => {
@@ -166,5 +168,66 @@ describe('a heist in three acts (31.1)', () => {
     if (!r.ok) throw new Error('join failed');
     match.teleport(r.player, terminal.x, 0, terminal.z);
     expect(match.heist.interactions.use(r.player, terminal.id)).toMatchObject({ action: 'denied' });
+  });
+
+  it('show a payout after a finished heist: the take, what it was made of and the mastery earned', () => {
+    const { match, player, heist, solve, payout } = setup();
+    for (let i = 0; i < A.intelMax; i++) solve();
+    const locks = heist.vaults.get(vault.id)?.lockCount ?? 0;
+    for (let k = 1; k <= locks; k++) heist.openLock(vault.id, k, player);
+    const spot = vault.loot[0];
+    if (!spot) throw new Error('no loot spot');
+    for (const s of vault.loot) {
+      match.teleport(player, s.x, s.y, s.z);
+      match.step();
+    }
+    const carried = heist.acts.runOf(player)?.take ?? 0;
+    expect(carried).toBeGreaterThan(0);
+    const mastered: number[] = [];
+    heist.events.subscribe((e) => {
+      if (e.type === 'heist_complete') mastered.push(e.mastery);
+    });
+    heist.events.publish({ type: 'banked', player, amount: carried });
+    const p = payout();
+    expect(p?.outcome).toBe('complete');
+    expect(p?.total).toBe(carried);
+    expect(p?.lines.find((l) => l.id === 'intel')?.amount).toBeGreaterThan(0); // full intel pays more
+    expect(p?.lines.reduce((n, l) => n + l.amount, 0)).toBe(carried);
+    const tier = vault.tier;
+    expect(p?.mastery).toBe(tier * DEFAULT_HEIST_SETTINGS.payout.masteryXpPerTier);
+    expect(mastered).toEqual([p?.mastery]);
+  });
+
+  it('show a ghost job’s bonus on the payout, with its extra mastery', () => {
+    const { match, player, heist, payout } = setup();
+    heist.setApproach(player, 'stealth');
+    const locks = heist.vaults.get(vault.id)?.lockCount ?? 0;
+    for (let k = 1; k <= locks; k++) heist.openLock(vault.id, k, player);
+    for (const s of vault.loot) {
+      match.teleport(player, s.x, s.y, s.z);
+      match.step();
+    }
+    const carried = heist.acts.runOf(player)?.take ?? 0;
+    heist.events.publish({ type: 'banked', player, amount: carried });
+    expect(payout()?.lines.find((l) => l.id === 'ghost')?.amount).toBeGreaterThan(0);
+    expect(payout()?.mastery).toBe(
+      vault.tier * DEFAULT_HEIST_SETTINGS.payout.masteryXpPerTier +
+        DEFAULT_HEIST_SETTINGS.payout.ghostXp,
+    );
+  });
+
+  it('show a failed payout when the getaway ends in death, with the take lost', () => {
+    const { match, player, heist, payout } = setup();
+    heist.openLock(vault.id, 1, player);
+    const spot = vault.loot[0];
+    if (!spot) throw new Error('no loot spot');
+    heist.events.publish({ type: 'bag_taken', player, amount: 7_000, x: spot.x, z: spot.z });
+    match.damage(player, 999, player);
+    expect(payout()).toMatchObject({
+      outcome: 'failed',
+      total: 7_000,
+      lines: [{ id: 'lost', amount: 7_000 }],
+      mastery: 0,
+    });
   });
 });

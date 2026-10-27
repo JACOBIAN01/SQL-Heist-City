@@ -146,6 +146,7 @@ export class HeistController implements ArmsControl {
       match,
       () => this.settings.acts,
       this.events,
+      () => this.settings.payout,
       (bank) =>
         this.guards
           .all()
@@ -532,8 +533,9 @@ export class HeistController implements ArmsControl {
       !this.guards.canSee(by) &&
       !this.police.canSee(by);
     vault.noteLock(quiet);
-    if (by && !quiet && this.settings.approach.enabled)
-      this.setCash(by, by.cash + this.settings.approach.loudBonus);
+    const bonus =
+      by && !quiet && this.settings.approach.enabled ? this.settings.approach.loudBonus : 0;
+    if (by && bonus > 0) this.setCash(by, by.cash + bonus);
     this.refreshDoors();
     this.match.broadcastJson({ t: 'vaults', vaults: this.vaults.views() });
     this.events.publish({
@@ -542,16 +544,20 @@ export class HeistController implements ArmsControl {
       lock,
       ...(by ? { player: by } : {}),
       ...(quiet ? { quiet: true } : {}),
+      ...(bonus > 0 ? { bonus } : {}),
     });
     if (vault.isOpen) {
-      this.spillLoot(vault, by);
-      this.events.publish({ type: 'vault_opened', vault });
+      const parts = this.spillLoot(vault, by);
+      this.events.publish({ type: 'vault_opened', vault, ...(by ? { by } : {}), ...parts });
     }
     return true;
   }
 
   /** The last lock fell: the vault's cash lies in bags at its loot spots. */
-  private spillLoot(vault: Vault, by?: Player): void {
+  private spillLoot(
+    vault: Vault,
+    by?: Player,
+  ): { base: number; ghostAmount: number; intelAmount: number } {
     const spots = vault.spec.loot;
     const base = this.settings.vaultLootByTier[String(vault.spec.tier)] ?? 0;
     // A ghost job (every lock quiet) pays more, and so does intel gathered on the bank (act one).
@@ -563,6 +569,11 @@ export class HeistController implements ArmsControl {
       return spot && amount > 0 ? [this.loot.add(spot.x, spot.y, spot.z, amount)] : [];
     });
     if (bags.length > 0) this.match.broadcastJson({ t: 'loot', add: bags, remove: [] });
+    return {
+      base,
+      ghostAmount: Math.round(base * ghost),
+      intelAmount: Math.round(base * intel),
+    };
   }
 
   private refreshDoors(): void {

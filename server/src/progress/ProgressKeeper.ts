@@ -68,7 +68,7 @@ export class ProgressKeeper implements AttemptSink {
 
   /** A student's progress as the client shows it. */
   /** XP that is not for a question or a round (a finished contract), added in order with the rest. */
-  bonus(accountId: number, xp: number, why: 'contract'): Promise<void> {
+  bonus(accountId: number, xp: number, why: 'contract' | 'heist'): Promise<void> {
     return new Promise((resolve) =>
       this.enqueue(accountId, async () => {
         try {
@@ -103,7 +103,7 @@ export class ProgressKeeper implements AttemptSink {
     accountId: number,
     delta: { learningXp?: number; playXp?: number },
     amount: number,
-    why: 'solve' | 'round' | 'contract',
+    why: 'solve' | 'round' | 'contract' | 'heist',
   ): Promise<void> {
     const stored = await this.store.add(accountId, delta);
     // While a season runs, the same XP fills its free track.

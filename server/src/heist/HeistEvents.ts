@@ -37,8 +37,26 @@ export type HeistEvent =
       readonly player?: Player;
       /** Cracked quietly (stealth, and nobody saw): no alarm, no police. */
       readonly quiet?: boolean;
+      /** Cash paid to the cracker at once for a loud lock. */
+      readonly bonus?: number;
     }
-  | { readonly type: 'vault_opened'; readonly vault: Vault }
+  | {
+      readonly type: 'vault_opened';
+      readonly vault: Vault;
+      /** Who cracked the last lock, and what the vault's cash was made of. */
+      readonly by?: Player;
+      readonly base?: number;
+      readonly ghostAmount?: number;
+      readonly intelAmount?: number;
+    }
+  /** A heist ended in the bank: the take was banked (Phase 31.4). */
+  | {
+      readonly type: 'heist_complete';
+      readonly player: Player;
+      readonly bank: string;
+      readonly tier: number;
+      readonly mastery: number;
+    }
   /** A player picked up a cash bag (Phase 31.1). */
   | {
       readonly type: 'bag_taken';

@@ -1,5 +1,6 @@
 import type {
   ActsMessage,
+  PayoutMessage,
   HeistSettings,
   InteractResult,
   MapAnchor,
@@ -18,6 +19,8 @@ interface Run {
   bank: string;
   act: Act;
   take: number;
+  /** What the cash was made of, as far as this player's own work went (the payout screen). */
+  parts?: { locks: number; ghost: number; intel: number };
 }
 
 const INTEL_KEY = /^intel:(bank-[1-5])$/;
@@ -40,15 +43,24 @@ export class ActsSystem implements InteractionHandler, TaskRule {
   constructor(
     private readonly match: MatchApi,
     private readonly settings: () => Settings,
-    events: HeistEvents,
+    private readonly events: HeistEvents,
+    private readonly payout: () => HeistSettings['payout'],
     private readonly guardsAt: (bank: string) => readonly { x: number; z: number }[],
     private readonly active: () => boolean,
   ) {
     events.subscribe((e) => {
       if (!this.settings().enabled || !this.active()) return;
-      if (e.type === 'lock_opened' && e.player)
+      if (e.type === 'lock_opened' && e.player) {
         this.start(e.player, `bank-${e.vault.spec.tier}`, 'heist');
-      else if (e.type === 'bag_taken') this.taken(e.player, e.x, e.z, e.amount);
+        const run = this.runs.get(e.player);
+        if (run) this.part(run).locks += e.bonus ?? 0;
+      } else if (e.type === 'vault_opened' && e.by) {
+        const run = this.runs.get(e.by);
+        if (run) {
+          this.part(run).ghost += e.ghostAmount ?? 0;
+          this.part(run).intel += e.intelAmount ?? 0;
+        }
+      } else if (e.type === 'bag_taken') this.taken(e.player, e.x, e.z, e.amount);
       else if (e.type === 'banked') this.banked(e.player, e.amount);
     });
   }
@@ -74,7 +86,19 @@ export class ActsSystem implements InteractionHandler, TaskRule {
 
   /** The player dies: the run ends, the intel they gathered stays for the round. */
   died(player: Player): void {
-    if (this.runs.delete(player)) this.send(player, undefined, 'none');
+    const run = this.runs.get(player);
+    if (!this.runs.delete(player)) return;
+    this.send(player, undefined, 'none');
+    // A getaway that never made it: the take is lost, and the screen says so.
+    if (run?.act === 'getaway' && run.take > 0 && this.payout().enabled)
+      this.match.sendJson(player, {
+        t: 'payout',
+        outcome: 'failed',
+        bank: run.bank,
+        total: run.take,
+        lines: [{ id: 'lost', amount: run.take }],
+        mastery: 0,
+      } satisfies PayoutMessage);
   }
 
   // --- act one: the terminal ------------------------------------------------------------------
@@ -160,12 +184,21 @@ export class ActsSystem implements InteractionHandler, TaskRule {
     if (!vault) return;
     const bank = `bank-${vault.tier}`;
     const run = this.runs.get(player);
-    const next: Run =
-      run && run.bank === bank && run.act === 'getaway'
-        ? { ...run, take: run.take + amount }
-        : { bank, act: 'getaway', take: amount };
+    // The heist's own record (what the cash was made of) carries on into the getaway.
+    const carried = run && run.bank === bank ? run : undefined;
+    const next: Run = {
+      bank,
+      act: 'getaway',
+      take: (carried?.act === 'getaway' ? carried.take : 0) + amount,
+      ...(carried?.parts ? { parts: carried.parts } : {}),
+    };
     this.runs.set(player, next);
     this.send(player, next);
+  }
+
+  private part(run: Run): { locks: number; ghost: number; intel: number } {
+    run.parts ??= { locks: 0, ghost: 0, intel: 0 };
+    return run.parts;
   }
 
   /** Banking while on the getaway completes the heist. */
@@ -173,7 +206,30 @@ export class ActsSystem implements InteractionHandler, TaskRule {
     const run = this.runs.get(player);
     if (!run || run.act !== 'getaway') return;
     this.runs.delete(player);
-    this.send(player, { ...run, take: Math.min(run.take, amount) }, 'complete');
+    const take = Math.min(run.take, amount);
+    this.send(player, { ...run, take }, 'complete');
+    const p = this.payout();
+    if (!p.enabled) return;
+    const tier = Number(run.bank.replace('bank-', '')) || 1;
+    const parts = run.parts ?? { locks: 0, ghost: 0, intel: 0 };
+    const mastery = tier * p.masteryXpPerTier + (parts.ghost > 0 ? p.ghostXp : 0);
+    const lines: PayoutMessage['lines'][number][] = [
+      { id: 'vault', amount: Math.max(0, take - parts.ghost - parts.intel) },
+      ...(parts.ghost > 0 ? [{ id: 'ghost' as const, amount: parts.ghost }] : []),
+      ...(parts.intel > 0 ? [{ id: 'intel' as const, amount: parts.intel }] : []),
+      ...(parts.locks > 0 ? [{ id: 'locks' as const, amount: parts.locks }] : []),
+    ];
+    const rest = amount - lines.reduce((n, l) => n + l.amount, 0);
+    if (rest > 0) lines.push({ id: 'other', amount: rest });
+    this.match.sendJson(player, {
+      t: 'payout',
+      outcome: 'complete',
+      bank: run.bank,
+      total: amount,
+      lines,
+      mastery,
+    } satisfies PayoutMessage);
+    this.events.publish({ type: 'heist_complete', player, bank: run.bank, tier, mastery });
   }
 
   private send(player: Player, run: Run | undefined, act?: Act): void {
