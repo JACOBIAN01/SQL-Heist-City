@@ -45,6 +45,13 @@ const type = (v: CityDbView, sql: string) => {
   box.dispatchEvent(new Event('input'));
 };
 
+const pick = (v: CityDbView, id: string) => {
+  const picker = v.panel.querySelector<HTMLSelectElement>('[data-role="request-picker"]');
+  if (!picker) throw new Error('no picker');
+  picker.value = id;
+  picker.dispatchEvent(new Event('change'));
+};
+
 describe('CityDbView', () => {
   it('says there is nothing to ask before the server sends the requests', () => {
     const v = new CityDbView(new I18n('en'), vi.fn());
@@ -53,10 +60,11 @@ describe('CityDbView', () => {
 
   it('lists the requests and the tables of the one chosen', () => {
     const { v } = make();
-    expect(v.panel.querySelectorAll('.citydb-request')).toHaveLength(2);
+    expect(v.panel.querySelectorAll('option')).toHaveLength(2);
+    expect(v.panel.querySelectorAll('optgroup')).toHaveLength(2);
     expect(v.panel.textContent).toContain('Show where every guard is.');
     expect(v.panel.textContent).toContain('guards(id INTEGER');
-    v.panel.querySelector<HTMLButtonElement>('[data-request="cameras-bank-3"]')?.click();
+    pick(v, 'cameras-bank-3');
     expect(v.panel.textContent).toContain('cameras(id TEXT');
     expect(v.panel.textContent).not.toContain('guards(id INTEGER');
   });
@@ -116,7 +124,7 @@ describe('CityDbView', () => {
   it('keeps what was typed when the request changes back and forth', () => {
     const { v } = make();
     type(v, 'SELECT 1');
-    v.panel.querySelector<HTMLButtonElement>('[data-request="cameras-bank-3"]')?.click();
+    pick(v, 'cameras-bank-3');
     expect(v.panel.querySelector<HTMLTextAreaElement>('textarea')?.value).toBe('SELECT 1');
   });
 });

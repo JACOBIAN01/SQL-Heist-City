@@ -103,23 +103,33 @@ export class CityDbView {
       return;
     }
     this.panel.appendChild(h('p', { class: 'skills-help', text: this.t('citydb.help') }));
-    const list = h('div', { class: 'citydb-requests' });
-    for (const r of c.requests)
-      list.appendChild(
-        h('button', {
-          class: r.id === this.selected ? 'citydb-request on' : 'citydb-request',
+    // One drop-down, grouped by what the request does, so twenty requests stay tidy.
+    const picker = h('select', {
+      class: 'citydb-picker',
+      attrs: { 'data-role': 'request-picker', 'aria-label': this.t('citydb.pick') },
+    }) as HTMLSelectElement;
+    for (const kind of ['intel', 'camera', 'door'] as const) {
+      const here = c.requests.filter((r) => r.kind === kind);
+      if (here.length === 0) continue;
+      const group = h('optgroup', {
+        attrs: { label: this.t(`citydb.kind.${kind}` as MessageKey) },
+      });
+      for (const r of here) {
+        const option = h('option', {
           text: `${'★'.repeat(r.tier)} ${r.title}`,
-          attrs: { 'data-request': r.id },
-          on: {
-            click: () => {
-              this.selected = r.id;
-              this.result = undefined;
-              this.draw();
-            },
-          },
-        }),
-      );
-    this.panel.appendChild(list);
+          attrs: { value: r.id },
+        }) as HTMLOptionElement;
+        option.selected = r.id === this.selected;
+        group.appendChild(option);
+      }
+      picker.appendChild(group);
+    }
+    picker.addEventListener('change', () => {
+      this.selected = picker.value;
+      this.result = undefined;
+      this.draw();
+    });
+    this.panel.appendChild(picker);
     const request = c.requests.find((r) => r.id === this.selected);
     if (!request) return;
     this.panel.appendChild(h('p', { class: 'citydb-prompt', text: request.prompt }));

@@ -286,8 +286,10 @@
   gap: 6px;
   margin: 0.5rem 0;
 }
-.citydb-request.on {
-  outline: 2px solid #4fc3f7;
+.citydb-picker {
+  width: 100%;
+  margin: 0.5rem 0;
+  padding: 4px;
 }
 .citydb-prompt {
   font-weight: 600;

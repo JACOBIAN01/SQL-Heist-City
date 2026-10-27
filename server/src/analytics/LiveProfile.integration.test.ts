@@ -11,6 +11,7 @@ import {
   PROTOCOL_VERSION,
   classInputSchema,
   decodeServerMessages,
+  SnapshotDecoder,
   encodeClientMessage,
   questionTemplateSchema,
   type ProfileMessage,
@@ -113,8 +114,9 @@ describe.skipIf(!TEST_DATABASE_URL)('live profile, end to end (15.2, 15.6, 15.8)
         }),
       ),
     );
+    const decoder = new SnapshotDecoder();
     ws.on('message', (data: Buffer) => {
-      for (const m of decodeServerMessages(new Uint8Array(data)))
+      for (const m of decodeServerMessages(new Uint8Array(data), decoder))
         if (m.t === 'json') json.push(JSON.parse(m.text) as { t: string });
     });
     const send = (m: object) =>

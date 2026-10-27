@@ -148,6 +148,10 @@ export const en = {
   'citydb.help':
     'The city is a database. Pick a request, read its tables, and write the SQL that answers it. A right answer shows on your map for a while; a right UPDATE hacks a camera or a door.',
   'citydb.sql': 'Your SQL',
+  'citydb.pick': 'Request',
+  'citydb.kind.intel': 'Intel: find things (SELECT)',
+  'citydb.kind.camera': 'Cameras: switch them off (UPDATE)',
+  'citydb.kind.door': 'Doors: unlock a vault (UPDATE)',
   'citydb.run': 'Run',
   'citydb.running': 'Running…',
   'citydb.okIntel': 'Intel on your map: {pins} places for {seconds} s.',

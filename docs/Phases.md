@@ -50,7 +50,7 @@
 | 30 | Exploration and freedom | ✅ done, awaiting approval |
 | 31 | Missions and heist structure | ✅ done, awaiting approval |
 | 32 | Story and characters | ✅ built; 32.1 and 32.4 await the owner |
-| 33 | SQL in the world: queries as superpowers | 🟦 33.1–33.5 done |
+| 33 | SQL in the world: queries as superpowers | ✅ done; the balance playtest waits for 36.1 |
 | 34 | Breakthrough features | ⬜ |
 | 35 | Polish | ⬜ |
 | 36 | GTA scorecard gate | ⬜ |
@@ -577,7 +577,7 @@ Post-launch. GTA audit "Story" from 1 to 8–9.
 | 32.5 | Review: re-score Story | ≥ 8 | ✅ [docs/review/story.md](review/story.md): Story 1 → 8 by the author's own assessment, with a screenshot of the journal, a scene, a bark and a framed question (a dev-only `story.html` preview). The gaps are listed (first-draft words, question bodies not rewritten, the villain never appears, English only). The playtest-backed score is 36.1; 32.1 and 32.4 wait on the owner |
 
 ---
-## Phase 33 — SQL in the world: queries as superpowers  🟦
+## Phase 33 — SQL in the world: queries as superpowers  ✅
 Post-launch. Breakthrough feature 1 and GTA audit "SQL fit" from 4 to 8–9.
 
 | # | Subphase | Done when | Status |
@@ -587,7 +587,7 @@ Post-launch. Breakthrough feature 1 and GTA audit "SQL fit" from 4 to 8–9.
 | 33.3 | Better queries give better intel (filters, joins, freshness) | quality scales the reward | ✅ Requests are tiered 1–5 by what the SQL needs: a plain `SELECT` (every guard), a filter (`WHERE amount > 5000`), a join with a label (which player the police are after), grouping and counting (the bank with the fewest guards). A higher tier keeps its intel on the map longer (`intelSeconds` by tier) and a joined query labels each ring with the name it found. The requests, their tier and their answers are data (admin → Settings → City database). Tested: lifetime grows with tier |
 | 33.4 | Camera hacking and door control through queries | both usable in a heist | ✅ **Cameras:** a correct `UPDATE cameras SET enabled = 0 WHERE bank = …` switches that bank's cameras off for 45 s and blinds its guards (the same blindness as the sabotage contract). **Doors:** a correct `UPDATE doors SET locked = 0 WHERE bank = …` (tier 5, 150 s cooldown) has the door controller open the vault's *next* lock (counted like any lock: quiet, loud, police and all), so it is a hard alternative to a lock question, not a way past all of them. The write runs on a throwaway copy; the server compares the resulting table with the request's own and applies only the change the answer would. Tested |
 | 33.5 | Anti-abuse: cooldowns, ranges, fairness tests | balance playtest passes | 🟨 Limits are in and tested: a try at most every 2 s and one query at a time, a cooldown per request (15 s intel, 90 s camera, 150 s door), a range, a pin cap, hostile SQL (`PRAGMA`, `ATTACH`, `load_extension`, two statements, `sqlite_master`) refused, a wrong answer gives nothing, the door hack is top tier with the longest wait. The *balance playtest* needs students and is for 36.1 |
-| 33.6 | Review: re-score SQL fit | ≥ 8 | ⬜ |
+| 33.6 | Review: re-score SQL fit | ≥ 8 | ✅ [docs/review/sql-fit.md](review/sql-fit.md): SQL fit 4 → 8 by the author's own assessment, with a screenshot of the terminal (a dev-only `citydb.html` preview: a right joined query, and a wrong UPDATE). The gaps are listed (set requests, alike requests, positions only, balance untested, not seen in play). The playtest-backed score is 36.1 |
 
 ---
 ## Phase 34 — Breakthrough features  ⬜

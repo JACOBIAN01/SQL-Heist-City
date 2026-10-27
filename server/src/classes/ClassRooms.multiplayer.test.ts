@@ -11,6 +11,7 @@ import {
   PROTOCOL_VERSION,
   classInputSchema,
   decodeServerMessages,
+  SnapshotDecoder,
   encodeClientMessage,
   type ServerMessage,
 } from '@heist/shared';
@@ -72,7 +73,11 @@ function student(port: number, accountId: number, classId: number): Client {
       }),
     ),
   );
-  ws.on('message', (data: Buffer) => messages.push(...decodeServerMessages(new Uint8Array(data))));
+  // One decoder per client: snapshots after the first are changes against the last.
+  const decoder = new SnapshotDecoder();
+  ws.on('message', (data: Buffer) =>
+    messages.push(...decodeServerMessages(new Uint8Array(data), decoder)),
+  );
   const closed = new Promise<{ code: number; reason: string }>((resolve) =>
     ws.on('close', (code, reason) => resolve({ code, reason: reason.toString() })),
   );

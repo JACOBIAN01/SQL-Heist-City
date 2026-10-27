@@ -7,6 +7,7 @@ import {
   PROTOCOL_VERSION,
   TEST_MAP,
   decodeServerMessages,
+  SnapshotDecoder,
   encodeClientMessage,
 } from '@heist/shared';
 import { issueTicket } from '../auth/ticket';
@@ -38,11 +39,12 @@ function joinWith(url: string, name: string, ticket: string) {
   open.push(ws);
   return new Promise<{ welcomed: boolean; code?: number; reason?: string }>((resolve) => {
     let welcomed = false;
+    const decoder = new SnapshotDecoder();
     ws.on('open', () =>
       ws.send(encodeClientMessage({ t: 'join', protocol: PROTOCOL_VERSION, name, ticket })),
     );
     ws.on('message', (data: Buffer) => {
-      if (decodeServerMessages(new Uint8Array(data)).some((m) => m.t === 'welcome')) {
+      if (decodeServerMessages(new Uint8Array(data), decoder).some((m) => m.t === 'welcome')) {
         welcomed = true;
         resolve({ welcomed });
       }
