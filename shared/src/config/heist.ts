@@ -282,6 +282,10 @@ export const heistSettingsSchema = z.object({
       escapeSeconds: z.number().positive().max(300).default(25),
       /** From this many stars, two officers hold a roadblock ahead of you. */
       roadblockFromStars: z.number().int().min(1).max(6).default(4),
+      /** With this much intel on the bank you robbed, you are told where the roadblocks are (Phase 31.3). */
+      intelRevealLevel: z.number().int().min(1).max(3).default(1),
+      /** With this much, a roadblock is held by one officer instead of two. */
+      intelThinLevel: z.number().int().min(1).max(3).default(3),
       /** Officers who are further than this (m) from you are not simulated (they stand still). */
       activeRange: z.number().positive().max(500).default(220),
     })
@@ -298,6 +302,8 @@ export const heistSettingsSchema = z.object({
       spawnMax: 85,
       escapeSeconds: 25,
       roadblockFromStars: 4,
+      intelRevealLevel: 1,
+      intelThinLevel: 3,
       activeRange: 220,
     }),
   /**

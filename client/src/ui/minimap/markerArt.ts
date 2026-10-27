@@ -11,6 +11,7 @@ export const MAP_COLOURS = {
   hospital: '#e5484d',
   bag: '#ffd34d',
   cache: '#ffb300',
+  roadblock: '#ff4d4d',
   wanted: '#ff6a00',
   mate: '#3ec1d3',
   foe: '#ff4d4d',
@@ -45,6 +46,17 @@ export function drawMarker(
       ctx.beginPath();
       ctx.arc(at.x, at.y, 2.5, 0, Math.PI * 2);
       ctx.fill();
+      return;
+    case 'roadblock':
+      // A red cross: the police are holding this street.
+      ctx.strokeStyle = MAP_COLOURS.roadblock;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(at.x - 6, at.y - 6);
+      ctx.lineTo(at.x + 6, at.y + 6);
+      ctx.moveTo(at.x + 6, at.y - 6);
+      ctx.lineTo(at.x - 6, at.y + 6);
+      ctx.stroke();
       return;
     case 'cache':
       // A hidden cache: a gold diamond with a question mark.

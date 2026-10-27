@@ -36,6 +36,7 @@ const LEGEND: readonly [string, string][] = [
   ['1–5', 'bank (ring: locks cracked)'],
   ['S', 'safehouse: bank your cash'],
   ['H', 'hospital'],
+  ['✕', 'police roadblock (with intel)'],
   ['$', 'wanted: bounty'],
   ['●', 'cash bag'],
   ['▲', 'you'],

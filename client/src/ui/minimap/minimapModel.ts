@@ -33,6 +33,8 @@ export type MarkerKind =
   | 'bag'
   /** A hidden cache the server has shown you (Phase 30.2). */
   | 'cache'
+  /** A police roadblock your intel has revealed (Phase 31.3). */
+  | 'roadblock'
   | 'wanted'
   | 'objective'
   /** A squad-mate (Phase 27.4). */

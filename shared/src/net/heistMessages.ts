@@ -193,6 +193,12 @@ export interface ActsMessage {
   readonly take: number;
 }
 
+/** Where the police have set roadblocks for you, when your intel has told you (Phase 31.3). */
+export interface RoadblocksMessage {
+  readonly t: 'roadblocks';
+  readonly posts: readonly { readonly x: number; readonly z: number }[];
+}
+
 /** Guards of a bank you have intel on (Phase 31.1), for your map. */
 export interface IntelGuardsMessage {
   readonly t: 'intel_guards';
@@ -697,6 +703,7 @@ export type HeistServerMessage =
   | JobMessage
   | ActsMessage
   | IntelGuardsMessage
+  | RoadblocksMessage
   | ApproachState
   | DuelMessage
   | RadarMessage

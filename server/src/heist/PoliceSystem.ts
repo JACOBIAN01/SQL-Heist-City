@@ -2,6 +2,7 @@ import {
   raycastMap,
   type HeistSettings,
   type PoliceMessage,
+  type RoadblocksMessage,
   type Rng,
   type SpawnPoint,
 } from '@heist/shared';
@@ -41,6 +42,16 @@ interface Heat {
   readonly officers: Officer[];
   /** The roadblock has been set for this many stars (0 none). */
   blockFor: number;
+  /** Where the roadblock stands (its middle), if set. */
+  blockAt?: { x: number; z: number };
+}
+
+/** What the getaway tells the police (Phase 31.3). */
+export interface PoliceIntel {
+  /** Intel the player holds on the bank they are robbing (0 when not on a heist). */
+  levelOf(player: Player): number;
+  /** Where a player on the getaway is making for, if they are. */
+  destination(player: Player): { x: number; z: number } | undefined;
 }
 
 /**
@@ -63,6 +74,7 @@ export class PoliceSystem {
     private readonly rng: Rng,
     /** Whether police are wanted in this room at all (not in the tutorial or a duel room). */
     private readonly active: () => boolean,
+    private readonly intel: PoliceIntel = { levelOf: () => 0, destination: () => undefined },
   ) {
     events.subscribe((event) => {
       if (event.type === 'lock_opened' && event.player && !event.quiet)
@@ -121,8 +133,11 @@ export class PoliceSystem {
   clear(player: Player): void {
     const heat = this.heat.get(player);
     if (!heat) return;
+    const hadBlock = heat.blockAt !== undefined;
     this.dismiss(heat);
     this.heat.delete(player);
+    if (hadBlock && this.match.getPlayer(player.id) === player)
+      this.match.sendJson(player, { t: 'roadblocks', posts: [] } satisfies RoadblocksMessage);
     if (heat.stars > 0 && this.match.getPlayer(player.id) === player) this.send(player, 0);
   }
 
@@ -162,10 +177,18 @@ export class PoliceSystem {
     if (blockWanted === 0 && heat.blockFor !== 0) {
       for (const o of heat.officers.filter((x) => x.post)) this.drop(heat, o);
       heat.blockFor = 0;
+      this.tellBlocks(player, heat, undefined);
     } else if (blockWanted > 0 && heat.blockFor === 0) {
       const posts = this.roadblockPosts(player);
-      for (const post of posts) this.spawn(player, heat, s, post);
+      // Good intel on the bank thins the roadblock to one officer.
+      const held = this.intel.levelOf(player) >= s.intelThinLevel ? posts.slice(0, 1) : posts;
+      for (const post of held) this.spawn(player, heat, s, post);
       heat.blockFor = blockWanted;
+      const middle = {
+        x: posts.reduce((n, p) => n + p.x, 0) / posts.length,
+        z: posts.reduce((n, p) => n + p.z, 0) / posts.length,
+      };
+      this.tellBlocks(player, heat, middle);
     }
   }
 
@@ -284,14 +307,35 @@ export class PoliceSystem {
     heat.blockFor = 0;
   }
 
-  /** Two posts across the street ahead of where the target is heading, at the nearest junction. */
+  /** Tells a player with enough intel where the roadblock is (or that it is gone). */
+  private tellBlocks(player: Player, heat: Heat, at: { x: number; z: number } | undefined): void {
+    if (at) heat.blockAt = at;
+    else delete heat.blockAt;
+    if (this.intel.levelOf(player) < this.settings().intelRevealLevel && at) return;
+    const message: RoadblocksMessage = { t: 'roadblocks', posts: at ? [at] : [] };
+    this.match.sendJson(player, message);
+  }
+
+  /** The roadblock's middle for a player (for tests). */
+  roadblockOf(player: Player): { x: number; z: number } | undefined {
+    return this.heat.get(player)?.blockAt;
+  }
+
+  /**
+   * Two posts across the street ahead of where the target is heading, at the nearest junction. On the
+   * getaway the police have guessed where the loot is going: ahead is the way to the nearest safehouse.
+   */
   private roadblockPosts(target: Player): { x: number; z: number }[] {
     const b = target.body;
     const speed = Math.hypot(b.vx, b.vz);
+    const goal = this.intel.destination(target);
+    const toGoal = goal ? Math.hypot(goal.x - b.x, goal.z - b.z) : 0;
     const dir =
-      speed > 0.5
-        ? { x: b.vx / speed, z: b.vz / speed }
-        : { x: -Math.sin(target.yaw), z: -Math.cos(target.yaw) };
+      goal && toGoal > 1
+        ? { x: (goal.x - b.x) / toGoal, z: (goal.z - b.z) / toGoal }
+        : speed > 0.5
+          ? { x: b.vx / speed, z: b.vz / speed }
+          : { x: -Math.sin(target.yaw), z: -Math.cos(target.yaw) };
     const ahead = { x: b.x + dir.x * BLOCK_AHEAD, z: b.z + dir.z * BLOCK_AHEAD };
     const city = this.match.map.city;
     const near = (lines: readonly number[], v: number) =>

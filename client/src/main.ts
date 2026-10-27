@@ -399,6 +399,7 @@ document.body.append(collectionView.panel);
 const actsView = new ActsView(i18n);
 document.body.append(actsView.root);
 let intelGuards: readonly { x: number; z: number }[] = [];
+let roadblocks: readonly { x: number; z: number }[] = [];
 const boardView = new BoardView(i18n, (m) => client.sendJson(m));
 document.body.append(boardView.panel);
 const approachBadge = new ApproachBadge(i18n);
@@ -653,6 +654,8 @@ client.subscribe({
       duelView.update(message);
     } else if (message.t === 'acts') {
       actsView.update(message, performance.now());
+    } else if (message.t === 'roadblocks') {
+      roadblocks = message.posts;
     } else if (message.t === 'intel_guards') {
       intelGuards = message.guards;
     } else if (message.t === 'approach_state') {
@@ -1188,6 +1191,13 @@ renderer.setAnimationLoop((now) => {
       ...mateMarkers(squadView.members),
       ...foeMarkers(radarFoes),
       ...foeMarkers(intelGuards),
+      ...roadblocks.map((r, i): Marker => ({
+        kind: 'roadblock',
+        id: `roadblock-${i}`,
+        x: r.x,
+        z: r.z,
+        pinned: true,
+      })),
       ...(objective ? [objectiveMarker(objective)] : []),
     ];
     minimap.draw(me, markers, now / 1000);

@@ -160,6 +160,15 @@ export class HeistController implements ArmsControl {
       this.events,
       new SeededRng(`police:${match.classInfo?.classId ?? 0}`),
       () => !this.taskOptions && !this.duels.enabled,
+      {
+        levelOf: (p) => {
+          const run = this.acts.runOf(p);
+          return run ? this.acts.intelOf(p, run.bank) : 0;
+        },
+        // On the getaway the police guess the loot is making for the nearest safehouse.
+        destination: (p) =>
+          this.acts.runOf(p)?.act === 'getaway' ? this.nearestSafehouse(p) : undefined,
+      },
     );
     this.duels = new DuelManager(
       match,
@@ -408,6 +417,17 @@ export class HeistController implements ArmsControl {
     const bag = this.loot.add(victim.body.x, victim.body.y, victim.body.z, victim.cash - kept);
     this.setCash(victim, kept);
     this.match.broadcastJson({ t: 'loot', add: [bag], remove: [] });
+  }
+
+  private nearestSafehouse(player: Player): { x: number; z: number } | undefined {
+    let best: { x: number; z: number } | undefined;
+    let bestD = Infinity;
+    for (const a of this.match.map.anchors ?? []) {
+      if (a.kind !== 'safehouse') continue;
+      const d = Math.hypot(a.x - player.body.x, a.z - player.body.z);
+      if (d < bestD) [best, bestD] = [a, d];
+    }
+    return best ? { x: best.x, z: best.z } : undefined;
   }
 
   /** A person to escort, standing at `at` on the street. */

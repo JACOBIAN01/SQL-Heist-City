@@ -271,3 +271,7 @@ Press X to move quietly: you are 25% slower, but a vault lock cracked while no g
 ## Contracts (Phase 31.2)
 
 Each district's board offers a choice of contracts: a delivery, a street race, recon of other banks, sabotage, data theft or an escort. All end with a SQL question; answer it correctly to be paid. Sabotage blinds a bank's guards for a minute; data theft pays most but brings the police; an escort fails if the person you are walking dies.
+
+## The getaway and intel (Phase 31.3)
+
+Once you carry the vault's cash, the police guess you will run for the nearest safehouse, and set their roadblock on that way. The intel you gathered outside the bank pays off here: with some, you are shown the roadblock on your minimap; with full intel it is held by one officer, not two.
