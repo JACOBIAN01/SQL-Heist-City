@@ -287,3 +287,7 @@ Each bank has a fixer and a chain of three steps: gather intel on the bank, fini
 ## Scenes, barks and the crew's line (Phases 32.3 and 32.4)
 
 When a story chain opens or ends, a short scene plays in the fixer's voice (Enter for the next line, Escape or Skip to end it). During a heist the fixer says a line at key moments: intel gained, a lock cracked, the vault open, the getaway, the heist done or lost, the police closing in, a contract done. Questions that belong to the story carry one line from the crew above the task. All the words are in admin → Settings → Story.
+
+## The city is a database (Phase 33)
+
+Press T for the city database terminal. The guards, cameras, cash lying about, wanted players, police, banks and vault doors are tables, live. Pick a request ("show every guard", "the guards of Metro Capital", "who the police are chasing"), read its tables and write the SQL: a right answer puts those places on your minimap for a while, and a harder question keeps them there longer. From the higher tiers a right `UPDATE` switches a bank's cameras off (its guards go blind for a minute) or has a vault door open its next lock. It only shows what is near you, you must wait between tries, and a wrong query shows nothing.

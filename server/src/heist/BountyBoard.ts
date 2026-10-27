@@ -26,6 +26,14 @@ export class BountyBoard {
     return this.wanted.has(player.id);
   }
 
+  /** Who is wanted now, as the city database lists them (Phase 33.1). */
+  list(): { id: number; name: string; cash: number; x: number; z: number }[] {
+    return [...this.wanted].flatMap((id) => {
+      const p = this.match.getPlayer(id);
+      return p ? [{ id, name: p.name, cash: p.cash, x: p.body.x, z: p.body.z }] : [];
+    });
+  }
+
   /** Every tick: who is wanted changes at once (announced); the board is posted every few seconds. */
   onTick(): void {
     for (const p of this.match.playerList()) {

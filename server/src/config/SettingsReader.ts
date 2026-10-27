@@ -22,6 +22,9 @@ import {
   storySettingsSchema,
   DEFAULT_STORY_SETTINGS,
   type StorySettings,
+  cityDbSettingsSchema,
+  DEFAULT_CITY_DB_SETTINGS,
+  type CityDbSettings,
   DEFAULT_MODES_SETTINGS,
   type ModesSettings,
   type AnalyticsSettings,
@@ -70,6 +73,8 @@ export interface SettingsReader {
   modesSettings(): ModesSettings;
   /** The story: fixers, chains, scenes and barks (Phase 32). */
   storySettings(): StorySettings;
+  /** The city database's requests and limits (Phase 33). */
+  cityDbSettings(): CityDbSettings;
   /** The dialect packs: notes on how other SQL dialects differ from SQLite. */
   dialectSettings(): DialectSettings;
   /** Which picture each reward shows. */
@@ -99,6 +104,7 @@ export class StaticSettings implements SettingsReader {
     private readonly progression: ProgressionSettings = DEFAULT_PROGRESSION_SETTINGS,
     private readonly modes: ModesSettings = DEFAULT_MODES_SETTINGS,
     private readonly story: StorySettings = DEFAULT_STORY_SETTINGS,
+    private readonly cityDb: CityDbSettings = DEFAULT_CITY_DB_SETTINGS,
   ) {}
 
   modesSettings(): ModesSettings {
@@ -107,6 +113,10 @@ export class StaticSettings implements SettingsReader {
 
   storySettings(): StorySettings {
     return this.story;
+  }
+
+  cityDbSettings(): CityDbSettings {
+    return this.cityDb;
   }
 
   progressionSettings(): ProgressionSettings {
@@ -173,6 +183,7 @@ export const PRIVACY_SETTINGS_KEY = 'privacy';
 export const PROGRESSION_SETTINGS_KEY = 'progression';
 export const MODES_SETTINGS_KEY = 'modes';
 export const STORY_SETTINGS_KEY = 'story';
+export const CITY_DB_SETTINGS_KEY = 'cityDb';
 
 /** What a match re-reads each round. */
 export function worldSettingsFrom(reader: SettingsReader): WorldSettings {
@@ -241,6 +252,8 @@ export const settingsParsers = {
     sectionFrom(raw, modesSettingsSchema, DEFAULT_MODES_SETTINGS),
   storyFrom: (raw: unknown): StorySettings =>
     sectionFrom(raw, storySettingsSchema, DEFAULT_STORY_SETTINGS),
+  cityDbFrom: (raw: unknown): CityDbSettings =>
+    sectionFrom(raw, cityDbSettingsSchema, DEFAULT_CITY_DB_SETTINGS),
   namesFrom: (raw: unknown): NameRules => sectionFrom(raw, nameRulesSchema, DEFAULT_NAME_RULES),
   privacyFrom: (raw: unknown): PrivacySettings =>
     sectionFrom(raw, privacySettingsSchema, DEFAULT_PRIVACY_SETTINGS),
@@ -295,6 +308,10 @@ export class SqliteSettingsReader implements SettingsReader {
 
   storySettings(): StorySettings {
     return settingsParsers.storyFrom(this.raw(STORY_SETTINGS_KEY));
+  }
+
+  cityDbSettings(): CityDbSettings {
+    return settingsParsers.cityDbFrom(this.raw(CITY_DB_SETTINGS_KEY));
   }
 
   dialectSettings(): DialectSettings {

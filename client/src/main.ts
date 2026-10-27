@@ -34,6 +34,7 @@ import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
 import { ActsView } from './ui/hud/ActsView';
 import { StoryView } from './ui/hud/StoryView';
+import { CityDbView } from './ui/hud/CityDbView';
 import { BarkView, SceneView } from './ui/hud/SceneView';
 import { PayoutView } from './ui/hud/PayoutView';
 import { BoardView } from './ui/hud/BoardView';
@@ -410,6 +411,9 @@ document.body.append(sceneView.root, barkView.root);
 window.addEventListener('keydown', (event) => {
   if (sceneView.playing && event.code === 'Enter') sceneView.advance();
 });
+const cityDbView = new CityDbView(i18n, (m) => client.sendJson(m));
+document.body.append(cityDbView.panel);
+let intelPins: readonly { id: number; x: number; z: number; label?: string }[] = [];
 const storyView = new StoryView(i18n);
 document.body.append(storyView.panel);
 const payoutView = new PayoutView(i18n);
@@ -668,6 +672,12 @@ client.subscribe({
       duelView.update(message);
     } else if (message.t === 'acts') {
       actsView.update(message, performance.now());
+    } else if (message.t === 'citydb') {
+      cityDbView.update(message);
+    } else if (message.t === 'city_result') {
+      cityDbView.answered(message);
+    } else if (message.t === 'intel_pins') {
+      intelPins = message.pins;
     } else if (message.t === 'scene') {
       sceneView.play(message);
     } else if (message.t === 'bark') {
@@ -855,6 +865,10 @@ const hotkeys = new Hotkeys(window, bindings)
   .onAction('approach', () =>
     client.sendJson({ t: 'approach', mode: stealthOn ? 'loud' : 'stealth' }),
   )
+  .onAction('citydb', () => {
+    pointer.release();
+    cityDbView.hidden = !cityDbView.hidden;
+  })
   .onAction('story', () => {
     pointer.release();
     storyView.hidden = !storyView.hidden;
@@ -892,6 +906,7 @@ const hotkeys = new Hotkeys(window, bindings)
     boardView.hidden = true;
     payoutView.hidden = true;
     storyView.hidden = true;
+    cityDbView.hidden = true;
     sceneView.skip();
     collectionView.hidden = true;
   })
@@ -1222,6 +1237,14 @@ renderer.setAnimationLoop((now) => {
       ...mateMarkers(squadView.members),
       ...foeMarkers(radarFoes),
       ...foeMarkers(intelGuards),
+      ...intelPins.map((p): Marker => ({
+        kind: 'intel',
+        id: `intel-${p.id}`,
+        x: p.x,
+        z: p.z,
+        ...(p.label ? { name: p.label } : {}),
+        pinned: false,
+      })),
       ...roadblocks.map((r, i): Marker => ({
         kind: 'roadblock',
         id: `roadblock-${i}`,

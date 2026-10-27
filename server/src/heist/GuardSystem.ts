@@ -117,6 +117,21 @@ export class GuardSystem {
     return g ? `bank-${g.vault.tier}` : undefined;
   }
 
+  /** The guards as the city database lists them (Phase 33.1). */
+  snapshot(): { id: number; bank: string; x: number; z: number; storey: number; alert: boolean }[] {
+    const tick = this.match.tick;
+    return this.guards
+      .filter((g) => g.player.alive)
+      .map((g) => ({
+        id: g.player.id,
+        bank: `bank-${g.vault.tier}`,
+        x: g.player.body.x,
+        z: g.player.body.z,
+        storey: Math.round(g.player.body.y / 3),
+        alert: tick < g.alertUntil,
+      }));
+  }
+
   /** The guards, for tests and the debug overlay. */
   all(): readonly Player[] {
     return this.guards.map((g) => g.player);

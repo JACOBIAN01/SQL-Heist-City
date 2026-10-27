@@ -50,7 +50,7 @@
 | 30 | Exploration and freedom | ✅ done, awaiting approval |
 | 31 | Missions and heist structure | ✅ done, awaiting approval |
 | 32 | Story and characters | ✅ built; 32.1 and 32.4 await the owner |
-| 33 | SQL in the world: queries as superpowers | ⬜ |
+| 33 | SQL in the world: queries as superpowers | 🟦 33.1–33.5 done |
 | 34 | Breakthrough features | ⬜ |
 | 35 | Polish | ⬜ |
 | 36 | GTA scorecard gate | ⬜ |
@@ -577,16 +577,16 @@ Post-launch. GTA audit "Story" from 1 to 8–9.
 | 32.5 | Review: re-score Story | ≥ 8 | ✅ [docs/review/story.md](review/story.md): Story 1 → 8 by the author's own assessment, with a screenshot of the journal, a scene, a bark and a framed question (a dev-only `story.html` preview). The gaps are listed (first-draft words, question bodies not rewritten, the villain never appears, English only). The playtest-backed score is 36.1; 32.1 and 32.4 wait on the owner |
 
 ---
-## Phase 33 — SQL in the world: queries as superpowers  ⬜
+## Phase 33 — SQL in the world: queries as superpowers  🟦
 Post-launch. Breakthrough feature 1 and GTA audit "SQL fit" from 4 to 8–9.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 33.1 | City database: live tables mirroring the world (guards, cameras, cash drops, wanted players, police) | tables update from the match state, cheaply | ⬜ |
-| 33.2 | Intel queries: a correct query shows its rows on the minimap for a while | intel appears and expires | ⬜ |
-| 33.3 | Better queries give better intel (filters, joins, freshness) | quality scales the reward | ⬜ |
-| 33.4 | Camera hacking and door control through queries | both usable in a heist | ⬜ |
-| 33.5 | Anti-abuse: cooldowns, ranges, fairness tests | balance playtest passes | ⬜ |
+| 33.1 | City database: live tables mirroring the world (guards, cameras, cash drops, wanted players, police) | tables update from the match state, cheaply | ✅ Seven tables mirror the world (`guards`, `cameras`, `cash_drops`, `wanted`, `police`, `banks`, `doors`; the schema and what each column means are in `shared/src/config/cityDb.ts`). They are read from the match's own state when a query is asked for, never kept up to date every tick, so the cost is a few dozen rows per question (a full snapshot takes well under 5 ms) and the sandbox gets a throwaway copy that nothing a student writes can reach back from. Cameras are placed from the map, three to a bank. Tested |
+| 33.2 | Intel queries: a correct query shows its rows on the minimap for a while | intel appears and expires | ✅ The city database terminal (T): pick a request, read its tables, write the SQL. The server runs the student's SQL and the request's own answer on the same snapshot and compares the rows (any right way of asking is accepted; the answer itself never leaves the server). A right query puts its x/z rows on the minimap as cyan rings, labelled by its next column, for `intelSeconds` (20 s for tier 1 up to 90 s for tier 5), only within `rangeMeters` (140) of you, at most `maxPins` (30); a wrong one shows nothing and gets a hint about the shape of the difference. Tested |
+| 33.3 | Better queries give better intel (filters, joins, freshness) | quality scales the reward | ✅ Requests are tiered 1–5 by what the SQL needs: a plain `SELECT` (every guard), a filter (`WHERE amount > 5000`), a join with a label (which player the police are after), grouping and counting (the bank with the fewest guards). A higher tier keeps its intel on the map longer (`intelSeconds` by tier) and a joined query labels each ring with the name it found. The requests, their tier and their answers are data (admin → Settings → City database). Tested: lifetime grows with tier |
+| 33.4 | Camera hacking and door control through queries | both usable in a heist | ✅ **Cameras:** a correct `UPDATE cameras SET enabled = 0 WHERE bank = …` switches that bank's cameras off for 45 s and blinds its guards (the same blindness as the sabotage contract). **Doors:** a correct `UPDATE doors SET locked = 0 WHERE bank = …` (tier 5, 150 s cooldown) has the door controller open the vault's *next* lock (counted like any lock: quiet, loud, police and all), so it is a hard alternative to a lock question, not a way past all of them. The write runs on a throwaway copy; the server compares the resulting table with the request's own and applies only the change the answer would. Tested |
+| 33.5 | Anti-abuse: cooldowns, ranges, fairness tests | balance playtest passes | 🟨 Limits are in and tested: a try at most every 2 s and one query at a time, a cooldown per request (15 s intel, 90 s camera, 150 s door), a range, a pin cap, hostile SQL (`PRAGMA`, `ATTACH`, `load_extension`, two statements, `sqlite_master`) refused, a wrong answer gives nothing, the door hack is top tier with the longest wait. The *balance playtest* needs students and is for 36.1 |
 | 33.6 | Review: re-score SQL fit | ≥ 8 | ⬜ |
 
 ---

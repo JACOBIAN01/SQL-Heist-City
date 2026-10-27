@@ -1,4 +1,5 @@
-import type { ChallengeServerMessage } from '@heist/shared';
+import type { ChallengeServerMessage, CityDbSettings } from '@heist/shared';
+import type { SandboxRunner } from '../sql/SandboxRunner';
 import type { IssueOptions } from '../challenges/ChallengeService';
 
 /**
@@ -11,6 +12,8 @@ export interface ChallengeGateway {
   /** `options` only matter for a task request (see IssueOptions). */
   handle(player: string, raw: unknown, options?: IssueOptions): Promise<ChallengeServerMessage>;
   playerLeft(player: string): void;
+  /** The SQL sandbox and limits the city database uses (Phase 33); absent: no city database. */
+  readonly city?: { run: SandboxRunner['run']; settings(): CityDbSettings } | undefined;
   /** The player was shot dead; an open question ends. */
   playerDied?(player: string): void;
 }

@@ -223,7 +223,7 @@ export function captionFor(m: Marker): string | undefined {
       ? `${name} · OPEN`
       : `${name} · ${m.opened ?? 0}/${locks} locks`;
   }
-  if (m.kind === 'wanted') return m.name;
+  if (m.kind === 'wanted' || m.kind === 'intel') return m.name;
   if (m.kind === 'hospital') return 'Hospital';
   return undefined;
 }

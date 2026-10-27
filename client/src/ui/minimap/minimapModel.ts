@@ -35,6 +35,8 @@ export type MarkerKind =
   | 'cache'
   /** A police roadblock your intel has revealed (Phase 31.3). */
   | 'roadblock'
+  /** A place your city-database query has put on the map (Phase 33.2). */
+  | 'intel'
   | 'wanted'
   | 'objective'
   /** A squad-mate (Phase 27.4). */

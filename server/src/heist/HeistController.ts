@@ -1,5 +1,6 @@
 import {
   ANCHOR_REACH_Y,
+  BANK_LAYOUTS,
   DEFAULT_HEIST_SETTINGS,
   carrySpeedScale,
   SeededRng,
@@ -37,6 +38,9 @@ import { CacheSystem } from './CacheSystem';
 import { CollectibleSystem } from './CollectibleSystem';
 import { ActsSystem } from './ActsSystem';
 import { StorySystem } from './StorySystem';
+import { CameraGrid } from './CameraGrid';
+import { CityDb } from './CityDb';
+import { IntelService } from './IntelService';
 import { StoryVoice } from './StoryVoice';
 import { DiscoverySystem } from './DiscoverySystem';
 import { JobSystem } from './JobSystem';
@@ -143,6 +147,56 @@ export class HeistController implements ArmsControl {
         removeVip: (vip) => this.match.removeNpc(vip),
         done: (player, kind) => this.events.publish({ type: 'job_done', player, kind }),
       },
+    );
+    // The city database: live tables students query for intel, camera hacks and door control.
+    this.cameras = new CameraGrid(match);
+    this.cityDb = new CityDb({
+      guards: () => this.guards.snapshot(),
+      cameras: () => this.cameras.list(),
+      cashDrops: () =>
+        this.loot
+          .all()
+          .map((b) => ({ id: b.id, x: b.x, z: b.z, amount: b.amount, loose: b.loose === true })),
+      wanted: () => this.bounties.list(),
+      police: () => this.police.snapshot(),
+      banks: () =>
+        [...this.vaults.all()].map((v) => {
+          const console_ = this.match.map.anchors?.find((a) => a.id === v.spec.consoleId);
+          return {
+            id: v.spec.bank,
+            name: BANK_LAYOUTS.get(v.spec.tier)?.name ?? v.spec.bank,
+            tier: v.spec.tier,
+            locks: v.lockCount,
+            opened: v.locksOpen,
+            x: console_?.x ?? 0,
+            z: console_?.z ?? 0,
+          };
+        }),
+      doors: () =>
+        [...this.vaults.all()].map((v) => ({
+          id: v.spec.doorId,
+          bank: v.spec.bank,
+          locked: !v.isOpen,
+        })),
+    });
+    this.intel = new IntelService(
+      match,
+      () => this.challenges?.city,
+      this.cityDb,
+      {
+        switchOff: (bank, seconds) => {
+          this.cameras.switchOff(bank, seconds);
+          this.guards.blind(bank, seconds);
+        },
+        unlockNext: (player, bank) => {
+          const vault = [...this.vaults.all()].find((v) => v.spec.bank === bank);
+          const lock = vault?.nextLock;
+          return (
+            vault !== undefined && lock !== undefined && this.openLock(vault.spec.id, lock, player)
+          );
+        },
+      },
+      () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
     );
     // The story: a chain of steps for each bank, following what the match already does.
     this.story = new StorySystem(
@@ -342,6 +396,8 @@ export class HeistController implements ArmsControl {
     this.caches.reset();
     this.jobs.reset();
     this.acts.reset();
+    this.intel.reset();
+    this.cameras.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
@@ -365,6 +421,7 @@ export class HeistController implements ArmsControl {
     this.squads.place(player);
     this.upgrades.load(player);
     this.story.load(player);
+    this.match.sendJson(player, this.intel.catalog());
     this.squads.send(player);
     this.duels.onJoin(player);
     this.match.sendJson(player, { t: 'weapons', weapons: this.match.weapons });
@@ -389,6 +446,7 @@ export class HeistController implements ArmsControl {
     this.discovery.onTick();
     this.jobs.onTick();
     this.acts.onTick();
+    this.intel.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -654,6 +712,10 @@ export class HeistController implements ArmsControl {
       this.match.sendJson(player, this.match.vehicleRequest(player, message));
       return;
     }
+    if (message.t === 'city_query') {
+      void this.intel.ask(player, message).then((reply) => this.match.sendJson(player, reply));
+      return;
+    }
     if (message.t === 'job_take') {
       this.jobs.take(player, message.board, message.kind);
       return;
@@ -703,6 +765,7 @@ export class HeistController implements ArmsControl {
     this.jobs.clear(player);
     this.acts.forget(player);
     this.story.forget(player);
+    this.intel.forget(player);
     this.voice.forget(player);
     this.stealth.delete(player);
     this.challenges?.playerLeft(player.key);
@@ -725,6 +788,7 @@ export class HeistController implements ArmsControl {
       message.t === 'upgrade_buy' ||
       message.t === 'approach' ||
       message.t === 'job_take' ||
+      message.t === 'city_query' ||
       message.t === 'role_pick'
     )
       return;
@@ -812,6 +876,9 @@ export class HeistController implements ArmsControl {
   readonly jobs: JobSystem;
   readonly acts: ActsSystem;
   readonly story: StorySystem;
+  readonly cameras: CameraGrid;
+  readonly cityDb: CityDb;
+  readonly intel: IntelService;
   readonly voice: StoryVoice;
   /** Who has chosen to break in quietly (Phase 30.7). */
   private readonly stealth = new Set<Player>();

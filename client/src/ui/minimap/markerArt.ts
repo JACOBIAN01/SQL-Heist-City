@@ -12,6 +12,7 @@ export const MAP_COLOURS = {
   bag: '#ffd34d',
   cache: '#ffb300',
   roadblock: '#ff4d4d',
+  intel: '#4fc3f7',
   wanted: '#ff6a00',
   mate: '#3ec1d3',
   foe: '#ff4d4d',
@@ -45,6 +46,18 @@ export function drawMarker(
       ctx.fillStyle = MAP_COLOURS.bag;
       ctx.beginPath();
       ctx.arc(at.x, at.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    case 'intel':
+      // A place a query found: a cyan ring.
+      ctx.strokeStyle = MAP_COLOURS.intel;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, 5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = MAP_COLOURS.intel;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, 1.8, 0, Math.PI * 2);
       ctx.fill();
       return;
     case 'roadblock':

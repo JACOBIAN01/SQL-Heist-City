@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { JOB_KINDS, type JobKind } from '../config/heist';
+import type { CityTable, PublicCityRequest } from '../config/cityDb';
 import type { AwardId } from '../config/awards';
 import type { AtmosphereSettings } from '../config/atmosphere';
 import type { WeaponSpec } from '../config/combat';
@@ -210,6 +211,54 @@ export interface PayoutMessage {
   readonly mastery: number;
 }
 
+/** Ask the city database a question: a request and the SQL the student wrote for it (Phase 33). */
+export const cityQueryMessageSchema = z.object({
+  t: z.literal('city_query'),
+  ref: z.number().int(),
+  request: z.string().min(1).max(60),
+  sql: z.string().min(1).max(2000),
+});
+export type CityQueryMessage = z.infer<typeof cityQueryMessageSchema>;
+
+/** The city database as a student sees it: its tables and the requests on offer (never the answers). */
+export interface CityDbMessage {
+  readonly t: 'citydb';
+  readonly tables: readonly CityTable[];
+  readonly requests: readonly PublicCityRequest[];
+}
+
+/** The answer to one `city_query`. */
+export interface CityResultMessage {
+  readonly t: 'city_result';
+  readonly ref: number;
+  readonly ok: boolean;
+  readonly request: string;
+  /** Why not: the SQL was wrong (see `feedback`), or the player must wait, or it is not allowed. */
+  readonly reason?: 'wrong' | 'error' | 'cooldown' | 'unknown' | 'busy' | 'not_available' | 'dead';
+  readonly feedback?: { readonly code: string; readonly message: string; readonly advice?: string };
+  /** Cooldown: seconds until it may be asked again. */
+  readonly waitSeconds?: number;
+  /** What the right query did: how many pins, or what was switched off or unlocked. */
+  readonly result?: {
+    readonly kind: 'intel' | 'camera' | 'door';
+    readonly pins?: number;
+    readonly seconds?: number;
+    readonly effect?: string;
+  };
+}
+
+/** What the student's intel shows on their map right now (Phase 33.2). */
+export interface IntelPinsMessage {
+  readonly t: 'intel_pins';
+  readonly pins: readonly {
+    readonly id: number;
+    readonly x: number;
+    readonly z: number;
+    readonly label?: string;
+    readonly secondsLeft: number;
+  }[];
+}
+
 /** A cut-scene to play (Phase 32.3): a few lines said in turn. The student can skip it. */
 export interface SceneMessage {
   readonly t: 'scene';
@@ -370,6 +419,7 @@ export const jsonClientMessageSchema = z.union([
   upgradeBuyMessageSchema,
   approachMessageSchema,
   jobTakeMessageSchema,
+  cityQueryMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -763,6 +813,9 @@ export type HeistServerMessage =
   | StoryMessage
   | SceneMessage
   | BarkMessage
+  | CityDbMessage
+  | CityResultMessage
+  | IntelPinsMessage
   | PayoutMessage
   | ApproachState
   | DuelMessage

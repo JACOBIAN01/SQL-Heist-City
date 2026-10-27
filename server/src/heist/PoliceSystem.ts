@@ -89,6 +89,21 @@ export class PoliceSystem {
     return this.heat.get(player)?.stars ?? 0;
   }
 
+  /** The officers as the city database lists them (Phase 33.1). */
+  snapshot(): { id: number; target: number; x: number; z: number; role: string }[] {
+    return [...this.heat].flatMap(([target, heat]) =>
+      heat.officers
+        .filter((o) => o.player.alive)
+        .map((o) => ({
+          id: o.player.id,
+          target: target.id,
+          x: o.player.body.x,
+          z: o.player.body.z,
+          role: o.post ? 'roadblock' : 'chase',
+        })),
+    );
+  }
+
   /** Whether any officer chasing this player can see them (for stealth). */
   canSee(player: Player): boolean {
     const range = this.settings().sightRange;

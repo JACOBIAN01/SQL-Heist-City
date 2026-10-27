@@ -5,6 +5,7 @@ import type {
   ProgressionSettings,
   ModesSettings,
   StorySettings,
+  CityDbSettings,
   CitySettings,
   CombatSettings,
   HeistSettings,
@@ -46,6 +47,8 @@ export interface ChallengeStack {
   modesSettings(): ModesSettings;
   /** The story's fixers, chains, scenes and barks. */
   storySettings(): StorySettings;
+  /** The city database's requests and limits. */
+  cityDbSettings(): CityDbSettings;
   /** Heist rules, cars and time of day, read again at each new round. */
   worldSettings(): WorldSettings;
   /** City generation settings, read when a match is created. */
@@ -101,7 +104,10 @@ export function buildChallengeStack(
   return {
     review,
     sandboxStats: () => (sandbox instanceof WorkerSandboxRunner ? sandbox.stats() : undefined),
-    handler: new ChallengeMessageHandler(service, settings, options.now),
+    handler: new ChallengeMessageHandler(service, settings, options.now, {
+      run: (job) => sandbox.run(job),
+      settings: () => settings.cityDbSettings(),
+    }),
     heistSettings: () => settings.heistSettings(),
     combatSettings: () => settings.combatSettings(),
     tutorialSettings: () => settings.tutorialSettings(),
@@ -111,6 +117,7 @@ export function buildChallengeStack(
     progressionSettings: () => settings.progressionSettings(),
     modesSettings: () => settings.modesSettings(),
     storySettings: () => settings.storySettings(),
+    cityDbSettings: () => settings.cityDbSettings(),
     worldSettings: () => worldSettingsFrom(settings),
     citySettings: () => settings.citySettings(),
     invalidate: () => {

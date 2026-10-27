@@ -279,6 +279,38 @@
   font-weight: 700;
 }
 
+/* City database terminal (Phase 33). */
+.citydb-requests {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0.5rem 0;
+}
+.citydb-request.on {
+  outline: 2px solid #4fc3f7;
+}
+.citydb-prompt {
+  font-weight: 600;
+}
+.citydb-table code {
+  display: block;
+  white-space: pre-wrap;
+  color: #9fdcff;
+}
+.citydb-sql {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0.5rem 0;
+  font:
+    0.85rem/1.4 ui-monospace,
+    monospace;
+  background: #05080c;
+  color: #e8ebf0;
+  border: 1px solid #39404a;
+  border-radius: 6px;
+  padding: 6px;
+}
+
 /* Story journal (Phase 32.2). */
 .story-chain {
   margin: 0.6rem 0;

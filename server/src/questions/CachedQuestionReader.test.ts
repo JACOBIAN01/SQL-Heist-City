@@ -39,6 +39,7 @@ describe('CachedSettingsReader', () => {
       progressionSettings: () => (calls++, inner.progressionSettings()),
       modesSettings: () => (calls++, inner.modesSettings()),
       storySettings: () => (calls++, inner.storySettings()),
+      cityDbSettings: () => (calls++, inner.cityDbSettings()),
       dialectSettings: () => (calls++, inner.dialectSettings()),
       rewardTiers: (k: string) => (calls++, inner.rewardTiers(k)),
     };

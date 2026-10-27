@@ -2,8 +2,10 @@ import {
   challengeClientMessageSchema,
   type ChallengeClientMessage,
   type ChallengeServerMessage,
+  type CityDbSettings,
 } from '@heist/shared';
 import type { SettingsReader } from '../config/SettingsReader';
+import type { SandboxRunner } from '../sql/SandboxRunner';
 import type { ChallengeService, IssueOptions } from './ChallengeService';
 import { tiersForReward } from './tiers';
 
@@ -16,6 +18,8 @@ export class ChallengeMessageHandler {
     private readonly service: ChallengeService,
     private readonly settings: SettingsReader,
     private readonly now: () => number = Date.now,
+    /** Runs a student's SQL against the city's live tables (Phase 33); absent in tests. */
+    readonly city?: { run: SandboxRunner['run']; settings(): CityDbSettings } | undefined,
   ) {}
 
   /**

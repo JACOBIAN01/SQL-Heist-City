@@ -96,6 +96,12 @@ export function SettingsPage() {
         editable={isAdmin}
       />
       <SectionCard
+        name="cityDb"
+        title="City database"
+        note="The live city tables students query for intel, camera hacks and door control: the requests (their tier, words and the answer, which is never sent to students), how long intel lasts by tier, the range, the cooldowns and the camera time. See docs/gameplay.md."
+        editable={isAdmin}
+      />
+      <SectionCard
         name="story"
         title="Story"
         note="The crew's story: a fixer and a chain of three steps for each bank, the scenes that play when a chain starts and ends, the short lines the fixers say, and the line shown above each question. See docs/story.md."
