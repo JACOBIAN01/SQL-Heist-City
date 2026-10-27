@@ -79,6 +79,15 @@ Which data chips (hidden SQL trivia cards) a student has found in the city (Phas
 | `chip` | Which chip: the city seed and its number (no free text) | record | with the account |
 | `found_at` | When they found it | technical | with the account |
 
+### `player_upgrades`
+Which safehouse upgrades a student has bought and at what level (Phase 30.4).
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `player_id` | The student | pseudonymous | with the account |
+| `upgrade` | Which upgrade (a fixed name, no free text) | record | with the account |
+| `level` | How many levels they own | record | with the account |
+
 ### `player_contracts`
 The daily contracts a student was dealt and how far each got (Phase 26.5). Old days are deleted by the retention job.
 

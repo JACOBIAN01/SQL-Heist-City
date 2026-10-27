@@ -32,6 +32,8 @@ export class CacheSystem {
     private readonly rng: SeededRng,
     private readonly pay: (player: Player, amount: number) => void,
     private readonly active: () => boolean,
+    /** Extra metres a player sees hidden caches from (a safehouse upgrade). */
+    private readonly bonus: (player: Player) => number = () => 0,
   ) {}
 
   /** Where the live caches are (for tests and the debug overlay). */
@@ -92,7 +94,8 @@ export class CacheSystem {
     const own = this.revealed.get(player);
     const visible = this.live().filter(
       (c) =>
-        own?.has(c.id) || Math.hypot(c.x - player.body.x, c.z - player.body.z) <= s.revealRange,
+        own?.has(c.id) ||
+        Math.hypot(c.x - player.body.x, c.z - player.body.z) <= s.revealRange + this.bonus(player),
     );
     const key = visible.map((c) => c.id).join(',');
     if (found === undefined && this.told.get(player) === key) return;

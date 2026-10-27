@@ -31,6 +31,8 @@ export class CollectibleSystem {
     private readonly rng: () => SeededRng,
     private readonly pay: (player: Player, amount: number) => void,
     private readonly active: () => boolean,
+    /** Extra metres a player sees chips from (a safehouse upgrade). */
+    private readonly bonus: (player: Player) => number = () => 0,
   ) {}
 
   /** Where signed-in students' finds are kept (set once the match is bound to progress). */
@@ -119,7 +121,8 @@ export class CollectibleSystem {
     const mine = this.found.get(player) ?? new Set<number>();
     const near = chips.filter(
       (c) =>
-        !mine.has(c.id) && Math.hypot(c.x - player.body.x, c.z - player.body.z) <= s.revealRange,
+        !mine.has(c.id) &&
+        Math.hypot(c.x - player.body.x, c.z - player.body.z) <= s.revealRange + this.bonus(player),
     );
     const key = `${[...mine].sort().join(',')}|${near.map((c) => c.id).join(',')}`;
     if (latest === undefined && this.told.get(player) === key) return;

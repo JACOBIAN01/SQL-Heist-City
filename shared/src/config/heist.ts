@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+/** One safehouse upgrade (Phase 30.4): the banked-cash price of each level, and what a level is worth. */
+const upgradeSpec = (prices: number[], perLevel: number) =>
+  z
+    .object({
+      prices: z.array(z.number().int().min(0)).min(1).max(5).default(prices),
+      perLevel: z.number().min(0).default(perLevel),
+    })
+    .default({ prices, perLevel });
+
 /** Collectible data chips (Phase 30.3). */
 const collectiblesSchema = z.object({
   enabled: z.boolean().default(true),
@@ -311,6 +320,27 @@ export const heistSettingsSchema = z.object({
    * kept with their account. Trivia is data: add, reword or remove entries here.
    */
   collectibles: collectiblesSchema.default(() => collectiblesSchema.parse({})),
+  /**
+   * Safehouse upgrades (Phase 30.4), bought at the shop counter with *banked* cash (so each costs
+   * some of the round's score) and kept with the student's account. `perLevel` is what each level
+   * adds: banking time cut (share), armour you spawn with, share of carried cash kept on death,
+   * and metres added to how far away caches and chips show.
+   */
+  upgrades: z
+    .object({
+      enabled: z.boolean().default(true),
+      banking: upgradeSpec([5_000, 15_000, 40_000], 0.15),
+      armour: upgradeSpec([8_000, 20_000, 50_000], 20),
+      stash: upgradeSpec([10_000, 30_000], 0.15),
+      intel: upgradeSpec([6_000, 18_000, 45_000], 12),
+    })
+    .default(() => ({
+      enabled: true,
+      banking: { prices: [5_000, 15_000, 40_000], perLevel: 0.15 },
+      armour: { prices: [8_000, 20_000, 50_000], perLevel: 20 },
+      stash: { prices: [10_000, 30_000], perLevel: 0.15 },
+      intel: { prices: [6_000, 18_000, 45_000], perLevel: 12 },
+    })),
   /**
    * Street shops (Phase 29.6), a counter beside every safehouse. They sell for cash you are
    * carrying (so spending is a risk-free way to lose it from your score): body armour, which

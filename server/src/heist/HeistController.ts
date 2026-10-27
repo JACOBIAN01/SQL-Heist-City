@@ -36,6 +36,7 @@ import { RoundController } from './RoundController';
 import { CacheSystem } from './CacheSystem';
 import { CollectibleSystem } from './CollectibleSystem';
 import { ShopService } from './ShopService';
+import { UpgradeSystem } from './UpgradeSystem';
 import { SafehouseHandler } from './SafehouseHandler';
 import { TaskRules } from './TaskRule';
 import { PlanningRule } from './PlanningRule';
@@ -109,6 +110,7 @@ export class HeistController implements ArmsControl {
       new SeededRng(`caches:${match.classInfo?.classId ?? 0}`),
       (player, amount) => this.setCash(player, player.cash + amount),
       () => !this.taskOptions && !this.duels.enabled,
+      (p) => this.upgrades.intelRange(p),
     );
     // Collectible chips: the same places in every round of this city.
     this.collectibles = new CollectibleSystem(
@@ -117,6 +119,7 @@ export class HeistController implements ArmsControl {
       () => new SeededRng(`chips:${match.map.city?.settings.seed ?? 'none'}`),
       (player, amount) => this.setCash(player, player.cash + amount),
       () => !this.taskOptions && !this.duels.enabled,
+      (p) => this.upgrades.intelRange(p),
     );
     // No police in the tutorial (its questions are fixed) or in a duel room.
     this.police = new PoliceSystem(
@@ -135,20 +138,32 @@ export class HeistController implements ArmsControl {
     );
     this.bounties = new BountyBoard(match, settings, this.events);
     this.awards = new RoundAwards(this.events);
-    this.banking = new BankingService(match, () => this.settings.bankingSeconds, {
-      complete: (player) => {
-        const amount = player.cash;
-        player.banked += amount;
-        this.setCash(player, 0);
-        if (amount > 0) this.events.publish({ type: 'banked', player, amount });
-        return amount;
+    this.banking = new BankingService(
+      match,
+      () => this.settings.bankingSeconds,
+      {
+        complete: (player) => {
+          const amount = player.cash;
+          player.banked += amount;
+          this.setCash(player, 0);
+          if (amount > 0) this.events.publish({ type: 'banked', player, amount });
+          return amount;
+        },
       },
-    });
+      (p) => this.upgrades.bankingScale(p),
+    );
+    this.upgrades = new UpgradeSystem(
+      match,
+      () => this.settings.upgrades,
+      (p, id, result) => this.shop.send(p, undefined, id && result ? { id, ...result } : undefined),
+      (p) => this.applyUpgrades(p),
+    );
     this.shop = new ShopService({
       match,
       settings: () => this.settings.shop,
       setCash: (p, cash) => this.setCash(p, cash),
       refillAmmo: (p) => this.refillAmmo(p),
+      upgradeOffers: (p) => this.upgrades.offers(p),
     });
     this.interactions = new InteractionService(match)
       .register('safehouse', new SafehouseHandler(this.banking))
@@ -268,6 +283,7 @@ export class HeistController implements ArmsControl {
   /** A player just joined: tell them the guns' numbers and where every vault stands. */
   onJoin(player: Player): void {
     this.squads.place(player);
+    this.upgrades.load(player);
     this.squads.send(player);
     this.duels.onJoin(player);
     this.match.sendJson(player, { t: 'weapons', weapons: this.match.weapons });
@@ -332,13 +348,26 @@ export class HeistController implements ArmsControl {
       (killer && killer !== victim && killer.alive ? this.settings.killBonus : 0) + bounty;
     if (killer && earned > 0) this.setCash(killer, killer.cash + earned);
     if (victim.cash <= 0) return;
-    const bag = this.loot.add(victim.body.x, victim.body.y, victim.body.z, victim.cash);
-    this.setCash(victim, 0);
+    // A safehouse stash upgrade keeps a share of what they carried.
+    const kept = Math.floor(victim.cash * this.upgrades.stashShare(victim));
+    const bag = this.loot.add(victim.body.x, victim.body.y, victim.body.z, victim.cash - kept);
+    this.setCash(victim, kept);
     this.match.broadcastJson({ t: 'loot', add: [bag], remove: [] });
+  }
+
+  /** Spawn armour from the safehouse upgrade; never takes armour away. */
+  private applyUpgrades(player: Player): void {
+    if (!player.alive || player.isGuard) return;
+    const armour = this.upgrades.spawnArmour(player);
+    if (armour > player.armour) {
+      player.armour = Math.min(this.settings.shop.armourMax, armour);
+      this.shop.send(player);
+    }
   }
 
   /** A new life: empty hands again (or the sandbox rifle); tell the client. */
   onRespawn(player: Player): void {
+    this.applyUpgrades(player);
     this.sendArms(player);
   }
 
@@ -457,6 +486,10 @@ export class HeistController implements ArmsControl {
       this.match.sendJson(player, this.match.vehicleRequest(player, message));
       return;
     }
+    if (message.t === 'upgrade_buy') {
+      this.upgrades.buy(player, message.upgrade);
+      return;
+    }
     if (message.t === 'shop_buy') {
       this.shop.buy(player, message.item);
       return;
@@ -488,6 +521,7 @@ export class HeistController implements ArmsControl {
     this.duels.onLeave(player);
     this.police.clear(player);
     this.caches.forget(player);
+    this.upgrades.forget(player);
     this.collectibles.forget(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
@@ -506,6 +540,7 @@ export class HeistController implements ArmsControl {
       message.t === 'set_look' ||
       message.t === 'squad_join' ||
       message.t === 'shop_buy' ||
+      message.t === 'upgrade_buy' ||
       message.t === 'role_pick'
     )
       return;
@@ -590,6 +625,7 @@ export class HeistController implements ArmsControl {
   readonly caches: CacheSystem;
   readonly collectibles: CollectibleSystem;
   readonly shop: ShopService;
+  readonly upgrades: UpgradeSystem;
   private readonly streaks = new StreakKeeper();
   /** The reward each player has open in the SQL pop-up (shown to their squad). */
   private readonly openTasks = new Map<string, string>();

@@ -13,6 +13,7 @@ const msg = (over: Partial<ShopMessage> = {}): ShopMessage => ({
   ],
   armour: 0,
   armourMax: 100,
+  upgrades: [],
   ...over,
 });
 
@@ -48,5 +49,22 @@ describe('ShopView', () => {
     v.update(msg({ armour: 50 }));
     expect(v.bar.hidden).toBe(false);
     expect(v.bar.textContent).toContain('50');
+  });
+
+  it('lists the safehouse upgrades and asks to buy the next level', () => {
+    const { v, send } = make();
+    v.update(
+      msg({
+        upgrades: [
+          { id: 'banking', level: 1, max: 3, price: 15000 },
+          { id: 'stash', level: 2, max: 2 },
+        ],
+      }),
+    );
+    expect(v.panel.textContent).toContain('1/3');
+    expect(v.panel.textContent).toContain('Maxed');
+    v.panel.querySelector<HTMLButtonElement>('[data-upgrade-buy="banking"]')?.click();
+    expect(send).toHaveBeenCalledWith({ t: 'upgrade_buy', upgrade: 'banking' });
+    expect(v.panel.querySelector('[data-upgrade-buy="stash"]')).toBeNull();
   });
 });

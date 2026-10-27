@@ -4,6 +4,8 @@ import {
   type ShopDenial,
   type ShopItem,
   type ShopMessage,
+  type UpgradeDenial,
+  type UpgradeId,
 } from '@heist/shared';
 import type { Player } from '../game/Player';
 import type { InteractionHandler } from './InteractionService';
@@ -16,6 +18,7 @@ export interface ShopDeps {
   readonly settings: () => HeistSettings['shop'];
   setCash(player: Player, cash: number): void;
   refillAmmo(player: Player): void;
+  upgradeOffers(player: Player): ShopMessage['upgrades'];
 }
 
 /**
@@ -70,7 +73,11 @@ export class ShopService implements InteractionHandler {
   }
 
   /** The shop window, with the answer to the last purchase if there was one. */
-  send(player: Player, result?: ShopMessage['result']): void {
+  send(
+    player: Player,
+    result?: ShopMessage['result'],
+    upgrade?: { id: UpgradeId; ok: boolean; reason?: UpgradeDenial },
+  ): void {
     const s = this.deps.settings();
     const message: ShopMessage = {
       t: 'shop',
@@ -80,6 +87,16 @@ export class ShopService implements InteractionHandler {
       ],
       armour: player.armour,
       armourMax: s.armourMax,
+      upgrades: this.deps.upgradeOffers(player),
+      ...(upgrade
+        ? {
+            upgradeResult: {
+              upgrade: upgrade.id,
+              ok: upgrade.ok,
+              ...(upgrade.reason ? { reason: upgrade.reason } : {}),
+            },
+          }
+        : {}),
       ...(result ? { result } : {}),
     };
     this.deps.match.sendJson(player, message);

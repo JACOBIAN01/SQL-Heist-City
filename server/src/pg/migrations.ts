@@ -400,4 +400,13 @@ export const pgMigrations: readonly string[] = [
     PRIMARY KEY (player_id, chip)
   );
   `,
+  // 20 — safehouse upgrades a student owns (Phase 30.4)
+  `
+  CREATE TABLE player_upgrades (
+    player_id BIGINT  NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    upgrade   TEXT    NOT NULL,
+    level     INTEGER NOT NULL CHECK (level >= 0),
+    PRIMARY KEY (player_id, upgrade)
+  );
+  `,
 ];

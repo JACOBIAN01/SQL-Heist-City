@@ -245,3 +245,7 @@ Each round, cash is stashed in open spots around the city (settings `heist.cache
 ## Data chips (Phase 30.3)
 
 Glowing blue cards lie in fixed places around the city. Walk over one for a little cash and a piece of SQL trivia; Y shows the ones you have found. A signed-in student keeps their finds from match to match.
+
+## Safehouse upgrades (Phase 30.4)
+
+At a shop counter you can spend banked cash on lasting upgrades: faster banking, armour when you spawn, keeping part of your cash when you die, and seeing hidden caches and chips from further away. They stay with your account. The price comes off the cash you banked this round, so each one is a bet on the future.

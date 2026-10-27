@@ -26,6 +26,8 @@ export class BankingService {
     private readonly match: MatchApi,
     seconds: number | (() => number),
     private readonly hooks: BankingHooks,
+    /** A player's share of the usual time (a safehouse upgrade makes it shorter). */
+    private readonly scale: (player: Player) => number = () => 1,
   ) {
     this.secondsOf = typeof seconds === 'function' ? seconds : () => seconds;
   }
@@ -36,11 +38,11 @@ export class BankingService {
   }
 
   start(player: Player, anchor: MapAnchor): number {
+    const seconds = this.secondsOf() * this.scale(player);
     this.channels.set(player, {
       anchor,
-      endTick: this.match.tick + Math.ceil(this.secondsOf() * this.match.tickRate),
+      endTick: this.match.tick + Math.ceil(seconds * this.match.tickRate),
     });
-    const seconds = this.secondsOf();
     this.match.sendJson(player, { t: 'banking', status: 'started', seconds });
     return seconds;
   }

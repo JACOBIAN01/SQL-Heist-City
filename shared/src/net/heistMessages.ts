@@ -121,6 +121,18 @@ export interface CollectionMessage {
   readonly latest?: number;
 }
 
+/** The safehouse upgrades a student can own (Phase 30.4). */
+export const UPGRADE_IDS = ['banking', 'armour', 'stash', 'intel'] as const;
+export type UpgradeId = (typeof UPGRADE_IDS)[number];
+export type UpgradeDenial = 'no_cash' | 'max' | 'too_far' | 'dead' | 'closed' | 'not_ready';
+
+/** Buy the next level of a safehouse upgrade, at the shop counter. */
+export const upgradeBuyMessageSchema = z.object({
+  t: z.literal('upgrade_buy'),
+  upgrade: z.enum(UPGRADE_IDS),
+});
+export type UpgradeBuyMessage = z.infer<typeof upgradeBuyMessageSchema>;
+
 /** What a street shop sells (Phase 29.6). */
 export const SHOP_ITEMS = ['armour', 'ammo'] as const;
 export type ShopItem = (typeof SHOP_ITEMS)[number];
@@ -139,6 +151,18 @@ export interface ShopMessage {
   readonly offers: readonly { readonly item: ShopItem; readonly price: number }[];
   readonly armour: number;
   readonly armourMax: number;
+  /** Safehouse upgrades: level owned, the most there is, and the price of the next level (none at the top). */
+  readonly upgrades: readonly {
+    readonly id: UpgradeId;
+    readonly level: number;
+    readonly max: number;
+    readonly price?: number;
+  }[];
+  readonly upgradeResult?: {
+    readonly upgrade: UpgradeId;
+    readonly ok: boolean;
+    readonly reason?: UpgradeDenial;
+  };
   readonly result?: { readonly item: ShopItem; readonly ok: boolean; readonly reason?: ShopDenial };
 }
 
@@ -218,6 +242,7 @@ export const jsonClientMessageSchema = z.union([
   squadJoinMessageSchema,
   rolePickMessageSchema,
   shopBuyMessageSchema,
+  upgradeBuyMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 

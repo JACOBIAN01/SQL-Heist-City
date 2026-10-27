@@ -1,4 +1,4 @@
-import type { ShopItem, ShopMessage } from '@heist/shared';
+import type { ShopItem, ShopMessage, UpgradeId } from '@heist/shared';
 import type { I18n } from '../../i18n/I18n';
 import type { MessageKey } from '../../i18n/en';
 import { clear, h } from '../dom';
@@ -22,7 +22,9 @@ export class ShopView {
 
   constructor(
     private readonly i18n: I18n,
-    private readonly send: (message: { t: 'shop_buy'; item: ShopItem }) => void,
+    private readonly send: (
+      message: { t: 'shop_buy'; item: ShopItem } | { t: 'upgrade_buy'; upgrade: UpgradeId },
+    ) => void,
   ) {
     i18n.onChange(() => this.draw());
     this.draw();
@@ -75,6 +77,18 @@ export class ShopView {
           attrs: { role: m.result.ok ? 'status' : 'alert' },
         }),
       );
+    if (m.upgradeResult)
+      this.panel.appendChild(
+        h('p', {
+          class: m.upgradeResult.ok ? 'skills-help' : 'menu-error',
+          text: m.upgradeResult.ok
+            ? this.t('shop.upgraded', {
+                upgrade: this.t(`upgrade.${m.upgradeResult.upgrade}` as MessageKey),
+              })
+            : this.t(`upgrade.denied.${m.upgradeResult.reason ?? 'closed'}` as MessageKey),
+          attrs: { role: m.upgradeResult.ok ? 'status' : 'alert' },
+        }),
+      );
     for (const offer of m.offers)
       this.panel.appendChild(
         h(
@@ -88,6 +102,29 @@ export class ShopView {
             attrs: { 'data-item': offer.item },
             on: { click: () => this.send({ t: 'shop_buy', item: offer.item }) },
           }),
+        ),
+      );
+
+    if (m.upgrades.length === 0) return;
+    this.panel.appendChild(h('h3', { text: this.t('shop.upgrades') }));
+    this.panel.appendChild(h('p', { class: 'skills-help', text: this.t('shop.upgradesHelp') }));
+    for (const u of m.upgrades)
+      this.panel.appendChild(
+        h(
+          'div',
+          { class: 'shop-offer' },
+          h(
+            'span',
+            { attrs: { 'data-upgrade': u.id } },
+            `${this.t(`upgrade.${u.id}` as MessageKey)} · ${u.level}/${u.max}`,
+          ),
+          u.price === undefined
+            ? h('span', { text: this.t('shop.maxed') })
+            : h('button', {
+                text: this.t('shop.upgradeFor', { price: u.price.toLocaleString('en-US') }),
+                attrs: { 'data-upgrade-buy': u.id },
+                on: { click: () => this.send({ t: 'upgrade_buy', upgrade: u.id }) },
+              }),
         ),
       );
   }
