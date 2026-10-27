@@ -615,3 +615,23 @@
 .approach-badge[hidden] {
   display: none;
 }
+
+/* Acts of a heist (Phase 31.1). */
+.acts-hud {
+  position: fixed;
+  left: 50%;
+  top: 84px;
+  transform: translateX(-50%);
+  z-index: 20;
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffd98a;
+  font:
+    700 0.85rem system-ui,
+    sans-serif;
+  pointer-events: none;
+}
+.acts-hud[hidden] {
+  display: none;
+}

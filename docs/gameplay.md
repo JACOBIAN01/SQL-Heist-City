@@ -261,3 +261,9 @@ Every district has a job board (a purple marker). Press F: some give a **deliver
 ## Stealth or loud (Phase 30.7)
 
 Press X to move quietly: you are 25% slower, but a vault lock cracked while no guard or officer can see you sets off no alarm and brings no police. Crack every lock of a vault that way and its cash is 30% bigger. Go loud (the default) and the alarm rings and the guards come, but each lock pays you $500 on the spot.
+
+## A heist in three acts (Phase 31.1)
+
+1. **Setup.** Use the intel terminal on the pavement outside a bank and answer a question. Each correct answer is an intel point (up to 3): the first shows the bank's guards on your map, the second makes the alarm die down faster, the third adds 10% to the vault's cash.
+2. **The heist.** Crack the vault's locks.
+3. **The getaway.** Pick up the cash and get it to a safehouse before anyone stops you. Banking it completes the heist.

@@ -39,6 +39,14 @@ export type HeistEvent =
       readonly quiet?: boolean;
     }
   | { readonly type: 'vault_opened'; readonly vault: Vault }
+  /** A player picked up a cash bag (Phase 31.1). */
+  | {
+      readonly type: 'bag_taken';
+      readonly player: Player;
+      readonly amount: number;
+      readonly x: number;
+      readonly z: number;
+    }
   | { readonly type: 'banked'; readonly player: Player; readonly amount: number }
   /** A SQL task was answered correctly and its reward applied. */
   | {

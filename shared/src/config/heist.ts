@@ -321,6 +321,24 @@ export const heistSettingsSchema = z.object({
    */
   collectibles: collectiblesSchema.default(() => collectiblesSchema.parse({})),
   /**
+   * A heist in three acts (Phase 31.1): **setup** (intel jobs at the terminal outside a bank, each a
+   * SQL question), **the heist** (the vault's locks) and **the getaway** (carry the take to a
+   * safehouse). Each intel point does something: 1 shows the bank's guards on your map, 2 makes the
+   * alarm fade `alertScale` as fast, 3 adds `lootBonus` to the vault's cash.
+   */
+  acts: z
+    .object({
+      enabled: z.boolean().default(true),
+      intelMax: z.number().int().min(1).max(3).default(3),
+      /** Guards stay on alert this share as long, with intel level 2. */
+      alertScale: z.number().min(0.1).max(1).default(0.5),
+      /** Extra share of the vault's cash with intel level 3. */
+      lootBonus: z.number().min(0).max(1).default(0.1),
+      /** Guards are shown on the map from this far (m). */
+      mapRange: z.number().positive().default(90),
+    })
+    .default({ enabled: true, intelMax: 3, alertScale: 0.5, lootBonus: 0.1, mapRange: 90 }),
+  /**
    * How to break in (Phase 30.7). **Stealth** (a toggle): you move slower, and a lock cracked while
    * no guard or officer can see you is *quiet*: no alarm, no police, nothing on the map. A vault
    * whose every lock was quiet is a *ghost* job and pays `ghostBonus` more. **Loud** (the default):

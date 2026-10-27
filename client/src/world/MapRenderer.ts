@@ -20,6 +20,7 @@ const ANCHOR_COLOR: Readonly<Record<AnchorKind, number>> = {
   safehouse: 0x6bd36b,
   shop: 0xe8a33d,
   job_board: 0x9b7bff,
+  intel_terminal: 0x4fc3f7,
 };
 
 const DOOR_COLOR = 0x9aa3ad;

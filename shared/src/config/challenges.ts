@@ -88,6 +88,12 @@ export const DEFAULT_REWARD_TIERS: Readonly<Record<string, TierRange>> = {
   'brief:plan': { min: 1, max: 5 },
 };
 
+/** An intel job on bank n (Phase 31.1) asks a question of its tier or the one below. */
+export function intelTier(bankTier: number): TierRange {
+  const tier = Math.min(MAX_TIER, Math.max(MIN_TIER, bankTier));
+  return { min: Math.max(MIN_TIER, tier - 1), max: tier };
+}
+
 /** Vault lock k (1-based) of a bank of tier t asks a question of tier min(5, t + k − 1). */
 export function vaultLockTier(bankTier: number, lock: number): TierRange {
   const tier = Math.min(MAX_TIER, Math.max(MIN_TIER, bankTier + lock - 1));

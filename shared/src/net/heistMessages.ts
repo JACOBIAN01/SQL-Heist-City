@@ -166,6 +166,28 @@ export interface ApproachState {
   readonly mode: 'loud' | 'stealth';
 }
 
+/**
+ * Where you are in a three-act heist (Phase 31.1): `setup` while you gather intel, `heist` once a
+ * lock is cracked, `getaway` once you carry the take, `complete` when it is banked.
+ */
+export interface ActsMessage {
+  readonly t: 'acts';
+  /** The bank this is about (`bank-3`), or none. */
+  readonly bank?: string;
+  readonly act: 'none' | 'setup' | 'heist' | 'getaway' | 'complete';
+  /** Intel points held on that bank, and the most there are. */
+  readonly intel: number;
+  readonly intelMax: number;
+  /** The take being carried (getaway) or banked (complete). */
+  readonly take: number;
+}
+
+/** Guards of a bank you have intel on (Phase 31.1), for your map. */
+export interface IntelGuardsMessage {
+  readonly t: 'intel_guards';
+  readonly guards: readonly { readonly x: number; readonly z: number }[];
+}
+
 /** What a street shop sells (Phase 29.6). */
 export const SHOP_ITEMS = ['armour', 'ammo'] as const;
 export type ShopItem = (typeof SHOP_ITEMS)[number];
@@ -289,6 +311,7 @@ export type InteractDenial =
   | 'round_over'
   | 'busy'
   | 'need_car'
+  | 'intel_full'
   | 'not_available';
 
 /** What using an anchor did. `open_task` tells the client to open the SQL panel on this reward. */
@@ -659,6 +682,8 @@ export type HeistServerMessage =
   | CollectionMessage
   | DiscoveryMessage
   | JobMessage
+  | ActsMessage
+  | IntelGuardsMessage
   | ApproachState
   | DuelMessage
   | RadarMessage

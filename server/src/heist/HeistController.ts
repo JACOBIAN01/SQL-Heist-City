@@ -35,6 +35,7 @@ import { InteractionService } from './InteractionService';
 import { RoundController } from './RoundController';
 import { CacheSystem } from './CacheSystem';
 import { CollectibleSystem } from './CollectibleSystem';
+import { ActsSystem } from './ActsSystem';
 import { DiscoverySystem } from './DiscoverySystem';
 import { JobSystem } from './JobSystem';
 import { ShopService } from './ShopService';
@@ -104,6 +105,7 @@ export class HeistController implements ArmsControl {
       () => this.settings.guards,
       this.events,
       new SeededRng(`guards:${match.classInfo?.classId ?? 0}`),
+      (p, bank) => this.acts.alertScale(p, bank),
     );
     // Hidden caches in a city room only (the tutorial has no city, a duel room has no loot).
     this.caches = new CacheSystem(
@@ -130,6 +132,18 @@ export class HeistController implements ArmsControl {
       () => this.settings.jobs,
       new SeededRng(`jobs:${match.classInfo?.classId ?? 0}`),
       (player, amount) => this.setCash(player, player.cash + amount),
+      () => !this.taskOptions && !this.duels.enabled,
+    );
+    // The three acts of a heist: intel at the terminal, the locks, the getaway.
+    this.acts = new ActsSystem(
+      match,
+      () => this.settings.acts,
+      this.events,
+      (bank) =>
+        this.guards
+          .all()
+          .filter((g) => this.guards.bankOf(g) === bank)
+          .map((g) => ({ x: g.body.x, z: g.body.z })),
       () => !this.taskOptions && !this.duels.enabled,
     );
     // No police in the tutorial (its questions are fixed) or in a duel room.
@@ -180,6 +194,7 @@ export class HeistController implements ArmsControl {
       .register('safehouse', new SafehouseHandler(this.banking))
       .register('shop', this.shop)
       .register('job_board', this.jobs)
+      .register('intel_terminal', this.acts)
       .register('elevator', new ElevatorHandler())
       .register('vault_console', new VaultConsoleHandler(this.vaults));
     this.tasks.add(
@@ -196,7 +211,8 @@ export class HeistController implements ArmsControl {
       .add(new AmmoRule(match, this))
       .add(new PlanningRule(settings, () => this.roundOver))
       .add(new DuelRule(this.duels))
-      .add(this.jobs);
+      .add(this.jobs)
+      .add(this.acts);
     this.refreshDoors();
     if ((match.map.vaults?.length ?? 0) > 0) {
       this.round = new RoundController(match, settings, {
@@ -276,6 +292,7 @@ export class HeistController implements ArmsControl {
     this.police.reset();
     this.caches.reset();
     this.jobs.reset();
+    this.acts.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
@@ -321,6 +338,7 @@ export class HeistController implements ArmsControl {
     this.collectibles.onTick();
     this.discovery.onTick();
     this.jobs.onTick();
+    this.acts.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -334,6 +352,13 @@ export class HeistController implements ArmsControl {
       if (!taker) continue;
       this.loot.remove(bag.id);
       this.setCash(taker, taker.cash + bag.amount);
+      this.events.publish({
+        type: 'bag_taken',
+        player: taker,
+        amount: bag.amount,
+        x: bag.x,
+        z: bag.z,
+      });
       this.match.broadcastJson({ t: 'loot', add: [], remove: [bag.id] });
     }
   }
@@ -345,6 +370,7 @@ export class HeistController implements ArmsControl {
     this.banking.cancel(victim, 'died');
     this.police.clear(victim); // dying clears the record
     this.jobs.fail(victim);
+    this.acts.died(victim);
     if (victim.isPolice) {
       this.police.officerDown(victim, killer);
       return;
@@ -474,18 +500,20 @@ export class HeistController implements ArmsControl {
       ...(quiet ? { quiet: true } : {}),
     });
     if (vault.isOpen) {
-      this.spillLoot(vault);
+      this.spillLoot(vault, by);
       this.events.publish({ type: 'vault_opened', vault });
     }
     return true;
   }
 
   /** The last lock fell: the vault's cash lies in bags at its loot spots. */
-  private spillLoot(vault: Vault): void {
+  private spillLoot(vault: Vault, by?: Player): void {
     const spots = vault.spec.loot;
     const base = this.settings.vaultLootByTier[String(vault.spec.tier)] ?? 0;
-    // A ghost job (every lock quiet) pays more.
-    const total = vault.ghost ? Math.round(base * (1 + this.settings.approach.ghostBonus)) : base;
+    // A ghost job (every lock quiet) pays more, and so does intel gathered on the bank (act one).
+    const ghost = vault.ghost ? this.settings.approach.ghostBonus : 0;
+    const intel = this.acts.lootBonus(by, `bank-${vault.spec.tier}`);
+    const total = Math.round(base * (1 + ghost + intel));
     const bags = LootManager.split(total, spots.length).flatMap((amount, i) => {
       const spot = spots[i];
       return spot && amount > 0 ? [this.loot.add(spot.x, spot.y, spot.z, amount)] : [];
@@ -581,6 +609,7 @@ export class HeistController implements ArmsControl {
     this.collectibles.forget(player);
     this.discovery.forget(player);
     this.jobs.clear(player);
+    this.acts.forget(player);
     this.stealth.delete(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
@@ -686,6 +715,7 @@ export class HeistController implements ArmsControl {
   readonly collectibles: CollectibleSystem;
   readonly discovery: DiscoverySystem;
   readonly jobs: JobSystem;
+  readonly acts: ActsSystem;
   /** Who has chosen to break in quietly (Phase 30.7). */
   private readonly stealth = new Set<Player>();
   readonly shop: ShopService;

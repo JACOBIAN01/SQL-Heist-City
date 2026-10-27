@@ -318,6 +318,12 @@ export const en = {
   'collection.close': 'Close',
   'collection.none': 'No data chips in this city. Look around the streets for glowing blue cards.',
   'collection.count': 'Found {found} of {total}. Each chip holds a piece of SQL trivia.',
+  // --- acts (31.1) --------------------------------------------------------------------------
+  'acts.setup': 'Act 1 · Setup · intel {intel}/{max}',
+  'acts.heist': 'Act 2 · The heist · crack the vault',
+  'acts.getaway': 'Act 3 · The getaway · ${take} to bank',
+  'acts.complete': 'Heist complete · ${take} banked',
+  'acts.none': '',
   // --- jobs (30.6) -------------------------------------------------------------------------
   'job.delivery': 'Delivery: get to the drop',
   'job.race': 'Race: checkpoint {n} of {total}',

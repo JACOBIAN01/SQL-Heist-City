@@ -32,6 +32,7 @@ import { ShareCardView } from './ui/share/ShareCardView';
 import { SquadView } from './ui/hud/SquadView';
 import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
+import { ActsView } from './ui/hud/ActsView';
 import { ApproachBadge } from './ui/hud/ApproachBadge';
 import { JobView } from './ui/hud/JobView';
 import { ShopView } from './ui/hud/ShopView';
@@ -394,6 +395,9 @@ const policeStars = new PoliceStars(i18n);
 document.body.append(policeStars.root);
 const collectionView = new CollectionView(i18n);
 document.body.append(collectionView.panel);
+const actsView = new ActsView(i18n);
+document.body.append(actsView.root);
+let intelGuards: readonly { x: number; z: number }[] = [];
 const approachBadge = new ApproachBadge(i18n);
 document.body.append(approachBadge.root);
 let stealthOn = false;
@@ -644,6 +648,10 @@ client.subscribe({
       hud.toast('Round review ready — press V');
     } else if (message.t === 'duel') {
       duelView.update(message);
+    } else if (message.t === 'acts') {
+      actsView.update(message, performance.now());
+    } else if (message.t === 'intel_guards') {
+      intelGuards = message.guards;
     } else if (message.t === 'approach_state') {
       stealthOn = message.mode === 'stealth';
       approachBadge.update(message);
@@ -1029,6 +1037,7 @@ renderer.setAnimationLoop((now) => {
   beacon?.update(now / 1000);
   jobBeacon.update(now / 1000);
   jobView.frame(now);
+  actsView.frame(now);
   vaultArt?.update(now / 1000, frameMs / 1000, (id) => vaultAlerts.isAlert(id, now / 1000));
   bankingProgress.update(now);
   roundUi.update(now);
@@ -1170,6 +1179,7 @@ renderer.setAnimationLoop((now) => {
       })),
       ...mateMarkers(squadView.members),
       ...foeMarkers(radarFoes),
+      ...foeMarkers(intelGuards),
       ...(objective ? [objectiveMarker(objective)] : []),
     ];
     minimap.draw(me, markers, now / 1000);

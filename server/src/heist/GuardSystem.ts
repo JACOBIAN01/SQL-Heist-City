@@ -74,10 +74,13 @@ export class GuardSystem {
     private readonly settings: () => HeistSettings['guards'],
     events: HeistEvents,
     private readonly rng: Rng,
+    /** How long the alarm rings, as a share, for whoever cracked the lock (intel shortens it). */
+    private readonly alertScale: (player: Player | undefined, bank: string) => number = () => 1,
   ) {
     events.subscribe((event) => {
       if (event.type !== 'lock_opened' || event.quiet) return;
-      const until = this.match.tick + this.ticks(this.settings().alertSeconds);
+      const scale = this.alertScale(event.player, `bank-${event.vault.spec.tier}`);
+      const until = this.match.tick + this.ticks(this.settings().alertSeconds * scale);
       for (const g of this.guards) if (g.vault.id === event.vault.spec.id) g.alertUntil = until;
     });
   }
@@ -92,6 +95,12 @@ export class GuardSystem {
     return this.guards.some(
       (g) => g.player.alive && nearestVisible(this.match, g.player, [player], range) !== undefined,
     );
+  }
+
+  /** The bank (`bank-3`) a guard works at. */
+  bankOf(player: Player): string | undefined {
+    const g = this.guards.find((x) => x.player === player);
+    return g ? `bank-${g.vault.tier}` : undefined;
   }
 
   /** The guards, for tests and the debug overlay. */

@@ -48,7 +48,7 @@
 | 28 | Game modes | 🟨 built |
 | 29 | Living city | ✅ done, awaiting approval |
 | 30 | Exploration and freedom | ✅ done, awaiting approval |
-| 31 | Missions and heist structure | ⬜ |
+| 31 | Missions and heist structure | 🟦 31.1 done |
 | 32 | Story and characters | ⬜ |
 | 33 | SQL in the world: queries as superpowers | ⬜ |
 | 34 | Breakthrough features | ⬜ |
@@ -553,12 +553,12 @@ Post-launch. GTA audit "Exploration" (3) and "Freedom" (5) to 8–9.
 | 30.8 | Review: re-score Exploration and Freedom | both ≥ 8 | ✅ [docs/review/exploration.md](review/exploration.md): Exploration 3 → 8 and Freedom 5 → 8 by the author's own assessment, with a fresh-join map (fog) and five district street views; the gaps are listed (district street life, one stealth rule, two job kinds). The playtest-backed score is 36.1 |
 
 ---
-## Phase 31 — Missions and heist structure  ⬜
+## Phase 31 — Missions and heist structure  🟦
 Post-launch. GTA audit "Missions" from 3 to 8–9.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 31.1 | Three-act heists: setup (intel jobs), the heist, the getaway | a full three-act heist plays end to end | ⬜ |
+| 31.1 | Three-act heists: setup (intel jobs), the heist, the getaway | a full three-act heist plays end to end | ✅ **Act 1, setup:** an intel terminal on the pavement outside every bank (anchor `intel_terminal`); F opens an SQL question (`intel:bank-N`, tier N−1 to N) and each correct answer is an intel point, up to 3 (`heist.acts`). **Act 2, the heist:** the vault's locks, as before; cracking one moves you to act 2. **Act 3, the getaway:** picking up the vault's cash starts it, and banking at a safehouse completes the heist. What intel does: 1 shows the bank's guards on your minimap, 2 makes the alarm fade twice as fast, 3 adds 10% to the vault's cash. A HUD line says which act you are in. The run ends if you die. Tested end to end (intel → locks → loot → bank) |
 | 31.2 | Contract board with varied jobs (intel, sabotage, data theft, escort) | at least four contract types | ⬜ |
 | 31.3 | Getaway: police roadblocks placed by what your intel queries revealed | intel changes the getaway | ⬜ |
 | 31.4 | Payout screen: the take split, bonuses, mastery gained | shown after every heist | ⬜ |

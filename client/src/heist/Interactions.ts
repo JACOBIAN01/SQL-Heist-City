@@ -21,6 +21,8 @@ export function promptText(anchor: MapAnchor): string {
       return 'Shop';
     case 'job_board':
       return 'Take a job';
+    case 'intel_terminal':
+      return 'Gather intel on this bank';
   }
 }
 
@@ -30,6 +32,7 @@ export const DENIAL_TEXT: Readonly<Record<string, string>> = {
   dead: 'You are dead',
   cooldown: 'Slow down',
   nothing_to_bank: 'You are not carrying any cash',
+  intel_full: 'You know all there is to know about this bank',
   busy: 'Finish your current job first',
   need_car: 'You need a car for this one',
   not_available: 'Not available right now',

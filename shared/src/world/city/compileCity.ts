@@ -116,6 +116,19 @@ export function compileCity(
     });
   }
 
+  // An intel terminal on the pavement in front of each bank (Phase 31.1): act one of a heist.
+  for (const b of city.banks)
+    anchors.push({
+      id: `${b.id}:intel`,
+      kind: 'intel_terminal',
+      x: Math.round(b.x - b.width / 2 + 3),
+      y: 0,
+      z: Math.round(b.z + b.depth / 2 + 1.5),
+      radius: SAFEHOUSE_RADIUS,
+      bank: b.id,
+      storey: 0,
+    });
+
   // A job board in the open at the middle of every district (Phase 30.6).
   for (const d of city.districts)
     anchors.push({

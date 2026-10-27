@@ -70,5 +70,6 @@ export const DEFAULT_REWARD_ICONS: RewardIcons = {
 /** The icon id for a reward key (`vault:3:2` and the like use the shared `vault` entry); unknown rewards get cash. */
 export function iconIdFor(icons: Readonly<Record<string, string>>, rewardKey: string): string {
   if (rewardKey.startsWith('vault:')) return icons['vault'] ?? 'vault';
+  if (rewardKey.startsWith('intel:')) return icons['brief:plan'] ?? 'plan';
   return icons[rewardKey] ?? 'cash';
 }
