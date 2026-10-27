@@ -39,6 +39,7 @@ import { CollectibleSystem } from './CollectibleSystem';
 import { ActsSystem } from './ActsSystem';
 import { StorySystem } from './StorySystem';
 import { CameraGrid } from './CameraGrid';
+import { CopsRobbers } from './CopsRobbers';
 import { CityDb } from './CityDb';
 import { IntelService } from './IntelService';
 import { StoryVoice } from './StoryVoice';
@@ -148,6 +149,13 @@ export class HeistController implements ArmsControl {
         done: (player, kind) => this.events.publish({ type: 'job_done', player, kind }),
       },
     );
+    // Cops and robbers: some players are the police, and cops query a log of the robbers' trail.
+    this.cops = new CopsRobbers(
+      match,
+      () => this.settings.copsRobbers,
+      this.events,
+      () => !this.taskOptions && !this.duels.enabled,
+    );
     // The city database: live tables students query for intel, camera hacks and door control.
     this.cameras = new CameraGrid(match);
     this.cityDb = new CityDb({
@@ -172,6 +180,7 @@ export class HeistController implements ArmsControl {
             z: console_?.z ?? 0,
           };
         }),
+      trail: () => this.cops.trail(),
       doors: () =>
         [...this.vaults.all()].map((v) => ({
           id: v.spec.doorId,
@@ -197,6 +206,7 @@ export class HeistController implements ArmsControl {
         },
       },
       () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
+      (p) => this.cops.teamOf(p),
     );
     // The story: a chain of steps for each bank, following what the match already does.
     this.story = new StorySystem(
@@ -397,6 +407,7 @@ export class HeistController implements ArmsControl {
     this.jobs.reset();
     this.acts.reset();
     this.intel.reset();
+    this.cops.reset();
     this.cameras.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
@@ -421,7 +432,9 @@ export class HeistController implements ArmsControl {
     this.squads.place(player);
     this.upgrades.load(player);
     this.story.load(player);
-    this.match.sendJson(player, this.intel.catalog());
+    this.cops.assign(player);
+    this.cops.equip(player, (p) => this.giveWeapon(p, 'pistol'));
+    this.match.sendJson(player, this.intel.catalog(player));
     this.squads.send(player);
     this.duels.onJoin(player);
     this.match.sendJson(player, { t: 'weapons', weapons: this.match.weapons });
@@ -447,6 +460,7 @@ export class HeistController implements ArmsControl {
     this.jobs.onTick();
     this.acts.onTick();
     this.intel.onTick();
+    this.cops.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -459,7 +473,9 @@ export class HeistController implements ArmsControl {
         .find((p) => p.alive && Math.abs(p.body.y - bag.y) <= ANCHOR_REACH_Y);
       if (!taker) continue;
       this.loot.remove(bag.id);
-      this.setCash(taker, taker.cash + bag.amount);
+      // A cop recovers cash for the score at once; a robber carries it.
+      if (taker.isCop) taker.banked += bag.amount;
+      else this.setCash(taker, taker.cash + bag.amount);
       this.events.publish({
         type: 'bag_taken',
         player: taker,
@@ -534,6 +550,12 @@ export class HeistController implements ArmsControl {
     return vip;
   }
 
+  /** What a cop may use: lifts, and nothing to do with vaults, banking, intel or jobs. */
+  private copMayUse(anchorId: string): boolean {
+    const kind = this.match.map.anchors?.find((a) => a.id === anchorId)?.kind;
+    return kind === 'elevator' || kind === 'shop';
+  }
+
   /** Spawn armour from the safehouse upgrade; never takes armour away. */
   private applyUpgrades(player: Player): void {
     if (!player.alive || player.isGuard) return;
@@ -547,6 +569,7 @@ export class HeistController implements ArmsControl {
   /** A new life: empty hands again (or the sandbox rifle); tell the client. */
   onRespawn(player: Player): void {
     this.applyUpgrades(player);
+    this.cops.equip(player, (p) => this.giveWeapon(p, 'pistol'));
     this.sendArms(player);
   }
 
@@ -690,7 +713,9 @@ export class HeistController implements ArmsControl {
         ? ({ action: 'denied', reason: 'round_over' } as const)
         : player.vehicleId !== 0
           ? ({ action: 'denied', reason: 'not_available' } as const) // no banking or lifts from a car
-          : this.interactions.use(player, message.anchor);
+          : player.isCop && !this.copMayUse(message.anchor)
+            ? ({ action: 'denied', reason: 'not_available' } as const) // cops do not rob
+            : this.interactions.use(player, message.anchor);
       // The client only offers F within reach of a real anchor.
       if (
         result.action === 'denied' &&
@@ -766,6 +791,7 @@ export class HeistController implements ArmsControl {
     this.acts.forget(player);
     this.story.forget(player);
     this.intel.forget(player);
+    this.cops.forget(player);
     this.voice.forget(player);
     this.stealth.delete(player);
     this.challenges?.playerLeft(player.key);
@@ -792,6 +818,12 @@ export class HeistController implements ArmsControl {
       message.t === 'role_pick'
     )
       return;
+    if (
+      message.t === 'challenge_request' &&
+      player.isCop &&
+      /^(vault|intel|job):/.test(message.rewardKey)
+    )
+      return this.reply(player, this.refuse(message.ref, 'not_allowed'));
     if (message.t === 'challenge_request' && !this.tasks.find(message.rewardKey)) {
       this.match.reportAnomaly(player, 'impossible_action', { task: message.rewardKey });
       return this.reply(player, this.refuse(message.ref, 'unknown_reward'));
@@ -876,6 +908,7 @@ export class HeistController implements ArmsControl {
   readonly jobs: JobSystem;
   readonly acts: ActsSystem;
   readonly story: StorySystem;
+  readonly cops: CopsRobbers;
   readonly cameras: CameraGrid;
   readonly cityDb: CityDb;
   readonly intel: IntelService;

@@ -690,3 +690,29 @@
 .acts-hud[hidden] {
   display: none;
 }
+
+/* Team badge in cops and robbers (Phase 34.1). */
+.team-badge {
+  position: fixed;
+  right: 16px;
+  top: 96px;
+  z-index: 20;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font:
+    800 0.8rem system-ui,
+    sans-serif;
+  letter-spacing: 0.12em;
+  pointer-events: none;
+}
+.team-badge[hidden] {
+  display: none;
+}
+.team-badge[data-team='cop'] {
+  background: rgba(30, 60, 140, 0.85);
+  color: #bcd4ff;
+}
+.team-badge[data-team='robber'] {
+  background: rgba(120, 40, 30, 0.85);
+  color: #ffc9b8;
+}

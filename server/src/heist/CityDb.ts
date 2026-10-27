@@ -26,6 +26,16 @@ export interface CityState {
     z: number;
   }[];
   doors(): readonly { id: string; bank: string; locked: boolean }[];
+  /** The robbers' log (cops and robbers); empty otherwise. */
+  trail(): readonly {
+    id: number;
+    robber: number;
+    name: string;
+    cash: number;
+    x: number;
+    z: number;
+    ageS: number;
+  }[];
 }
 
 const round = (n: number): number => Math.round(n * 10) / 10;
@@ -87,6 +97,13 @@ export class CityDb {
         {
           columns: ['id', 'name', 'tier', 'locks', 'opened', 'x', 'z'],
           rows: s.banks().map((b) => [b.id, b.name, b.tier, b.locks, b.opened, num(b.x), num(b.z)]),
+        },
+      ],
+      [
+        'trail',
+        {
+          columns: ['id', 'robber', 'name', 'cash', 'x', 'z', 'age_s'],
+          rows: s.trail().map((t) => [t.id, t.robber, t.name, t.cash, num(t.x), num(t.z), t.ageS]),
         },
       ],
       [

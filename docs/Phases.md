@@ -51,7 +51,7 @@
 | 31 | Missions and heist structure | ✅ done, awaiting approval |
 | 32 | Story and characters | ✅ built; 32.1 and 32.4 await the owner |
 | 33 | SQL in the world: queries as superpowers | ✅ done; the balance playtest waits for 36.1 |
-| 34 | Breakthrough features | ⬜ |
+| 34 | Breakthrough features | 🟦 34.1 done |
 | 35 | Polish | ⬜ |
 | 36 | GTA scorecard gate | ⬜ |
 
@@ -582,7 +582,7 @@ Post-launch. Breakthrough feature 1 and GTA audit "SQL fit" from 4 to 8–9.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 33.1 | City database: live tables mirroring the world (guards, cameras, cash drops, wanted players, police) | tables update from the match state, cheaply | ✅ Seven tables mirror the world (`guards`, `cameras`, `cash_drops`, `wanted`, `police`, `banks`, `doors`; the schema and what each column means are in `shared/src/config/cityDb.ts`). They are read from the match's own state when a query is asked for, never kept up to date every tick, so the cost is a few dozen rows per question (a full snapshot takes well under 5 ms) and the sandbox gets a throwaway copy that nothing a student writes can reach back from. Cameras are placed from the map, three to a bank. Tested |
+| 33.1 | City database: live tables mirroring the world (guards, cameras, cash drops, wanted players, police) | tables update from the match state, cheaply | ✅ Eight tables mirror the world (`guards`, `cameras`, `cash_drops`, `wanted`, `police`, `banks`, `doors`, and the cops-only `trail` of Phase 34; the schema and what each column means are in `shared/src/config/cityDb.ts`). They are read from the match's own state when a query is asked for, never kept up to date every tick, so the cost is a few dozen rows per question (a full snapshot takes well under 5 ms) and the sandbox gets a throwaway copy that nothing a student writes can reach back from. Cameras are placed from the map, three to a bank. Tested |
 | 33.2 | Intel queries: a correct query shows its rows on the minimap for a while | intel appears and expires | ✅ The city database terminal (T): pick a request, read its tables, write the SQL. The server runs the student's SQL and the request's own answer on the same snapshot and compares the rows (any right way of asking is accepted; the answer itself never leaves the server). A right query puts its x/z rows on the minimap as cyan rings, labelled by its next column, for `intelSeconds` (20 s for tier 1 up to 90 s for tier 5), only within `rangeMeters` (140) of you, at most `maxPins` (30); a wrong one shows nothing and gets a hint about the shape of the difference. Tested |
 | 33.3 | Better queries give better intel (filters, joins, freshness) | quality scales the reward | ✅ Requests are tiered 1–5 by what the SQL needs: a plain `SELECT` (every guard), a filter (`WHERE amount > 5000`), a join with a label (which player the police are after), grouping and counting (the bank with the fewest guards). A higher tier keeps its intel on the map longer (`intelSeconds` by tier) and a joined query labels each ring with the name it found. The requests, their tier and their answers are data (admin → Settings → City database). Tested: lifetime grows with tier |
 | 33.4 | Camera hacking and door control through queries | both usable in a heist | ✅ **Cameras:** a correct `UPDATE cameras SET enabled = 0 WHERE bank = …` switches that bank's cameras off for 45 s and blinds its guards (the same blindness as the sabotage contract). **Doors:** a correct `UPDATE doors SET locked = 0 WHERE bank = …` (tier 5, 150 s cooldown) has the door controller open the vault's *next* lock (counted like any lock: quiet, loud, police and all), so it is a hard alternative to a lock question, not a way past all of them. The write runs on a throwaway copy; the server compares the resulting table with the request's own and applies only the change the answer would. Tested |
@@ -590,12 +590,12 @@ Post-launch. Breakthrough feature 1 and GTA audit "SQL fit" from 4 to 8–9.
 | 33.6 | Review: re-score SQL fit | ≥ 8 | ✅ [docs/review/sql-fit.md](review/sql-fit.md): SQL fit 4 → 8 by the author's own assessment, with a screenshot of the terminal (a dev-only `citydb.html` preview: a right joined query, and a wrong UPDATE). The gaps are listed (set requests, alike requests, positions only, balance untested, not seen in play). The playtest-backed score is 36.1 |
 
 ---
-## Phase 34 — Breakthrough features  ⬜
+## Phase 34 — Breakthrough features  🟦
 Post-launch. Audit section "Breakthrough features" 2–8.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 34.1 | Cops and robbers: police team queries logs to track the robbers | playable mode | ⬜ |
+| 34.1 | Cops and robbers: police team queries logs to track the robbers | playable mode | ✅ A mode a class can pick (`cops-and-robbers`, in the modes settings). Every fourth player to join is a cop (`heist.copsRobbers.copEvery`): armed with a pistol and 50 armour on every life, kept out of vaults, safehouses, intel and jobs, and scored for each robber put down (+$5,000 `arrestPoints`) and for cash they recover (it goes straight into their score). The robbers' positions are logged every 5 s into a `trail` table that only cops can see, and cops track robbers with three requests that need real SQL (`WHERE age_s <= 20`, a filter on cash with names, and each robber's latest row with a correlated subquery); the answers show on the cop's map for a while like any intel. The AI police and the bank guards are off in this mode. A COP / ROBBER badge says which side you are. Tested |
 | 34.2 | Co-op split queries: a tier-5 vault needs a three-part CTE, one part per squad member | parts join and grade together | ⬜ |
 | 34.3 | Fix the inside man's query mid-heist (uses 17.1) | appears in heists | ⬜ |
 | 34.4 | Optimisation leaderboards (rows scanned, query length) | per class and global | ⬜ |

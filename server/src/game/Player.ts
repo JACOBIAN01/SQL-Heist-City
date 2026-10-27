@@ -35,6 +35,8 @@ export class Player {
   isPolice = false;
   /** Somebody being escorted on a contract (Phase 31.2). */
   isVip = false;
+  /** A cop in a cops-and-robbers room (Phase 34.1). */
+  isCop = false;
   /** The gun a guard carries (kept across rounds). */
   guardWeapon = '';
   /** The floor level this player starts and respawns at (a guard upstairs), 0 for the street. */

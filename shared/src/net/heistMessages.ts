@@ -211,6 +211,12 @@ export interface PayoutMessage {
   readonly mastery: number;
 }
 
+/** Which side you are on in a cops-and-robbers room (Phase 34.1); sent once on joining. */
+export interface TeamMessage {
+  readonly t: 'team';
+  readonly role: 'cop' | 'robber';
+}
+
 /** Ask the city database a question: a request and the SQL the student wrote for it (Phase 33). */
 export const cityQueryMessageSchema = z.object({
   t: z.literal('city_query'),
@@ -814,6 +820,7 @@ export type HeistServerMessage =
   | SceneMessage
   | BarkMessage
   | CityDbMessage
+  | TeamMessage
   | CityResultMessage
   | IntelPinsMessage
   | PayoutMessage

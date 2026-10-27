@@ -81,6 +81,20 @@ export const DEFAULT_MODES: readonly Mode[] = [
     duel: duelSettingsSchema.parse({}),
   },
   {
+    id: 'cops-and-robbers',
+    name: 'Cops and Robbers',
+    description:
+      'Every fourth student is a cop: armed, kept out of the vaults, and given a log of where the robbers have been to query. Robbers rob; cops catch them.',
+    kind: 'heist',
+    heist: {
+      copsRobbers: { enabled: true },
+      police: { enabled: false },
+      guards: { perBankTier: {} },
+    },
+    bankLimit: null,
+    duel: duelSettingsSchema.parse({}),
+  },
+  {
     id: 'quick-draw',
     name: 'SQL Quick Draw',
     description:

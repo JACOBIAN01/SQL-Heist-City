@@ -69,16 +69,26 @@ export class IntelService {
     private readonly db: CityDb,
     private readonly effects: IntelEffects,
     private readonly active: () => boolean,
+    /** Which side a player is on, in a cops-and-robbers room (Phase 34.1). */
+    private readonly teamOf: (player: Player) => 'cop' | 'robber' | undefined = () => undefined,
   ) {}
 
   /** What a student is shown: the tables and the requests (never the answers). */
-  catalog(): CityDbMessage {
+  catalog(player?: Player): CityDbMessage {
     const s = this.sql()?.settings();
+    const team = player ? this.teamOf(player) : undefined;
+    const visible = (r: CityRequest) => r.tier <= (s?.maxTier ?? 0) && this.allowed(r, team);
     return {
       t: 'citydb',
-      tables: CITY_TABLES,
-      requests: s?.enabled ? publicRequests(s.requests.filter((r) => r.tier <= s.maxTier)) : [],
+      // The trail log exists only where there are cops.
+      tables: CITY_TABLES.filter((t) => t.name !== 'trail' || team === 'cop'),
+      requests: s?.enabled ? publicRequests(s.requests.filter(visible)) : [],
     };
+  }
+
+  /** A request meant for one team is for that team only; and only where cops and robbers is played. */
+  private allowed(r: CityRequest, team: 'cop' | 'robber' | undefined): boolean {
+    return r.team === undefined || r.team === team;
   }
 
   forget(player: Player): void {
@@ -121,7 +131,10 @@ export class IntelService {
     const s = city?.settings();
     if (!city || !s?.enabled || !this.active()) return refuse('not_available');
     if (!player.alive) return refuse('dead');
-    const request = s.requests.find((r) => r.id === message.request && r.tier <= s.maxTier);
+    const request = s.requests.find(
+      (r) =>
+        r.id === message.request && r.tier <= s.maxTier && this.allowed(r, this.teamOf(player)),
+    );
     if (!request) return refuse('unknown');
     if (this.busy.has(player)) return refuse('busy');
     const now = this.match.tick / this.match.tickRate;

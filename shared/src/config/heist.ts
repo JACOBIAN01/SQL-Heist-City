@@ -371,6 +371,31 @@ export const heistSettingsSchema = z.object({
     })
     .default({ enabled: true, intelMax: 3, alertScale: 0.5, lootBonus: 0.1, mapRange: 90 }),
   /**
+   * Cops and robbers (Phase 34.1), a mode where some players are the police. Every `copEvery`th
+   * player to join is a cop: armed, unable to crack vaults, scored for arrests (a robber put down)
+   * and for cash recovered. Cops track robbers with SQL over a log of where robbers have been.
+   */
+  copsRobbers: z
+    .object({
+      enabled: z.boolean().default(false),
+      copEvery: z.number().int().min(2).max(10).default(4),
+      /** Score (banked) for putting a robber down. */
+      arrestPoints: z.number().int().min(0).default(5_000),
+      /** Seconds between samples of where each robber is, and how long the log is kept. */
+      logEverySeconds: z.number().positive().default(5),
+      keepSeconds: z.number().positive().default(90),
+      /** Armour a cop starts with. */
+      copArmour: z.number().int().min(0).default(50),
+    })
+    .default({
+      enabled: false,
+      copEvery: 4,
+      arrestPoints: 5_000,
+      logEverySeconds: 5,
+      keepSeconds: 90,
+      copArmour: 50,
+    }),
+  /**
    * The payout screen (Phase 31.4) and what a finished heist teaches: mastery XP is
    * `masteryXpPerTier` for each tier of the bank, plus `ghostXp` for a ghost job.
    */

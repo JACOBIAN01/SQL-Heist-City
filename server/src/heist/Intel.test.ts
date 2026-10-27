@@ -71,11 +71,11 @@ function setup(over: Partial<CityDbSettings> = {}, near = true) {
 const ok = (r: CityResultMessage) => r.ok;
 
 describe('the city database (33.1)', () => {
-  it('mirrors the world in seven tables, from the match’s own state', async () => {
+  it('mirrors the world in eight tables, from the match’s own state', async () => {
     const { heist } = setup();
     const data = heist.cityDb.snapshot();
     expect([...data.tables.keys()].sort()).toEqual(
-      ['banks', 'cameras', 'cash_drops', 'doors', 'guards', 'police', 'wanted'].sort(),
+      ['banks', 'cameras', 'cash_drops', 'doors', 'guards', 'police', 'trail', 'wanted'].sort(),
     );
     const guards = data.tables.get('guards');
     expect(guards?.rows.length).toBe(heist.guards.snapshot().length);

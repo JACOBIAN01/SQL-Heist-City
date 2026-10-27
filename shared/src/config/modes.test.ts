@@ -12,10 +12,11 @@ import {
 const mode = (id: string) => modeById(S, id);
 
 describe('game modes', () => {
-  it('ships classic, smash and grab, and quick draw', () => {
+  it('ships classic, smash and grab, cops and robbers, and quick draw', () => {
     expect(S.modes.map((m) => [m.id, m.kind])).toEqual([
       ['classic', 'heist'],
       ['smash-and-grab', 'heist'],
+      ['cops-and-robbers', 'heist'],
       ['quick-draw', 'duel'],
     ]);
   });

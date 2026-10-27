@@ -139,6 +139,8 @@ export const en = {
   'action.mute': 'Mute sound',
   'action.approach': 'Stealth',
   'approach.stealth': 'STEALTH',
+  'team.cop': 'COP',
+  'team.robber': 'ROBBER',
   'action.collection': 'Chips',
   'action.story': 'Story',
   'action.citydb': 'City database',

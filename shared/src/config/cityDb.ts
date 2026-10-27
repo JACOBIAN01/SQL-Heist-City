@@ -89,6 +89,19 @@ export const CITY_TABLES: readonly CityTable[] = [
     ],
   },
   {
+    name: 'trail',
+    about: 'Where each robber has been: a log of their position every few seconds (cops only).',
+    columns: [
+      { name: 'id', type: 'INTEGER', about: 'the log entry' },
+      { name: 'robber', type: 'INTEGER', about: 'the robber (a player)' },
+      { name: 'name', type: 'TEXT', about: 'their name' },
+      { name: 'cash', type: 'INTEGER', about: 'dollars they carried then' },
+      { name: 'x', type: 'REAL', about: 'east–west position (m)' },
+      { name: 'z', type: 'REAL', about: 'north–south position (m)' },
+      { name: 'age_s', type: 'INTEGER', about: 'seconds ago' },
+    ],
+  },
+  {
     name: 'doors',
     about: 'The vault doors, and whether their controller has them locked.',
     columns: [
@@ -107,6 +120,7 @@ export const CITY_SCHEMA_SQL = [
   'CREATE TABLE wanted (id INTEGER PRIMARY KEY, name TEXT, cash INTEGER, x REAL, z REAL)',
   'CREATE TABLE police (id INTEGER PRIMARY KEY, target INTEGER, x REAL, z REAL, role TEXT)',
   'CREATE TABLE banks (id TEXT PRIMARY KEY, name TEXT, tier INTEGER, locks INTEGER, opened INTEGER, x REAL, z REAL)',
+  'CREATE TABLE trail (id INTEGER PRIMARY KEY, robber INTEGER, name TEXT, cash INTEGER, x REAL, z REAL, age_s INTEGER)',
   'CREATE TABLE doors (id TEXT PRIMARY KEY, bank TEXT, locked INTEGER)',
 ].join(';\n');
 
@@ -128,6 +142,8 @@ const requestSchema = z.object({
     .string()
     .regex(/^bank-[1-5]$/)
     .optional(),
+  /** Only this team sees and may ask it (cops and robbers mode); everyone otherwise. */
+  team: z.enum(['cop', 'robber']).optional(),
   /** The answer. Never sent to a client: the server runs it on the same snapshot and compares. */
   reference: z.string().min(1).max(2000),
 });
@@ -217,6 +233,41 @@ function defaultRequests(): CityRequest[] {
         'SELECT b.x, b.z, b.name FROM banks b LEFT JOIN guards g ON g.bank = b.id GROUP BY b.id ORDER BY COUNT(g.id) ASC, b.id LIMIT 1',
     },
   ];
+  out.push(
+    {
+      id: 'trail-recent',
+      kind: 'intel',
+      tier: 2,
+      title: 'Where the robbers have just been',
+      prompt: 'Show where any robber was in the last 20 seconds. Return x and z.',
+      tables: ['trail'],
+      team: 'cop',
+      reference: 'SELECT x, z FROM trail WHERE age_s <= 20',
+    },
+    {
+      id: 'trail-rich',
+      kind: 'intel',
+      tier: 3,
+      title: 'The robbers with the money',
+      prompt:
+        'Show where robbers carrying $20,000 or more were in the last 30 seconds, with their name. Return x, z and name.',
+      tables: ['trail'],
+      team: 'cop',
+      reference: 'SELECT x, z, name FROM trail WHERE age_s <= 30 AND cash >= 20000',
+    },
+    {
+      id: 'trail-latest',
+      kind: 'intel',
+      tier: 4,
+      title: 'Each robber’s latest position',
+      prompt:
+        'Show the most recent logged position of every robber, with their name. Return x, z and name.',
+      tables: ['trail'],
+      team: 'cop',
+      reference:
+        'SELECT t.x, t.z, t.name FROM trail t WHERE t.age_s = (SELECT MIN(age_s) FROM trail u WHERE u.robber = t.robber)',
+    },
+  );
   for (const n of [1, 2, 3, 4, 5]) {
     const bank = `bank-${n}`;
     const name = BANK_NAMES[bank] ?? bank;

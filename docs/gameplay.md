@@ -291,3 +291,7 @@ When a story chain opens or ends, a short scene plays in the fixer's voice (Ente
 ## The city is a database (Phase 33)
 
 Press T for the city database terminal. The guards, cameras, cash lying about, wanted players, police, banks and vault doors are tables, live. Pick a request ("show every guard", "the guards of Metro Capital", "who the police are chasing"), read its tables and write the SQL: a right answer puts those places on your minimap for a while, and a harder question keeps them there longer. From the higher tiers a right `UPDATE` switches a bank's cameras off (its guards go blind for a minute) or has a vault door open its next lock. It only shows what is near you, you must wait between tries, and a wrong query shows nothing.
+
+## Cops and robbers (Phase 34.1)
+
+In this mode (the teacher picks it), every fourth student is a cop. Cops carry a pistol and armour, cannot rob, and score for each robber they put down and for cash they recover. The game logs where each robber has been every few seconds, and only cops can read the log: press T and answer a request such as "where were the robbers carrying $20,000 or more in the last 30 seconds?" and the places show on the cops' map. Robbers should keep moving, and keep their cash close.

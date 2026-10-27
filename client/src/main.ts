@@ -34,6 +34,7 @@ import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
 import { ActsView } from './ui/hud/ActsView';
 import { StoryView } from './ui/hud/StoryView';
+import { TeamBadge } from './ui/hud/TeamBadge';
 import { CityDbView } from './ui/hud/CityDbView';
 import { BarkView, SceneView } from './ui/hud/SceneView';
 import { PayoutView } from './ui/hud/PayoutView';
@@ -411,6 +412,8 @@ document.body.append(sceneView.root, barkView.root);
 window.addEventListener('keydown', (event) => {
   if (sceneView.playing && event.code === 'Enter') sceneView.advance();
 });
+const teamBadge = new TeamBadge(i18n);
+document.body.append(teamBadge.root);
 const cityDbView = new CityDbView(i18n, (m) => client.sendJson(m));
 document.body.append(cityDbView.panel);
 let intelPins: readonly { id: number; x: number; z: number; label?: string }[] = [];
@@ -672,6 +675,8 @@ client.subscribe({
       duelView.update(message);
     } else if (message.t === 'acts') {
       actsView.update(message, performance.now());
+    } else if (message.t === 'team') {
+      teamBadge.update(message);
     } else if (message.t === 'citydb') {
       cityDbView.update(message);
     } else if (message.t === 'city_result') {
