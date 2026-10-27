@@ -106,6 +106,8 @@ Server → client: the challenge replies and
 
 - `shop_buy { item }` (client → server, `armour` or `ammo`): buy at the counter you stand at. Answer: `shop { offers, armour, armourMax, result? }` with `result { item, ok, reason? }` (`no_cash`, `full`, `too_far`, `dead`, `closed`). Opening a shop sends the same message without `result`.
 
+- `caches { caches: [{id,x,z}], found?: {amount} }` (server → client): the hidden caches this player can see now (near, or revealed by intel); sent when that set changes, and with `found` when they take one.
+
 The server validates every use: the anchor exists, the player is alive and within its radius (+0.75 m slack) on the same storey, and a 0.75 s per-player cooldown has passed. Anything that fails the shape check is ignored.
 
 - `vaults { vaults: [{id, tier, locks, opened}] }` (server → client): progress of every vault, sent on join and whenever a lock opens. The vault door stops blocking once `opened == locks`; the client swaps its collision map and hides the door.

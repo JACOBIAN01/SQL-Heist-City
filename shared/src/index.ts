@@ -44,6 +44,7 @@ export * from './config/audio';
 export * from './world/bank/banks';
 export * from './world/city/CityLayout';
 export * from './world/city/districts';
+export * from './world/city/caches';
 export * from './world/city/generateCity';
 export * from './world/city/compileCity';
 export * from './world/city/cityMaps';

@@ -10,6 +10,7 @@ export const MAP_COLOURS = {
   safehouse: '#3ddc84',
   hospital: '#e5484d',
   bag: '#ffd34d',
+  cache: '#ffb300',
   wanted: '#ff6a00',
   mate: '#3ec1d3',
   foe: '#ff4d4d',
@@ -44,6 +45,18 @@ export function drawMarker(
       ctx.beginPath();
       ctx.arc(at.x, at.y, 2.5, 0, Math.PI * 2);
       ctx.fill();
+      return;
+    case 'cache':
+      // A hidden cache: a gold diamond with a question mark.
+      ctx.fillStyle = MAP_COLOURS.cache;
+      ctx.beginPath();
+      ctx.moveTo(at.x, at.y - 6);
+      ctx.lineTo(at.x + 6, at.y);
+      ctx.lineTo(at.x, at.y + 6);
+      ctx.lineTo(at.x - 6, at.y);
+      ctx.closePath();
+      ctx.fill();
+      label('?', '#3a2600', 9);
       return;
     case 'wanted':
       // A price on their head: an orange diamond with a dollar sign.

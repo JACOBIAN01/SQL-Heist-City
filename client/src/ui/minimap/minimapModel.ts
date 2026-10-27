@@ -31,6 +31,8 @@ export type MarkerKind =
   | 'safehouse'
   | 'hospital'
   | 'bag'
+  /** A hidden cache the server has shown you (Phase 30.2). */
+  | 'cache'
   | 'wanted'
   | 'objective'
   /** A squad-mate (Phase 27.4). */

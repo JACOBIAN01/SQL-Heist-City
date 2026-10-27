@@ -102,6 +102,13 @@ export interface PoliceMessage {
   readonly max: number;
 }
 
+/** Hidden caches this player can see right now (Phase 30.2), and the cash from one just found. */
+export interface CachesMessage {
+  readonly t: 'caches';
+  readonly caches: readonly { readonly id: number; readonly x: number; readonly z: number }[];
+  readonly found?: { readonly amount: number };
+}
+
 /** What a street shop sells (Phase 29.6). */
 export const SHOP_ITEMS = ['armour', 'ammo'] as const;
 export type ShopItem = (typeof SHOP_ITEMS)[number];
@@ -572,6 +579,7 @@ export type HeistServerMessage =
   | SquadMessage
   | PoliceMessage
   | ShopMessage
+  | CachesMessage
   | DuelMessage
   | RadarMessage
   | LeagueMessage

@@ -237,3 +237,7 @@ At the wheel, R steps the radio through three stations and off. The tunes are ma
 ## Districts (Phase 30.1)
 
 The city is five districts, each with its own building style, a landmark tower you can see across the rooftops, and a colour on the full map (M): Financial District (glass towers), Old Town (brick), The Docks, Market Row, Campus Heights.
+
+## Hidden caches (Phase 30.2)
+
+Each round, cash is stashed in open spots around the city (settings `heist.caches`). You only see one when you are close: a bag under a golden beam, and a `?` on the minimap. Walk over it to take the cash. They are somewhere new every round.

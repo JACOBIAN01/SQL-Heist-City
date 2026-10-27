@@ -184,6 +184,20 @@ export const heistSettingsSchema = z.object({
     .min(2)
     .default(['Red', 'Blue', 'Green', 'Gold', 'Violet', 'Teal', 'Orange', 'Pink', 'Grey', 'Cyan']),
   /**
+   * Hidden caches (Phase 30.2): cash stashed on open ground, somewhere new each round. A cache shows
+   * only when you are within `revealRange`; walking over it pays `amount` into your carried cash.
+   * (Intel from SQL jobs will reveal them from afar, Phase 33.)
+   */
+  caches: z
+    .object({
+      enabled: z.boolean().default(true),
+      count: z.number().int().min(0).max(40).default(8),
+      amount: z.number().int().min(0).default(1_500),
+      pickupRadius: z.number().positive().max(10).default(1.8),
+      revealRange: z.number().positive().max(200).default(30),
+    })
+    .default({ enabled: true, count: 8, amount: 1_500, pickupRadius: 1.8, revealRange: 30 }),
+  /**
    * Street shops (Phase 29.6), a counter beside every safehouse. They sell for cash you are
    * carrying (so spending is a risk-free way to lose it from your score): body armour, which
    * soaks damage before health, and a full reload. Prices and amounts are all here.

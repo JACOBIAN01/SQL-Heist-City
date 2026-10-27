@@ -33,6 +33,7 @@ import { LootManager } from './LootManager';
 import { ElevatorHandler } from './ElevatorHandler';
 import { InteractionService } from './InteractionService';
 import { RoundController } from './RoundController';
+import { CacheSystem } from './CacheSystem';
 import { ShopService } from './ShopService';
 import { SafehouseHandler } from './SafehouseHandler';
 import { TaskRules } from './TaskRule';
@@ -99,6 +100,14 @@ export class HeistController implements ArmsControl {
       () => this.settings.guards,
       this.events,
       new SeededRng(`guards:${match.classInfo?.classId ?? 0}`),
+    );
+    // Hidden caches in a city room only (the tutorial has no city, a duel room has no loot).
+    this.caches = new CacheSystem(
+      match,
+      () => this.settings.caches,
+      new SeededRng(`caches:${match.classInfo?.classId ?? 0}`),
+      (player, amount) => this.setCash(player, player.cash + amount),
+      () => !this.taskOptions && !this.duels.enabled,
     );
     // No police in the tutorial (its questions are fixed) or in a duel room.
     this.police = new PoliceSystem(
@@ -228,6 +237,7 @@ export class HeistController implements ArmsControl {
     this.duels.reset();
     this.guards.reset();
     this.police.reset();
+    this.caches.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
     this.bounties.forget();
@@ -268,6 +278,7 @@ export class HeistController implements ArmsControl {
     this.duels.onTick();
     this.guards.onTick();
     this.police.onTick();
+    this.caches.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -466,6 +477,7 @@ export class HeistController implements ArmsControl {
     this.openTasks.delete(player.key);
     this.duels.onLeave(player);
     this.police.clear(player);
+    this.caches.forget(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
     this.onDeath(player); // cash does not vanish with a disconnect
@@ -564,6 +576,7 @@ export class HeistController implements ArmsControl {
       .catch(() => this.reply(player, this.refuse(message.ref, 'unavailable')));
   }
 
+  readonly caches: CacheSystem;
   readonly shop: ShopService;
   private readonly streaks = new StreakKeeper();
   /** The reward each player has open in the SQL pop-up (shown to their squad). */

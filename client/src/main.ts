@@ -74,6 +74,7 @@ import { CombatFeedback } from './game/CombatFeedback';
 import { RoundUi } from './heist/RoundUi';
 import { ScoreboardView } from './ui/hud/ScoreboardView';
 import { BankingProgress } from './heist/BankingProgress';
+import { CacheBeacons } from './heist/CacheBeacons';
 import { LootRenderer } from './heist/LootRenderer';
 import { HeistWorld } from './heist/HeistWorld';
 import { createGun } from './entities/GunModel';
@@ -87,6 +88,7 @@ import { AimView } from './render/AimView';
 import { WeaponTable } from './game/WeaponTable';
 import {
   hospitalMarker,
+  type Marker,
   markersFor,
   objectiveMarker,
   VaultAlerts,
@@ -217,6 +219,7 @@ if (vaultArt && params.has('vaultdemo')) {
 }
 const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
+const cacheBeacons = new CacheBeacons(scene);
 
 /** Field of view (deg) when not aiming; aiming narrows it by the gun's zoom. */
 const BASE_FOV = settings.current.look.fov;
@@ -628,6 +631,10 @@ client.subscribe({
       hud.toast('Round review ready — press V');
     } else if (message.t === 'duel') {
       duelView.update(message);
+    } else if (message.t === 'caches') {
+      cacheBeacons.apply(message.caches);
+      if (message.found)
+        hud.toast(`Hidden cache found! +$${message.found.amount.toLocaleString('en-US')}`);
     } else if (message.t === 'shop') {
       shopView.update(message);
     } else if (message.t === 'police') {
@@ -979,6 +986,7 @@ renderer.setAnimationLoop((now) => {
   predicted.smooth(frameMs / 1000);
   tracers.update(frameMs / 1000);
   loot.update(now / 1000);
+  cacheBeacons.update(now / 1000);
   beacon?.update(now / 1000);
   vaultArt?.update(now / 1000, frameMs / 1000, (id) => vaultAlerts.isAlert(id, now / 1000));
   bankingProgress.update(now);
@@ -1105,6 +1113,13 @@ renderer.setAnimationLoop((now) => {
         wanted,
         client.playerId,
       ),
+      ...[...cacheBeacons.positions()].map((c): Marker => ({
+        kind: 'cache',
+        id: `cache-${c.id}`,
+        x: c.x,
+        z: c.z,
+        pinned: false,
+      })),
       ...mateMarkers(squadView.members),
       ...foeMarkers(radarFoes),
       ...(objective ? [objectiveMarker(objective)] : []),
