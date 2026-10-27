@@ -16,8 +16,24 @@ const journal: StoryMessage = {
   t: 'story',
   pages: 2,
   chains: [
-    { bank: one.bank, name: one.name, fixer: one.fixer, state: 'done', step: 3, total: 3, page: one.page },
-    { bank: two.bank, name: two.name, fixer: two.fixer, state: 'done', step: 3, total: 3, page: two.page },
+    {
+      bank: one.bank,
+      name: one.name,
+      fixer: one.fixer,
+      state: 'done',
+      step: 3,
+      total: 3,
+      page: one.page,
+    },
+    {
+      bank: two.bank,
+      name: two.name,
+      fixer: two.fixer,
+      state: 'done',
+      step: 3,
+      total: 3,
+      page: two.page,
+    },
     {
       bank: three.bank,
       name: three.name,
@@ -46,6 +62,6 @@ const question = document.createElement('div');
 question.id = 'question';
 const pane = new ProblemPane(question);
 const frame = frameFor('vault:bank-3:lock-1', DEFAULT_STORY_SETTINGS.frames);
-pane.show({ ...sampleChallenge, rewardKey: 'vault:bank-3:lock-1', ...(frame ? { frame } : {}) });
+pane.show(sampleChallenge({ rewardKey: 'vault:bank-3:lock-1', ...(frame ? { frame } : {}) }));
 
 row.append(story.panel, scenes.root, bark.root, question);
