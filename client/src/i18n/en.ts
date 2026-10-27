@@ -137,6 +137,7 @@ export const en = {
   'action.squad': 'Squad',
   'action.review': 'Review the round',
   'action.mute': 'Mute sound',
+  'action.collection': 'Chips',
   'action.radio': 'Radio',
   'radio.off': 'Radio off',
   'action.settings': 'Settings',
@@ -310,6 +311,11 @@ export const en = {
   'game.hint': 'Click to play — {keys} · Esc release mouse',
   // --- police (29.4) ----------------------------------------------------------------------
   'wanted.label': 'Wanted level {stars}',
+  // --- collection (30.3) -------------------------------------------------------------------
+  'collection.title': 'Data chips',
+  'collection.close': 'Close',
+  'collection.none': 'No data chips in this city. Look around the streets for glowing blue cards.',
+  'collection.count': 'Found {found} of {total}. Each chip holds a piece of SQL trivia.',
   // --- shop (29.6) -------------------------------------------------------------------------
   'shop.title': 'Shop',
   'shop.close': 'Close',

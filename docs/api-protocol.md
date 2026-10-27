@@ -108,6 +108,8 @@ Server → client: the challenge replies and
 
 - `caches { caches: [{id,x,z}], found?: {amount} }` (server → client): the hidden caches this player can see now (near, or revealed by intel); sent when that set changes, and with `found` when they take one.
 
+- `collection { near: [{id,x,z}], found: [{id,title,fact}], total, latest? }` (server → client): the data chips in sight, every chip this student has found with its trivia, and the id of the one just picked up.
+
 The server validates every use: the anchor exists, the player is alive and within its radius (+0.75 m slack) on the same storey, and a 0.75 s per-player cooldown has passed. Anything that fails the shape check is ignored.
 
 - `vaults { vaults: [{id, tier, locks, opened}] }` (server → client): progress of every vault, sent on join and whenever a lock opens. The vault door stops blocking once `opened == locks`; the client swaps its collision map and hides the door.

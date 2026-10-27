@@ -34,6 +34,7 @@ import { ElevatorHandler } from './ElevatorHandler';
 import { InteractionService } from './InteractionService';
 import { RoundController } from './RoundController';
 import { CacheSystem } from './CacheSystem';
+import { CollectibleSystem } from './CollectibleSystem';
 import { ShopService } from './ShopService';
 import { SafehouseHandler } from './SafehouseHandler';
 import { TaskRules } from './TaskRule';
@@ -106,6 +107,14 @@ export class HeistController implements ArmsControl {
       match,
       () => this.settings.caches,
       new SeededRng(`caches:${match.classInfo?.classId ?? 0}`),
+      (player, amount) => this.setCash(player, player.cash + amount),
+      () => !this.taskOptions && !this.duels.enabled,
+    );
+    // Collectible chips: the same places in every round of this city.
+    this.collectibles = new CollectibleSystem(
+      match,
+      () => this.settings.collectibles,
+      () => new SeededRng(`chips:${match.map.city?.settings.seed ?? 'none'}`),
       (player, amount) => this.setCash(player, player.cash + amount),
       () => !this.taskOptions && !this.duels.enabled,
     );
@@ -279,6 +288,7 @@ export class HeistController implements ArmsControl {
     this.guards.onTick();
     this.police.onTick();
     this.caches.onTick();
+    this.collectibles.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -478,6 +488,7 @@ export class HeistController implements ArmsControl {
     this.duels.onLeave(player);
     this.police.clear(player);
     this.caches.forget(player);
+    this.collectibles.forget(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
     this.onDeath(player); // cash does not vanish with a disconnect
@@ -577,6 +588,7 @@ export class HeistController implements ArmsControl {
   }
 
   readonly caches: CacheSystem;
+  readonly collectibles: CollectibleSystem;
   readonly shop: ShopService;
   private readonly streaks = new StreakKeeper();
   /** The reward each player has open in the SQL pop-up (shown to their squad). */

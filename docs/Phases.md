@@ -47,7 +47,7 @@
 | 27 | Squads and roles | 🟨 built; role balance waits for a playtest |
 | 28 | Game modes | 🟨 built |
 | 29 | Living city | ✅ done, awaiting approval |
-| 30 | Exploration and freedom | 🟦 30.1–30.2 done |
+| 30 | Exploration and freedom | 🟦 30.1–30.3 done |
 | 31 | Missions and heist structure | ⬜ |
 | 32 | Story and characters | ⬜ |
 | 33 | SQL in the world: queries as superpowers | ⬜ |
@@ -545,7 +545,7 @@ Post-launch. GTA audit "Exploration" (3) and "Freedom" (5) to 8–9.
 |---|---|---|---|
 | 30.1 | Districts with their own look and landmarks | each district recognisable on sight and on the map | ✅ Five districts (`DEFAULT_DISTRICTS`: Financial District, Old Town, The Docks, Market Row, Campus Heights), each block belonging to the nearest spot on the grid. Each has its own facade family (metal glass downtown, brick in Old Town, …), one landmark tower (`citySettings.landmarkStoreys`, 12 storeys) and its own colour; the full map washes every block in its district colour and writes the district names and landmark names. Lot layout is untouched (districts are a layer added after the lots). Tested across seeds and sizes |
 | 30.2 | Points of interest and hidden caches (found through SQL intel, see Phase 33) | caches spawn and pay out | ✅ Each round hides `heist.caches.count` (8) piles of cash on open ground (alley crossings and plazas, 60 m apart, new places each round). A cache is only sent to a player within `revealRange` (30 m) — or one that intel has revealed (`CacheSystem.reveal`, the hook Phase 33 uses) — and shows as a bag under a golden beam and a `?` on the minimap. Walking over it pays `amount` ($1,500) into carried cash, once, and removes it for everyone. All server-side; off in tutorial and duel rooms. Tested |
-| 30.3 | Collectibles tied to SQL trivia | collectibles tracked per player | ⬜ |
+| 30.3 | Collectibles tied to SQL trivia | collectibles tracked per player | ✅ 24 data chips (`heist.collectibles`) stand in the same places every round of a city, shown only within 35 m as a glowing cyan card with a beam and a `?` on the minimap. Picking one up pays $250 into carried cash and reveals a piece of SQL trivia (24 cards in settings, so teachers can edit or add them). A signed-in student's finds are saved with their account (`player_collectibles`, migration 19, `CollectionStore` with Pg and in-memory versions under one contract test; listed in the privacy data map); a guest keeps theirs for the match. Press Y for the collection panel. Tested |
 | 30.4 | Safehouse properties and upgrades bought with banked cash | upgrades persist and matter | ⬜ |
 | 30.5 | Map discovery (fog over unexplored districts) on the full-screen map | discovery persists per player | ⬜ |
 | 30.6 | Side activities: street races, deliveries, each with an SQL twist | two side activities playable | ⬜ |

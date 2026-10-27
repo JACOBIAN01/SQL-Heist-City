@@ -232,3 +232,17 @@
 .armour-bar[hidden] {
   display: none;
 }
+
+/* Data-chip collection (Phase 30.3). */
+.collection-card {
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid #55d6ff;
+}
+.collection-card h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+}
+.collection-card p {
+  margin: 0;
+}

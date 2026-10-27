@@ -109,6 +109,18 @@ export interface CachesMessage {
   readonly found?: { readonly amount: number };
 }
 
+/**
+ * The student's data-chip collection (Phase 30.3): the chips they can see now, every chip they have
+ * found with its trivia, and how many there are in all. `latest` is the one just picked up.
+ */
+export interface CollectionMessage {
+  readonly t: 'collection';
+  readonly near: readonly { readonly id: number; readonly x: number; readonly z: number }[];
+  readonly found: readonly { readonly id: number; readonly title: string; readonly fact: string }[];
+  readonly total: number;
+  readonly latest?: number;
+}
+
 /** What a street shop sells (Phase 29.6). */
 export const SHOP_ITEMS = ['armour', 'ammo'] as const;
 export type ShopItem = (typeof SHOP_ITEMS)[number];
@@ -580,6 +592,7 @@ export type HeistServerMessage =
   | PoliceMessage
   | ShopMessage
   | CachesMessage
+  | CollectionMessage
   | DuelMessage
   | RadarMessage
   | LeagueMessage

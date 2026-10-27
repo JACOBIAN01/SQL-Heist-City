@@ -241,3 +241,7 @@ The city is five districts, each with its own building style, a landmark tower y
 ## Hidden caches (Phase 30.2)
 
 Each round, cash is stashed in open spots around the city (settings `heist.caches`). You only see one when you are close: a bag under a golden beam, and a `?` on the minimap. Walk over it to take the cash. They are somewhere new every round.
+
+## Data chips (Phase 30.3)
+
+Glowing blue cards lie in fixed places around the city. Walk over one for a little cash and a piece of SQL trivia; Y shows the ones you have found. A signed-in student keeps their finds from match to match.

@@ -30,6 +30,7 @@ import { ContractsView } from './ui/profile/ContractsView';
 import { LeagueView } from './ui/profile/LeagueView';
 import { ShareCardView } from './ui/share/ShareCardView';
 import { SquadView } from './ui/hud/SquadView';
+import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
 import { ShopView } from './ui/hud/ShopView';
 import { DuelView } from './ui/hud/DuelView';
@@ -220,6 +221,7 @@ if (vaultArt && params.has('vaultdemo')) {
 const world = new HeistWorld(MAP);
 const loot = new LootRenderer(scene);
 const cacheBeacons = new CacheBeacons(scene);
+const chipBeacons = new CacheBeacons(scene, 'chip');
 
 /** Field of view (deg) when not aiming; aiming narrows it by the gun's zoom. */
 const BASE_FOV = settings.current.look.fov;
@@ -388,6 +390,8 @@ const squadView = new SquadView(i18n, (m) => client.sendJson(m));
 document.body.append(squadView.hud, squadView.panel);
 const policeStars = new PoliceStars(i18n);
 document.body.append(policeStars.root);
+const collectionView = new CollectionView(i18n);
+document.body.append(collectionView.panel);
 const shopView = new ShopView(i18n, (m) => client.sendJson(m));
 document.body.append(shopView.panel, shopView.bar);
 /** Rivals the squad's lookout can see (minimap). */
@@ -635,6 +639,11 @@ client.subscribe({
       cacheBeacons.apply(message.caches);
       if (message.found)
         hud.toast(`Hidden cache found! +$${message.found.amount.toLocaleString('en-US')}`);
+    } else if (message.t === 'collection') {
+      chipBeacons.apply(message.near);
+      collectionView.update(message);
+      const card = message.found.find((f) => f.id === message.latest);
+      if (card) hud.toast(`Data chip: ${card.title}`);
     } else if (message.t === 'shop') {
       shopView.update(message);
     } else if (message.t === 'police') {
@@ -781,6 +790,10 @@ const hotkeys = new Hotkeys(window, bindings)
     pointer.release();
     squadView.hidden = !squadView.hidden;
   })
+  .onAction('collection', () => {
+    pointer.release();
+    collectionView.hidden = !collectionView.hidden;
+  })
   .onAction('league', () => {
     pointer.release();
     leagueView.hidden = !leagueView.hidden;
@@ -807,6 +820,7 @@ const hotkeys = new Hotkeys(window, bindings)
     leagueView.hidden = true;
     squadView.hidden = true;
     shopView.hidden = true;
+    collectionView.hidden = true;
   })
   .onAction('radio', () => {
     if (!myCar) return;
@@ -987,6 +1001,7 @@ renderer.setAnimationLoop((now) => {
   tracers.update(frameMs / 1000);
   loot.update(now / 1000);
   cacheBeacons.update(now / 1000);
+  chipBeacons.update(now / 1000);
   beacon?.update(now / 1000);
   vaultArt?.update(now / 1000, frameMs / 1000, (id) => vaultAlerts.isAlert(id, now / 1000));
   bankingProgress.update(now);
@@ -1116,6 +1131,13 @@ renderer.setAnimationLoop((now) => {
       ...[...cacheBeacons.positions()].map((c): Marker => ({
         kind: 'cache',
         id: `cache-${c.id}`,
+        x: c.x,
+        z: c.z,
+        pinned: false,
+      })),
+      ...[...chipBeacons.positions()].map((c): Marker => ({
+        kind: 'cache',
+        id: `chip-${c.id}`,
         x: c.x,
         z: c.z,
         pinned: false,

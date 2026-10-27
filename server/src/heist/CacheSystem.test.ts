@@ -19,7 +19,12 @@ function setup(caches: Partial<HeistSettings['caches']> = {}) {
     map: city,
     settings: { ...DEFAULT_MATCH_SETTINGS, maxPlayers: 20, sandboxDummies: 0 },
     combat: { ...DEFAULT_COMBAT_SETTINGS, spawnProtectionSec: 0 },
-    heist: { ...DEFAULT_HEIST_SETTINGS, caches: { ...DEFAULT_HEIST_SETTINGS.caches, ...caches } },
+    heist: {
+      ...DEFAULT_HEIST_SETTINGS,
+      // Chips stand on the same open ground; keep them out of these tests.
+      collectibles: { ...DEFAULT_HEIST_SETTINGS.collectibles, enabled: false },
+      caches: { ...DEFAULT_HEIST_SETTINGS.caches, ...caches },
+    },
     seed: 'cache-test',
   });
   const connection = new FakeConnection();

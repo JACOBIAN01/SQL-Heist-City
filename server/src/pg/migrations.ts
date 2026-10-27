@@ -391,4 +391,13 @@ export const pgMigrations: readonly string[] = [
   `
   ALTER TABLE classes ADD COLUMN mode TEXT NOT NULL DEFAULT 'classic';
   `,
+  // 19 — data chips a student has found (Phase 30.3)
+  `
+  CREATE TABLE player_collectibles (
+    player_id   BIGINT      NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    chip        TEXT        NOT NULL,
+    found_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (player_id, chip)
+  );
+  `,
 ];

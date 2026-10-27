@@ -43,3 +43,11 @@ export function cacheSites(
   }
   return out;
 }
+
+/**
+ * Where the collectible data chips are (Phase 30.3): the same on every round and every server, so a
+ * collection can be finished over many matches. Their ids are 1…count.
+ */
+export function collectibleSites(city: CityLayout, rng: Rng, count: number): CacheSite[] {
+  return cacheSites(city, rng, count, 40);
+}

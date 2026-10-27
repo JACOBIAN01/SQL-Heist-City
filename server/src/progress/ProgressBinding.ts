@@ -11,6 +11,7 @@ import {
 } from '@heist/shared';
 import { FanOutSink, type AttemptSink } from '../analytics/AttemptSink';
 import { ContractKeeper } from './ContractKeeper';
+import type { CollectionStore } from './CollectionStore';
 import type { ContractStore } from './ContractStore';
 import type { LeagueService } from './LeagueService';
 import type { Match } from '../game/Match';
@@ -24,6 +25,7 @@ export interface ProgressBindingDeps {
   readonly progressStore: ProgressStore;
   readonly loadoutStore: LoadoutStore;
   readonly contractStore: ContractStore;
+  readonly collectionStore: CollectionStore;
   readonly now?: () => number;
   /** The class league; without it no league is sent. */
   readonly league?: LeagueService;
@@ -122,6 +124,7 @@ export class ProgressBinding {
 
   bind(match: Match): void {
     this.match = match;
+    match.heist.collectibles.bindStore(this.deps.collectionStore);
     match.heist.events.subscribe((event) => {
       if (event.type === 'round_end') {
         this.keeper.roundEnded(event.result);

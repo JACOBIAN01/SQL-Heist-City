@@ -3,6 +3,7 @@ import { DEFAULT_PROGRESSION_SETTINGS } from '@heist/shared';
 import { PgProgressStore } from '../progress/ProgressStore';
 import { ProgressBinding } from '../progress/ProgressBinding';
 import { PgLoadoutStore } from '../progress/LoadoutStore';
+import { PgCollectionStore } from '../progress/CollectionStore';
 import { PgContractStore } from '../progress/ContractStore';
 import { LeagueService } from '../progress/LeagueService';
 import { PgClassResults } from '../classes/ClassResults';
@@ -51,6 +52,7 @@ export class AnalyticsKit {
       progressStore: new PgProgressStore(db),
       loadoutStore: new PgLoadoutStore(db),
       contractStore: new PgContractStore(db),
+      collectionStore: new PgCollectionStore(db),
       league: new LeagueService(
         new PgClassResults(db),
         attempts,

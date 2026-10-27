@@ -1,5 +1,113 @@
 import { z } from 'zod';
 
+/** Collectible data chips (Phase 30.3). */
+const collectiblesSchema = z.object({
+  enabled: z.boolean().default(true),
+  count: z.number().int().min(0).max(60).default(24),
+  /** Cash added to the carried purse for each chip. */
+  cash: z.number().int().min(0).default(250),
+  pickupRadius: z.number().positive().max(10).default(1.8),
+  revealRange: z.number().positive().max(200).default(35),
+  trivia: z
+    .array(z.object({ title: z.string().min(1).max(40), fact: z.string().min(1).max(200) }))
+    .min(1)
+    .default([
+      {
+        title: 'SELECT *',
+        fact: 'SELECT * returns every column. Handy for a look, but name the columns you need in real queries.',
+      },
+      {
+        title: 'WHERE before GROUP BY',
+        fact: 'WHERE filters rows before they are grouped; HAVING filters the groups afterwards.',
+      },
+      {
+        title: 'NULL is not equal',
+        fact: 'NULL is never equal to anything, not even NULL. Use IS NULL, not = NULL.',
+      },
+      {
+        title: 'INNER JOIN',
+        fact: 'An INNER JOIN keeps only rows that have a match on both sides.',
+      },
+      {
+        title: 'LEFT JOIN',
+        fact: 'A LEFT JOIN keeps every row from the left table, with NULLs where nothing matched.',
+      },
+      {
+        title: 'COUNT(*) vs COUNT(col)',
+        fact: 'COUNT(*) counts rows; COUNT(column) skips the rows where that column is NULL.',
+      },
+      {
+        title: 'DISTINCT',
+        fact: 'DISTINCT removes duplicate rows from the result, comparing whole rows.',
+      },
+      {
+        title: 'ORDER BY',
+        fact: 'Without ORDER BY a table has no promised order, however it looked last time.',
+      },
+      {
+        title: 'LIMIT',
+        fact: 'LIMIT stops after N rows; pair it with ORDER BY or you get an arbitrary N.',
+      },
+      {
+        title: 'LIKE wildcards',
+        fact: 'In LIKE, % matches any run of characters and _ matches exactly one.',
+      },
+      { title: 'IN', fact: 'x IN (1, 2, 3) is shorthand for x = 1 OR x = 2 OR x = 3.' },
+      {
+        title: 'BETWEEN',
+        fact: 'BETWEEN is inclusive at both ends: 1 AND 3 includes 1 and 3.',
+      },
+      {
+        title: 'Aliases',
+        fact: 'AS gives a column or table another name for the rest of the query.',
+      },
+      {
+        title: 'Window functions',
+        fact: 'A window function like ROW_NUMBER() OVER (...) adds a value per row without collapsing rows.',
+      },
+      {
+        title: 'CASE',
+        fact: "CASE WHEN ... THEN ... ELSE ... END is SQL's if-else inside a query.",
+      },
+      {
+        title: 'COALESCE',
+        fact: 'COALESCE(a, b, c) returns the first value that is not NULL.',
+      },
+      {
+        title: 'UNION',
+        fact: 'UNION removes duplicate rows; UNION ALL keeps them and is faster.',
+      },
+      {
+        title: 'Primary key',
+        fact: 'A primary key uniquely identifies each row and can never be NULL.',
+      },
+      {
+        title: 'Foreign key',
+        fact: "A foreign key points at another table's key, so a row cannot reference one that does not exist.",
+      },
+      {
+        title: 'Subquery',
+        fact: 'A subquery is a SELECT inside another query, in WHERE, FROM or SELECT.',
+      },
+      {
+        title: 'Index',
+        fact: 'An index lets the database find rows without reading the whole table, at a small cost on writes.',
+      },
+      {
+        title: 'Transactions',
+        fact: 'A transaction groups changes so they all happen or none do.',
+      },
+      {
+        title: 'HAVING',
+        fact: 'HAVING is how you filter on an aggregate such as COUNT(*) > 3.',
+      },
+      {
+        title: 'SQL name',
+        fact: 'SQL began in the 1970s at IBM as SEQUEL; the name was shortened for trademark reasons.',
+      },
+    ]),
+});
+
 /**
  * Heist rules as numbers. Defaults only: the admin settings table can
  * override any of them (docs/gameplay.md), so a teacher retunes the game
@@ -197,6 +305,12 @@ export const heistSettingsSchema = z.object({
       revealRange: z.number().positive().max(200).default(30),
     })
     .default({ enabled: true, count: 8, amount: 1_500, pickupRadius: 1.8, revealRange: 30 }),
+  /**
+   * Collectible data chips (Phase 30.3): the same spots every round, so a student can find them all
+   * over several matches. Each shows a piece of SQL trivia once found, and what they have found is
+   * kept with their account. Trivia is data: add, reword or remove entries here.
+   */
+  collectibles: collectiblesSchema.default(() => collectiblesSchema.parse({})),
   /**
    * Street shops (Phase 29.6), a counter beside every safehouse. They sell for cash you are
    * carrying (so spending is a risk-free way to lose it from your score): body armour, which
