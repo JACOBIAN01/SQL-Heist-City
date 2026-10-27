@@ -18,7 +18,7 @@ const FALL_SPEED = 16;
 const STREAK = 0.7;
 /** Rain and fog grey the sky down; how much of the horizon colour is replaced at full fog. */
 const GREY = new Color(0x8a9097);
-const GREY_MIX = 0.55;
+const GREY_MIX = 0.8;
 
 const VERTEX = /* glsl */ `
   attribute float aTip;
@@ -117,7 +117,13 @@ export class WeatherFx {
       const reach = 1 + (this.settings.fogVisibility - 1) * Math.max(fog, rain * 0.5);
       sceneFog.near = sky.fogNear * reach;
       sceneFog.far = sky.fogFar * reach;
-      sceneFog.color.copy(sky.horizon).lerp(GREY, GREY_MIX * Math.max(fog, rain) * (1 - sky.night));
+      const grey = GREY_MIX * Math.max(fog, rain) * (1 - sky.night);
+      sceneFog.color.copy(sky.horizon).lerp(GREY, grey);
+      // The sky greys too, or fogged buildings would hang against a clear blue.
+      const zenith = this.lighting.sky.uniform('uZenith') as Color;
+      const horizon = this.lighting.sky.uniform('uHorizon') as Color;
+      zenith.copy(sky.zenith).lerp(GREY, grey);
+      horizon.copy(sceneFog.color);
     }
     const shown = this.drops > 0 && rain > 0.02;
     this.rain.visible = shown;

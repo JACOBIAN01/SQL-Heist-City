@@ -58,7 +58,7 @@ export const atmosphereSettingsSchema = z.object({
         })
         .default({ clear: 4, fog: 1, rain: 2, storm: 1 }),
       /** Fog distances are multiplied by this much in the thickest fog (0.2 = see a fifth as far). */
-      fogVisibility: z.number().min(0.05).max(1).default(0.3),
+      fogVisibility: z.number().min(0.05).max(1).default(0.12),
       /** Rain streaks drawn around you (0 turns the picture off, the sound stays). */
       rainDrops: z.number().int().min(0).max(4000).default(900),
     })
@@ -67,7 +67,7 @@ export const atmosphereSettingsSchema = z.object({
       spellMinutes: 3,
       blendSeconds: 30,
       weights: { clear: 4, fog: 1, rain: 2, storm: 1 },
-      fogVisibility: 0.3,
+      fogVisibility: 0.12,
       rainDrops: 900,
     }),
 });
