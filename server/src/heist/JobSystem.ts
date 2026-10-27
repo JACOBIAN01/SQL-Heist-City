@@ -45,6 +45,8 @@ export interface JobHooks {
   /** Somebody to escort, standing at `at`. */
   spawnVip(at: Point): Player | undefined;
   removeVip(vip: Player): void;
+  /** A contract was finished and paid (the story listens). */
+  done(player: Player, kind: JobKind): void;
 }
 
 const REWARD_KEY = new RegExp(`^job:(${JOB_KINDS.join('|')})$`);
@@ -412,5 +414,6 @@ export class JobSystem implements InteractionHandler, TaskRule {
     if (!job || job.status !== 'claim' || !this.handles(rewardKey)) return;
     this.pay(player, this.rewardOf(job.kind, this.settings()));
     this.end(player, 'done');
+    this.hooks.done(player, job.kind);
   }
 }

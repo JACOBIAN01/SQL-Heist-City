@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Story preview</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: linear-gradient(#1b2330, #0b0d10);
+        color: #e8ebf0;
+        font:
+          14px system-ui,
+          sans-serif;
+      }
+      /* The panels are fixed to the game's screen; here each sits in its own column. */
+      .skills {
+        position: static !important;
+        transform: none !important;
+        margin: 16px;
+        max-width: 460px;
+      }
+      #row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .scene,
+      .bark {
+        position: static !important;
+        transform: none !important;
+        display: block;
+        margin: 16px;
+        width: 460px;
+      }
+      #question {
+        margin: 16px;
+        width: 460px;
+        padding: 12px;
+        background: rgba(14, 17, 22, 0.9);
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Development only (not in the build): the story screens with sample data. -->
+    <div id="row"></div>
+    <script type="module" src="/src/storyPreview.ts"></script>
+  </body>
+</html>

@@ -99,6 +99,8 @@ export class ActsSystem implements InteractionHandler, TaskRule {
         lines: [{ id: 'lost', amount: run.take }],
         mastery: 0,
       } satisfies PayoutMessage);
+    if (run?.act === 'getaway' && run.take > 0)
+      this.events.publish({ type: 'heist_failed', player, bank: run.bank });
   }
 
   // --- act one: the terminal ------------------------------------------------------------------
@@ -137,6 +139,7 @@ export class ActsSystem implements InteractionHandler, TaskRule {
     const run = this.runs.get(player);
     if (run && run.bank !== bank && run.act === 'setup') run.bank = bank;
     this.send(player, run);
+    this.events.publish({ type: 'intel_gained', player, bank, level: mine.get(bank) ?? 0 });
   }
 
   // --- what the intel does --------------------------------------------------------------------

@@ -400,3 +400,20 @@ const DEFAULT_FRAMES: Record<string, string> = {
 };
 
 export const DEFAULT_STORY_SETTINGS: StorySettings = storySettingsSchema.parse({});
+
+/**
+ * The line shown above a question to tie it to the story (Phase 32.4). It looks for the most
+ * specific frame first: `vault:bank-3:lock-2`, then `vault:bank-3`, then `vault`, and so on
+ * (`job:delivery` falls to `job`). No frame is a plain question.
+ */
+export function frameFor(
+  rewardKey: string,
+  frames: Readonly<Record<string, string>>,
+): string | undefined {
+  const parts = rewardKey.split(':');
+  for (let n = parts.length; n >= 1; n--) {
+    const found = frames[parts.slice(0, n).join(':')];
+    if (found) return found;
+  }
+  return undefined;
+}

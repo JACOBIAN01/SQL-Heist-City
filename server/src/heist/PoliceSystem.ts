@@ -70,7 +70,7 @@ export class PoliceSystem {
   constructor(
     private readonly match: MatchApi,
     private readonly settings: () => Settings,
-    events: HeistEvents,
+    private readonly events: HeistEvents,
     private readonly rng: Rng,
     /** Whether police are wanted in this room at all (not in the tutorial or a duel room). */
     private readonly active: () => boolean,
@@ -351,6 +351,7 @@ export class PoliceSystem {
   private send(player: Player, stars: number): void {
     const msg: PoliceMessage = { t: 'police', stars, max: this.settings().maxStars };
     this.match.sendJson(player, msg);
+    this.events.publish({ type: 'stars', player, stars });
   }
 
   private ticks(seconds: number): number {

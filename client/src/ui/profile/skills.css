@@ -278,3 +278,24 @@
   border-top: 1px solid rgba(255, 255, 255, 0.3);
   font-weight: 700;
 }
+
+/* Story journal (Phase 32.2). */
+.story-chain {
+  margin: 0.6rem 0;
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid #ffd98a;
+}
+.story-chain h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+}
+.story-locked {
+  opacity: 0.5;
+  border-left-color: #555;
+}
+.story-done {
+  border-left-color: #7dffb0;
+}
+.story-page {
+  font-style: italic;
+}

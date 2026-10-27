@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_CHALLENGE_SETTINGS,
+  DEFAULT_STORY_SETTINGS,
   questionTemplateSchema,
   type PublicChallenge,
 } from '@heist/shared';
@@ -410,6 +411,16 @@ describe('a shared task for a duel (28.3)', () => {
       expect(again.challenge.title).toBe(r.challenge.title);
     }
     expect(titles.size).toBeGreaterThan(1);
+  });
+
+  it('ties a story reward’s question to the story with one line, and leaves a heal plain (32.4)', async () => {
+    const job = await service.issue({ player: 'ana', rewardKey: 'job:delivery' });
+    if (!job.ok) throw new Error('issue failed');
+    expect(job.challenge.frame).toBe(DEFAULT_STORY_SETTINGS.frames['job']);
+    clock += 60_000;
+    const heal = await service.issue({ player: 'ana', rewardKey: 'heal:small' });
+    if (!heal.ok) throw new Error('issue failed');
+    expect(heal.challenge.frame).toBeUndefined();
   });
 
   it('only draws from the allowed questions, and says so when there are none', async () => {

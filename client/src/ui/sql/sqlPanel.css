@@ -1,3 +1,12 @@
+/* The crew's line above a question (Phase 32.4). */
+.sqlp-frame {
+  margin: 0 0 0.5rem;
+  padding-left: 0.6rem;
+  border-left: 3px solid #ffd98a;
+  font-style: italic;
+  color: #ffe9b0;
+}
+
 /* SQL challenge panel. Palette is local so the game's look can change without touching the panel. */
 .sqlp,
 .sqlp-bar {

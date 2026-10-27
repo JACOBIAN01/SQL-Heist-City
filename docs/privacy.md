@@ -88,6 +88,15 @@ Which safehouse upgrades a student has bought and at what level (Phase 30.4).
 | `upgrade` | Which upgrade (a fixed name, no free text) | record | with the account |
 | `level` | How many levels they own | record | with the account |
 
+### `player_story`
+How far a student has got through each bank's story chain (Phase 32.2).
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `player_id` | The student | pseudonymous | with the account |
+| `chain` | Which chain (a bank, such as `bank-3`; no free text) | record | with the account |
+| `step` | How many steps they have finished | record | with the account |
+
 ### `player_contracts`
 The daily contracts a student was dealt and how far each got (Phase 26.5). Old days are deleted by the retention job.
 

@@ -34,6 +34,8 @@ export interface PublicChallenge {
   readonly title: string;
   /** Markdown task description with this player's parameters filled in. */
   readonly story: string;
+  /** One line from the crew that ties this question to the story (Phase 32.4), if there is one. */
+  readonly frame?: string;
   readonly schemaSql: string;
   readonly tables: readonly PublicTable[];
   /** Expected output: its columns and an example (absent only if the example could not be built). */

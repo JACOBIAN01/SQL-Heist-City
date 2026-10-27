@@ -33,6 +33,8 @@ import { SquadView } from './ui/hud/SquadView';
 import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
 import { ActsView } from './ui/hud/ActsView';
+import { StoryView } from './ui/hud/StoryView';
+import { BarkView, SceneView } from './ui/hud/SceneView';
 import { PayoutView } from './ui/hud/PayoutView';
 import { BoardView } from './ui/hud/BoardView';
 import { ApproachBadge } from './ui/hud/ApproachBadge';
@@ -401,6 +403,15 @@ const actsView = new ActsView(i18n);
 document.body.append(actsView.root);
 let intelGuards: readonly { x: number; z: number }[] = [];
 let roadblocks: readonly { x: number; z: number }[] = [];
+const sceneView = new SceneView(i18n, { onStart: () => pointer.release() });
+const barkView = new BarkView();
+document.body.append(sceneView.root, barkView.root);
+// Enter shows the next line of a scene; Escape (below) skips it.
+window.addEventListener('keydown', (event) => {
+  if (sceneView.playing && event.code === 'Enter') sceneView.advance();
+});
+const storyView = new StoryView(i18n);
+document.body.append(storyView.panel);
 const payoutView = new PayoutView(i18n);
 document.body.append(payoutView.panel);
 const boardView = new BoardView(i18n, (m) => client.sendJson(m));
@@ -657,6 +668,12 @@ client.subscribe({
       duelView.update(message);
     } else if (message.t === 'acts') {
       actsView.update(message, performance.now());
+    } else if (message.t === 'scene') {
+      sceneView.play(message);
+    } else if (message.t === 'bark') {
+      barkView.show(message.speaker, message.text, performance.now());
+    } else if (message.t === 'story') {
+      storyView.update(message);
     } else if (message.t === 'payout') {
       pointer.release();
       payoutView.show(message);
@@ -838,6 +855,10 @@ const hotkeys = new Hotkeys(window, bindings)
   .onAction('approach', () =>
     client.sendJson({ t: 'approach', mode: stealthOn ? 'loud' : 'stealth' }),
   )
+  .onAction('story', () => {
+    pointer.release();
+    storyView.hidden = !storyView.hidden;
+  })
   .onAction('collection', () => {
     pointer.release();
     collectionView.hidden = !collectionView.hidden;
@@ -870,6 +891,8 @@ const hotkeys = new Hotkeys(window, bindings)
     shopView.hidden = true;
     boardView.hidden = true;
     payoutView.hidden = true;
+    storyView.hidden = true;
+    sceneView.skip();
     collectionView.hidden = true;
   })
   .onAction('radio', () => {
@@ -1056,6 +1079,7 @@ renderer.setAnimationLoop((now) => {
   jobBeacon.update(now / 1000);
   jobView.frame(now);
   actsView.frame(now);
+  barkView.frame(now);
   vaultArt?.update(now / 1000, frameMs / 1000, (id) => vaultAlerts.isAlert(id, now / 1000));
   bankingProgress.update(now);
   roundUi.update(now);

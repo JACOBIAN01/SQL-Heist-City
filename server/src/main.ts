@@ -18,6 +18,7 @@ import {
   DEFAULT_ANALYTICS_SETTINGS,
   DEFAULT_MATCH_SETTINGS,
   DEFAULT_PROGRESSION_SETTINGS,
+  DEFAULT_STORY_SETTINGS,
   cityMapIdFor,
 } from '@heist/shared';
 import { PgAttemptStore } from './analytics/AttemptStore';
@@ -70,6 +71,7 @@ const analytics = pg
       () => challenges?.analyticsSettings() ?? DEFAULT_ANALYTICS_SETTINGS,
       undefined,
       () => challenges?.progressionSettings() ?? DEFAULT_PROGRESSION_SETTINGS,
+      () => challenges?.storySettings() ?? DEFAULT_STORY_SETTINGS,
     )
   : undefined;
 if (existsSync(dbPath)) {

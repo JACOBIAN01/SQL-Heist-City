@@ -409,4 +409,13 @@ export const pgMigrations: readonly string[] = [
     PRIMARY KEY (player_id, upgrade)
   );
   `,
+  // 21 — how far a student is through each story chain (Phase 32.2)
+  `
+  CREATE TABLE player_story (
+    player_id BIGINT  NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    chain     TEXT    NOT NULL,
+    step      INTEGER NOT NULL CHECK (step >= 0),
+    PRIMARY KEY (player_id, chain)
+  );
+  `,
 ];

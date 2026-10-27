@@ -113,6 +113,8 @@ Server → client: the challenge replies and
 - `approach { mode: 'loud'|'stealth' }` (client → server): choose how to break in; answered by `approach_state { mode }`. A lock cracked quietly sets `quiet: true` on the vault's entry in `vaults`.
 - `acts { bank?, act, intel, intelMax, take }` (server → client): where you are in a three-act heist (`setup`, `heist`, `getaway`, `complete`, or `none`). `intel_guards { guards: [{x,z}] }` lists the guards of banks you hold intel on. An intel terminal's `interact_result` is `open_task` with reward `intel:bank-N`, or `denied` with `intel_full`.
 - `payout { outcome, bank, total, lines: [{id, amount}], mastery }` (server → client): what a heist came to, shown after every one: `complete` (banked) or `failed` (the take lost). Line ids: `vault`, `ghost`, `intel`, `locks`, `other`, `lost`.
+- `story { chains: [{bank, name, fixer, state, step, total, current?, page?}], pages, finished? }` (server → client): how far the student is through the story (`state` is `locked`, `active` or `done`); sent on joining and after every step.
+- `scene { id, title, lines: [{speaker, text}] }` and `bark { speaker, text }` (server → client): a story scene to play (skippable, once a match) and a short line from a fixer at a moment in a heist. A challenge's `frame` is the crew's one line above its question.
 - `roadblocks { posts: [{x,z}] }` (server → client): where the police have set a roadblock for you, sent only if your intel on the bank you robbed has told you; empty when it is gone.
 - `caches { caches: [{id,x,z}], found?: {amount} }` (server → client): the hidden caches this player can see now (near, or revealed by intel); sent when that set changes, and with `found` when they take one.
 

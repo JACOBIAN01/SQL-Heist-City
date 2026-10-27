@@ -36,6 +36,8 @@ import { RoundController } from './RoundController';
 import { CacheSystem } from './CacheSystem';
 import { CollectibleSystem } from './CollectibleSystem';
 import { ActsSystem } from './ActsSystem';
+import { StorySystem } from './StorySystem';
+import { StoryVoice } from './StoryVoice';
 import { DiscoverySystem } from './DiscoverySystem';
 import { JobSystem } from './JobSystem';
 import { ShopService } from './ShopService';
@@ -139,8 +141,38 @@ export class HeistController implements ArmsControl {
         crime: (player) => this.police.crime(player, 'lock'),
         spawnVip: (at) => this.spawnVip(at),
         removeVip: (vip) => this.match.removeNpc(vip),
+        done: (player, kind) => this.events.publish({ type: 'job_done', player, kind }),
       },
     );
+    // The story: a chain of steps for each bank, following what the match already does.
+    this.story = new StorySystem(
+      match,
+      this.events,
+      (player, amount) => this.setCash(player, player.cash + amount),
+      () => !this.taskOptions && !this.duels.enabled,
+    );
+    // What the fixers say: scenes at the start and end of a chain, and a line at moments in a heist.
+    this.voice = new StoryVoice(
+      match,
+      this.events,
+      {
+        settings: () => this.story.current(),
+        chainOf: (p) => this.story.chainOf(p),
+        stepsOf: (p, bank) => this.story.stepsOf(p, bank),
+      },
+      new SeededRng(`story:${match.classInfo?.classId ?? 0}`),
+      () => !this.taskOptions && !this.duels.enabled,
+    );
+    this.story.onLoaded = (player) => this.voice.introFor(player);
+    this.story.onChainDone = (player, chain) => {
+      this.events.publish({
+        type: 'chain_complete',
+        player,
+        bank: chain.bank,
+        xp: chain.reward.xp,
+      });
+      this.voice.chainDone(player, chain);
+    };
     // The three acts of a heist: intel at the terminal, the locks, the getaway.
     this.acts = new ActsSystem(
       match,
@@ -332,6 +364,7 @@ export class HeistController implements ArmsControl {
   onJoin(player: Player): void {
     this.squads.place(player);
     this.upgrades.load(player);
+    this.story.load(player);
     this.squads.send(player);
     this.duels.onJoin(player);
     this.match.sendJson(player, { t: 'weapons', weapons: this.match.weapons });
@@ -669,6 +702,8 @@ export class HeistController implements ArmsControl {
     this.discovery.forget(player);
     this.jobs.clear(player);
     this.acts.forget(player);
+    this.story.forget(player);
+    this.voice.forget(player);
     this.stealth.delete(player);
     this.challenges?.playerLeft(player.key);
     this.issuedAt.delete(player.key);
@@ -776,6 +811,8 @@ export class HeistController implements ArmsControl {
   readonly discovery: DiscoverySystem;
   readonly jobs: JobSystem;
   readonly acts: ActsSystem;
+  readonly story: StorySystem;
+  readonly voice: StoryVoice;
   /** Who has chosen to break in quietly (Phase 30.7). */
   private readonly stealth = new Set<Player>();
   readonly shop: ShopService;

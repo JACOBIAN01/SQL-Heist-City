@@ -49,7 +49,7 @@
 | 29 | Living city | ✅ done, awaiting approval |
 | 30 | Exploration and freedom | ✅ done, awaiting approval |
 | 31 | Missions and heist structure | ✅ done, awaiting approval |
-| 32 | Story and characters | 🟦 32.1 drafted |
+| 32 | Story and characters | 🟦 32.1–32.4 done |
 | 33 | SQL in the world: queries as superpowers | ⬜ |
 | 34 | Breakthrough features | ⬜ |
 | 35 | Polish | ⬜ |
@@ -571,9 +571,9 @@ Post-launch. GTA audit "Story" from 1 to 8–9.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 32.1 | Story bible: the city, the crew, a fixer per bank, the arc across tiers | approved | 🟨 [docs/story.md](story.md) is written (the premise, five fixers, the antagonist, the arc across the tiers, how a chain plays, rules for the words) and its data is in the `story` settings with defaults for all five chains, ten scenes, barks and question frames, editable in admin → Settings → Story. Waiting for the owner's approval of the story itself |
-| 32.2 | Story missions (solo or co-op), one chain per bank | five chains playable | ⬜ |
-| 32.3 | In-engine cut-scenes and character barks (text) | scenes play and can be skipped | ⬜ |
-| 32.4 | Question stories rewritten to follow the arc | stories match the chain they appear in | ⬜ |
+| 32.2 | Story missions (solo or co-op), one chain per bank | five chains playable | ✅ One chain of three steps per bank (briefing: intel on the bank; favour: a contract of the kind that suits the fixer; heist: crack and bank the vault), each chain opening the next. It follows the match's events (`intel_gained`, `job_done`, `heist_complete`), so nothing else changed. Finishing a chain pays cash and XP (`chain_complete`) and gives a page of evidence. A student's place is kept with their account (`player_story`, migration 21, `StoryStore` with Pg and in-memory versions under one contract test, in the privacy map); squad-mates near a finished heist share its credit, so a chain can be done alone or together. The journal (I) lists the chains, the step to do now and the pages. Tested |
+| 32.3 | In-engine cut-scenes and character barks (text) | scenes play and can be skipped | ✅ A text scene plays when a chain opens (two or three lines in the fixer's voice, over the game, which keeps running) and another when it ends; Next (or Enter) shows the next line, Skip (or Escape) ends it, and scenes waiting behind one play after it. Each scene is shown once a match. Fixers also say a short line at eight moments (intel gained, a lock cracked, the vault open, the getaway, the heist done, a lost getaway, the police close in, a contract done), spaced at least 8 s apart, from a bank's own lines or the shared ones. All of it is in the `story` settings (`scenes`, `barks`). Tested: scenes once, in order, skippable; barks spaced, in the fixer's name, with fallbacks |
+| 32.4 | Question stories rewritten to follow the arc | stories match the chain they appear in | 🟨 Every question of a story reward now sits under one line from the crew (`story.frames`, found by reward key from the most specific: `vault:bank-3`, then `vault`; vault locks, intel jobs and contracts have one), so a question asked for Inez says so, and the client shows it above the task. The question bodies themselves (the 268 situations in the question bank) are not rewritten: that is a content job, listed for the owner in `docs/inputs-needed.md` |
 | 32.5 | Review: re-score Story | ≥ 8 | ⬜ |
 
 ---

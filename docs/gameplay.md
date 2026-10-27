@@ -279,3 +279,11 @@ Once you carry the vault's cash, the police guess you will run for the nearest s
 ## The payout (Phase 31.4)
 
 When you bank a vault's cash, a payout screen shows what it was made of (vault cash, ghost and intel bonuses, loud-lock bonuses), what you banked, and the mastery XP you earned (more for a higher bank and for a ghost job). If you die on the getaway, it shows the take you lost.
+
+## The story (Phase 32.2)
+
+Each bank has a fixer and a chain of three steps: gather intel on the bank, finish the kind of contract the fixer asks for, then crack the vault and bank the take. Finishing a chain pays cash and XP and gives a page of evidence, and opens the next bank's chain. Press I for the journal. You can do a chain alone; squad-mates close by when you finish a heist share its credit.
+
+## Scenes, barks and the crew's line (Phases 32.3 and 32.4)
+
+When a story chain opens or ends, a short scene plays in the fixer's voice (Enter for the next line, Escape or Skip to end it). During a heist the fixer says a line at key moments: intel gained, a lock cracked, the vault open, the getaway, the heist done or lost, the police closing in, a contract done. Questions that belong to the story carry one line from the crew above the task. All the words are in admin → Settings → Story.

@@ -42,6 +42,19 @@ const challenge: PublicChallenge = {
   expiresAt: 0,
 };
 
+describe('ProblemPane: the story’s frame (32.4)', () => {
+  it('shows the crew’s line above the task, and nothing when there is none', () => {
+    const host = document.createElement('div');
+    const pane = new ProblemPane(host);
+    pane.show({ ...challenge, frame: 'Mae asks: can you read this table?' });
+    expect(host.querySelector('.sqlp-frame')?.textContent).toBe(
+      'Mae asks: can you read this table?',
+    );
+    pane.show(challenge);
+    expect(host.querySelector('.sqlp-frame')).toBeNull();
+  });
+});
+
 let host: HTMLElement;
 let pane: ProblemPane;
 beforeEach(() => {

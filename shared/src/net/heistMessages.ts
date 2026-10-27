@@ -210,6 +210,42 @@ export interface PayoutMessage {
   readonly mastery: number;
 }
 
+/** A cut-scene to play (Phase 32.3): a few lines said in turn. The student can skip it. */
+export interface SceneMessage {
+  readonly t: 'scene';
+  readonly id: string;
+  readonly title: string;
+  readonly lines: readonly { readonly speaker: string; readonly text: string }[];
+}
+
+/** One short line from a fixer at a moment in a heist (Phase 32.3). */
+export interface BarkMessage {
+  readonly t: 'bark';
+  readonly speaker: string;
+  readonly text: string;
+}
+
+/** How far the student is through the story (Phase 32.2). */
+export interface StoryMessage {
+  readonly t: 'story';
+  readonly chains: readonly {
+    readonly bank: string;
+    readonly name: string;
+    readonly fixer: { readonly name: string; readonly role: string };
+    readonly state: 'locked' | 'active' | 'done';
+    readonly step: number;
+    readonly total: number;
+    /** The step to do now (the active chain). */
+    readonly current?: { readonly title: string; readonly text: string };
+    /** The page of evidence this chain gave (a finished chain). */
+    readonly page?: string;
+  }[];
+  /** Pages of evidence collected, of five. */
+  readonly pages: number;
+  /** The bank whose chain was just finished. */
+  readonly finished?: string;
+}
+
 /** Where the police have set roadblocks for you, when your intel has told you (Phase 31.3). */
 export interface RoadblocksMessage {
   readonly t: 'roadblocks';
@@ -620,7 +656,7 @@ export interface ProgressMessage {
   /** XP just earned, and for what, so the HUD can show "+45 XP". */
   readonly gained?: {
     readonly amount: number;
-    readonly why: 'solve' | 'round' | 'contract' | 'heist';
+    readonly why: 'solve' | 'round' | 'contract' | 'heist' | 'story';
   };
   /** What the share card may show (Phase 26.8); sent with the first progress message. */
   readonly share?: {
@@ -724,6 +760,9 @@ export type HeistServerMessage =
   | ActsMessage
   | IntelGuardsMessage
   | RoadblocksMessage
+  | StoryMessage
+  | SceneMessage
+  | BarkMessage
   | PayoutMessage
   | ApproachState
   | DuelMessage

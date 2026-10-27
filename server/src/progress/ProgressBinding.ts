@@ -6,6 +6,7 @@ import {
   type LookView,
   type ProgressionSettings,
   type SeasonMessage,
+  type StorySettings,
   type SkillView,
   type TopicMarks,
 } from '@heist/shared';
@@ -13,6 +14,7 @@ import { FanOutSink, type AttemptSink } from '../analytics/AttemptSink';
 import { ContractKeeper } from './ContractKeeper';
 import type { CollectionStore } from './CollectionStore';
 import type { UpgradeStore } from './UpgradeStore';
+import type { StoryStore } from './StoryStore';
 import type { ContractStore } from './ContractStore';
 import type { LeagueService } from './LeagueService';
 import type { Match } from '../game/Match';
@@ -28,6 +30,9 @@ export interface ProgressBindingDeps {
   readonly contractStore: ContractStore;
   readonly collectionStore: CollectionStore;
   readonly upgradeStore: UpgradeStore;
+  readonly storyStore: StoryStore;
+  /** The story's words and chains (admin-editable). */
+  readonly story: () => StorySettings;
   readonly now?: () => number;
   /** The class league; without it no league is sent. */
   readonly league?: LeagueService;
@@ -129,8 +134,13 @@ export class ProgressBinding {
     match.heist.collectibles.bindStore(this.deps.collectionStore);
     match.heist.discovery.bindStore(this.deps.collectionStore);
     match.heist.upgrades.bindStore(this.deps.upgradeStore);
+    match.heist.story.bindStore(this.deps.storyStore);
+    match.heist.story.bindSettings(this.deps.story);
     match.heist.events.subscribe((event) => {
       // A finished heist teaches something too (Phase 31.4): mastery XP, over and above the question XP.
+      // Finishing a bank's story chain pays XP too.
+      if (event.type === 'chain_complete' && event.player.accountId !== undefined)
+        void this.keeper.bonus(event.player.accountId, event.xp, 'story');
       if (event.type === 'heist_complete' && event.player.accountId !== undefined)
         void this.keeper.bonus(event.player.accountId, event.mastery, 'heist');
       if (event.type === 'round_end') {

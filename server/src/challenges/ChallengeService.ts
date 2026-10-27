@@ -18,6 +18,7 @@ import {
   type WorkedExampleView,
   type TaskAnswer,
   marksFor,
+  frameFor,
   ENGINE_DIALECT,
   questionQuirks,
 } from '@heist/shared';
@@ -302,10 +303,21 @@ export class ChallengeService {
       this.note(challenge, 'issued', { seed, attempt, tutorial: challenge.revealSolution });
       return {
         ok: true,
-        challenge: toPublic(challenge, settings.sampleRows, settings.exampleShownRows),
+        challenge: toPublic(
+          challenge,
+          settings.sampleRows,
+          settings.exampleShownRows,
+          this.frameOf(challenge.rewardKey),
+        ),
       };
     }
     return { ok: false, reason: 'unavailable' };
+  }
+
+  /** The story's line above a question of this reward (none in a tutorial, practice or assessment). */
+  private frameOf(rewardKey: string): string | undefined {
+    const story = this.deps.settings.storySettings();
+    return story.enabled ? frameFor(rewardKey, story.frames) : undefined;
   }
 
   /** Free preview ("Run"). Rate-limited, never locks the challenge. */
@@ -604,7 +616,12 @@ export class ChallengeService {
   }
 }
 
-function toPublic(c: ActiveChallenge, sampleRows: number, shownRows: number): PublicChallenge {
+function toPublic(
+  c: ActiveChallenge,
+  sampleRows: number,
+  shownRows: number,
+  frame?: string,
+): PublicChallenge {
   // Answering from the tables alone (predict the output, fill, choose) needs them in full: show as
   // many rows as a worked example does.
   const rows = c.task.prepared.canRun ? sampleRows : Math.max(sampleRows, shownRows);
@@ -614,6 +631,7 @@ function toPublic(c: ActiveChallenge, sampleRows: number, shownRows: number): Pu
     tier: c.variant.tier,
     title: c.variant.title,
     story: c.variant.story,
+    ...(frame ? { frame } : {}),
     schemaSql: c.variant.schemaSql,
     tables: [...c.variant.tables].map(([name, table]) => ({
       name,

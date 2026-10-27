@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BARK_EVENTS, DEFAULT_STORY_SETTINGS as S, storySettingsSchema } from './story';
+import { BARK_EVENTS, DEFAULT_STORY_SETTINGS as S, frameFor, storySettingsSchema } from './story';
 
 describe('the story settings (32.1)', () => {
   it('has one chain for each of the five banks, in tier order', () => {
@@ -47,6 +47,17 @@ describe('the story settings (32.1)', () => {
 
   it('keeps every page of evidence different, one per bank', () => {
     expect(new Set(S.chains.map((c) => c.page)).size).toBe(5);
+  });
+
+  it('finds the most specific frame for a reward, falling back to its family', () => {
+    const frames = { 'vault:bank-3': 'Inez.', vault: 'Any vault.', job: 'The crew.' };
+    expect(frameFor('vault:bank-3:lock-2', frames)).toBe('Inez.');
+    expect(frameFor('vault:bank-1:lock-1', frames)).toBe('Any vault.');
+    expect(frameFor('job:escort', frames)).toBe('The crew.');
+    expect(frameFor('heal:small', frames)).toBeUndefined();
+    expect(frameFor('vault:bank-3:lock-2', { 'vault:bank-3:lock-2': 'Exact.', ...frames })).toBe(
+      'Exact.',
+    );
   });
 
   it('rejects a chain for a bank that does not exist', () => {

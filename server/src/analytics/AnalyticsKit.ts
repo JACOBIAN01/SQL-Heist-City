@@ -1,5 +1,11 @@
-import type { AnalyticsSettings, ProfileMessage, ProgressionSettings } from '@heist/shared';
-import { DEFAULT_PROGRESSION_SETTINGS } from '@heist/shared';
+import type {
+  AnalyticsSettings,
+  ProfileMessage,
+  ProgressionSettings,
+  StorySettings,
+} from '@heist/shared';
+import { DEFAULT_PROGRESSION_SETTINGS, DEFAULT_STORY_SETTINGS } from '@heist/shared';
+import { PgStoryStore } from '../progress/StoryStore';
 import { PgProgressStore } from '../progress/ProgressStore';
 import { ProgressBinding } from '../progress/ProgressBinding';
 import { PgLoadoutStore } from '../progress/LoadoutStore';
@@ -33,6 +39,7 @@ export class AnalyticsKit {
     settings: () => AnalyticsSettings,
     private readonly log: (message: string, err: unknown) => void = (m, e) => console.error(m, e),
     progression: () => ProgressionSettings = () => DEFAULT_PROGRESSION_SETTINGS,
+    story: () => StorySettings = () => DEFAULT_STORY_SETTINGS,
   ) {
     const attempts = new PgAttemptStore(db);
     this.recorder = new BatchingRecorder(
@@ -55,6 +62,8 @@ export class AnalyticsKit {
       contractStore: new PgContractStore(db),
       collectionStore: new PgCollectionStore(db),
       upgradeStore: new PgUpgradeStore(db),
+      storyStore: new PgStoryStore(db),
+      story,
       league: new LeagueService(
         new PgClassResults(db),
         attempts,

@@ -4,6 +4,7 @@ import { parentPort, workerData } from 'node:worker_threads';
 import {
   DEFAULT_ANALYTICS_SETTINGS,
   DEFAULT_PROGRESSION_SETTINGS,
+  DEFAULT_STORY_SETTINGS,
   type HeistSettings,
   type MatchSettings,
 } from '@heist/shared';
@@ -68,6 +69,7 @@ const analytics = data.databaseUrl
       () => holder.stack?.analyticsSettings() ?? DEFAULT_ANALYTICS_SETTINGS,
       undefined,
       () => holder.stack?.progressionSettings() ?? DEFAULT_PROGRESSION_SETTINGS,
+      () => holder.stack?.storySettings() ?? DEFAULT_STORY_SETTINGS,
     )
   : undefined;
 const stack: ChallengeStack | undefined =

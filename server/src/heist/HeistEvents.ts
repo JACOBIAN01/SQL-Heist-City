@@ -57,6 +57,26 @@ export type HeistEvent =
       readonly tier: number;
       readonly mastery: number;
     }
+  /** A player gained an intel point on a bank (Phase 32.2: the story listens). */
+  | {
+      readonly type: 'intel_gained';
+      readonly player: Player;
+      readonly bank: string;
+      readonly level: number;
+    }
+  /** A player finished a contract and was paid (Phase 32.2). */
+  | { readonly type: 'job_done'; readonly player: Player; readonly kind: string }
+  /** A getaway ended in death with the take on the player (Phase 32.3: the fixer says so). */
+  | { readonly type: 'heist_failed'; readonly player: Player; readonly bank: string }
+  /** A player's wanted level changed (Phase 32.3). */
+  | { readonly type: 'stars'; readonly player: Player; readonly stars: number }
+  /** A student finished a bank's story chain (Phase 32.2). */
+  | {
+      readonly type: 'chain_complete';
+      readonly player: Player;
+      readonly bank: string;
+      readonly xp: number;
+    }
   /** A player picked up a cash bag (Phase 31.1). */
   | {
       readonly type: 'bag_taken';
