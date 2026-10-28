@@ -40,6 +40,7 @@ import { ActsSystem } from './ActsSystem';
 import { StorySystem } from './StorySystem';
 import { CameraGrid } from './CameraGrid';
 import { CopsRobbers } from './CopsRobbers';
+import { GhostSystem } from './GhostSystem';
 import { InsideMan } from './InsideMan';
 import { SplitQueries } from './SplitQueries';
 import { CityDb } from './CityDb';
@@ -225,6 +226,12 @@ export class HeistController implements ArmsControl {
         unlockNext: (player, bank) => this.unlockNext(player, bank),
         pay: (player, amount) => this.setCash(player, player.cash + amount),
       },
+      () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
+    );
+    // Ghost heists: your fastest run on a bank, to race.
+    this.ghosts = new GhostSystem(
+      match,
+      this.events,
       () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
     );
     // The story: a chain of steps for each bank, following what the match already does.
@@ -428,6 +435,7 @@ export class HeistController implements ArmsControl {
     this.acts.reset();
     this.intel.reset();
     this.cops.reset();
+    this.ghosts.reset();
     this.inside.reset();
     this.splits.reset();
     this.cameras.reset();
@@ -492,6 +500,7 @@ export class HeistController implements ArmsControl {
     this.acts.onTick();
     this.intel.onTick();
     this.cops.onTick();
+    this.ghosts.onTick();
     this.inside.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
@@ -526,6 +535,7 @@ export class HeistController implements ArmsControl {
     this.banking.cancel(victim, 'died');
     this.police.clear(victim); // dying clears the record
     this.jobs.fail(victim);
+    this.ghosts.drop(victim);
     this.acts.died(victim);
     if (victim.isPolice) {
       this.police.officerDown(victim, killer);
@@ -835,6 +845,7 @@ export class HeistController implements ArmsControl {
     this.story.forget(player);
     this.intel.forget(player);
     this.cops.forget(player);
+    this.ghosts.drop(player);
     this.inside.forget(player);
     this.splits.forget(player);
     this.voice.forget(player);
@@ -955,6 +966,7 @@ export class HeistController implements ArmsControl {
   readonly acts: ActsSystem;
   readonly story: StorySystem;
   readonly cops: CopsRobbers;
+  readonly ghosts: GhostSystem;
   readonly inside: InsideMan;
   readonly splits: SplitQueries;
   readonly cameras: CameraGrid;

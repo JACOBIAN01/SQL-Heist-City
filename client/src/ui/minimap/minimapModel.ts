@@ -37,6 +37,8 @@ export type MarkerKind =
   | 'roadblock'
   /** A place your city-database query has put on the map (Phase 33.2). */
   | 'intel'
+  /** The ghost you are racing (Phase 34.6). */
+  | 'ghost'
   | 'wanted'
   | 'objective'
   /** A squad-mate (Phase 27.4). */

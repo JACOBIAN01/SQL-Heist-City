@@ -15,6 +15,7 @@ import { ContractKeeper } from './ContractKeeper';
 import type { CollectionStore } from './CollectionStore';
 import type { UpgradeStore } from './UpgradeStore';
 import type { StoryStore } from './StoryStore';
+import type { GhostStore } from './GhostStore';
 import type { ContractStore } from './ContractStore';
 import type { LeagueService } from './LeagueService';
 import type { Match } from '../game/Match';
@@ -31,6 +32,7 @@ export interface ProgressBindingDeps {
   readonly collectionStore: CollectionStore;
   readonly upgradeStore: UpgradeStore;
   readonly storyStore: StoryStore;
+  readonly ghostStore: GhostStore;
   /** The story's words and chains (admin-editable). */
   readonly story: () => StorySettings;
   readonly now?: () => number;
@@ -135,6 +137,7 @@ export class ProgressBinding {
     match.heist.discovery.bindStore(this.deps.collectionStore);
     match.heist.upgrades.bindStore(this.deps.upgradeStore);
     match.heist.story.bindStore(this.deps.storyStore);
+    match.heist.ghosts.bindStore(this.deps.ghostStore);
     match.heist.story.bindSettings(this.deps.story);
     match.heist.events.subscribe((event) => {
       // A finished heist teaches something too (Phase 31.4): mastery XP, over and above the question XP.

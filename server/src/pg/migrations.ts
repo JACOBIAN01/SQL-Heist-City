@@ -444,4 +444,16 @@ export const pgMigrations: readonly string[] = [
   );
   CREATE INDEX custom_heists_owner ON custom_heists (owner_user_id);
   `,
+  // 24 — each student's fastest heist on each bank, kept as a ghost (Phase 34.6)
+  `
+  CREATE TABLE ghost_heists (
+    bank        TEXT        NOT NULL,
+    player_id   BIGINT      NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    seconds     INTEGER     NOT NULL CHECK (seconds >= 0),
+    take        BIGINT      NOT NULL CHECK (take >= 0),
+    trace       JSON        NOT NULL,
+    achieved_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (bank, player_id)
+  );
+  `,
 ];

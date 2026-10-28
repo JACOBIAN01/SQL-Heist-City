@@ -122,6 +122,18 @@ A teacher's own heist: a story and a chain of questions (Phase 34.5). Written by
 | `created_at` | When it was made | technical | until the teacher deletes it |
 | `updated_at` | When it last changed | technical | until the teacher deletes it |
 
+### `ghost_heists`
+A student's fastest heist on each bank, kept as a "ghost" other students can race (Phase 34.6): how long it took, what it banked, and where they stood each second. The student's display name is shown with the ghost.
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `bank` | Which bank (`bank-1` to `bank-5`) | content | with the account |
+| `player_id` | The student | pseudonymous | with the account |
+| `seconds` | How long the heist took | record | with the account |
+| `take` | Dollars banked from the vault | record | with the account |
+| `trace` | Where they stood each second (numbers; no text) | record | with the account |
+| `achieved_at` | When they reached it | technical | with the account |
+
 ### `player_contracts`
 The daily contracts a student was dealt and how far each got (Phase 26.5). Old days are deleted by the retention job.
 

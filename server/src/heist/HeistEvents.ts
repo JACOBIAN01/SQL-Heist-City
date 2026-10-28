@@ -56,6 +56,8 @@ export type HeistEvent =
       readonly bank: string;
       readonly tier: number;
       readonly mastery: number;
+      /** The cash banked from the vault (Phase 34.6). */
+      readonly take?: number;
     }
   /** A player gained an intel point on a bank (Phase 32.2: the story listens). */
   | {

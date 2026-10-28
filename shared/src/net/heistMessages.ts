@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { JOB_KINDS, type JobKind } from '../config/heist';
+import type { GhostTrace } from '../progress/ghost';
 import type { CityTable, PublicCityRequest, PublicSplitRequest } from '../config/cityDb';
 import type { AwardId } from '../config/awards';
 import type { AtmosphereSettings } from '../config/atmosphere';
@@ -209,6 +210,29 @@ export interface PayoutMessage {
     readonly amount: number;
   }[];
   readonly mastery: number;
+}
+
+/** A ghost to race (Phase 34.6): the best run on a bank so far, replayed from the moment you begin yours. */
+export interface GhostMessage {
+  readonly t: 'ghost';
+  readonly bank: string;
+  readonly name: string;
+  /** How long its heist took, and what it banked. */
+  readonly seconds: number;
+  readonly take: number;
+  readonly mine: boolean;
+  readonly trace: GhostTrace;
+}
+
+/** How your finished heist compared with the ghost (Phase 34.6). */
+export interface GhostResultMessage {
+  readonly t: 'ghost_result';
+  readonly bank: string;
+  readonly ghost?: { readonly name: string; readonly seconds: number };
+  readonly seconds: number;
+  readonly beat: boolean;
+  /** Your run is now the ghost for everyone to beat. */
+  readonly record: boolean;
 }
 
 /** One table of leanest queries for a question (Phase 34.4). */
@@ -886,6 +910,8 @@ export type HeistServerMessage =
   | TeamMessage
   | InsideMessage
   | LeaderboardMessage
+  | GhostMessage
+  | GhostResultMessage
   | CityResultMessage
   | SplitStateMessage
   | IntelPinsMessage

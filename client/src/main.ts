@@ -34,6 +34,7 @@ import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
 import { ActsView } from './ui/hud/ActsView';
 import { StoryView } from './ui/hud/StoryView';
+import { GhostRenderer } from './heist/GhostRenderer';
 import { LeaderboardView } from './ui/hud/LeaderboardView';
 import { TeamBadge } from './ui/hud/TeamBadge';
 import { CityDbView } from './ui/hud/CityDbView';
@@ -413,6 +414,7 @@ document.body.append(sceneView.root, barkView.root);
 window.addEventListener('keydown', (event) => {
   if (sceneView.playing && event.code === 'Enter') sceneView.advance();
 });
+const ghostArt = new GhostRenderer(scene);
 const leaderboardView = new LeaderboardView(i18n);
 document.body.append(leaderboardView.panel);
 const teamBadge = new TeamBadge(i18n);
@@ -685,6 +687,22 @@ client.subscribe({
         openTask(`inside:${message.bank}`, message.bank);
       } else
         hud.toast(message.status === 'done' ? 'Fixed. He owes you one.' : 'He hung up. Caught.');
+    } else if (message.t === 'ghost') {
+      ghostArt.start(message, performance.now());
+      hud.toast(
+        `${message.mine ? 'Racing your own best' : `Racing ${message.name}’s ghost`}: ${Math.floor(message.seconds / 60)}:${String(message.seconds % 60).padStart(2, '0')}`,
+      );
+    } else if (message.t === 'ghost_result') {
+      ghostArt.stop();
+      hud.toast(
+        message.record
+          ? 'New ghost record!'
+          : message.ghost
+            ? message.beat
+              ? `You beat ${message.ghost.name}’s ghost by ${message.ghost.seconds - message.seconds} s`
+              : `${message.ghost.name}’s ghost was ${message.seconds - message.ghost.seconds} s faster`
+            : 'Heist done: your run is the first ghost',
+      );
     } else if (message.t === 'leaderboard') {
       leaderboardView.update(message);
       hud.toast(leaderboardView.toastFor(message));
@@ -1118,6 +1136,7 @@ renderer.setAnimationLoop((now) => {
   beacon?.update(now / 1000);
   jobBeacon.update(now / 1000);
   jobView.frame(now);
+  ghostArt.update(performance.now());
   actsView.frame(now);
   barkView.frame(now);
   vaultArt?.update(now / 1000, frameMs / 1000, (id) => vaultAlerts.isAlert(id, now / 1000));
@@ -1262,6 +1281,10 @@ renderer.setAnimationLoop((now) => {
       ...mateMarkers(squadView.members),
       ...foeMarkers(radarFoes),
       ...foeMarkers(intelGuards),
+      ...(() => {
+        const g = ghostArt.position(performance.now());
+        return g ? [{ kind: 'ghost', id: 'ghost', x: g.x, z: g.z, pinned: false } as Marker] : [];
+      })(),
       ...intelPins.map((p): Marker => ({
         kind: 'intel',
         id: `intel-${p.id}`,

@@ -120,6 +120,7 @@ Server → client: the challenge replies and
 - `split_submit { ref, split, part, sql }` (client → server): one squad member's part of a three-part query; answered by `city_result` (`reason` may also be `squad` or `taken`), and the whole squad gets `split_state { split, parts: [{status, by?}], opened? }`. `citydb` also lists `splits` (their parts' prompts, never the answers).
 - `inside { status: 'call'|'done'|'missed', bank, text, seconds }` (server → client): the inside man rings with a broken query to fix (the client opens the question `inside:bank-N` at once), and later says it was fixed or missed.
 - `leaderboard { question, you: {scanned, length}, newBest, class?, global }` (server → client): after a signed-in student solves a write question, where its leanness puts them (`class`/`global`: `{rank, of, top: [{rank, name, scanned, length, you}]}`). `scanned` is an estimate from the query plan.
+- `ghost { bank, name, seconds, take, mine, trace: {step, points} }` (server → client): the fastest heist on the bank you have just begun on, to replay beside you; `ghost_result { bank, ghost?, seconds, beat, record }` says how your finished heist compared.
 - `roadblocks { posts: [{x,z}] }` (server → client): where the police have set a roadblock for you, sent only if your intel on the bank you robbed has told you; empty when it is gone.
 - `caches { caches: [{id,x,z}], found?: {amount} }` (server → client): the hidden caches this player can see now (near, or revealed by intel); sent when that set changes, and with `found` when they take one.
 

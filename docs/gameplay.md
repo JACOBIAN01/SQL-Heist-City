@@ -311,3 +311,7 @@ Solve a write question and the game prices your query: about how many rows it re
 ## A teacher's own heist (Phase 34.5)
 
 In the admin, **My heists** lets a teacher write a story and choose a chain of questions for one bank. Each lock asks the next question, the same for the whole class. Take it as the class's game mode to play it, and hand its share code to another teacher to let them copy it.
+
+## Ghost heists (Phase 34.6)
+
+The fastest heist on each bank is kept as a ghost. The moment you begin on that bank, a pale figure sets off from the start and replays that run beside you, and shows on your minimap. Finish faster and it is your ghost the next student races. A run that ends in death does not count.

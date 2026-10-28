@@ -13,6 +13,7 @@ export const MAP_COLOURS = {
   cache: '#ffb300',
   roadblock: '#ff4d4d',
   intel: '#4fc3f7',
+  ghost: '#e8f4ff',
   wanted: '#ff6a00',
   mate: '#3ec1d3',
   foe: '#ff4d4d',
@@ -46,6 +47,18 @@ export function drawMarker(
       ctx.fillStyle = MAP_COLOURS.bag;
       ctx.beginPath();
       ctx.arc(at.x, at.y, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    case 'ghost':
+      // The ghost: a white dot with a pale ring.
+      ctx.strokeStyle = 'rgba(232,244,255,0.6)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = MAP_COLOURS.ghost;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, 3, 0, Math.PI * 2);
       ctx.fill();
       return;
     case 'intel':

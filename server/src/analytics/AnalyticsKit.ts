@@ -7,6 +7,7 @@ import type {
 } from '@heist/shared';
 import { DEFAULT_PROGRESSION_SETTINGS, DEFAULT_STORY_SETTINGS } from '@heist/shared';
 import { PgStoryStore } from '../progress/StoryStore';
+import { PgGhostStore } from '../progress/GhostStore';
 import { PgLeaderboardStore } from '../progress/LeaderboardStore';
 import { OptimisationSink } from './OptimisationSink';
 import { PgProgressStore } from '../progress/ProgressStore';
@@ -67,6 +68,7 @@ export class AnalyticsKit {
       collectionStore: new PgCollectionStore(db),
       upgradeStore: new PgUpgradeStore(db),
       storyStore: new PgStoryStore(db),
+      ghostStore: new PgGhostStore(db),
       story,
       league: new LeagueService(
         new PgClassResults(db),

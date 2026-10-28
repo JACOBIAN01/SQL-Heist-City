@@ -232,7 +232,14 @@ export class ActsSystem implements InteractionHandler, TaskRule {
       lines,
       mastery,
     } satisfies PayoutMessage);
-    this.events.publish({ type: 'heist_complete', player, bank: run.bank, tier, mastery });
+    this.events.publish({
+      type: 'heist_complete',
+      player,
+      bank: run.bank,
+      tier,
+      mastery,
+      take,
+    });
   }
 
   private send(player: Player, run: Run | undefined, act?: Act): void {

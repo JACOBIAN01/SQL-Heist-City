@@ -88,4 +88,5 @@ export * from './config/customHeist';
 export * from './config/story';
 export * from './config/cityDb';
 export * from './analytics/queryCost';
+export * from './progress/ghost';
 export * from './sim/traffic';
