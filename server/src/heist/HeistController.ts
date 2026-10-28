@@ -10,7 +10,6 @@ import {
   type ChallengeServerMessage,
   type CheatMessage,
   type CheatRefusal,
-  type CheatResultMessage,
   type HeistSettings,
   type JsonClientMessage,
   type SetLookMessage,
@@ -503,7 +502,19 @@ export class HeistController implements ArmsControl {
     this.sendPurse(player);
     this.sendArms(player);
     this.bounties.post(player);
+    this.sendCheatInfo(player);
     this.round?.onJoin(player);
+  }
+
+  /** Tells a player which keys open the cheat prompt, when a pass can work here. */
+  private sendCheatInfo(player: Player): void {
+    if (player.isGuard || player.isPolice || player.isVip || player.isDummy) return;
+    const info = this.challenges?.cheatInfo?.({
+      classId: this.match.classInfo?.classId,
+      tutorial: !!this.taskOptions,
+      round: this.round?.number,
+    });
+    if (info) this.match.sendJson(player, { t: 'cheat_info', combo: info.combo });
   }
 
   /** Every tick: players walking over a bag pick it up. */
@@ -991,11 +1002,13 @@ export class HeistController implements ArmsControl {
    * question is recorded as a cheat. Duels (a fair fight between two people) can never be passed.
    */
   private async onCheat(player: Player, message: CheatMessage): Promise<void> {
-    const send = (result: CheatResultMessage) => {
-      if (this.match.getPlayer(player.id) === player) this.match.sendJson(player, result);
-    };
     const refuse = (reason: CheatRefusal) =>
-      send({ t: 'cheat_result', ref: message.ref, ok: false, reason });
+      this.reply(player, {
+        t: 'challenge_cheat',
+        ref: message.ref,
+        now: this.now(),
+        result: { ok: false, reason },
+      });
     const open = this.openTasks.get(player.key);
     if (!this.challenges?.cheat || open?.startsWith('duel:')) return refuse('refused');
     if (!open) return refuse('no_task');
@@ -1005,17 +1018,20 @@ export class HeistController implements ArmsControl {
         tutorial: !!this.taskOptions,
         round: this.round?.number,
       });
-      if (out.result.reason === 'wrong' || out.result.reason === 'locked')
-        this.match.reportAnomaly(player, 'bad_cheat_code');
-      send(out.result);
-      const solved = out.solved;
-      if (solved?.t !== 'challenge_result' || solved.result.status !== 'correct') return;
-      const { rewardKey, target } = solved.result;
-      if (out.payReward !== false) this.tasks.find(rewardKey)?.grant(player, rewardKey, target);
-      this.openTasks.delete(player.key);
-      this.issuedAt.delete(player.key);
-      this.events.publish({ type: 'task_cheated', player, rewardKey });
-      this.reply(player, solved);
+      if (out.reply.t === 'challenge_cheat' && !out.reply.result.ok) {
+        const { reason } = out.reply.result;
+        if (reason === 'wrong' || reason === 'locked')
+          this.match.reportAnomaly(player, 'bad_cheat_code');
+      }
+      const passed = out.passed;
+      if (passed && out.payReward !== false)
+        this.tasks.find(passed.rewardKey)?.grant(player, passed.rewardKey, passed.target);
+      if (passed) {
+        this.openTasks.delete(player.key);
+        this.issuedAt.delete(player.key);
+        this.events.publish({ type: 'task_cheated', player, rewardKey: passed.rewardKey });
+      }
+      this.reply(player, out.reply);
     } catch {
       refuse('refused');
     }

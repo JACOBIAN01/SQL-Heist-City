@@ -1,4 +1,5 @@
 import type {
+  CheatOutcome,
   HintResult,
   IssueResult,
   PublicChallenge,
@@ -56,6 +57,17 @@ export class FakeChallengeApi implements ChallengeApi {
       charged: true,
     },
   });
+
+  onCheat: (id: string, code: string) => Promise<CheatOutcome> = async () => ({
+    ok: true,
+    rewardKey: 'heal:small',
+    target: null,
+  });
+
+  cheat(id: string, code: string): Promise<CheatOutcome> {
+    this.calls.push({ method: 'cheat', args: [id, code] });
+    return this.onCheat(id, code);
+  }
 
   hint(id: string, index: number): Promise<HintResult> {
     this.calls.push({ method: 'hint', args: [id, index] });

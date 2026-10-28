@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { ChallengeClientMessage, PublicChallenge } from '@heist/shared';
+import type { ChallengeClientMessage, CheatMessage, PublicChallenge } from '@heist/shared';
 import { ChallengeProtocolError } from './ChallengeApi';
 import { ChannelChallengeApi } from './ChannelChallengeApi';
 
 const challenge = { id: 'c1' } as PublicChallenge;
 
 function setup() {
-  const sent: ChallengeClientMessage[] = [];
+  const sent: (ChallengeClientMessage | CheatMessage)[] = [];
   let clock = 1_000;
   const api = new ChannelChallengeApi({ send: (m) => sent.push(m) }, () => clock, 5_000);
   return { api, sent, setClock: (t: number) => (clock = t) };
@@ -60,5 +60,18 @@ describe('ChannelChallengeApi', () => {
     api.close();
     await failed;
     vi.useRealTimers();
+  });
+
+  it('sends the cheat code and resolves with what the server decided (37.4)', async () => {
+    const { api, sent } = setup();
+    const pending = api.cheat('c1', 'abc-def');
+    expect(sent).toEqual([{ t: 'cheat', ref: 1, challengeId: 'c1', code: 'abc-def' }]);
+    api.handle({
+      t: 'challenge_cheat',
+      ref: 1,
+      now: 9_000,
+      result: { ok: true, rewardKey: 'heal:small', target: null },
+    });
+    await expect(pending).resolves.toEqual({ ok: true, rewardKey: 'heal:small', target: null });
   });
 });

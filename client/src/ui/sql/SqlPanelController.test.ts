@@ -560,3 +560,31 @@ it('uses a sample challenge for the header bar text', async () => {
   await controller.start(task('vault:bank-1:lock-1'));
   expect(panel.slots.tier.textContent).toBe('T3');
 });
+
+describe('SqlPanelController: the cheat code (37.4)', () => {
+  it('has nothing to pass until a question is open', async () => {
+    expect(controller.hasOpenTask).toBe(false);
+    expect(await controller.cheat('code')).toBe('no_task');
+    expect(api.calls.some((c) => c.method === 'cheat')).toBe(false);
+  });
+
+  it('closes the question like a correct answer, but says it was a cheat, and tells the game', async () => {
+    const solved: SolvedInfo[] = [];
+    controller.destroy();
+    controller = new SqlPanelController({ panel, api, onSolved: (i) => solved.push(i) });
+    await started();
+    expect(controller.hasOpenTask).toBe(true);
+    expect(await controller.cheat('the-code')).toMatchObject({ ok: true });
+    expect(api.calls.at(-1)).toEqual({ method: 'cheat', args: ['c1', 'the-code'] });
+    expect($('.sqlp-msg.ok').textContent).toMatch(/Passed with the cheat code\. Small h/i);
+    expect(solved).toEqual([{ rewardKey: 'heal:small', target: null }]);
+    expect(controller.hasOpenTask).toBe(false);
+  });
+
+  it('leaves the question open when the code is refused', async () => {
+    await started();
+    api.onCheat = async () => ({ ok: false, reason: 'wrong' });
+    expect(await controller.cheat('nope')).toEqual({ ok: false, reason: 'wrong' });
+    expect(controller.hasOpenTask).toBe(true);
+  });
+});

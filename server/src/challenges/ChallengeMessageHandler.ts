@@ -1,7 +1,7 @@
 import {
   challengeClientMessageSchema,
   type CheatMessage,
-  type CheatResultMessage,
+  type CheatOutcome,
   type ChallengeClientMessage,
   type ChallengeServerMessage,
   type CityDbSettings,
@@ -55,6 +55,12 @@ export class ChallengeMessageHandler {
     () => this.now(),
   );
 
+  cheatInfo(context: CheatContext): { combo: readonly string[] } | undefined {
+    return this.gate.available(context)
+      ? { combo: this.settings.cheatSettings().combo }
+      : undefined;
+  }
+
   playerLeft(player: string): void {
     this.service.forgetPlayer(player);
     this.gate.forget(player);
@@ -62,43 +68,41 @@ export class ChallengeMessageHandler {
 
   /**
    * A typed cheat code. Only when the gate agrees is the open question ended (as `cheat`, never as
-   * solved) and its correct result returned, so the game pays the reward its usual way.
+   * solved); the reply says what it unlocked so the game pays the reward its usual way.
    */
   async cheat(
     player: string,
     message: CheatMessage,
     context: CheatContext,
   ): Promise<{
-    result: CheatResultMessage;
-    solved?: ChallengeServerMessage;
+    reply: ChallengeServerMessage;
+    passed?: { rewardKey: string; target: string | null };
     payReward?: boolean;
   }> {
-    const refuse = (
-      reason: Extract<CheatResultMessage, { ok: boolean }>['reason'],
-      lockedUntil?: number,
-    ) => ({
-      result: {
-        t: 'cheat_result' as const,
-        ref: message.ref,
-        ok: false,
-        ...(reason ? { reason } : {}),
-        ...(lockedUntil === undefined ? {} : { lockedUntil }),
-      },
+    const reply = (result: CheatOutcome): ChallengeServerMessage => ({
+      t: 'challenge_cheat',
+      ref: message.ref,
+      now: this.now(),
+      result,
     });
     const verdict = await this.gate.check(player, message.code, context);
-    if (!verdict.ok) return refuse(verdict.reason, verdict.lockedUntil);
+    if (!verdict.ok)
+      return {
+        reply: reply({
+          ok: false,
+          reason: verdict.reason,
+          ...(verdict.lockedUntil === undefined ? {} : { lockedUntil: verdict.lockedUntil }),
+        }),
+      };
     const passed = this.service.pass(player, message.challengeId);
-    if (passed.status !== 'correct') return refuse('no_task');
+    if (passed.status !== 'correct') return { reply: reply({ ok: false, reason: 'no_task' }) };
     this.gate.used(player);
+    const { rewardKey, target } = passed;
     return {
-      result: { t: 'cheat_result', ref: message.ref, ok: true },
-      solved: { t: 'challenge_result', ref: message.ref, now: this.now(), result: passed },
+      reply: reply({ ok: true, rewardKey, target }),
+      passed: { rewardKey, target },
       payReward: this.settings.cheatSettings().payReward,
     };
-  }
-
-  playerDied(player: string): void {
-    this.service.playerDied(player);
   }
 
   private async dispatch(

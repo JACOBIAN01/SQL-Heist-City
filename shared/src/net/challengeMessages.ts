@@ -41,6 +41,19 @@ export const challengeClientMessageSchema = z.discriminatedUnion('t', [
 
 export type ChallengeClientMessage = z.infer<typeof challengeClientMessageSchema>;
 
+/** Why a typed cheat code did not pass. `refused` covers off, not here and no code set, so a prober learns nothing. */
+export type CheatRefusal = 'refused' | 'wrong' | 'locked' | 'limit' | 'no_task';
+
+/** The answer to a `cheat` (Phase 37): passed (with what a correct answer would have unlocked) or refused. */
+export type CheatOutcome =
+  | { readonly ok: true; readonly rewardKey: string; readonly target: string | null }
+  | {
+      readonly ok: false;
+      readonly reason: CheatRefusal;
+      /** Epoch ms until another try is accepted (`locked`). */
+      readonly lockedUntil?: number;
+    };
+
 interface Reply<T extends string, R> {
   readonly t: T;
   readonly ref: number;
@@ -54,6 +67,7 @@ export type ChallengeServerMessage =
   | Reply<'challenge_preview', RunResult>
   | Reply<'challenge_result', SubmitResult>
   | Reply<'challenge_hint', HintResult>
+  | Reply<'challenge_cheat', CheatOutcome>
   | { readonly t: 'challenge_abandoned'; readonly ref: number; readonly now: number }
   | {
       readonly t: 'challenge_error';

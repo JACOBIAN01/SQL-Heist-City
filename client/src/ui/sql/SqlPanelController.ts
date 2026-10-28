@@ -1,4 +1,10 @@
-import type { HintReveal, PublicChallenge, RunResult, SubmitResult } from '@heist/shared';
+import type {
+  CheatOutcome,
+  HintReveal,
+  PublicChallenge,
+  RunResult,
+  SubmitResult,
+} from '@heist/shared';
 import { ChallengeConnectionError, type ChallengeApi } from '../../net/ChallengeApi';
 import { h } from '../dom';
 import { MemoryDraftStore, type DraftStore } from './DraftStore';
@@ -196,6 +202,51 @@ export class SqlPanelController {
       );
     } catch (err) {
       this.work.result.showMessage(this.describe(err), 'error');
+    } finally {
+      this.setBusy(false);
+    }
+  }
+
+  /** Whether a question is open to be passed with the cheat code (Phase 37). */
+  get hasOpenTask(): boolean {
+    return this.challenge !== null && !this.busy;
+  }
+
+  /**
+   * Types the cheat code for the open question. The server decides; a pass closes the question like a
+   * correct answer would (the reward is applied by the game) but says plainly what happened.
+   */
+  async cheat(code: string): Promise<CheatOutcome | 'no_task'> {
+    const challenge = this.challenge;
+    const cheat = this.deps.api.cheat?.bind(this.deps.api);
+    if (!challenge || !cheat) return 'no_task';
+    this.setBusy(true);
+    try {
+      const outcome = await cheat(challenge.id, code);
+      if (outcome.ok) {
+        if (this.task) this.drafts.clear(this.task.key);
+        this.endTask();
+        this.work.editor.setReadOnly(true);
+        this.work.result.showWith(
+          `✔ Passed with the cheat code. ${rewardLabel(outcome.rewardKey)} unlocked.`,
+          'ok',
+          h(
+            'p',
+            {},
+            h('button', {
+              class: 'sqlp-btn primary',
+              text: 'Continue',
+              attrs: { type: 'button' },
+              on: { click: () => this.deps.panel.close() },
+            }),
+          ),
+        );
+        this.deps.onSolved?.({ rewardKey: outcome.rewardKey, target: outcome.target });
+      }
+      return outcome;
+    } catch (err) {
+      this.work.result.showMessage(this.describe(err), 'error');
+      return { ok: false, reason: 'refused' };
     } finally {
       this.setBusy(false);
     }

@@ -294,17 +294,11 @@ export const cheatMessageSchema = z.object({
 });
 export type CheatMessage = z.infer<typeof cheatMessageSchema>;
 
-/** Why a code did not pass. `refused` covers off, not here and no code set, so a prober learns nothing. */
-export type CheatRefusal = 'refused' | 'wrong' | 'locked' | 'limit' | 'no_task';
-
-/** The answer to a `cheat`. When it passes, the usual `challenge_result` (correct) follows. */
-export interface CheatResultMessage {
-  readonly t: 'cheat_result';
-  readonly ref: number;
-  readonly ok: boolean;
-  readonly reason?: CheatRefusal;
-  /** Epoch ms until another try is accepted (`locked`). */
-  readonly lockedUntil?: number;
+/** The key combination that opens the cheat prompt; sent only where a pass can work (Phase 37). */
+export interface CheatInfoMessage {
+  readonly t: 'cheat_info';
+  /** `KeyboardEvent.code` values held together. */
+  readonly combo: readonly string[];
 }
 
 /** Ask the city database a question: a request and the SQL the student wrote for it (Phase 33). */
@@ -946,7 +940,7 @@ export type HeistServerMessage =
   | LeaderboardMessage
   | GhostMessage
   | KillCamMessage
-  | CheatResultMessage
+  | CheatInfoMessage
   | GhostResultMessage
   | CityResultMessage
   | SplitStateMessage

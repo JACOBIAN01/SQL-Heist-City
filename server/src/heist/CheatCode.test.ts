@@ -78,7 +78,8 @@ async function setup(over: Partial<CheatSettings> = {}) {
   const type = async (challengeId: string, code: string) => {
     connection.clear();
     send({ t: 'cheat', ref: ++ref, challengeId, code });
-    return waitFor(() => connection.jsonOf('cheat_result')[0]);
+    const reply = await waitFor(() => connection.jsonOf('challenge_cheat')[0]);
+    return reply.result;
   };
   const advance = (ms: number) => (clock += ms);
   return { match, connection, send, waitFor, ask, type, advance, attempts, player: joined.player };
@@ -90,8 +91,7 @@ describe('the cheat code (37.2)', () => {
     const id = await s.ask();
     const result = await s.type(id, CODE);
     expect(result).toMatchObject({ ok: true });
-    const graded = await s.waitFor(() => s.connection.jsonOf('challenge_result')[0]);
-    expect(graded.result).toMatchObject({ status: 'correct', target: 'bank-1:vault' });
+    expect(result).toMatchObject({ rewardKey: 'vault:bank-1:lock-1', target: 'bank-1:vault' });
     expect(s.connection.jsonOf('vaults').at(-1)?.vaults[0]).toMatchObject({ opened: 1 });
     expect(s.attempts.items.map((i) => i.item.outcome)).toEqual(['cheat']);
     expect(s.attempts.events.map((e) => e.kind)).toContain('cheat');
@@ -161,5 +161,14 @@ describe('the cheat code (37.2)', () => {
     await s.type(id, 'guess-123');
     expect(s.match.anomalies.counts()).toEqual({ bad_cheat_code: 1 });
     expect(JSON.stringify(s.match.anomalies.counts())).not.toContain('guess-123');
+  });
+
+  it('tells a player the key combination only where a pass can work', async () => {
+    const on = await setup({ combo: ['KeyQ', 'KeyW'] });
+    const joined = on.match.join(PROTOCOL_VERSION, 'Late', new FakeConnection());
+    if (!joined.ok) throw new Error('join failed');
+    expect(on.connection.jsonOf('cheat_info').at(-1)).toMatchObject({ combo: ['KeyQ', 'KeyW'] });
+    const off = await setup({ scope: 'off' });
+    expect(off.connection.jsonOf('cheat_info')).toHaveLength(0);
   });
 });

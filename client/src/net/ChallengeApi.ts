@@ -1,4 +1,11 @@
-import type { HintResult, IssueResult, RunResult, SubmitResult, TaskAnswer } from '@heist/shared';
+import type {
+  CheatOutcome,
+  HintResult,
+  IssueResult,
+  RunResult,
+  SubmitResult,
+  TaskAnswer,
+} from '@heist/shared';
 
 /**
  * What the SQL panel needs from the game connection. The panel depends on
@@ -15,6 +22,8 @@ export interface ChallengeApi {
   submit(challengeId: string, sql: string, answer?: TaskAnswer): Promise<SubmitResult>;
   /** Reveals hint `index` (in order). The first reveal is charged by the game; repeats are free. */
   hint(challengeId: string, index: number): Promise<HintResult>;
+  /** Types the owner's cheat code for the open question (Phase 37); absent on connections that cannot. */
+  cheat?(challengeId: string, code: string): Promise<CheatOutcome>;
   /** Tells the server this player gave up their current task. */
   abandon(): Promise<void>;
   /** Best estimate of the server clock (epoch ms); lockouts and expiry are in server time. */

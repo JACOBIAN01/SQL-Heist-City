@@ -1,6 +1,7 @@
 import {
   isChallengeServerMessage,
   type ChallengeClientMessage,
+  type CheatMessage,
   type ChallengeServerMessage,
   type TaskAnswer,
   type JsonServerMessage,
@@ -11,14 +12,14 @@ import { JsonRpc } from './JsonRpc';
 
 /** Where challenge messages travel: the game connection's JSON channel. */
 export interface ChallengeChannel {
-  send(message: ChallengeClientMessage): void;
+  send(message: ChallengeClientMessage | CheatMessage): void;
 }
 
 // Pattern: Adapter — Why: the SQL panel asks for plain promises (ChallengeApi);
 // this turns them into JSON messages on the game connection and matches the
 // replies by ref, so the same panel runs on the demo socket and in the game.
 export class ChannelChallengeApi implements ChallengeApi {
-  private readonly rpc: JsonRpc<ChallengeClientMessage, ChallengeServerMessage>;
+  private readonly rpc: JsonRpc<ChallengeClientMessage | CheatMessage, ChallengeServerMessage>;
   private clockOffset = 0;
 
   constructor(
@@ -78,6 +79,16 @@ export class ChannelChallengeApi implements ChallengeApi {
       index,
     }));
     return (reply as Extract<ChallengeServerMessage, { t: 'challenge_hint' }>).result;
+  }
+
+  async cheat(challengeId: string, code: string) {
+    const reply = await this.rpc.call('challenge_cheat', (ref) => ({
+      t: 'cheat',
+      ref,
+      challengeId,
+      code,
+    }));
+    return (reply as Extract<ChallengeServerMessage, { t: 'challenge_cheat' }>).result;
   }
 
   async abandon(): Promise<void> {

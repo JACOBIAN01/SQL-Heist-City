@@ -36,6 +36,8 @@ import { ActsView } from './ui/hud/ActsView';
 import { StoryView } from './ui/hud/StoryView';
 import { GhostRenderer } from './heist/GhostRenderer';
 import { LeaderboardView } from './ui/hud/LeaderboardView';
+import { ChordWatcher } from './input/ChordWatcher';
+import { CheatPrompt } from './ui/hud/CheatPrompt';
 import { KillCamView } from './heist/KillCamView';
 import { TeamBadge } from './ui/hud/TeamBadge';
 import { CityDbView } from './ui/hud/CityDbView';
@@ -709,6 +711,8 @@ client.subscribe({
     } else if (message.t === 'leaderboard') {
       leaderboardView.update(message);
       hud.toast(leaderboardView.toastFor(message));
+    } else if (message.t === 'cheat_info') {
+      cheatChord.setCombo(message.combo);
     } else if (message.t === 'killcam') {
       killCam.start(message, performance.now());
     } else if (message.t === 'team') {
@@ -846,6 +850,14 @@ const sqlTasks = new SqlPanelController({
   drafts: new StorageDraftStore(sessionStorage),
   onHintCharged: (hint) => hud.toast(`Hint revealed (cost ${hint.cost})`),
 });
+// The cheat code (Phase 37): the server says which keys open the prompt, and only where it can work.
+const cheatPrompt = new CheatPrompt(i18n, (code) => sqlTasks.cheat(code));
+document.body.append(cheatPrompt.root);
+const cheatChord = new ChordWatcher([], () => {
+  if (cheatPrompt.isOpen) cheatPrompt.close();
+  else if (sqlTasks.hasOpenTask) cheatPrompt.open();
+});
+cheatChord.attach(window);
 // A vault door opening changes what everyone collides with.
 world.onChange((map, closedDoors) => {
   collisionMap = map;
