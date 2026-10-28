@@ -174,3 +174,16 @@ describe('axisScores and remediation', () => {
     expect(remediation(scores)?.dimension).toBe('analyze');
   });
 });
+
+describe('a question passed with the cheat code (37.3)', () => {
+  it('is never evidence of learning, however it went before', () => {
+    expect(scoreItem(item({ outcome: 'cheat' }), S)).toEqual({
+      counted: false,
+      available: 0,
+      earned: 0,
+    });
+    expect(
+      scoreItem(item({ outcome: 'cheat', runs: 5, submits: 3, wrongSubmits: 2 }), S).counted,
+    ).toBe(false);
+  });
+});

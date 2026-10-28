@@ -57,7 +57,7 @@ export class ProgressKeeper implements AttemptSink {
   /** A round finished: everyone signed in who took part earns for it. */
   roundEnded(result: RoundResult): void {
     for (const s of result.standings) {
-      if (s.accountId === undefined) continue;
+      if (s.accountId === undefined || s.cheated) continue;
       const xp = playXp(s, this.settings());
       if (xp > 0)
         this.enqueue(s.accountId, () =>

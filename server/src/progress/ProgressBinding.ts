@@ -142,9 +142,10 @@ export class ProgressBinding {
     match.heist.events.subscribe((event) => {
       // A finished heist teaches something too (Phase 31.4): mastery XP, over and above the question XP.
       // Finishing a bank's story chain pays XP too.
-      if (event.type === 'chain_complete' && event.player.accountId !== undefined)
+      const cheated = 'player' in event && match.heist.cheats.has(event.player);
+      if (event.type === 'chain_complete' && event.player.accountId !== undefined && !cheated)
         void this.keeper.bonus(event.player.accountId, event.xp, 'story');
-      if (event.type === 'heist_complete' && event.player.accountId !== undefined)
+      if (event.type === 'heist_complete' && event.player.accountId !== undefined && !cheated)
         void this.keeper.bonus(event.player.accountId, event.mastery, 'heist');
       if (event.type === 'round_end') {
         this.keeper.roundEnded(event.result);

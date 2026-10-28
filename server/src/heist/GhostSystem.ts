@@ -29,6 +29,8 @@ export class GhostSystem {
     private readonly match: MatchApi,
     events: HeistEvents,
     private readonly active: () => boolean,
+    /** Someone who passed a question with the cheat code sets no record (Phase 37). */
+    private readonly cheated: (player: Player) => boolean = () => false,
   ) {
     events.subscribe((e) => {
       if (!this.active()) return;
@@ -98,7 +100,7 @@ export class GhostSystem {
   private async finish(player: Player, bank: string, take: number): Promise<void> {
     const run = this.runs.get(player);
     this.runs.delete(player);
-    if (!run || run.bank !== bank) return;
+    if (!run || run.bank !== bank || this.cheated(player)) return;
     const seconds = Math.round((this.match.tick - run.startTick) / this.match.tickRate);
     if (seconds < MIN_SECONDS) return;
     this.sample2(run, player);

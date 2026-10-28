@@ -12,6 +12,8 @@ export interface PlayerRoundResult {
   readonly banked: number;
   readonly kills: number;
   readonly deaths: number;
+  /** Passed a question with the cheat code this round: earns no XP for it (Phase 37). */
+  readonly cheated?: boolean;
 }
 
 export interface RoundResult {

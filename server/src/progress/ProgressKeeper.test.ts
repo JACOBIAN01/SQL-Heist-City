@@ -90,6 +90,22 @@ describe('ProgressKeeper', () => {
     expect((await store.get(7)).playXp).toBe(20 + 8 + 24 + 40);
   });
 
+  it('pays no XP for a question passed with the cheat code, nor for a round of someone who cheated (37.3)', async () => {
+    const { k, store } = keeper();
+    k.item(item({ outcome: 'cheat' }), {});
+    k.roundEnded({
+      number: 1,
+      startedAt: 0,
+      endedAt: 1,
+      awards: [],
+      standings: [
+        { rank: 1, accountId: 7, name: 'A', banked: 9000, kills: 5, deaths: 0, cheated: true },
+      ],
+    });
+    await k.settled();
+    expect(await store.get(7)).toEqual({ learningXp: 0, playXp: 0 });
+  });
+
   it('counts answers that arrive together, in order, without losing any', async () => {
     const { k, store } = keeper(['joins']);
     for (let i = 0; i < 10; i++) k.item(item({ challengeId: `c${i}` }), {});

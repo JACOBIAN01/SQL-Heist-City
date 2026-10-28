@@ -9,6 +9,7 @@ const OUTCOMES: Readonly<Record<string, string>> = {
   switched: 'Switched to another task',
   died: 'You were shot',
   left: 'Left',
+  cheat: 'Passed with the cheat code',
 };
 
 /**

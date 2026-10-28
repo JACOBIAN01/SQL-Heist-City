@@ -157,4 +157,27 @@ describe('ghost heists (34.6)', () => {
     await runHeist(s, b, 1);
     expect(await s.store.best(BANK)).toBeUndefined();
   });
+
+  it('keeps no record for a runner who passed a question with the cheat code (37.3)', async () => {
+    const s = await setup();
+    const a = s.join('Ana', 1);
+    s.heist.events.publish({ type: 'intel_gained', player: a.player, bank: BANK, level: 1 });
+    s.heist.events.publish({
+      type: 'task_cheated',
+      player: a.player,
+      rewardKey: 'vault:bank-1:lock-1',
+    });
+    s.seconds(40);
+    s.heist.events.publish({
+      type: 'heist_complete',
+      player: a.player,
+      bank: BANK,
+      tier: 1,
+      mastery: 0,
+      take: 8_000,
+    });
+    await settle();
+    expect(await s.store.best(BANK)).toBeUndefined();
+    expect(result(a.connection)).toBeUndefined();
+  });
 });

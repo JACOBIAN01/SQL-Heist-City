@@ -44,6 +44,7 @@ import { StorySystem } from './StorySystem';
 import { CameraGrid } from './CameraGrid';
 import { CopsRobbers } from './CopsRobbers';
 import { GhostSystem } from './GhostSystem';
+import { CheatLedger } from './CheatLedger';
 import { RoundRecorder } from './RoundRecorder';
 import { KillCam } from './KillCam';
 import { InsideMan } from './InsideMan';
@@ -233,6 +234,8 @@ export class HeistController implements ArmsControl {
       },
       () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
     );
+    // Who passed a question with the cheat code: nothing that rewards learning pays them.
+    this.cheats = new CheatLedger(this.events);
     // The round, recorded for the teacher to replay.
     this.recorder = new RoundRecorder(match, this.events);
     // The kill-cam: who put you down, and how long their last answer took.
@@ -242,6 +245,7 @@ export class HeistController implements ArmsControl {
       match,
       this.events,
       () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
+      (p) => this.cheats.has(p),
     );
     // The story: a chain of steps for each bank, following what the match already does.
     this.story = new StorySystem(
@@ -375,6 +379,7 @@ export class HeistController implements ArmsControl {
         squadAwards: () => this.squads.awards(),
         awards: () => this.awards.results((id) => this.match.getPlayer(id)),
         onEnd: () => this.banking.cancelAll('round_over'),
+        cheated: (p) => this.cheats.has(p),
         onResult: (result) =>
           this.events.publish({
             type: 'round_end',
@@ -450,6 +455,7 @@ export class HeistController implements ArmsControl {
     this.cops.reset();
     this.ghosts.reset();
     this.recorder.reset();
+    this.cheats.reset();
     this.inside.reset();
     this.splits.reset();
     this.cameras.reset();
@@ -1025,6 +1031,7 @@ export class HeistController implements ArmsControl {
   readonly ghosts: GhostSystem;
   readonly killcam: KillCam;
   readonly recorder: RoundRecorder;
+  readonly cheats: CheatLedger;
   readonly inside: InsideMan;
   readonly splits: SplitQueries;
   readonly cameras: CameraGrid;

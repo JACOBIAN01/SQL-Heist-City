@@ -21,6 +21,8 @@ export interface RoundHooks {
   squadAwards?(): readonly SquadAwardView[] | undefined;
   /** The finished round's full result (for the class record). */
   onResult(result: RoundResult): void;
+  /** Whether a player passed a question with the cheat code this round (Phase 37). */
+  cheated?(player: Player): boolean;
 }
 
 const TOP = 10;
@@ -128,6 +130,7 @@ export class RoundController {
         banked: p.banked,
         kills: p.kills,
         deaths: p.deaths,
+        ...(this.hooks.cheated?.(p) ? { cheated: true } : {}),
       })),
       awards: this.hooks.awards(),
       ...this.squadsField(),
