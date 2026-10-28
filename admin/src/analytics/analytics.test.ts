@@ -175,6 +175,47 @@ describe('class analytics API (15.11–15.16, 15.18)', () => {
     });
   });
 
+  it('lists the questions passed with the cheat code, apart from the learning record (37.5)', async () => {
+    const { h, cls, ana, q } = await setup();
+    const none = await h.client.get<{ passes: unknown[] }>(`/api/classes/${cls}/cheats`);
+    expect(none.body.passes).toEqual([]);
+    const cheated = item({
+      accountId: ana,
+      classId: cls,
+      round: 2,
+      questionId: q,
+      outcome: 'cheat',
+      rewardKey: 'vault:bank-1:lock-1',
+      finishedAt: Date.parse('2026-03-01T10:00:00Z'),
+    });
+    await h.stores.attempts.writeBatch(
+      [],
+      [{ item: cheated, who: { accountId: ana, classId: cls } }],
+      S,
+    );
+    const res = await h.client.get<{
+      passes: { name: string; round: number; rewardKey: string; title: string; at: string }[];
+    }>(`/api/classes/${cls}/cheats`);
+    expect(res.body.passes).toEqual([
+      {
+        studentId: ana,
+        name: 'Ana',
+        round: 2,
+        rewardKey: 'vault:bank-1:lock-1',
+        title: questionTemplateSchema.parse(sampleQuestion).title,
+        at: '2026-03-01T10:00:00.000Z',
+      },
+    ]);
+    // It is not learning evidence: the question analysis still shows the same ten attempts.
+    const items = await h.client.get<{ items: { attempts: number }[] }>(
+      `/api/classes/${cls}/items`,
+    );
+    expect(items.body.items[0]?.attempts).toBe(10);
+    h.client.clearCookie();
+    await h.loginAs('other@school.test', 'teacher');
+    expect((await h.client.get(`/api/classes/${cls}/cheats`)).status).toBe(403);
+  });
+
   it('exports profiles and questions as spreadsheets', async () => {
     const { h, cls } = await setup();
     const profiles = await h.client.get<string>(`/api/classes/${cls}/export.csv`);

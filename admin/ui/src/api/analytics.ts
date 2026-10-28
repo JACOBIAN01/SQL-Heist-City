@@ -92,6 +92,23 @@ export function useItemAnalysis(classId: number) {
   });
 }
 
+export interface CheatPassRow {
+  studentId: number | null;
+  name: string;
+  round: number | null;
+  rewardKey: string;
+  title: string;
+  at: string;
+}
+
+export function useCheatPasses(classId: number) {
+  return useQuery({
+    queryKey: ['class', classId, 'cheats'],
+    queryFn: async () =>
+      (await api<{ passes: CheatPassRow[] }>(`/classes/${classId}/cheats`)).passes,
+  });
+}
+
 export interface AssessmentView {
   id: number;
   classId: number;

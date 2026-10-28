@@ -12,6 +12,7 @@ import {
 import {
   useClassAnalytics,
   useGain,
+  useCheatPasses,
   useItemAnalysis,
   type GainRow,
   type Spread,
@@ -142,6 +143,7 @@ export function ClassLearningPage() {
         </div>
       )}
       {tab === 'Questions' && <Questions classId={id} />}
+      {tab === 'Questions' && <CheatPasses classId={id} />}
       {tab === 'Gain' && <Gain classId={id} />}
     </div>
   );
@@ -256,6 +258,41 @@ function SpreadTable({
               <td className="num">{fmt(r.median)}</td>
               <td className="num">{fmt(r.q3)}</td>
               <td className="num">{fmt(r.max)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Questions passed with the cheat code; shown only when there are some, so a class that never used it sees nothing. */
+function CheatPasses({ classId }: { classId: number }) {
+  const passes = useCheatPasses(classId);
+  if (!passes.data?.length) return null;
+  return (
+    <div className="card stack">
+      <h2>Passed with the cheat code</h2>
+      <p className="muted">
+        These count as no learning: no marks, XP or leaderboard place. Students who used it are
+        listed with the question and round.
+      </p>
+      <table aria-label="Cheat code passes">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Question</th>
+            <th>Round</th>
+            <th>When</th>
+          </tr>
+        </thead>
+        <tbody>
+          {passes.data.map((p, i) => (
+            <tr key={i}>
+              <td>{p.name}</td>
+              <td>{p.title}</td>
+              <td className="num">{p.round ?? '–'}</td>
+              <td className="muted">{new Date(p.at).toLocaleString()}</td>
             </tr>
           ))}
         </tbody>

@@ -16,7 +16,7 @@
 1. **Everything about questions is configurable** and stored in the DB: text, schema, data generator, reference solution, tier, topic, reward mapping, hints, hint cost, lockout seconds, enabled flag. Game code reads these; it never embeds them.
 2. **A teacher/admin can** create, edit, disable, duplicate, import, export, and version questions, and change reward→tier mappings and gameplay numbers, without a deploy.
 3. **Same reward ≠ same question.** Per-player, per-attempt seeds; pool rotation; no repeat until pool exhausted.
-4. **Server-authoritative:** damage, health, cash, inventory, vault state, grading, cooldowns.
+4. **Server-authoritative:** damage, health, cash, inventory, vault state, grading, cooldowns. The owner's cheat code (Phase 37) is not an exception: the code is a hash in settings, checked only on the server, scoped, rate-limited and audited, and a pass is recorded as outcome `cheat`, never as a solve.
 5. **Reference solutions never leave the server** (not in WS payloads, not in client bundles, not in logs at info level). Neither does the real expected result. A worked example computed on separate example data may be shown (questions.md "Worked example"). The one exception: tutorial rooms send the reference query of their fixed questions (`solution`), which never happens in a real match.
 6. **The world never pauses** during a SQL pop-up.
 

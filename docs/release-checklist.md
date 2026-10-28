@@ -12,6 +12,7 @@ Every line needs **evidence**: a test, a report, a screenshot, or a link. "Evide
 | Teaching loop | Pre/post tests, practice mode, hints, review | Phase 16 tests |
 | Content | 268 questions pass the QA gate across 100 seeds | `npm run questions:validate` in CI |
 | Security | Sandbox escapes, fuzz, rate limits, origin policy, secrets scan | fuzz nightly; rateLimits tests; scripts/check-secrets.mjs |
+| Security | Cheat code switched off for students, or scoped to named classes; the code set from the admin page and changed since it was shared in chat | Settings → Cheat code (`scope` is `off` by default); `CheatCode.test.ts`; owner to confirm before launch |
 | Security | External penetration test, high findings fixed | ⛔ #14 (brief ready: docs/pentest-brief.md) |
 | Scale | 100 players tick p95 < 15 ms | tickBudget.test.ts |
 | Scale | 100/200 on real cloud machines | ⛔ #15 |

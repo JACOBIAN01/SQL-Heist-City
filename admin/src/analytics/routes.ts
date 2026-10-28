@@ -255,6 +255,32 @@ export function analyticsRoutes(deps: AnalyticsDeps): Router {
     });
   });
 
+  /** Questions passed with the owner's cheat code (Phase 37.5): who, which question, which round. */
+  router.get('/classes/:id/cheats', async (req, res) => {
+    const record = await load(res, idParam(req.params.id));
+    const passes = (await deps.attempts.itemsOfClass(record.id)).filter(
+      (i) => i.outcome === 'cheat',
+    );
+    const names = new Map<number, string>();
+    for (const accountId of new Set(passes.flatMap((p) => (p.accountId ? [p.accountId] : [])))) {
+      const player = await deps.players.findById(accountId);
+      if (player) names.set(accountId, player.displayName);
+    }
+    const known = new Map((await deps.questions.list()).map((q) => [q.id, q] as const));
+    res.json({
+      passes: passes
+        .map((p) => ({
+          studentId: p.accountId ?? null,
+          name: (p.accountId && names.get(p.accountId)) || '(unsigned)',
+          round: p.round ?? null,
+          rewardKey: p.rewardKey,
+          title: known.get(p.questionId)?.template.title ?? '(removed)',
+          at: new Date(p.finishedAt).toISOString(),
+        }))
+        .sort((a, b) => b.at.localeCompare(a.at)),
+    });
+  });
+
   router.get('/classes/:id/export.csv', async (req, res) => {
     const record = await load(res, idParam(req.params.id));
     const settings = await deps.settings();

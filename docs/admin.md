@@ -70,4 +70,4 @@ The game server records every class round: where each student stood every 3 s se
 
 ## Cheat code (Phase 37)
 
-Settings → **Cheat code** (admins only). Choose where it works (`off` by default), record the key combination, and set the code. The code is write-only: it is stored as a scrypt hash, cannot be read back, and never appears in the audit trail (which records only that it changed). Leave the code field empty to keep the current one. It cannot be switched on without a code.
+Settings → **Cheat code** (admins only). Choose where it works (`off` by default), record the key combination, and set the code. The code is write-only: it is stored as a scrypt hash, cannot be read back, and never appears in the audit trail (which records only that it changed). Leave the code field empty to keep the current one. Each use is kept as a question with outcome `cheat`; the class's **Learning → Questions** tab lists them (student, question, round, time), and the round replay shows them too. It cannot be switched on without a code.

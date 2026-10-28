@@ -227,7 +227,7 @@ One row per question a student finished, with how it went and the marks it earne
 | `bloom` | Which level of thinking | content | as above |
 | `marks` | What it was worth | content | as above |
 | `topics` | Its SQL topics | content | as above |
-| `outcome` | Solved, expired, abandoned… | record | as above |
+| `outcome` | Solved, expired, abandoned… or `cheat` (passed with the owner's cheat code, Phase 37; never counted as learning) | record | as above |
 | `runs` | Times they ran a query | record | as above |
 | `submits` | Times they submitted | record | as above |
 | `wrong_submits` | Wrong submits | record | as above |
