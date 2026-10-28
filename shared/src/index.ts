@@ -90,4 +90,5 @@ export * from './config/story';
 export * from './config/cityDb';
 export * from './analytics/queryCost';
 export * from './progress/ghost';
+export * from './replay/roundReplay';
 export * from './sim/traffic';

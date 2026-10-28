@@ -73,6 +73,7 @@ describe.skipIf(!TEST_DATABASE_URL)('the data map (21.1)', () => {
         'audit_log.actor',
         'brief_submissions.marked_by',
         'class_rounds.awards',
+        'class_rounds.replay',
         'class_results.name',
         'concept_card_versions.created_by',
         'concept_cards.updated_by',

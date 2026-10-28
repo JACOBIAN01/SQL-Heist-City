@@ -1,4 +1,4 @@
-import type { AwardView } from '@heist/shared';
+import { REPLAYS_KEPT_PER_CLASS, type AwardView, type RoundReplay } from '@heist/shared';
 import type { PgDatabase } from '../pg/PgDatabase';
 import type { RoundResult } from '../heist/HeistEvents';
 
@@ -13,6 +13,8 @@ export interface StoredRound {
   readonly players: number;
   /** Name and banked cash of whoever won (the most banked), if anyone banked. */
   readonly winner: { readonly name: string; readonly banked: number } | null;
+  /** The round was recorded and can still be replayed (Phase 35.2). */
+  readonly hasReplay: boolean;
 }
 
 export interface StoredStanding {
@@ -43,6 +45,8 @@ export interface ClassResultRepository {
     classId: number,
     roundId: number,
   ): Promise<{ round: StoredRound; standings: StoredStanding[] } | undefined>;
+  /** The recording of a round, or undefined (none kept, or the round belongs to another class). */
+  replay(classId: number, roundId: number): Promise<RoundReplay | undefined>;
   /** Per student: cash banked and rounds played in rounds that ended in [from, to). */
   totalsBetween(classId: number, from: Date, to: Date): Promise<PeriodTotal[]>;
   /** A student's most recent rounds over every class, newest first. */
@@ -63,7 +67,11 @@ const winnerOf = (standings: readonly { name: string; banked: number }[]) => {
 };
 
 export class InMemoryClassResults implements ClassResultRepository {
-  private readonly rows: { round: StoredRound; standings: StoredStanding[] }[] = [];
+  private readonly rows: {
+    round: StoredRound;
+    standings: StoredStanding[];
+    replay: RoundReplay | undefined;
+  }[] = [];
   private nextId = 1;
 
   async record(classId: number, result: RoundResult) {
@@ -84,8 +92,15 @@ export class InMemoryClassResults implements ClassResultRepository {
       awards: result.awards,
       players: standings.length,
       winner: winnerOf(standings),
+      hasReplay: result.replay !== undefined,
     };
-    this.rows.push({ round, standings });
+    this.rows.push({ round, standings, replay: result.replay });
+    // Only the newest recordings are kept.
+    const mine = this.rows.filter((r) => r.round.classId === classId && r.replay);
+    for (const old of mine.slice(0, -REPLAYS_KEPT_PER_CLASS)) {
+      old.replay = undefined;
+      this.rows[this.rows.indexOf(old)] = { ...old, round: { ...old.round, hasReplay: false } };
+    }
     return round;
   }
 
@@ -99,6 +114,10 @@ export class InMemoryClassResults implements ClassResultRepository {
   async round(classId: number, roundId: number) {
     const found = this.rows.find((r) => r.round.id === roundId && r.round.classId === classId);
     return found && { round: found.round, standings: found.standings };
+  }
+
+  async replay(classId: number, roundId: number) {
+    return this.rows.find((r) => r.round.id === roundId && r.round.classId === classId)?.replay;
   }
 
   async totalsBetween(classId: number, from: Date, to: Date) {
@@ -146,11 +165,13 @@ interface RoundRow {
   players: string | number;
   winner_name: string | null;
   winner_banked: string | null;
+  has_replay: boolean;
   [column: string]: unknown;
 }
 
 const ROUND_SQL = `
-  SELECT r.*, (SELECT count(*) FROM class_results c WHERE c.round_id = r.id) AS players,
+  SELECT r.id, r.class_id, r.number, r.started_at, r.ended_at, r.awards, (r.replay IS NOT NULL) AS has_replay,
+         (SELECT count(*) FROM class_results c WHERE c.round_id = r.id) AS players,
          (SELECT name FROM class_results c WHERE c.round_id = r.id AND c.rank = 1 AND c.banked > 0) AS winner_name,
          (SELECT banked FROM class_results c WHERE c.round_id = r.id AND c.rank = 1 AND c.banked > 0) AS winner_banked
   FROM class_rounds r`;
@@ -164,6 +185,7 @@ const toRound = (r: RoundRow): StoredRound => ({
   awards: r.awards,
   players: Number(r.players),
   winner: r.winner_name === null ? null : { name: r.winner_name, banked: Number(r.winner_banked) },
+  hasReplay: r.has_replay,
 });
 
 interface StandingRow {
@@ -213,15 +235,24 @@ export class PgClassResults implements ClassResultRepository {
   async record(classId: number, result: RoundResult): Promise<StoredRound> {
     const id = await this.db.tx(async (tx) => {
       const row = await tx.one<{ id: string }>(
-        `INSERT INTO class_rounds (class_id, number, started_at, ended_at, awards)
-         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        `INSERT INTO class_rounds (class_id, number, started_at, ended_at, awards, replay)
+         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
         [
           classId,
           result.number,
           new Date(result.startedAt),
           new Date(result.endedAt),
           JSON.stringify(result.awards),
+          result.replay ? JSON.stringify(result.replay) : null,
         ],
+      );
+      // Only the newest recordings are kept; the round's table stays.
+      await tx.query(
+        `UPDATE class_rounds SET replay = NULL
+          WHERE class_id = $1 AND replay IS NOT NULL
+            AND id NOT IN (SELECT id FROM class_rounds WHERE class_id = $1 AND replay IS NOT NULL
+                           ORDER BY id DESC LIMIT $2)`,
+        [classId, REPLAYS_KEPT_PER_CLASS],
       );
       const roundId = Number((row as { id: string }).id);
       for (const s of result.standings) {
@@ -247,6 +278,14 @@ export class PgClassResults implements ClassResultRepository {
       [classId],
     );
     return rows.map(toRound);
+  }
+
+  async replay(classId: number, roundId: number) {
+    const row = await this.db.one<{ replay: RoundReplay | null }>(
+      'SELECT replay FROM class_rounds WHERE id = $1 AND class_id = $2',
+      [roundId, classId],
+    );
+    return row?.replay ?? undefined;
   }
 
   async round(classId: number, roundId: number) {

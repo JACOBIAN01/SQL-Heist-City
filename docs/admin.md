@@ -63,3 +63,7 @@ The Settings page has a card for heist rules, vehicles, day and night, and the c
 - **Heist, vehicles, day and night:** every match re-reads them when a new round starts and tells its clients (`world` message), so the cars a client predicts with are the server's. The heist numbers are rewritten in place in the running match, including locks per vault and banking time.
 - **City:** the generation settings travel in the map id (`city:autumn~blocks=6~banks=4`), so a client builds exactly the server's city. A city cannot change under a running match: a new one applies to matches created afterwards (a server restart for the single in-process match).
 - **Tutorial** questions were already editable (Tutorial card).
+
+## Round replay (Phase 35.2)
+
+The game server records every class round: where each student stood every 3 s seen from above, and the kills, cracked locks, opened vaults, banked cash and solved questions (reward keys only, never SQL). On the class page, open a finished round and press **Watch the replay**: a top-down map plays the round at 12× speed with a slider, and the last minute of events beside it. The newest 10 recordings per class are kept; older rounds keep their results table but lose the recording. See `docs/privacy.md` (`class_rounds.replay`).

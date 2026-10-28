@@ -610,7 +610,7 @@ Post-launch. Minor items from the audit.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 35.1 | Kill-cam showing the killer's view and how long their last query took | plays on death | ✅ |
-| 35.2 | Round replay (server-recorded) for teachers | a round can be replayed | ⬜ |
+| 35.2 | Round replay (server-recorded) for teachers | a round can be replayed | ✅ |
 | 35.3 | Small UX fixes from pilot and launch feedback | backlog emptied | ⬜ |
 
 ---

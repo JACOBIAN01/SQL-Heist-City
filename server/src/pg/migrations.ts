@@ -456,4 +456,8 @@ export const pgMigrations: readonly string[] = [
     PRIMARY KEY (bank, player_id)
   );
   `,
+  // 25 — a recording of each round for the teacher to replay (Phase 35.2); only the newest are kept
+  `
+  ALTER TABLE class_rounds ADD COLUMN replay JSONB;
+  `,
 ];

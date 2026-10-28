@@ -158,5 +158,5 @@ The SQL pop-up uses the same challenge messages as before, now over `json` frame
 ## Class rooms (14.5–14.7)
 - Account service: `POST /auth/class/join {code}` → `{class:{id,name}}` (records the student); `POST /auth/ticket {classId}` → a ticket whose claims carry the class (members only). Ticket claims are `[playerId, expiry, id, name, classId]`; a room admits only its own class id, open play only `0`.
 - Game server: `GET /class/:id` → `{state: 'waiting'|'live', port?, players?, maxPlayers?, mapId?}` (public). `POST /internal/class/:id` (secret) with `{action: start|stop|refresh|end_round|next_round|kick|rename, …}` → `{ok, status}` or `{ok:false, reason: unknown_class|not_live|archived}`.
-- Admin API: `/api/classes` (CRUD, `/code`, `/lock`, `/questions`, `/roster`, `/results`, `/live`, `/live/start|stop|end-round|next-round|kick|rename`).
+- Admin API: `/api/classes` (CRUD, `/code`, `/lock`, `/questions`, `/roster`, `/results` (and `/results/:round/replay`), `/live`, `/live/start|stop|end-round|next-round|kick|rename`).
 - Closing codes: 4004 already in this match, 4005 sign-in/ticket refused, 4006 removed by the teacher.

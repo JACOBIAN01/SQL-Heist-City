@@ -19,6 +19,7 @@ import {
   useClass,
   useClassQuestions,
   useNewCode,
+  useReplay,
   useRound,
   useRounds,
   useRoster,
@@ -28,6 +29,7 @@ import {
   useSquads,
   useUpdateClass,
 } from '../api/classes';
+import { ReplayPlayer } from '../components/ReplayPlayer';
 import { useQuestions } from '../api/questions';
 import { useAssessments, useSaveAssessment } from '../api/analytics';
 import { useCustomHeists } from '../api/customHeists';
@@ -686,6 +688,8 @@ function Rounds({ classId }: { classId: number }) {
   const rounds = useRounds(classId);
   const [open, setOpen] = useState<number | undefined>();
   const detail = useRound(classId, open);
+  const [watching, setWatching] = useState(false);
+  const replay = useReplay(classId, open, watching);
   return (
     <div className="card stack">
       <h2>Finished rounds</h2>
@@ -697,7 +701,10 @@ function Rounds({ classId }: { classId: number }) {
             <tr
               key={r.id}
               className="clickable"
-              onClick={() => setOpen(open === r.id ? undefined : r.id)}
+              onClick={() => {
+                setOpen(open === r.id ? undefined : r.id);
+                setWatching(false);
+              }}
             >
               <td>Round {r.number}</td>
               <td className="muted">{new Date(r.endedAt).toLocaleString()}</td>
@@ -711,6 +718,12 @@ function Rounds({ classId }: { classId: number }) {
           ))}
         </tbody>
       </table>
+      {open !== undefined && rounds.data?.find((r) => r.id === open)?.hasReplay && (
+        <button type="button" onClick={() => setWatching(!watching)}>
+          {watching ? 'Hide the replay' : 'Watch the replay'}
+        </button>
+      )}
+      {watching && replay.data && <ReplayPlayer replay={replay.data} />}
       {detail.data && open !== undefined && (
         <table aria-label="Round results">
           <thead>

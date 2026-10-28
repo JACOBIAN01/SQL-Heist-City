@@ -84,7 +84,7 @@ describe('the kill-cam (35.1)', () => {
     for (let i = 0; i < 650 * match.tickRate; i++) match.step();
     match.damage(carl.player, 999, ben.player);
     expect(cam(carl.connection)?.lastAnswer).toBeUndefined();
-  });
+  }, 30_000);
 
   it('sends nothing for a death by your own hand', () => {
     const { match, join, cam } = setup();

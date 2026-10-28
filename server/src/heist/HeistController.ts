@@ -41,6 +41,7 @@ import { StorySystem } from './StorySystem';
 import { CameraGrid } from './CameraGrid';
 import { CopsRobbers } from './CopsRobbers';
 import { GhostSystem } from './GhostSystem';
+import { RoundRecorder } from './RoundRecorder';
 import { KillCam } from './KillCam';
 import { InsideMan } from './InsideMan';
 import { SplitQueries } from './SplitQueries';
@@ -229,6 +230,8 @@ export class HeistController implements ArmsControl {
       },
       () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
     );
+    // The round, recorded for the teacher to replay.
+    this.recorder = new RoundRecorder(match, this.events);
     // The kill-cam: who put you down, and how long their last answer took.
     this.killcam = new KillCam(match, this.events);
     // Ghost heists: your fastest run on a bank, to race.
@@ -369,7 +372,11 @@ export class HeistController implements ArmsControl {
         squadAwards: () => this.squads.awards(),
         awards: () => this.awards.results((id) => this.match.getPlayer(id)),
         onEnd: () => this.banking.cancelAll('round_over'),
-        onResult: (result) => this.events.publish({ type: 'round_end', result }),
+        onResult: (result) =>
+          this.events.publish({
+            type: 'round_end',
+            result: { ...result, replay: this.recorder.snapshot() },
+          }),
       });
       this.layLooseCash();
     }
@@ -439,6 +446,7 @@ export class HeistController implements ArmsControl {
     this.intel.reset();
     this.cops.reset();
     this.ghosts.reset();
+    this.recorder.reset();
     this.inside.reset();
     this.splits.reset();
     this.cameras.reset();
@@ -504,6 +512,7 @@ export class HeistController implements ArmsControl {
     this.intel.onTick();
     this.cops.onTick();
     this.ghosts.onTick();
+    this.recorder.onTick();
     this.inside.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
@@ -972,6 +981,7 @@ export class HeistController implements ArmsControl {
   readonly cops: CopsRobbers;
   readonly ghosts: GhostSystem;
   readonly killcam: KillCam;
+  readonly recorder: RoundRecorder;
   readonly inside: InsideMan;
   readonly splits: SplitQueries;
   readonly cameras: CameraGrid;

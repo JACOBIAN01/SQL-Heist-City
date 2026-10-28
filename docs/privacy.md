@@ -344,6 +344,7 @@ Each finished round of a class.
 | `started_at` | Start | technical | with the class |
 | `ended_at` | End | technical | with the class |
 | `awards` | The round's awards: names of winners as they appeared | personal | with the class |
+| `replay` | A recording of the round for the teacher to watch (Phase 35.2): display names, where each stood every 3 s seen from above, and kills, locks, vaults, banked amounts and solved reward keys. No SQL text. Only the newest 10 per class are kept | personal | newest 10 rounds, then cleared |
 
 ### `users`
 Teachers and administrators (staff sign in with email and password, not Google).

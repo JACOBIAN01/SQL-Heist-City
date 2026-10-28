@@ -255,4 +255,28 @@ describe('class results API (14.9)', () => {
     expect((await h.client.get(`/api/classes/${id}/results`)).status).toBe(403);
     expect((await h.client.get(`/api/classes/${id}/results/${stored.id}`)).status).toBe(403);
   });
+  it('hands the teacher the recording of a round, and says so when there is none (35.2)', async () => {
+    const { h, id } = await boot(new FakeGame());
+    const replay = { step: 3, seconds: 6, tracks: [], events: [] };
+    const withReplay = await h.stores.classResults.record(id, { ...result, replay });
+    const without = await h.stores.classResults.record(id, { ...result, number: 2 });
+    const list = await h.client.get<{ rounds: { id: number; hasReplay: boolean }[] }>(
+      `/api/classes/${id}/results`,
+    );
+    expect(list.body.rounds.map((r) => [r.id, r.hasReplay])).toEqual([
+      [without.id, false],
+      [withReplay.id, true],
+    ]);
+    expect((await h.client.get(`/api/classes/${id}/results/${withReplay.id}/replay`)).body).toEqual(
+      replay,
+    );
+    expect((await h.client.get(`/api/classes/${id}/results/${without.id}/replay`)).status).toBe(
+      404,
+    );
+    h.client.clearCookie();
+    await h.loginAs('bob@school.test', 'teacher');
+    expect((await h.client.get(`/api/classes/${id}/results/${withReplay.id}/replay`)).status).toBe(
+      403,
+    );
+  });
 });

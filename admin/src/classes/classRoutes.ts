@@ -359,6 +359,14 @@ export function classRoutes(deps: ClassRouteDeps): Router {
     res.json(detail);
   });
 
+  // --- replay (35.2): the recorded round, for the teacher to watch ---
+  router.get('/classes/:id/results/:roundId/replay', async (req, res) => {
+    const record = await load(res, idParam(req.params.id));
+    const replay = await deps.results.replay(record.id, idParam(req.params.roundId));
+    if (!replay) throw notFound('Replay');
+    res.json(replay);
+  });
+
   // --- the weekly league (26.6): learning counts for more than cash ---
   router.get('/classes/:id/league', async (req, res) => {
     const record = await load(res, idParam(req.params.id));

@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { classInputSchema } from '@heist/shared';
+import { REPLAYS_KEPT_PER_CLASS, classInputSchema } from '@heist/shared';
 import type { RoundResult } from '../heist/HeistEvents';
 import { TEST_DATABASE_URL, freshPg } from '../pg/testing';
 import { PgPlayerRepository } from '../players/PlayerRepository';
@@ -106,6 +106,31 @@ describe.each(implementations)('class results: %s', (_n, make) => {
     ]);
     expect(detail?.round.awards).toHaveLength(1);
     expect(await results.round(other, r.id)).toBeUndefined();
+  });
+
+  it('keeps the recording of a round, only for its own class, and only the newest ones', async () => {
+    const { results, newClass, newPlayer } = await make();
+    const c = await newClass();
+    const other = await newClass();
+    const a = await newPlayer('a');
+    const replay = {
+      step: 3,
+      seconds: 9,
+      tracks: [{ name: 'A', from: 0, points: [1, 2, 3, 4] }],
+      events: [{ at: 4, kind: 'banked' as const, who: 'A', text: '500' }],
+    };
+    const first = await results.record(c, result(1, [a], { replay }));
+    expect(first.hasReplay).toBe(true);
+    expect(await results.replay(c, first.id)).toEqual(replay);
+    expect(await results.replay(other, first.id)).toBeUndefined();
+    const plain = await results.record(c, result(2, [a]));
+    expect(plain.hasReplay).toBe(false);
+    expect(await results.replay(c, plain.id)).toBeUndefined();
+    for (let n = 3; n < 3 + REPLAYS_KEPT_PER_CLASS; n++)
+      await results.record(c, result(n, [a], { replay }));
+    expect(await results.replay(c, first.id)).toBeUndefined();
+    expect((await results.rounds(c)).find((r) => r.id === first.id)?.hasReplay).toBe(false);
+    expect((await results.round(c, first.id))?.standings).toHaveLength(1);
   });
 
   it('says there was no winner when nobody banked anything', async () => {

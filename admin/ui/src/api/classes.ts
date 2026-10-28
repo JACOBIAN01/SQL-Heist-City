@@ -5,6 +5,7 @@ import type {
   ClassQuestionView,
   ClassRecord,
   RosterEntry,
+  RoundReplay,
 } from '@heist/shared';
 import { api } from './client';
 
@@ -196,6 +197,7 @@ export interface RoundSummary {
   endedAt: string;
   players: number;
   winner: { name: string; banked: number } | null;
+  hasReplay: boolean;
 }
 
 export interface RoundDetail {
@@ -215,6 +217,14 @@ export function useRound(id: number, roundId: number | undefined) {
     queryKey: ['class', id, 'rounds', roundId],
     enabled: roundId !== undefined,
     queryFn: () => api<RoundDetail>(`/classes/${id}/results/${roundId}`),
+  });
+}
+
+export function useReplay(id: number, roundId: number | undefined, on: boolean) {
+  return useQuery({
+    queryKey: ['class', id, 'rounds', roundId, 'replay'],
+    enabled: on && roundId !== undefined,
+    queryFn: () => api<RoundReplay>(`/classes/${id}/results/${roundId}/replay`),
   });
 }
 

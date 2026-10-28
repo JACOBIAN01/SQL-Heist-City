@@ -1,4 +1,4 @@
-import type { AwardView, SquadAwardView, SquadStandingView } from '@heist/shared';
+import type { RoundReplay, AwardView, SquadAwardView, SquadStandingView } from '@heist/shared';
 import type { Player } from '../game/Player';
 import type { Vault } from './Vault';
 
@@ -24,6 +24,8 @@ export interface RoundResult {
   /** Squad table of the round (Phase 27), when the class plays in squads. */
   readonly squads?: readonly SquadStandingView[];
   readonly squadAwards?: readonly SquadAwardView[];
+  /** The round as recorded for the teacher to replay (Phase 35.2). */
+  readonly replay?: RoundReplay;
 }
 
 export type HeistEvent =
