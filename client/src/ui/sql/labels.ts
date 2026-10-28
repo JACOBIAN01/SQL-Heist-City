@@ -35,12 +35,14 @@ export function hintCostText(cost: number, mode: 'fraction' | 'absolute'): strin
   return mode === 'fraction' ? `−${Math.round(cost * 100)}% of your cash` : `−$${cost}`;
 }
 
+const INSIDE_KEY = /^inside:bank-(\d+)$/;
 const INTEL_KEY = /^intel:bank-(\d+)$/;
 const VAULT_KEY = /^vault:bank-(\d+):lock-(\d+)$/;
 
 export function rewardLabel(rewardKey: string): string {
   const known = LABELS[rewardKey];
   if (known) return known;
+  if (INSIDE_KEY.test(rewardKey)) return 'The inside man’s query';
   const intel = INTEL_KEY.exec(rewardKey);
   if (intel) return `Intel on bank ${intel[1]}`;
   const vault = VAULT_KEY.exec(rewardKey);

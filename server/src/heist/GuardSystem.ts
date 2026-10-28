@@ -91,6 +91,11 @@ export class GuardSystem {
     return this.guards.length;
   }
 
+  /** The alarm at a bank is over: its guards stand down (the inside man's tip). */
+  calm(bank: string): void {
+    for (const g of this.guards) if (`bank-${g.vault.tier}` === bank) g.alertUntil = 0;
+  }
+
   /** A bank's guards cannot see anyone for a while (a sabotage contract). */
   blind(bank: string, seconds: number): void {
     this.blindUntil.set(bank, this.match.tick + this.ticks(seconds));

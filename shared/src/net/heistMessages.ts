@@ -211,6 +211,15 @@ export interface PayoutMessage {
   readonly mastery: number;
 }
 
+/** The inside man rings (Phase 34.3): fix his query in time. `done` or `missed` closes the call. */
+export interface InsideMessage {
+  readonly t: 'inside';
+  readonly status: 'call' | 'done' | 'missed';
+  readonly bank: string;
+  readonly text: string;
+  readonly seconds: number;
+}
+
 /** Which side you are on in a cops-and-robbers room (Phase 34.1); sent once on joining. */
 export interface TeamMessage {
   readonly t: 'team';
@@ -851,6 +860,7 @@ export type HeistServerMessage =
   | BarkMessage
   | CityDbMessage
   | TeamMessage
+  | InsideMessage
   | CityResultMessage
   | SplitStateMessage
   | IntelPinsMessage

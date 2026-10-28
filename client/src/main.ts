@@ -675,6 +675,13 @@ client.subscribe({
       duelView.update(message);
     } else if (message.t === 'acts') {
       actsView.update(message, performance.now());
+    } else if (message.t === 'inside') {
+      if (message.status === 'call') {
+        barkView.show('Inside man', message.text, performance.now());
+        // His query is the question: fix it for his tip.
+        openTask(`inside:${message.bank}`, message.bank);
+      } else
+        hud.toast(message.status === 'done' ? 'Fixed. He owes you one.' : 'He hung up. Caught.');
     } else if (message.t === 'team') {
       teamBadge.update(message);
     } else if (message.t === 'citydb') {

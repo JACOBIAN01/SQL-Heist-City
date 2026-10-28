@@ -47,7 +47,7 @@ export const challengeSettingsSchema = z.object({
    */
   taskKinds: z
     .record(z.string(), z.array(z.enum(TASK_KINDS)).min(1))
-    .default({ '*': IN_ROUND_KINDS, brief: ['brief'] }),
+    .default({ '*': IN_ROUND_KINDS, brief: ['brief'], inside: ['fix'] }),
 });
 
 /** The task kinds a reward may ask, from the settings. */

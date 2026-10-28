@@ -40,6 +40,7 @@ import { ActsSystem } from './ActsSystem';
 import { StorySystem } from './StorySystem';
 import { CameraGrid } from './CameraGrid';
 import { CopsRobbers } from './CopsRobbers';
+import { InsideMan } from './InsideMan';
 import { SplitQueries } from './SplitQueries';
 import { CityDb } from './CityDb';
 import { IntelService } from './IntelService';
@@ -149,6 +150,18 @@ export class HeistController implements ArmsControl {
         removeVip: (vip) => this.match.removeNpc(vip),
         done: (player, kind) => this.events.publish({ type: 'job_done', player, kind }),
       },
+    );
+    // The inside man: a broken query of his, now and then, to fix for a tip.
+    this.inside = new InsideMan(
+      match,
+      () => this.settings.insideMan,
+      this.events,
+      new SeededRng(`inside:${match.classInfo?.classId ?? 0}`),
+      {
+        calmGuards: (bank) => this.guards.calm(bank),
+        pay: (player, amount) => this.setCash(player, player.cash + amount),
+      },
+      () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
     );
     // Cops and robbers: some players are the police, and cops query a log of the robbers' trail.
     this.cops = new CopsRobbers(
@@ -331,7 +344,8 @@ export class HeistController implements ArmsControl {
       .add(new PlanningRule(settings, () => this.roundOver))
       .add(new DuelRule(this.duels))
       .add(this.jobs)
-      .add(this.acts);
+      .add(this.acts)
+      .add(this.inside);
     this.refreshDoors();
     if ((match.map.vaults?.length ?? 0) > 0) {
       this.round = new RoundController(match, settings, {
@@ -414,6 +428,7 @@ export class HeistController implements ArmsControl {
     this.acts.reset();
     this.intel.reset();
     this.cops.reset();
+    this.inside.reset();
     this.splits.reset();
     this.cameras.reset();
     this.match.refreshWorld();
@@ -468,6 +483,7 @@ export class HeistController implements ArmsControl {
     this.acts.onTick();
     this.intel.onTick();
     this.cops.onTick();
+    this.inside.onTick();
     if (!this.roundOver) {
       this.banking.onTick();
       this.bounties.onTick();
@@ -810,6 +826,7 @@ export class HeistController implements ArmsControl {
     this.story.forget(player);
     this.intel.forget(player);
     this.cops.forget(player);
+    this.inside.forget(player);
     this.splits.forget(player);
     this.voice.forget(player);
     this.stealth.delete(player);
@@ -929,6 +946,7 @@ export class HeistController implements ArmsControl {
   readonly acts: ActsSystem;
   readonly story: StorySystem;
   readonly cops: CopsRobbers;
+  readonly inside: InsideMan;
   readonly splits: SplitQueries;
   readonly cameras: CameraGrid;
   readonly cityDb: CityDb;

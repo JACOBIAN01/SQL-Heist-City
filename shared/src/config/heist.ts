@@ -371,6 +371,40 @@ export const heistSettingsSchema = z.object({
     })
     .default({ enabled: true, intelMax: 3, alertScale: 0.5, lootBonus: 0.1, mapRange: 90 }),
   /**
+   * The inside man (Phase 34.3): after you crack a lock he sometimes rings with a broken query of his
+   * own and asks you to fix it (a question of the "fix" kind). Fixed in time, he calms the guards at
+   * that bank and tips you; ignored, he is caught and the alarm rings on.
+   */
+  insideMan: z
+    .object({
+      enabled: z.boolean().default(true),
+      /** Chance he calls after each lock cracked (not the last). */
+      chance: z.number().min(0).max(1).default(0.6),
+      /** Seconds you have to fix the query. */
+      seconds: z.number().positive().default(90),
+      /** Cash the tip is worth when it is fixed. */
+      reward: z.number().int().min(0).default(2_000),
+      lines: z
+        .array(z.string().min(1).max(160))
+        .min(1)
+        .default([
+          'It’s me, from inside. My query is broken and the guards are watching the screen. Fix it, quick!',
+          'The door log script just crashed. Can you fix this query before the shift change?',
+          'I copied this from an old report and it will not run. Please, fix it.',
+        ]),
+    })
+    .default({
+      enabled: true,
+      chance: 0.6,
+      seconds: 90,
+      reward: 2_000,
+      lines: [
+        'It’s me, from inside. My query is broken and the guards are watching the screen. Fix it, quick!',
+        'The door log script just crashed. Can you fix this query before the shift change?',
+        'I copied this from an old report and it will not run. Please, fix it.',
+      ],
+    }),
+  /**
    * Cops and robbers (Phase 34.1), a mode where some players are the police. Every `copEvery`th
    * player to join is a cop: armed, unable to crack vaults, scored for arrests (a robber put down)
    * and for cash recovered. Cops track robbers with SQL over a log of where robbers have been.

@@ -299,3 +299,7 @@ In this mode (the teacher picks it), every fourth student is a cop. Cops carry a
 ## Three-part queries for a squad (Phase 34.2)
 
 In the city database terminal, a squad can take the co-op request: one query in three parts, one part for each of you (the body of two CTEs and the SELECT that joins them). Everyone writes their own part. When all three are right, they are put together and checked as one query; if it holds, the next lock of that bank's vault opens and each of you is paid.
+
+## The inside man (Phase 34.3)
+
+Crack a lock and your man on the inside may ring: his query is broken, and the guards are watching. A "fix this query" question opens at once. Fix it in time for a tip and for the guards at that bank to stand down; ignore it and he hangs up.
