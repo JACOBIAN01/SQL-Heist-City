@@ -418,4 +418,17 @@ export const pgMigrations: readonly string[] = [
     PRIMARY KEY (player_id, chain)
   );
   `,
+  // 22 — the leanest correct query of each student, per question (Phase 34.4)
+  `
+  CREATE TABLE query_records (
+    question_id BIGINT      NOT NULL,
+    player_id   BIGINT      NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+    class_id    BIGINT,
+    scanned     INTEGER     NOT NULL CHECK (scanned >= 0),
+    length      INTEGER     NOT NULL CHECK (length >= 0),
+    achieved_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (question_id, player_id)
+  );
+  CREATE INDEX query_records_class ON query_records (class_id, question_id);
+  `,
 ];

@@ -97,6 +97,18 @@ How far a student has got through each bank's story chain (Phase 32.2).
 | `chain` | Which chain (a bank, such as `bank-3`; no free text) | record | with the account |
 | `step` | How many steps they have finished | record | with the account |
 
+### `query_records`
+A student's leanest correct query for each question: how many rows it is estimated to read and how long it is (Phase 34.4). The query text itself is **not** kept. Shown on the question's table, in the student's class and across the game, by display name.
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `question_id` | Which question | content | with the account |
+| `player_id` | The student | pseudonymous | with the account |
+| `class_id` | The class they were in (a number; no class details) | pseudonymous | with the account |
+| `scanned` | Estimated rows read | record | with the account |
+| `length` | Characters in the query (no text) | record | with the account |
+| `achieved_at` | When they reached it | technical | with the account |
+
 ### `player_contracts`
 The daily contracts a student was dealt and how far each got (Phase 26.5). Old days are deleted by the retention job.
 

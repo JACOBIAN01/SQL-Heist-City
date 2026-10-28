@@ -19,6 +19,8 @@ import {
   type TaskAnswer,
   marksFor,
   frameFor,
+  queryCost,
+  type QueryCost,
   ENGINE_DIALECT,
   questionQuirks,
 } from '@heist/shared';
@@ -395,7 +397,7 @@ export class ChallengeService {
         challenge.solved = true;
         challenge.submits++;
         this.note(challenge, 'submit_correct');
-        this.finish(challenge, 'solved', grade.share);
+        this.finish(challenge, 'solved', grade.share, await this.costOf(challenge, sql));
         this.byPlayer.delete(player);
         return { status: 'correct', rewardKey: challenge.rewardKey, target: challenge.target };
       case 'answered':
@@ -512,7 +514,28 @@ export class ChallengeService {
   }
 
   /** A question ended, one way or another: the record is complete, report it once. */
-  private finish(challenge: ActiveChallenge, outcome: ItemOutcome, share?: number): void {
+  /** How lean a correct write-task query was: its plan priced against the tables, and its length. */
+  private async costOf(challenge: ActiveChallenge, sql: string): Promise<QueryCost | undefined> {
+    if (!sql || challenge.revealSolution || challenge.task.ctx.template.task.kind !== 'write')
+      return undefined;
+    try {
+      const plan = await this.deps.grader.plan(challenge.variant, sql);
+      if (plan.status !== 'ok') return undefined;
+      const rows = Object.fromEntries(
+        [...challenge.variant.tables].map(([name, t]) => [name, t.rows.length]),
+      );
+      return queryCost(plan.lines, rows, sql);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private finish(
+    challenge: ActiveChallenge,
+    outcome: ItemOutcome,
+    share?: number,
+    cost?: QueryCost,
+  ): void {
     if (challenge.finished) return;
     challenge.finished = true;
     const at = this.now();
@@ -543,6 +566,7 @@ export class ChallengeService {
         topics: challenge.tags.topics,
         outcome,
         ...(share === undefined || share === 1 ? {} : { share }),
+        ...(cost ? { cost } : {}),
         ...(outcome === 'submitted' && challenge.task.ctx.template.task.kind === 'brief'
           ? {
               brief: {

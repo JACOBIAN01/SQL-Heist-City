@@ -1,11 +1,14 @@
 import type {
   AnalyticsSettings,
+  LeaderboardMessage,
   ProfileMessage,
   ProgressionSettings,
   StorySettings,
 } from '@heist/shared';
 import { DEFAULT_PROGRESSION_SETTINGS, DEFAULT_STORY_SETTINGS } from '@heist/shared';
 import { PgStoryStore } from '../progress/StoryStore';
+import { PgLeaderboardStore } from '../progress/LeaderboardStore';
+import { OptimisationSink } from './OptimisationSink';
 import { PgProgressStore } from '../progress/ProgressStore';
 import { ProgressBinding } from '../progress/ProgressBinding';
 import { PgLoadoutStore } from '../progress/LoadoutStore';
@@ -33,6 +36,7 @@ export class AnalyticsKit {
   private readonly aggregator: ProfileAggregator;
   private deliver: (accountId: number, message: ProfileMessage) => void = () => {};
   private readonly progress: ProgressBinding;
+  private deliverBoard: (accountId: number, message: LeaderboardMessage) => void = () => {};
 
   constructor(
     db: PgDatabase,
@@ -80,12 +84,21 @@ export class AnalyticsKit {
       topicsOf: (accountId) => this.aggregator.topicsOf(accountId),
       log: (message, err) => this.log(message, err),
     });
-    this.sink = new FanOutSink([this.recorder, this.aggregator, briefs, this.progress.sink]);
+    const board = new OptimisationSink(
+      new PgLeaderboardStore(db),
+      async (id) => (await new PgPlayerRepository(db).findById(id))?.displayName,
+      (accountId, message) => this.deliverBoard(accountId, message),
+      (message, err) => this.log(message, err),
+    );
+    this.sink = new FanOutSink([this.recorder, this.aggregator, briefs, this.progress.sink, board]);
   }
 
   /** Send profiles to this match's students, and give each one theirs on joining. */
   bind(match: Match): void {
     this.deliver = (accountId, message) => match.sendProfile(accountId, message);
+    this.deliverBoard = (accountId, message) => {
+      for (const p of match.playersOfAccount(accountId)) match.sendJson(p, message);
+    };
     this.aggregator.onTopics((accountId) => this.progress.topicsChanged(accountId));
     this.progress.bind(match);
     match.heist.focusOf = (player) =>

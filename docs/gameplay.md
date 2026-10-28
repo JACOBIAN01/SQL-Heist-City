@@ -303,3 +303,7 @@ In the city database terminal, a squad can take the co-op request: one query in 
 ## The inside man (Phase 34.3)
 
 Crack a lock and your man on the inside may ring: his query is broken, and the guards are watching. A "fix this query" question opens at once. Fix it in time for a tip and for the guards at that bank to stand down; ignore it and he hangs up.
+
+## Leanest-query leaderboards (Phase 34.4)
+
+Solve a write question and the game prices your query: about how many rows it reads (using a key beats reading a whole table) and how long it is. You get your place in your class and in the game right away, and Z shows the top of each table. A shorter, leaner query for the same answer climbs the table, so there is always a reason to go back and tighten one up.

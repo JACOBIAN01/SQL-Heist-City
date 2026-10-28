@@ -119,6 +119,7 @@ Server → client: the challenge replies and
 - `team { role: 'cop'|'robber' }` (server → client): which side you are on in a cops-and-robbers room, sent on joining. The city database's `trail` table and its three requests are listed only to cops.
 - `split_submit { ref, split, part, sql }` (client → server): one squad member's part of a three-part query; answered by `city_result` (`reason` may also be `squad` or `taken`), and the whole squad gets `split_state { split, parts: [{status, by?}], opened? }`. `citydb` also lists `splits` (their parts' prompts, never the answers).
 - `inside { status: 'call'|'done'|'missed', bank, text, seconds }` (server → client): the inside man rings with a broken query to fix (the client opens the question `inside:bank-N` at once), and later says it was fixed or missed.
+- `leaderboard { question, you: {scanned, length}, newBest, class?, global }` (server → client): after a signed-in student solves a write question, where its leanness puts them (`class`/`global`: `{rank, of, top: [{rank, name, scanned, length, you}]}`). `scanned` is an estimate from the query plan.
 - `roadblocks { posts: [{x,z}] }` (server → client): where the police have set a roadblock for you, sent only if your intel on the bank you robbed has told you; empty when it is gone.
 - `caches { caches: [{id,x,z}], found?: {amount} }` (server → client): the hidden caches this player can see now (near, or revealed by intel); sent when that set changes, and with `found` when they take one.
 

@@ -211,6 +211,30 @@ export interface PayoutMessage {
   readonly mastery: number;
 }
 
+/** One table of leanest queries for a question (Phase 34.4). */
+export interface BoardSummary {
+  readonly rank: number;
+  readonly of: number;
+  readonly top: readonly {
+    readonly rank: number;
+    readonly name: string;
+    readonly scanned: number;
+    readonly length: number;
+    readonly you: boolean;
+  }[];
+}
+
+/** Where a correct write query puts the student among their class and everyone (Phase 34.4). */
+export interface LeaderboardMessage {
+  readonly t: 'leaderboard';
+  readonly question: string;
+  readonly you: { readonly scanned: number; readonly length: number };
+  /** This query is the student's best so far for the question. */
+  readonly newBest: boolean;
+  readonly class?: BoardSummary;
+  readonly global: BoardSummary;
+}
+
 /** The inside man rings (Phase 34.3): fix his query in time. `done` or `missed` closes the call. */
 export interface InsideMessage {
   readonly t: 'inside';
@@ -861,6 +885,7 @@ export type HeistServerMessage =
   | CityDbMessage
   | TeamMessage
   | InsideMessage
+  | LeaderboardMessage
   | CityResultMessage
   | SplitStateMessage
   | IntelPinsMessage

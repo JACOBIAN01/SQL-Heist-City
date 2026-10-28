@@ -1,3 +1,4 @@
+import type { QueryCost } from './queryCost';
 import type { AnalyticsSettings, BloomLevel, RcsbeDimension } from '../questions/analytics';
 
 /** How an issued question ended. */
@@ -68,6 +69,8 @@ export interface ItemRecord {
   readonly brief?: BriefAnswer;
   /** Share of the marks the answer earned, for tasks marked in parts (multiple choice). 1 when absent and solved. */
   readonly share?: number;
+  /** How lean the query was, for a write task solved (Phase 34.4). */
+  readonly cost?: QueryCost;
   /** Set when the question was part of a class's pre or post assessment: it then counts in that scope only. */
   readonly assessment?: 'pre' | 'post';
 }

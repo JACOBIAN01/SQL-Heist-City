@@ -54,6 +54,22 @@ const right = (player: string, reward: string) =>
 const kinds = () => sink.events.map((e) => e.kind);
 const last = () => sink.items.at(-1)?.item;
 
+describe('query cost on a solved write question (34.4)', () => {
+  it('prices the query by its plan and length, and leaves it off a wrong or tutorial one', async () => {
+    const c = await open();
+    clock += 30_000;
+    const sql = right('p1', 'heal:small');
+    await service.submit('p1', c.id, sql);
+    const cost = last()?.cost;
+    expect(cost?.length).toBeGreaterThan(5);
+    expect(cost?.scanned).toBeGreaterThan(0);
+    const tut = await open('p2', 'heal:small', { revealSolution: true });
+    clock += 30_000;
+    await service.submit('p2', tut.id, right('p2', 'heal:small'));
+    expect(last()?.cost).toBeUndefined();
+  });
+});
+
 describe('attempt events and item records (15.2)', () => {
   it('records a solved question with the tags, marks and who, snapshotted at issue', async () => {
     const c = await open();

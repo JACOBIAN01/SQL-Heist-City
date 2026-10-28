@@ -86,4 +86,5 @@ export * from './config/squadAwards';
 export * from './config/modes';
 export * from './config/story';
 export * from './config/cityDb';
+export * from './analytics/queryCost';
 export * from './sim/traffic';

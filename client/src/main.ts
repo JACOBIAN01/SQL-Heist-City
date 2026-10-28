@@ -34,6 +34,7 @@ import { CollectionView } from './ui/hud/CollectionView';
 import { PoliceStars } from './ui/hud/PoliceStars';
 import { ActsView } from './ui/hud/ActsView';
 import { StoryView } from './ui/hud/StoryView';
+import { LeaderboardView } from './ui/hud/LeaderboardView';
 import { TeamBadge } from './ui/hud/TeamBadge';
 import { CityDbView } from './ui/hud/CityDbView';
 import { BarkView, SceneView } from './ui/hud/SceneView';
@@ -412,6 +413,8 @@ document.body.append(sceneView.root, barkView.root);
 window.addEventListener('keydown', (event) => {
   if (sceneView.playing && event.code === 'Enter') sceneView.advance();
 });
+const leaderboardView = new LeaderboardView(i18n);
+document.body.append(leaderboardView.panel);
 const teamBadge = new TeamBadge(i18n);
 document.body.append(teamBadge.root);
 const cityDbView = new CityDbView(i18n, (m) => client.sendJson(m));
@@ -682,6 +685,9 @@ client.subscribe({
         openTask(`inside:${message.bank}`, message.bank);
       } else
         hud.toast(message.status === 'done' ? 'Fixed. He owes you one.' : 'He hung up. Caught.');
+    } else if (message.t === 'leaderboard') {
+      leaderboardView.update(message);
+      hud.toast(leaderboardView.toastFor(message));
     } else if (message.t === 'team') {
       teamBadge.update(message);
     } else if (message.t === 'citydb') {
@@ -879,6 +885,10 @@ const hotkeys = new Hotkeys(window, bindings)
   .onAction('approach', () =>
     client.sendJson({ t: 'approach', mode: stealthOn ? 'loud' : 'stealth' }),
   )
+  .onAction('leaderboard', () => {
+    pointer.release();
+    leaderboardView.hidden = !leaderboardView.hidden;
+  })
   .onAction('citydb', () => {
     pointer.release();
     cityDbView.hidden = !cityDbView.hidden;
@@ -921,6 +931,7 @@ const hotkeys = new Hotkeys(window, bindings)
     payoutView.hidden = true;
     storyView.hidden = true;
     cityDbView.hidden = true;
+    leaderboardView.hidden = true;
     sceneView.skip();
     collectionView.hidden = true;
   })
