@@ -8,6 +8,7 @@ afterEach(() => document.body.replaceChildren());
 const catalog: CityDbMessage = {
   t: 'citydb',
   tables: CITY_TABLES,
+  splits: [],
   requests: [
     {
       id: 'guards-all',
@@ -126,5 +127,56 @@ describe('CityDbView', () => {
     type(v, 'SELECT 1');
     pick(v, 'cameras-bank-3');
     expect(v.panel.querySelector<HTMLTextAreaElement>('textarea')?.value).toBe('SELECT 1');
+  });
+});
+
+describe('CityDbView: split queries (34.2)', () => {
+  const withSplit = (v: CityDbView) =>
+    v.update({
+      ...catalog,
+      splits: [
+        {
+          id: 'split-bank-4',
+          tier: 5,
+          bank: 'bank-4',
+          title: 'The door code, in three parts',
+          intro: 'Write your part.',
+          tables: ['guards'],
+          ctes: ['guard_counts', 'camera_status'],
+          parts: [
+            { label: 'Part 1: guards', prompt: 'Count the guards.' },
+            { label: 'Part 2: cameras', prompt: 'Count the cameras.' },
+            { label: 'Part 3: the join', prompt: 'Join them.' },
+          ],
+        },
+      ],
+    });
+
+  it('shows the three parts and who has done them, and sends the part chosen', () => {
+    const send = vi.fn();
+    const v = new CityDbView(new I18n('en'), send);
+    document.body.append(v.panel);
+    withSplit(v);
+    pick(v, 'split:split-bank-4');
+    expect(v.panel.querySelectorAll('[data-part]')).toHaveLength(3);
+    v.splitState({
+      t: 'split_state',
+      split: 'split-bank-4',
+      parts: [{ status: 'done', by: 'Ana' }, { status: 'open' }, { status: 'open' }],
+    });
+    expect(v.panel.querySelector('[data-part="0"]')?.textContent).toContain('Ana');
+    const which = v.panel.querySelector<HTMLSelectElement>('[data-role="part-picker"]');
+    if (!which) throw new Error('no part picker');
+    which.value = '2';
+    which.dispatchEvent(new Event('change'));
+    type(v, 'SELECT 1');
+    v.panel.querySelector<HTMLButtonElement>('[data-action="run"]')?.click();
+    expect(send).toHaveBeenCalledWith({
+      t: 'split_submit',
+      ref: 1,
+      split: 'split-bank-4',
+      part: 2,
+      sql: 'SELECT 1',
+    });
   });
 });

@@ -51,7 +51,7 @@
 | 31 | Missions and heist structure | ✅ done, awaiting approval |
 | 32 | Story and characters | ✅ built; 32.1 and 32.4 await the owner |
 | 33 | SQL in the world: queries as superpowers | ✅ done; the balance playtest waits for 36.1 |
-| 34 | Breakthrough features | 🟦 34.1 done |
+| 34 | Breakthrough features | 🟦 34.1–34.2 done |
 | 35 | Polish | ⬜ |
 | 36 | GTA scorecard gate | ⬜ |
 
@@ -596,7 +596,7 @@ Post-launch. Audit section "Breakthrough features" 2–8.
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 34.1 | Cops and robbers: police team queries logs to track the robbers | playable mode | ✅ A mode a class can pick (`cops-and-robbers`, in the modes settings). Every fourth player to join is a cop (`heist.copsRobbers.copEvery`): armed with a pistol and 50 armour on every life, kept out of vaults, safehouses, intel and jobs, and scored for each robber put down (+$5,000 `arrestPoints`) and for cash they recover (it goes straight into their score). The robbers' positions are logged every 5 s into a `trail` table that only cops can see, and cops track robbers with three requests that need real SQL (`WHERE age_s <= 20`, a filter on cash with names, and each robber's latest row with a correlated subquery); the answers show on the cop's map for a while like any intel. The AI police and the bank guards are off in this mode. A COP / ROBBER badge says which side you are. Tested |
-| 34.2 | Co-op split queries: a tier-5 vault needs a three-part CTE, one part per squad member | parts join and grade together | ⬜ |
+| 34.2 | Co-op split queries: a tier-5 vault needs a three-part CTE, one part per squad member | parts join and grade together | ✅ A squad (3–4 students) faces one query in three parts, one for each member (city database terminal, T, under "Co-op"; defaults for banks 4 and 5, in `cityDb.splits`): the body of a CTE counting guards per bank, the body of a CTE counting working cameras per bank, and the final SELECT that joins them. Each part is graded on its own (the join on top of the *right* two CTEs, so a member is right whatever the others write), a member may hold one part, and the parts may come in any order within 5 minutes. When all three are in, the assembled `WITH … AS (…), … AS (…) SELECT …` is graded as a whole; if it is right the squad's next vault lock opens and each member is paid $3,000. The squad sees which parts are done and by whom. The answers never leave the server. **Not yet required:** it is an alternative to the lock question, not the only way into a tier-5 vault, so a student with no squad can still finish it. Tested |
 | 34.3 | Fix the inside man's query mid-heist (uses 17.1) | appears in heists | ⬜ |
 | 34.4 | Optimisation leaderboards (rows scanned, query length) | per class and global | ⬜ |
 | 34.5 | Teacher heist builder: a story plus a question chain makes a custom heist; shareable | a teacher builds and shares one | ⬜ |

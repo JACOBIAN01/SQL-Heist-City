@@ -295,3 +295,7 @@ Press T for the city database terminal. The guards, cameras, cash lying about, w
 ## Cops and robbers (Phase 34.1)
 
 In this mode (the teacher picks it), every fourth student is a cop. Cops carry a pistol and armour, cannot rob, and score for each robber they put down and for cash they recover. The game logs where each robber has been every few seconds, and only cops can read the log: press T and answer a request such as "where were the robbers carrying $20,000 or more in the last 30 seconds?" and the places show on the cops' map. Robbers should keep moving, and keep their cash close.
+
+## Three-part queries for a squad (Phase 34.2)
+
+In the city database terminal, a squad can take the co-op request: one query in three parts, one part for each of you (the body of two CTEs and the SELECT that joins them). Everyone writes their own part. When all three are right, they are put together and checked as one query; if it holds, the next lock of that bank's vault opens and each of you is paid.

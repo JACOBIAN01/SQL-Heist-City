@@ -40,6 +40,7 @@ import { ActsSystem } from './ActsSystem';
 import { StorySystem } from './StorySystem';
 import { CameraGrid } from './CameraGrid';
 import { CopsRobbers } from './CopsRobbers';
+import { SplitQueries } from './SplitQueries';
 import { CityDb } from './CityDb';
 import { IntelService } from './IntelService';
 import { StoryVoice } from './StoryVoice';
@@ -197,16 +198,21 @@ export class HeistController implements ArmsControl {
           this.cameras.switchOff(bank, seconds);
           this.guards.blind(bank, seconds);
         },
-        unlockNext: (player, bank) => {
-          const vault = [...this.vaults.all()].find((v) => v.spec.bank === bank);
-          const lock = vault?.nextLock;
-          return (
-            vault !== undefined && lock !== undefined && this.openLock(vault.spec.id, lock, player)
-          );
-        },
+        unlockNext: (player, bank) => this.unlockNext(player, bank),
       },
       () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
       (p) => this.cops.teamOf(p),
+    );
+    // Co-op split queries: three squad-mates write one query between them.
+    this.splits = new SplitQueries(
+      match,
+      () => this.challenges?.city,
+      this.cityDb,
+      {
+        unlockNext: (player, bank) => this.unlockNext(player, bank),
+        pay: (player, amount) => this.setCash(player, player.cash + amount),
+      },
+      () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
     );
     // The story: a chain of steps for each bank, following what the match already does.
     this.story = new StorySystem(
@@ -408,6 +414,7 @@ export class HeistController implements ArmsControl {
     this.acts.reset();
     this.intel.reset();
     this.cops.reset();
+    this.splits.reset();
     this.cameras.reset();
     this.match.refreshWorld();
     for (const v of this.vaults.all()) v.reset();
@@ -548,6 +555,13 @@ export class HeistController implements ArmsControl {
     );
     vip.isVip = true;
     return vip;
+  }
+
+  /** The door controller opens a vault's next lock for a player; false if there is nothing to open. */
+  private unlockNext(player: Player, bank: string): boolean {
+    const vault = [...this.vaults.all()].find((v) => v.spec.bank === bank);
+    const lock = vault?.nextLock;
+    return vault !== undefined && lock !== undefined && this.openLock(vault.spec.id, lock, player);
   }
 
   /** What a cop may use: lifts, and nothing to do with vaults, banking, intel or jobs. */
@@ -737,6 +751,10 @@ export class HeistController implements ArmsControl {
       this.match.sendJson(player, this.match.vehicleRequest(player, message));
       return;
     }
+    if (message.t === 'split_submit') {
+      void this.splits.submit(player, message).then((reply) => this.match.sendJson(player, reply));
+      return;
+    }
     if (message.t === 'city_query') {
       void this.intel.ask(player, message).then((reply) => this.match.sendJson(player, reply));
       return;
@@ -792,6 +810,7 @@ export class HeistController implements ArmsControl {
     this.story.forget(player);
     this.intel.forget(player);
     this.cops.forget(player);
+    this.splits.forget(player);
     this.voice.forget(player);
     this.stealth.delete(player);
     this.challenges?.playerLeft(player.key);
@@ -815,6 +834,7 @@ export class HeistController implements ArmsControl {
       message.t === 'approach' ||
       message.t === 'job_take' ||
       message.t === 'city_query' ||
+      message.t === 'split_submit' ||
       message.t === 'role_pick'
     )
       return;
@@ -909,6 +929,7 @@ export class HeistController implements ArmsControl {
   readonly acts: ActsSystem;
   readonly story: StorySystem;
   readonly cops: CopsRobbers;
+  readonly splits: SplitQueries;
   readonly cameras: CameraGrid;
   readonly cityDb: CityDb;
   readonly intel: IntelService;

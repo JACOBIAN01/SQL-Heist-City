@@ -679,6 +679,8 @@ client.subscribe({
       teamBadge.update(message);
     } else if (message.t === 'citydb') {
       cityDbView.update(message);
+    } else if (message.t === 'split_state') {
+      cityDbView.splitState(message);
     } else if (message.t === 'city_result') {
       cityDbView.answered(message);
     } else if (message.t === 'intel_pins') {

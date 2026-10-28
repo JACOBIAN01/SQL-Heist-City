@@ -2,6 +2,7 @@ import {
   CITY_TABLES,
   intelSecondsFor,
   publicRequests,
+  publicSplits,
   type CityDbMessage,
   type CityDbSettings,
   type CityQueryMessage,
@@ -83,6 +84,7 @@ export class IntelService {
       // The trail log exists only where there are cops.
       tables: CITY_TABLES.filter((t) => t.name !== 'trail' || team === 'cop'),
       requests: s?.enabled ? publicRequests(s.requests.filter(visible)) : [],
+      splits: s?.enabled ? publicSplits(s.splits.filter((x) => x.tier <= s.maxTier)) : [],
     };
   }
 

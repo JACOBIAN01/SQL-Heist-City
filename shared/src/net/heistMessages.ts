@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { JOB_KINDS, type JobKind } from '../config/heist';
-import type { CityTable, PublicCityRequest } from '../config/cityDb';
+import type { CityTable, PublicCityRequest, PublicSplitRequest } from '../config/cityDb';
 import type { AwardId } from '../config/awards';
 import type { AtmosphereSettings } from '../config/atmosphere';
 import type { WeaponSpec } from '../config/combat';
@@ -231,6 +231,26 @@ export interface CityDbMessage {
   readonly t: 'citydb';
   readonly tables: readonly CityTable[];
   readonly requests: readonly PublicCityRequest[];
+  readonly splits: readonly PublicSplitRequest[];
+}
+
+/** One member's part of a split query (Phase 34.2): which part, and the SQL they wrote for it. */
+export const splitSubmitMessageSchema = z.object({
+  t: z.literal('split_submit'),
+  ref: z.number().int(),
+  split: z.string().min(1).max(60),
+  part: z.number().int().min(0).max(2),
+  sql: z.string().min(1).max(2000),
+});
+export type SplitSubmitMessage = z.infer<typeof splitSubmitMessageSchema>;
+
+/** Where a squad's split query stands: each part open, done (and by whom). Sent to the whole squad. */
+export interface SplitStateMessage {
+  readonly t: 'split_state';
+  readonly split: string;
+  readonly parts: readonly { readonly status: 'open' | 'done'; readonly by?: string }[];
+  /** The lock opened: all three parts were right. */
+  readonly opened?: boolean;
 }
 
 /** The answer to one `city_query`. */
@@ -240,7 +260,16 @@ export interface CityResultMessage {
   readonly ok: boolean;
   readonly request: string;
   /** Why not: the SQL was wrong (see `feedback`), or the player must wait, or it is not allowed. */
-  readonly reason?: 'wrong' | 'error' | 'cooldown' | 'unknown' | 'busy' | 'not_available' | 'dead';
+  readonly reason?:
+    | 'wrong'
+    | 'error'
+    | 'cooldown'
+    | 'unknown'
+    | 'busy'
+    | 'not_available'
+    | 'dead'
+    | 'squad'
+    | 'taken';
   readonly feedback?: { readonly code: string; readonly message: string; readonly advice?: string };
   /** Cooldown: seconds until it may be asked again. */
   readonly waitSeconds?: number;
@@ -426,6 +455,7 @@ export const jsonClientMessageSchema = z.union([
   approachMessageSchema,
   jobTakeMessageSchema,
   cityQueryMessageSchema,
+  splitSubmitMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -822,6 +852,7 @@ export type HeistServerMessage =
   | CityDbMessage
   | TeamMessage
   | CityResultMessage
+  | SplitStateMessage
   | IntelPinsMessage
   | PayoutMessage
   | ApproachState

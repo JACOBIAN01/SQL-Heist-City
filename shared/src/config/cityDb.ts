@@ -156,6 +156,88 @@ export function publicRequests(requests: readonly CityRequest[]): PublicCityRequ
   return requests.map(({ reference: _answer, ...rest }) => rest);
 }
 
+/**
+ * A split query (Phase 34.2): one query in three parts, one part for each member of a squad. Parts
+ * one and two are the bodies of two CTEs (named in `ctes`); part three is the final SELECT that joins
+ * them. Each part is graded on its own, and when all three are right the assembled query is graded
+ * as a whole, and the squad's next vault lock opens.
+ */
+const splitPartSchema = z.object({
+  label: z.string().min(1).max(60),
+  prompt: z.string().min(1).max(400),
+  /** The part's own answer; never sent to a client. */
+  reference: z.string().min(1).max(2000),
+});
+const splitSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]{1,40}$/),
+  tier: z.number().int().min(1).max(5).default(5),
+  title: z.string().min(1).max(80),
+  intro: z.string().min(1).max(400),
+  bank: z.string().regex(/^bank-[1-5]$/),
+  /** The tables its parts read (shown to the squad). */
+  tables: z.array(z.string()).default(['guards', 'cameras']),
+  /** The names of the two CTEs parts one and two define, in order. */
+  ctes: z.tuple([z.string().regex(/^[a-z_]{1,30}$/), z.string().regex(/^[a-z_]{1,30}$/)]),
+  parts: z.tuple([splitPartSchema, splitPartSchema, splitPartSchema]),
+});
+export type SplitRequest = z.infer<typeof splitSchema>;
+export type PublicSplitRequest = Omit<SplitRequest, 'parts'> & {
+  parts: { label: string; prompt: string }[];
+};
+
+export function publicSplits(splits: readonly SplitRequest[]): PublicSplitRequest[] {
+  return splits.map((s) => ({
+    ...s,
+    parts: s.parts.map(({ label, prompt }) => ({ label, prompt })),
+  }));
+}
+
+/** The assembled query from the three parts' SQL. */
+export function assembleSplit(
+  split: Pick<SplitRequest, 'ctes'>,
+  sql: readonly [string, string, string],
+): string {
+  const strip = (s: string) => s.trim().replace(/;+\s*$/, '');
+  return `WITH ${split.ctes[0]} AS (${strip(sql[0])}), ${split.ctes[1]} AS (${strip(sql[1])}) ${strip(sql[2])}`;
+}
+
+function defaultSplits(): SplitRequest[] {
+  return [4, 5].map((n): SplitRequest => {
+    const bank = `bank-${n}`;
+    return {
+      id: `split-${bank}`,
+      tier: 5,
+      bank,
+      tables: ['guards', 'cameras'],
+      title: `The ${BANK_NAMES[bank]} door code, in three parts`,
+      intro:
+        'The door controller will only open for a query built from three parts, one written by each of you. Write your part; when all three are right the lock opens.',
+      ctes: ['guard_counts', 'camera_status'],
+      parts: [
+        {
+          label: 'Part 1: guards per bank',
+          prompt:
+            'Write the body of guard_counts: for each bank, its id as bank and the number of its guards as guards.',
+          reference: 'SELECT bank, COUNT(*) AS guards FROM guards GROUP BY bank',
+        },
+        {
+          label: 'Part 2: working cameras per bank',
+          prompt:
+            'Write the body of camera_status: for each bank, its id as bank and the number of its cameras that are switched on as cameras_on.',
+          reference: 'SELECT bank, SUM(enabled) AS cameras_on FROM cameras GROUP BY bank',
+        },
+        {
+          label: 'Part 3: the join',
+          prompt:
+            'Write the final SELECT, using guard_counts and camera_status: the banks with more guards than working cameras, with bank, guards and cameras_on, in bank order.',
+          reference:
+            'SELECT g.bank, g.guards, c.cameras_on FROM guard_counts g JOIN camera_status c ON c.bank = g.bank WHERE g.guards > c.cameras_on ORDER BY g.bank',
+        },
+      ],
+    };
+  });
+}
+
 const BANK_NAMES: Record<string, string> = {
   'bank-1': 'Corner Savings',
   'bank-2': 'City Trust',
@@ -327,6 +409,12 @@ export const cityDbSettingsSchema = z.object({
     .default({ intel: 15, camera: 90, door: 150 }),
   /** Seconds a bank's guards stay blind after its cameras are switched off. */
   cameraSeconds: z.number().positive().default(45),
+  /** Co-op split queries for squads (Phase 34.2). */
+  splits: z.array(splitSchema).default(defaultSplits),
+  /** A split's three parts must all be right within this many seconds of the first. */
+  splitWindowSeconds: z.number().positive().default(300),
+  /** Cash each member is paid when a split opens a lock. */
+  splitReward: z.number().int().min(0).default(3_000),
   /** The hardest tier of request a student may try, by their progress would go here; 5 for now. */
   maxTier: z.number().int().min(1).max(5).default(5),
 });

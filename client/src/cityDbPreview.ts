@@ -1,4 +1,4 @@
-import { CITY_TABLES, DEFAULT_CITY_DB_SETTINGS, publicRequests } from '@heist/shared';
+import { CITY_TABLES, DEFAULT_CITY_DB_SETTINGS, publicRequests, publicSplits } from '@heist/shared';
 import { I18n } from './i18n/I18n';
 import { CityDbView } from './ui/hud/CityDbView';
 
@@ -9,6 +9,7 @@ const catalog = {
   t: 'citydb' as const,
   tables: CITY_TABLES,
   requests: publicRequests(DEFAULT_CITY_DB_SETTINGS.requests),
+  splits: publicSplits(DEFAULT_CITY_DB_SETTINGS.splits),
 };
 
 function terminal(request: string, sql: string, answer: Parameters<CityDbView['answered']>[0]) {
