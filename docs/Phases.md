@@ -54,7 +54,7 @@
 | 34 | Breakthrough features | ✅ done |
 | 35 | Polish | 🟨 |
 | 36 | GTA scorecard gate | 🟨 |
-| 37 | Cheat code (owner's skip) | ⬜ planned |
+| 37 | Cheat code (owner's skip) | 🟦 37.1 done |
 
 ---
 ## Phase 0 — Docs & scaffold  ✅
@@ -624,7 +624,7 @@ Post-launch. A review proving every pillar is at least 8/10.
 | 36.2 | Fix any pillar under 8 | re-scored ≥ 8 | ⛔ after 36.1 |
 
 ---
-## Phase 37 — Cheat code (owner's skip)  ⬜
+## Phase 37 — Cheat code (owner's skip)  🟦
 Requested by the owner. A secret key combination opens a small prompt; typing the cheat code solves and passes whatever question is open. **Both the code and the combination are settings, never in source.** Because the game's rule is "the server decides grading" (CLAUDE.md rule 4), the code is checked on the server, never in the client.
 
 Design decisions (defaults, change them in the settings):
@@ -636,7 +636,7 @@ Design decisions (defaults, change them in the settings):
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 37.1 | `cheat` settings section: enabled, scope, code (hashed on save), combination, pay-reward on/off, max uses per player per round; admin card with a "set new code" field that never shows the old one | settings validated, code stored only as a hash, admin card tested | ⬜ |
+| 37.1 | `cheat` settings section: enabled, scope, code (hashed on save), combination, pay-reward on/off, max uses per player per round; admin card with a "set new code" field that never shows the old one | settings validated, code stored only as a hash, admin card tested | ✅ `cheat` settings (scope off/dev/tutorial/rooms/all, class ids, combo of 2–3 keys, pay-reward, passes per round, lockout); admin-only card on Settings; the code is write-only (`newCode`), hashed with scrypt (`server/src/security/CodeHash.ts`), never returned, never in the audit trail; a planted `codeHash` is ignored; the cheat cannot be switched on without a code |
 | 37.2 | Server: `cheat { ref, code }` message answered by the same path a correct answer takes (reward applied once), constant-time check, scope check, per-player rate limit and lockout, anomaly log on wrong codes | right code passes the open question; wrong code, off, wrong scope, tutorial-excluded and locked-out cases all refused; tested | ⬜ |
 | 37.3 | Keep the books honest: outcome `cheat` in attempts and review; no XP, mastery, streak, contracts, leaderboard, ghost, story-progress-by-skill, kill-cam "last answer" time | a test per system shows a cheated answer changes none of them | ⬜ |
 | 37.4 | Client: chord support in player key settings (a new `cheat` action that takes two or three keys), a small prompt that opens on the chord, hidden when the feature is off or out of scope | chord opens the prompt only when allowed; remappable; no hint of it in menus when off | ⬜ |

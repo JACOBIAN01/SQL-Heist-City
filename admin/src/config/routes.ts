@@ -40,6 +40,16 @@ export function configRoutes(settings: SettingsService): Router {
     });
   });
 
+  // The cheat code (Phase 37): admin only, even to read; the code is write-only.
+  router.get('/config/cheat', requireRole('admin'), async (_req, res) => {
+    res.json({ cheat: await settings.cheatSettings() });
+  });
+
+  router.put('/config/cheat', requireRole('admin'), async (req, res) => {
+    const body = (req.body ?? {}) as { cheat?: unknown };
+    res.json({ cheat: await settings.updateCheatSettings(body.cheat ?? {}, requireUser(res)) });
+  });
+
   // Heist rules, cars, time of day and the city: plain numbers, one generic pair of routes each.
   for (const name of SECTION_NAMES) {
     router.get(`/config/${name}`, async (_req, res) => {

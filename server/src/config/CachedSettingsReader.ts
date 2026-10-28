@@ -13,6 +13,7 @@ import type {
   ProgressionSettings,
   ModesSettings,
   StorySettings,
+  CheatSettings,
   CityDbSettings,
 } from '@heist/shared';
 import type { SettingsReader } from './SettingsReader';
@@ -33,6 +34,7 @@ export class CachedSettingsReader implements SettingsReader {
   private modes: ModesSettings | undefined;
   private story: StorySettings | undefined;
   private cityDb: CityDbSettings | undefined;
+  private cheat: CheatSettings | undefined;
   private dialects: DialectSettings | undefined;
   private tiers = new Map<string, TierRange | undefined>();
 
@@ -88,6 +90,11 @@ export class CachedSettingsReader implements SettingsReader {
     return this.cityDb;
   }
 
+  cheatSettings(): CheatSettings {
+    this.cheat ??= this.inner.cheatSettings();
+    return this.cheat;
+  }
+
   progressionSettings(): ProgressionSettings {
     this.progression ??= this.inner.progressionSettings();
     return this.progression;
@@ -127,6 +134,7 @@ export class CachedSettingsReader implements SettingsReader {
     this.modes = undefined;
     this.story = undefined;
     this.cityDb = undefined;
+    this.cheat = undefined;
     this.dialects = undefined;
     this.tiers = new Map();
   }

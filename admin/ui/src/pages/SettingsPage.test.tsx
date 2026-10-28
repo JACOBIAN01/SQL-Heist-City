@@ -3,6 +3,8 @@ import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   DEFAULT_CHALLENGE_SETTINGS,
+  DEFAULT_CHEAT_SETTINGS,
+  cheatAdminView,
   DEFAULT_ANALYTICS_SETTINGS,
   DEFAULT_ATMOSPHERE_SETTINGS,
   DEFAULT_CITY_SETTINGS,
@@ -27,6 +29,8 @@ const rewards = Object.entries(DEFAULT_REWARD_TIERS).map(([key, t]) => ({
   ...t,
   isDefault: true,
 }));
+
+const cheatView = { ...cheatAdminView(DEFAULT_CHEAT_SETTINGS) };
 
 function api(user: typeof admin | typeof teacher) {
   return fakeApi({
@@ -81,6 +85,10 @@ function api(user: typeof admin | typeof teacher) {
         analytics: { current: DEFAULT_ANALYTICS_SETTINGS, defaults: DEFAULT_ANALYTICS_SETTINGS },
       },
     }),
+    'GET /config/cheat': () => ({
+      body: { cheat: { current: cheatView, defaults: cheatView } },
+    }),
+    'PUT /config/cheat': (b) => ({ body: b }),
     'PUT /config/vehicles': (b) => ({ body: b }),
     'PUT /config/city': (b) => ({ body: b }),
     'GET /questions': () => ({
@@ -223,5 +231,28 @@ describe('SettingsPage', () => {
     ).toBe(true);
     expect(screen.queryByRole('button', { name: 'Save rules' })).toBeNull();
     expect(((await screen.findByLabelText('rifle Zoom')) as HTMLInputElement).disabled).toBe(true);
+  });
+
+  it('admins set a cheat code and scope; the code is sent once and never shown', async () => {
+    const calls = api(admin);
+    renderWithProviders(<SettingsPage />);
+    const user = userEvent.setup();
+    const code = await screen.findByLabelText('New cheat code');
+    expect((code as HTMLInputElement).type).toBe('password');
+    await user.type(code, 'my-new-code');
+    await user.selectOptions(screen.getByLabelText('Cheat scope'), 'dev');
+    await user.click(screen.getByRole('button', { name: 'Save cheat settings' }));
+    await screen.findAllByText('Saved ✓');
+    const put = calls.find((c) => c.method === 'PUT' && c.path === '/config/cheat');
+    expect(put?.body).toMatchObject({ cheat: { scope: 'dev', newCode: 'my-new-code' } });
+    expect(JSON.stringify(put?.body)).not.toContain('codeHash');
+    expect(((await screen.findByLabelText('New cheat code')) as HTMLInputElement).value).toBe('');
+  });
+
+  it('teachers do not see the cheat card at all', async () => {
+    api(teacher);
+    renderWithProviders(<SettingsPage />);
+    await screen.findByText('Tutorial questions');
+    expect(screen.queryByText('Cheat code')).toBeNull();
   });
 });

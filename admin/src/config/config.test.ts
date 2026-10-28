@@ -11,6 +11,7 @@ import {
 import { DEFAULT_TUTORIAL_SETTINGS } from '@heist/shared';
 import { sampleQuestion } from '@heist/shared/fixtures';
 import { SqliteSettingsReader } from '@heist/server/config/SettingsReader';
+import { verifyCode } from '@heist/server/security/CodeHash';
 import { startAdmin } from '../testing/harness';
 
 type Harness = Awaited<ReturnType<typeof startAdmin>>;
@@ -277,5 +278,65 @@ describe('game modes settings API (28.1)', () => {
       'classic',
       'marathon',
     ]);
+  });
+});
+
+describe('cheat code settings API (37.1)', () => {
+  type View = { scope: string; combo: string[]; codeSet: boolean; codeHash?: string };
+
+  it('is off with no code by default, and the admin never gets the hash back', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    const first = await h.client.get<{ cheat: { current: View } }>('/api/config/cheat');
+    expect(first.body.cheat.current).toMatchObject({ scope: 'off', codeSet: false });
+    const set = await h.client.put<{ cheat: View }>('/api/config/cheat', {
+      cheat: { newCode: 'a-secret-code', scope: 'dev' },
+    });
+    expect(set.body.cheat).toMatchObject({ scope: 'dev', codeSet: true });
+    expect(JSON.stringify(set.body)).not.toContain('a-secret-code');
+    expect(set.body.cheat.codeHash).toBeUndefined();
+    const stored = new SqliteSettingsReader(h.db).cheatSettings();
+    expect(stored.codeHash).toMatch(/^scrypt\$/);
+    expect(stored.codeHash).not.toContain('a-secret-code');
+    expect(await verifyCode('a-secret-code', stored.codeHash)).toBe(true);
+    expect(await verifyCode('wrong-code', stored.codeHash)).toBe(false);
+  });
+
+  it('keeps the code when other settings change, and ignores a planted hash', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    await h.client.put('/api/config/cheat', { cheat: { newCode: 'first-code-1', scope: 'all' } });
+    const hash = new SqliteSettingsReader(h.db).cheatSettings().codeHash;
+    await h.client.put('/api/config/cheat', {
+      cheat: { combo: ['KeyA', 'KeyB'], codeHash: 'scrypt$1$1$1$AA$AA' },
+    });
+    const after = new SqliteSettingsReader(h.db).cheatSettings();
+    expect(after.codeHash).toBe(hash);
+    expect(after.combo).toEqual(['KeyA', 'KeyB']);
+  });
+
+  it('refuses a short code, a one-key combination, and switching on without a code', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    const client = h.client;
+    const put = (cheat: object) => client.put('/api/config/cheat', { cheat });
+    expect((await put({ newCode: 'abc' })).status).toBe(400);
+    expect((await put({ combo: ['KeyA'] })).status).toBe(400);
+    expect((await put({ scope: 'all' })).status).toBe(400);
+  });
+
+  it('is for admins only, and the audit trail never holds the code or its hash', async () => {
+    h = await startAdmin();
+    await h.loginAs('a@school.test', 'admin');
+    await h.client.put('/api/config/cheat', { cheat: { newCode: 'audit-me-not', scope: 'dev' } });
+    const audit = await h.client.get('/api/audit?entity=settings');
+    const text = JSON.stringify(audit.body);
+    expect(text).toContain('cheat');
+    expect(text).not.toContain('audit-me-not');
+    expect(text).not.toContain('scrypt$');
+    h.client.clearCookie();
+    await h.loginAs('t@school.test', 'teacher');
+    expect((await h.client.get('/api/config/cheat')).status).toBe(403);
+    expect((await h.client.put('/api/config/cheat', { cheat: { scope: 'off' } })).status).toBe(403);
   });
 });

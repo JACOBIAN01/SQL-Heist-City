@@ -22,8 +22,11 @@ import {
   storySettingsSchema,
   DEFAULT_STORY_SETTINGS,
   type StorySettings,
+  cheatSettingsSchema,
   cityDbSettingsSchema,
   DEFAULT_CITY_DB_SETTINGS,
+  type CheatSettings,
+  DEFAULT_CHEAT_SETTINGS,
   type CityDbSettings,
   DEFAULT_MODES_SETTINGS,
   type ModesSettings,
@@ -75,6 +78,7 @@ export interface SettingsReader {
   storySettings(): StorySettings;
   /** The city database's requests and limits (Phase 33). */
   cityDbSettings(): CityDbSettings;
+  cheatSettings(): CheatSettings;
   /** The dialect packs: notes on how other SQL dialects differ from SQLite. */
   dialectSettings(): DialectSettings;
   /** Which picture each reward shows. */
@@ -105,6 +109,7 @@ export class StaticSettings implements SettingsReader {
     private readonly modes: ModesSettings = DEFAULT_MODES_SETTINGS,
     private readonly story: StorySettings = DEFAULT_STORY_SETTINGS,
     private readonly cityDb: CityDbSettings = DEFAULT_CITY_DB_SETTINGS,
+    private readonly cheat: CheatSettings = DEFAULT_CHEAT_SETTINGS,
   ) {}
 
   modesSettings(): ModesSettings {
@@ -117,6 +122,10 @@ export class StaticSettings implements SettingsReader {
 
   cityDbSettings(): CityDbSettings {
     return this.cityDb;
+  }
+
+  cheatSettings(): CheatSettings {
+    return this.cheat;
   }
 
   progressionSettings(): ProgressionSettings {
@@ -184,6 +193,7 @@ export const PROGRESSION_SETTINGS_KEY = 'progression';
 export const MODES_SETTINGS_KEY = 'modes';
 export const STORY_SETTINGS_KEY = 'story';
 export const CITY_DB_SETTINGS_KEY = 'cityDb';
+export const CHEAT_SETTINGS_KEY = 'cheat';
 
 /** What a match re-reads each round. */
 export function worldSettingsFrom(reader: SettingsReader): WorldSettings {
@@ -254,6 +264,8 @@ export const settingsParsers = {
     sectionFrom(raw, storySettingsSchema, DEFAULT_STORY_SETTINGS),
   cityDbFrom: (raw: unknown): CityDbSettings =>
     sectionFrom(raw, cityDbSettingsSchema, DEFAULT_CITY_DB_SETTINGS),
+  cheatFrom: (raw: unknown): CheatSettings =>
+    sectionFrom(raw, cheatSettingsSchema, DEFAULT_CHEAT_SETTINGS),
   namesFrom: (raw: unknown): NameRules => sectionFrom(raw, nameRulesSchema, DEFAULT_NAME_RULES),
   privacyFrom: (raw: unknown): PrivacySettings =>
     sectionFrom(raw, privacySettingsSchema, DEFAULT_PRIVACY_SETTINGS),
@@ -312,6 +324,10 @@ export class SqliteSettingsReader implements SettingsReader {
 
   cityDbSettings(): CityDbSettings {
     return settingsParsers.cityDbFrom(this.raw(CITY_DB_SETTINGS_KEY));
+  }
+
+  cheatSettings(): CheatSettings {
+    return settingsParsers.cheatFrom(this.raw(CHEAT_SETTINGS_KEY));
   }
 
   dialectSettings(): DialectSettings {

@@ -88,6 +88,7 @@ export * from './config/customHeist';
 export * from './config/themes';
 export * from './config/story';
 export * from './config/cityDb';
+export * from './config/cheat';
 export * from './analytics/queryCost';
 export * from './progress/ghost';
 export * from './replay/roundReplay';

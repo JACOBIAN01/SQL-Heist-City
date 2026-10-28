@@ -67,3 +67,7 @@ The Settings page has a card for heist rules, vehicles, day and night, and the c
 ## Round replay (Phase 35.2)
 
 The game server records every class round: where each student stood every 3 s seen from above, and the kills, cracked locks, opened vaults, banked cash and solved questions (reward keys only, never SQL). On the class page, open a finished round and press **Watch the replay**: a top-down map plays the round at 12× speed with a slider, and the last minute of events beside it. The newest 10 recordings per class are kept; older rounds keep their results table but lose the recording. See `docs/privacy.md` (`class_rounds.replay`).
+
+## Cheat code (Phase 37)
+
+Settings → **Cheat code** (admins only). Choose where it works (`off` by default), record the key combination, and set the code. The code is write-only: it is stored as a scrypt hash, cannot be read back, and never appears in the audit trail (which records only that it changed). Leave the code field empty to keep the current one. It cannot be switched on without a code.

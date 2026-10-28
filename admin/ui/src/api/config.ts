@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   ChallengeSettings,
+  CheatAdminView,
   CombatSettings,
   RewardTierEntry,
   TutorialSettings,
@@ -130,6 +131,29 @@ export function useSaveSection(name: SectionName) {
         method: 'PUT',
         body: { [name]: changes },
       }),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['config'] }),
+  });
+}
+
+export interface CheatChanges extends Partial<Omit<CheatAdminView, 'codeSet'>> {
+  /** A new code; sent once, stored only as a hash. */
+  newCode?: string;
+}
+
+export function useCheatSettings() {
+  return useQuery({
+    queryKey: ['config', 'cheat'],
+    queryFn: async () =>
+      (await api<{ cheat: { current: CheatAdminView; defaults: CheatAdminView } }>('/config/cheat'))
+        .cheat,
+  });
+}
+
+export function useSaveCheatSettings() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (changes: CheatChanges) =>
+      api<{ cheat: CheatAdminView }>('/config/cheat', { method: 'PUT', body: { cheat: changes } }),
     onSuccess: () => client.invalidateQueries({ queryKey: ['config'] }),
   });
 }

@@ -20,6 +20,12 @@ import {
   modesSettingsSchema,
   storySettingsSchema,
   DEFAULT_STORY_SETTINGS,
+  CHEAT_CODE_MAX_LENGTH,
+  CHEAT_CODE_MIN_LENGTH,
+  DEFAULT_CHEAT_SETTINGS,
+  cheatAdminView,
+  cheatSettingsSchema,
+  type CheatAdminView,
   cityDbSettingsSchema,
   DEFAULT_CITY_DB_SETTINGS,
   privacySettingsSchema,
@@ -50,6 +56,7 @@ import {
   MODES_SETTINGS_KEY,
   STORY_SETTINGS_KEY,
   CITY_DB_SETTINGS_KEY,
+  CHEAT_SETTINGS_KEY,
   HEIST_SETTINGS_KEY,
   NAME_RULES_KEY,
   REWARD_ICONS_KEY,
@@ -59,6 +66,7 @@ import {
   TUTORIAL_SETTINGS_KEY,
 } from '@heist/server/config/SettingsReader';
 import type { SettingsStore } from '@heist/server/config/SettingsStore';
+import { hashCode } from '@heist/server/security/CodeHash';
 import type { ZodType } from 'zod';
 import { HttpError } from '../http/errors';
 import type { AdminEventBus } from '../events/AdminEvents';
@@ -198,6 +206,65 @@ export class SettingsService {
       after: parsed.data,
     });
     return parsed.data;
+  }
+
+  /** The cheat code settings as the admin sees them: never the hash, only whether a code is set. */
+  async cheatSettings(): Promise<{ current: CheatAdminView; defaults: CheatAdminView }> {
+    return {
+      current: cheatAdminView(await this.current(CHEAT_SETTINGS_KEY, settingsParsers.cheatFrom)),
+      defaults: cheatAdminView(DEFAULT_CHEAT_SETTINGS),
+    };
+  }
+
+  /**
+   * Changes the cheat settings. A new code arrives as `newCode`, is checked for length and stored
+   * only as a hash; `codeHash` in the request is ignored, so a hash can never be planted. The audit
+   * trail records that the code changed, never the code or its hash.
+   */
+  async updateCheatSettings(changes: unknown, actor: AdminUser): Promise<CheatAdminView> {
+    if (typeof changes !== 'object' || changes === null || Array.isArray(changes))
+      throw new HttpError(400, 'validation_failed', 'Cheat settings must be an object');
+    const {
+      newCode,
+      codeHash: _ignored,
+      codeSet: _view,
+      ...rest
+    } = changes as Record<string, unknown>;
+    const before = await this.current(CHEAT_SETTINGS_KEY, settingsParsers.cheatFrom);
+    let codeHash = before.codeHash;
+    if (newCode !== undefined) {
+      if (
+        typeof newCode !== 'string' ||
+        newCode.length < CHEAT_CODE_MIN_LENGTH ||
+        newCode.length > CHEAT_CODE_MAX_LENGTH
+      )
+        throw new HttpError(
+          400,
+          'validation_failed',
+          `The code must be ${CHEAT_CODE_MIN_LENGTH} to ${CHEAT_CODE_MAX_LENGTH} characters`,
+        );
+      codeHash = await hashCode(newCode);
+    }
+    const parsed = cheatSettingsSchema.safeParse({ ...before, ...rest, codeHash });
+    if (!parsed.success) {
+      throw new HttpError(
+        400,
+        'validation_failed',
+        'Some settings are invalid',
+        parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+      );
+    }
+    if (parsed.data.scope !== 'off' && parsed.data.codeHash === '')
+      throw new HttpError(400, 'validation_failed', 'Set a code before switching the cheat on');
+    await this.store.put(CHEAT_SETTINGS_KEY, parsed.data);
+    this.events.publish({
+      type: 'settings_changed',
+      key: CHEAT_SETTINGS_KEY,
+      actor: { id: actor.id, email: actor.email },
+      before: { ...cheatAdminView(before), codeChanged: false },
+      after: { ...cheatAdminView(parsed.data), codeChanged: codeHash !== before.codeHash },
+    });
+    return cheatAdminView(parsed.data);
   }
 
   /** The editable sections that are plain numbers: key → what the admin may change. */

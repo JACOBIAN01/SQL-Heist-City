@@ -21,6 +21,7 @@ import {
 import { useQuestions } from '../api/questions';
 import { useMe } from '../auth/useMe';
 import { ErrorMessage } from '../components/ErrorMessage';
+import { CheatCard } from './CheatCard';
 import { NameRulesCard } from './NameRulesCard';
 import { RewardIconsCard } from './RewardIconsCard';
 import { REWARD_LABELS } from './rewardLabels';
@@ -59,6 +60,7 @@ export function SettingsPage() {
       <NameRulesCard editable={isAdmin} />
       <GunsCard editable={isAdmin} />
       <TutorialCard editable={isAdmin} />
+      {isAdmin && <CheatCard editable />}
       <SectionCard
         name="heist"
         title="Heist rules"
