@@ -98,6 +98,8 @@ export type HeistEvent =
       /** From the question being issued to the correct answer, when known. */
       readonly seconds?: number;
     }
+  /** A question was passed with the cheat code: the world reacts (the reward may be paid), learning does not (Phase 37). */
+  | { readonly type: 'task_cheated'; readonly player: Player; readonly rewardKey: string }
   /** A player killed another (not themselves, not a practice target). */
   | { readonly type: 'kill'; readonly killer: Player; readonly victim: Player }
   | {

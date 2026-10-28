@@ -21,6 +21,7 @@ export const REPLAY_EVENT_KINDS = [
   'solved',
   'failed',
   'joined',
+  'cheat',
 ] as const;
 export type ReplayEventKind = (typeof REPLAY_EVENT_KINDS)[number];
 

@@ -434,6 +434,23 @@ export class ChallengeService {
   }
 
   /**
+   * The cheat code passed the open question (Phase 37). The caller has already checked the code; this
+   * ends the question as `cheat` (never as solved) and returns what a correct answer would, so the
+   * game pays the reward the same way.
+   */
+  pass(player: string, challengeId: string): SubmitResult {
+    const found = this.find(player, challengeId);
+    if ('reason' in found) return { status: 'rejected', reason: found.reason };
+    const challenge = found.challenge;
+    if (challenge.solved) return { status: 'rejected', reason: 'already_solved' };
+    challenge.solved = true;
+    this.note(challenge, 'cheat');
+    this.finish(challenge, 'cheat');
+    this.byPlayer.delete(player);
+    return { status: 'correct', rewardKey: challenge.rewardKey, target: challenge.target };
+  }
+
+  /**
    * Reveals hint `index`. Hints open in order; the first reveal is `charged`
    * (the game deducts the cost once), asking again is free and idempotent.
    */
@@ -539,7 +556,12 @@ export class ChallengeService {
     if (challenge.finished) return;
     challenge.finished = true;
     const at = this.now();
-    if (outcome !== 'solved' && outcome !== 'answered' && outcome !== 'submitted') {
+    if (
+      outcome !== 'solved' &&
+      outcome !== 'answered' &&
+      outcome !== 'submitted' &&
+      outcome !== 'cheat'
+    ) {
       const kind: Record<string, AttemptEventKind> = {
         abandoned: 'abandon',
         expired: 'expire',

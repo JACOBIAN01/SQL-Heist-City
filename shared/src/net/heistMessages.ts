@@ -285,6 +285,28 @@ export interface TeamMessage {
   readonly role: 'cop' | 'robber';
 }
 
+/** Type the cheat code to pass the question that is open (Phase 37). */
+export const cheatMessageSchema = z.object({
+  t: z.literal('cheat'),
+  ref: z.number().int(),
+  challengeId: z.string().min(1).max(80),
+  code: z.string().min(1).max(100),
+});
+export type CheatMessage = z.infer<typeof cheatMessageSchema>;
+
+/** Why a code did not pass. `refused` covers off, not here and no code set, so a prober learns nothing. */
+export type CheatRefusal = 'refused' | 'wrong' | 'locked' | 'limit' | 'no_task';
+
+/** The answer to a `cheat`. When it passes, the usual `challenge_result` (correct) follows. */
+export interface CheatResultMessage {
+  readonly t: 'cheat_result';
+  readonly ref: number;
+  readonly ok: boolean;
+  readonly reason?: CheatRefusal;
+  /** Epoch ms until another try is accepted (`locked`). */
+  readonly lockedUntil?: number;
+}
+
 /** Ask the city database a question: a request and the SQL the student wrote for it (Phase 33). */
 export const cityQueryMessageSchema = z.object({
   t: z.literal('city_query'),
@@ -524,6 +546,7 @@ export const jsonClientMessageSchema = z.union([
   jobTakeMessageSchema,
   cityQueryMessageSchema,
   splitSubmitMessageSchema,
+  cheatMessageSchema,
 ]);
 export type JsonClientMessage = z.infer<typeof jsonClientMessageSchema>;
 
@@ -923,6 +946,7 @@ export type HeistServerMessage =
   | LeaderboardMessage
   | GhostMessage
   | KillCamMessage
+  | CheatResultMessage
   | GhostResultMessage
   | CityResultMessage
   | SplitStateMessage

@@ -18,7 +18,9 @@ export type AnomalyKind =
   /** Asked for something the client never offers (an anchor out of reach, an unknown task). */
   | 'impossible_action'
   /** A JSON message that does not match the protocol. */
-  | 'malformed';
+  | 'malformed'
+  /** A wrong cheat code was typed (never the code itself). */
+  | 'bad_cheat_code';
 
 export interface Anomaly {
   readonly at: number;

@@ -109,6 +109,8 @@ function describe(e: RoundReplay['events'][number]): string {
       return `${e.who} lost the take at ${e.text ?? 'a bank'}`;
     case 'solved':
       return `${e.who} solved ${e.text ?? 'a question'}`;
+    case 'cheat':
+      return `${e.who} passed ${e.text ?? 'a question'} with the cheat code`;
     case 'joined':
       return `${e.who} joined`;
   }

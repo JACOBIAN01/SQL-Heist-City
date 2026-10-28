@@ -49,6 +49,9 @@ export class RoundRecorder {
         case 'heist_failed':
           this.note('failed', e.player, { text: e.bank });
           break;
+        case 'task_cheated':
+          this.note('cheat', e.player, { text: e.rewardKey });
+          break;
         case 'task_solved':
           this.note('solved', e.player, { text: e.rewardKey });
           break;

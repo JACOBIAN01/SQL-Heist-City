@@ -16,7 +16,9 @@ export type ItemOutcome =
   /** A one-go task (multiple choice) was answered, not fully right: it earns its share of the marks. */
   | 'answered'
   /** An open brief was handed in; it counts once a teacher marks it. */
-  | 'submitted';
+  | 'submitted'
+  /** Passed with the owner's cheat code: the reward may be paid, but it is never learning evidence (Phase 37). */
+  | 'cheat';
 
 export const ITEM_OUTCOMES: readonly ItemOutcome[] = [
   'solved',
@@ -27,6 +29,7 @@ export const ITEM_OUTCOMES: readonly ItemOutcome[] = [
   'switched',
   'died',
   'left',
+  'cheat',
 ];
 
 /** Everything known about one issued question when it ended (docs/RCBSE.md §5.3, §6). */
@@ -107,7 +110,7 @@ const NOT_COUNTED: ItemScore = { counted: false, available: 0, earned: 0 };
  * nothing; a question worked on and failed shows a real gap.
  */
 export function scoreItem(item: ItemRecord, settings: AnalyticsSettings): ItemScore {
-  if (item.tutorial) return NOT_COUNTED;
+  if (item.tutorial || item.outcome === 'cheat') return NOT_COUNTED;
   // A brief counts when a teacher marks it (the marks arrive then, not now).
   if (item.outcome === 'submitted') return NOT_COUNTED;
   if (item.outcome === 'answered') {

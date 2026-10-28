@@ -24,7 +24,9 @@ export type AttemptEventKind =
   | 'expire'
   | 'abandon'
   | 'death'
-  | 'leave';
+  | 'leave'
+  /** Passed with the cheat code. */
+  | 'cheat';
 
 export interface AttemptEvent {
   readonly at: number;

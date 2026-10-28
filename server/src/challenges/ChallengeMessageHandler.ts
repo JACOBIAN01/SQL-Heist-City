@@ -1,5 +1,7 @@
 import {
   challengeClientMessageSchema,
+  type CheatMessage,
+  type CheatResultMessage,
   type ChallengeClientMessage,
   type ChallengeServerMessage,
   type CityDbSettings,
@@ -8,6 +10,7 @@ import type { SettingsReader } from '../config/SettingsReader';
 import type { SandboxRunner } from '../sql/SandboxRunner';
 import type { ChallengeService, IssueOptions } from './ChallengeService';
 import { tiersForReward } from './tiers';
+import { CheatGate, type CheatContext } from './CheatGate';
 
 // Pattern: Command (message → handler) — Why: each client message is a small
 // validated command mapped to one service call. The same handler serves the
@@ -46,8 +49,52 @@ export class ChallengeMessageHandler {
     return this.dispatch(player, parsed.data, options);
   }
 
+  /** Decides who may pass a question with the cheat code (Phase 37). */
+  private readonly gate = new CheatGate(
+    () => this.settings.cheatSettings(),
+    () => this.now(),
+  );
+
   playerLeft(player: string): void {
     this.service.forgetPlayer(player);
+    this.gate.forget(player);
+  }
+
+  /**
+   * A typed cheat code. Only when the gate agrees is the open question ended (as `cheat`, never as
+   * solved) and its correct result returned, so the game pays the reward its usual way.
+   */
+  async cheat(
+    player: string,
+    message: CheatMessage,
+    context: CheatContext,
+  ): Promise<{
+    result: CheatResultMessage;
+    solved?: ChallengeServerMessage;
+    payReward?: boolean;
+  }> {
+    const refuse = (
+      reason: Extract<CheatResultMessage, { ok: boolean }>['reason'],
+      lockedUntil?: number,
+    ) => ({
+      result: {
+        t: 'cheat_result' as const,
+        ref: message.ref,
+        ok: false,
+        ...(reason ? { reason } : {}),
+        ...(lockedUntil === undefined ? {} : { lockedUntil }),
+      },
+    });
+    const verdict = await this.gate.check(player, message.code, context);
+    if (!verdict.ok) return refuse(verdict.reason, verdict.lockedUntil);
+    const passed = this.service.pass(player, message.challengeId);
+    if (passed.status !== 'correct') return refuse('no_task');
+    this.gate.used(player);
+    return {
+      result: { t: 'cheat_result', ref: message.ref, ok: true },
+      solved: { t: 'challenge_result', ref: message.ref, now: this.now(), result: passed },
+      payReward: this.settings.cheatSettings().payReward,
+    };
   }
 
   playerDied(player: string): void {

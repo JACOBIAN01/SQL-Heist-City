@@ -8,6 +8,9 @@ import {
   jsonClientMessageSchema,
   mapWithClosedDoors,
   type ChallengeServerMessage,
+  type CheatMessage,
+  type CheatRefusal,
+  type CheatResultMessage,
   type HeistSettings,
   type JsonClientMessage,
   type SetLookMessage,
@@ -840,6 +843,10 @@ export class HeistController implements ArmsControl {
       if (player.alive && player.equip(message.weapon)) this.sendArms(player);
       return;
     }
+    if (message.t === 'cheat') {
+      void this.onCheat(player, message);
+      return;
+    }
     this.onChallenge(player, message, raw);
   }
 
@@ -970,6 +977,42 @@ export class HeistController implements ArmsControl {
         this.reply(player, reply);
       })
       .catch(() => this.reply(player, this.refuse(message.ref, 'unavailable')));
+  }
+
+  /**
+   * The cheat code was typed (Phase 37). The gateway checks the code; a pass ends the open question
+   * and may pay its reward, but it is never a solved answer: no streak, no `task_solved`, and the
+   * question is recorded as a cheat. Duels (a fair fight between two people) can never be passed.
+   */
+  private async onCheat(player: Player, message: CheatMessage): Promise<void> {
+    const send = (result: CheatResultMessage) => {
+      if (this.match.getPlayer(player.id) === player) this.match.sendJson(player, result);
+    };
+    const refuse = (reason: CheatRefusal) =>
+      send({ t: 'cheat_result', ref: message.ref, ok: false, reason });
+    const open = this.openTasks.get(player.key);
+    if (!this.challenges?.cheat || open?.startsWith('duel:')) return refuse('refused');
+    if (!open) return refuse('no_task');
+    try {
+      const out = await this.challenges.cheat(player.key, message, {
+        classId: this.match.classInfo?.classId,
+        tutorial: !!this.taskOptions,
+        round: this.round?.number,
+      });
+      if (out.result.reason === 'wrong' || out.result.reason === 'locked')
+        this.match.reportAnomaly(player, 'bad_cheat_code');
+      send(out.result);
+      const solved = out.solved;
+      if (solved?.t !== 'challenge_result' || solved.result.status !== 'correct') return;
+      const { rewardKey, target } = solved.result;
+      if (out.payReward !== false) this.tasks.find(rewardKey)?.grant(player, rewardKey, target);
+      this.openTasks.delete(player.key);
+      this.issuedAt.delete(player.key);
+      this.events.publish({ type: 'task_cheated', player, rewardKey });
+      this.reply(player, solved);
+    } catch {
+      refuse('refused');
+    }
   }
 
   readonly caches: CacheSystem;
