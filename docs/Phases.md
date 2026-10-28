@@ -51,7 +51,7 @@
 | 31 | Missions and heist structure | ✅ done, awaiting approval |
 | 32 | Story and characters | ✅ built; 32.1 and 32.4 await the owner |
 | 33 | SQL in the world: queries as superpowers | ✅ done; the balance playtest waits for 36.1 |
-| 34 | Breakthrough features | 🟦 34.1–34.6 done |
+| 34 | Breakthrough features | ✅ done |
 | 35 | Polish | ⬜ |
 | 36 | GTA scorecard gate | ⬜ |
 
@@ -590,7 +590,7 @@ Post-launch. Breakthrough feature 1 and GTA audit "SQL fit" from 4 to 8–9.
 | 33.6 | Review: re-score SQL fit | ≥ 8 | ✅ [docs/review/sql-fit.md](review/sql-fit.md): SQL fit 4 → 8 by the author's own assessment, with a screenshot of the terminal (a dev-only `citydb.html` preview: a right joined query, and a wrong UPDATE). The gaps are listed (set requests, alike requests, positions only, balance untested, not seen in play). The playtest-backed score is 36.1 |
 
 ---
-## Phase 34 — Breakthrough features  🟦
+## Phase 34 — Breakthrough features  ✅
 Post-launch. Audit section "Breakthrough features" 2–8.
 
 | # | Subphase | Done when | Status |
@@ -601,7 +601,7 @@ Post-launch. Audit section "Breakthrough features" 2–8.
 | 34.4 | Optimisation leaderboards (rows scanned, query length) | per class and global | ✅ When a signed-in student solves a *write* question, the server prices the query: its plan (from `EXPLAIN QUERY PLAN`) against the row counts of the tables gives an **estimate of rows scanned** (a full `SCAN` costs the table, a `SEARCH` an index lookup; SQLite does not say how many rows it read, so this is an estimate and is called one), and its **length** (without comments or spare whitespace). The student's leanest query per question is kept (`query_records`, migration 22, `LeaderboardStore` with Pg and in-memory versions under one contract test; only numbers, never the query, in the privacy map), ranked by rows scanned then length. After each solve they get a toast ("#2 of 9 · about 40 rows, 50 chars", "New best!") and the Z panel shows the top five of their class and of everyone. Tutorial, assessment and unsigned play do not count. Tested |
 | 34.5 | Teacher heist builder: a story plus a question chain makes a custom heist; shareable | a teacher builds and shares one | ✅ Admin → My heists: a teacher writes a short story (lines said by named speakers) and picks one to five questions by slug, for one bank; each lock of that vault then asks the next question in order, with the round length they chose. Saved in `custom_heists` (migration 23, `CustomHeistRepository` with Pg and in-memory versions under one contract test; in the privacy map), each with an 8-character **share code**: another teacher types it under "Copy a heist by share code" and gets a copy of their own (their later edits do not reach the original). A class plays one by taking it as its game mode (`custom-<id>`, listed in the class editor as "My heist: …"); students see its story as a scene when they join. A teacher sees and edits only their own; an admin any. Every slug is checked to exist when it is saved. The question and its data are the same for the whole class (a fixed seed, as in the tutorial), so a teacher can walk through the answer. Tested |
 | 34.6 | Async ghost heists: replay a top player's heist as a ghost to beat | ghost replays work | ✅ From a student's first move on a bank (intel or a cracked lock) the server notes where they stand each second (up to ten minutes); a heist that ends in the bank is kept as their run if it is their fastest there (`ghost_heists`, migration 24, `GhostStore` with Pg and in-memory versions under one contract test; only numbers and a display name, in the privacy map). The fastest run on each bank is the ghost: the moment the next student begins on that bank it is sent to them and replayed beside them — a translucent figure in the world and a white ring on the minimap — from that instant, and when they finish they are told whether they beat it ("You beat Ana's ghost by 12 s", or "New ghost record!"). A guest can race the ghost but not set one; a run that ends in death, or under five seconds, is not kept. Tested |
-| 34.7 | Localised stories, bank names and currencies per country (uses 22.7) | two countries' themes ship | ⬜ |
+| 34.7 | Localised stories, bank names and currencies per country (uses 22.7) | two countries' themes ship | ✅ Three themes ship (`DEFAULT_COUNTRY_THEMES`): the default (`$`), **India** (`₹`, lakh grouping — ₹15,00,000 — and local bank names and cast: Gram Sahakari Bank, Mumbai Capital, Meera, Isha, Mohan Vyas…) and **United Kingdom** (`£`, High Street Savings, Thames Capital, Maisie, Imogen…). A student picks one under Settings → Language ("Country look"; kept with their settings and account). A theme changes only what is shown, never a number: the HUD purse, payout, shop, jobs, acts, toasts, the map's bank names and all the story text (journal, scenes, barks, the crew's line on a question) are written through it. **Not themed:** the bank signs drawn on the buildings in the 3D world, district and landmark names, and the questions' own text. The story is still English; a Hindi translation of it is an owner item (22.7 gave the interface a Hindi switch). Tested |
 
 ---
 ## Phase 35 — Polish  ⬜

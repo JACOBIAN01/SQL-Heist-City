@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import { AWARDS, type AwardView, type ReviewItem } from '@heist/shared';
 import { formatAward } from '../hud/ScoreboardView';
 
@@ -43,7 +44,7 @@ export function bestQuery(items: readonly ReviewItem[]): ReviewItem | undefined 
     .sort((a, b) => b.tier - a.tier || a.secondsOpen - b.secondsOpen)[0];
 }
 
-const money = (n: number) => `$${Math.round(n).toLocaleString('en-US')}`;
+const money = (n: number) => theme.money(n);
 
 /** Tidies a query for a card: trims, drops blank lines, and cuts it to `maxLines` with an ellipsis. */
 export function queryLines(sql: string, maxLines: number): string[] {

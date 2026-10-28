@@ -315,3 +315,7 @@ In the admin, **My heists** lets a teacher write a story and choose a chain of q
 ## Ghost heists (Phase 34.6)
 
 The fastest heist on each bank is kept as a ghost. The moment you begin on that bank, a pale figure sets off from the start and replays that run beside you, and shows on your minimap. Finish faster and it is your ghost the next student races. A run that ends in death does not count.
+
+## Country looks (Phase 34.7)
+
+Under Settings → Language, pick a **Country look**: India or the United Kingdom change the money symbol and digit grouping, the banks' names and the crew's names, everywhere the game writes them. The numbers underneath do not change, so a class can mix looks and still play the same heist.

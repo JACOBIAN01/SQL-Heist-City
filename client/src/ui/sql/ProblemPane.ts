@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import {
   parseInlineMarkdown,
   type HintReveal,
@@ -28,7 +29,9 @@ export class ProblemPane {
     this.task = challenge.task ? taskView(challenge.task) : null;
     this.host.append(
       h('h2', { class: 'sqlp-h2', text: 'Task' }),
-      ...(challenge.frame ? [h('p', { class: 'sqlp-frame', text: challenge.frame })] : []),
+      ...(challenge.frame
+        ? [h('p', { class: 'sqlp-frame', text: theme.text(challenge.frame) })]
+        : []),
       story(challenge.story),
       ...(this.task ? [this.task.element] : []),
       ...(challenge.solution === undefined ? [] : [this.solution(challenge.solution)]),

@@ -3,6 +3,7 @@ import {
   DEFAULT_KEYS,
   GRAPHICS,
   LOCALES,
+  DEFAULT_COUNTRY_THEMES,
   PALETTES,
   RESERVED_KEYS,
   keyConflicts,
@@ -252,6 +253,13 @@ export class SettingsPanel {
             },
           ),
           h('p', { class: 'menu-muted', text: this.t('settings.languageNote') }),
+          this.select(
+            'settings.theme',
+            this.s.theme,
+            DEFAULT_COUNTRY_THEMES.map((c) => [c.id, c.name]),
+            (v) => this.update((s) => ({ ...s, theme: v as PlayerSettings['theme'] })),
+          ),
+          h('p', { class: 'menu-muted', text: this.t('settings.themeNote') }),
         ];
     }
   }

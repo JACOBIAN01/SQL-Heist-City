@@ -1,3 +1,4 @@
+import { theme } from '../theme/theme';
 import type { AccountApi } from '../net/account';
 import { I18n } from '../i18n/I18n';
 import { applyAccessibility } from './accessibility';
@@ -18,6 +19,7 @@ export function startSettings(account: AccountApi): { store: SettingsStore; i18n
   const apply = () => {
     applyAccessibility(store.current);
     i18n.setLocale(store.current.locale);
+    theme.set(store.current.theme);
     document.documentElement.lang = store.current.locale;
   };
   apply();

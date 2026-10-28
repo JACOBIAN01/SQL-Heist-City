@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import type { JobMessage } from '@heist/shared';
 import type { I18n } from '../../i18n/I18n';
 import type { MessageKey } from '../../i18n/en';
@@ -49,7 +50,8 @@ export class JobView {
     this.root.hidden = !m || m.status === 'none';
     if (!m || m.status === 'none') return;
     const money = m.reward.toLocaleString('en-US');
-    if (m.status === 'done') this.root.textContent = this.t('job.done', { reward: money });
+    if (m.status === 'done')
+      this.root.textContent = theme.text(this.t('job.done', { reward: money }));
     else if (m.status === 'failed') this.root.textContent = this.t('job.failed');
     else if (m.status === 'claim') this.root.textContent = this.t('job.claim');
     else {
@@ -60,7 +62,9 @@ export class JobView {
         pct: Math.round((m.dwell ?? 0) * 100),
       };
       const what = this.t(`job.${m.kind}` as MessageKey, params);
-      this.root.textContent = `${what} · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} · $${money}`;
+      this.root.textContent = theme.text(
+        `${what} · ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')} · $${money}`,
+      );
     }
   }
 }

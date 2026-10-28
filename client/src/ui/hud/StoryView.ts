@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import type { StoryMessage } from '@heist/shared';
 import type { I18n } from '../../i18n/I18n';
 import type { MessageKey } from '../../i18n/en';
@@ -66,20 +67,24 @@ export class StoryView {
           'article',
           { class: `story-chain story-${c.state}`, attrs: { 'data-bank': c.bank } },
           h('h3', {
-            text: c.state === 'locked' ? `${c.name} · ${this.t('story.locked')}` : c.name,
+            text: theme.text(
+              c.state === 'locked' ? `${c.name} · ${this.t('story.locked')}` : c.name,
+            ),
           }),
-          h('p', { class: 'skills-help', text: `${c.fixer.name}, ${c.fixer.role}` }),
+          h('p', { class: 'skills-help', text: theme.text(`${c.fixer.name}, ${c.fixer.role}`) }),
           c.current
             ? h(
                 'p',
                 {},
                 h('b', {
-                  text: `${this.t('story.step', { n: c.step + 1, total: c.total })}: ${c.current.title}. `,
+                  text: theme.text(
+                    `${this.t('story.step', { n: c.step + 1, total: c.total })}: ${c.current.title}. `,
+                  ),
                 }),
-                c.current.text,
+                theme.text(c.current.text),
               )
             : h('span'),
-          c.page ? h('p', { class: 'story-page', text: `“${c.page}”` }) : h('span'),
+          c.page ? h('p', { class: 'story-page', text: theme.text(`“${c.page}”`) }) : h('span'),
         ),
       );
   }

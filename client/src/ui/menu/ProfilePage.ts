@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import type { PlayerProfilePage, ProfileMessage } from '@heist/shared';
 import type { AccountApi } from '../../net/account';
 import type { I18n } from '../../i18n/I18n';
@@ -135,7 +136,7 @@ export class ProfilePage {
                 text: [
                   this.t('profilePage.round', { round: r.round }),
                   this.t('profilePage.place', { rank: r.rank, players: r.players }),
-                  this.t('profilePage.haul', { money: `$${r.banked.toLocaleString('en-US')}` }),
+                  this.t('profilePage.haul', { money: theme.money(r.banked) }),
                   this.t('profilePage.kills', { kills: r.kills }),
                   new Date(r.endedAt).toLocaleDateString(),
                 ].join(' · '),

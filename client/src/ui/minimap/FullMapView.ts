@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import { BANK_LAYOUTS, type CityLayout, type GameMap } from '@heist/shared';
 import { h } from '../dom';
 import { drawMarker, MAP_COLOURS } from './markerArt';
@@ -215,7 +216,7 @@ export function drawDistricts(
 /** A marker's caption on the full map, or nothing. */
 export function captionFor(m: Marker): string | undefined {
   if (m.kind === 'bank') {
-    const name = BANK_LAYOUTS.get(m.tier ?? 0)?.name ?? `Bank ${m.tier ?? ''}`;
+    const name = theme.text(BANK_LAYOUTS.get(m.tier ?? 0)?.name ?? `Bank ${m.tier ?? ''}`);
     if (m.closed) return `${name} · CLOSED`;
     const locks = m.locks ?? 0;
     if (locks === 0) return name;

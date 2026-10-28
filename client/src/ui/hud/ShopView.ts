@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import type { ShopItem, ShopMessage, UpgradeId } from '@heist/shared';
 import type { I18n } from '../../i18n/I18n';
 import type { MessageKey } from '../../i18n/en';
@@ -95,7 +96,7 @@ export class ShopView {
           'div',
           { class: 'shop-offer' },
           h('span', {
-            text: `${this.t(`shop.item.${offer.item}` as MessageKey)} · $${offer.price.toLocaleString('en-US')}`,
+            text: `${this.t(`shop.item.${offer.item}` as MessageKey)} · ${theme.money(offer.price)}`,
           }),
           h('button', {
             text: this.t('shop.buy'),
@@ -121,7 +122,9 @@ export class ShopView {
           u.price === undefined
             ? h('span', { text: this.t('shop.maxed') })
             : h('button', {
-                text: this.t('shop.upgradeFor', { price: u.price.toLocaleString('en-US') }),
+                text: theme.text(
+                  this.t('shop.upgradeFor', { price: u.price.toLocaleString('en-US') }),
+                ),
                 attrs: { 'data-upgrade-buy': u.id },
                 on: { click: () => this.send({ t: 'upgrade_buy', upgrade: u.id }) },
               }),

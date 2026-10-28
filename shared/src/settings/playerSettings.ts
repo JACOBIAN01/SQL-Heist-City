@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { COUNTRY_THEME_IDS } from '../config/themes';
 
 /**
  * A player's own settings (Phase 22): how they look around, hear, see and control the game.
@@ -198,6 +199,8 @@ export const playerSettingsSchema = z.object({
     })
     .default({ controls: 'auto', leftHanded: false }),
   locale: z.enum(LOCALES).default('en'),
+  /** The country's look for money, bank names and the cast (Phase 34.7). */
+  theme: z.enum(COUNTRY_THEME_IDS).default('default'),
 });
 
 export type PlayerSettings = z.infer<typeof playerSettingsSchema>;

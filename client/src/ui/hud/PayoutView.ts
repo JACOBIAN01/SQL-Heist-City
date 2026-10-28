@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import type { PayoutMessage } from '@heist/shared';
 import type { I18n } from '../../i18n/I18n';
 import type { MessageKey } from '../../i18n/en';
@@ -51,7 +52,7 @@ export class PayoutView {
       ),
     );
     if (!m) return;
-    const money = (n: number) => `$${n.toLocaleString('en-US')}`;
+    const money = (n: number) => theme.money(n);
     this.panel.appendChild(
       h('p', { class: 'skills-help', text: m.bank.replace('bank-', 'Bank ') }),
     );

@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import { h } from '../dom';
 import { WeaponBar } from './WeaponBar';
 import './hud.css';
@@ -29,8 +30,7 @@ export interface HudView {
 export type FeedTone = 'alarm' | 'vault' | 'bounty' | 'good';
 
 /** $1,234 */
-export const formatMoney = (amount: number): string =>
-  `$${Math.round(amount).toLocaleString('en-US')}`;
+export const formatMoney = (amount: number): string => theme.money(amount);
 
 const MAX_FEED = 5;
 const FEED_MS = 5000;
@@ -205,6 +205,7 @@ export class Hud implements HudView {
   }
 
   toast(text: string): void {
+    text = theme.text(text);
     this.toastBox.textContent = text;
     this.toastBox.hidden = false;
     clearTimeout(this.toastTimer);

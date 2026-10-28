@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import type { SceneMessage } from '@heist/shared';
 import type { I18n } from '../../i18n/I18n';
 import { clear, h } from '../dom';
@@ -75,8 +76,13 @@ export class SceneView {
     if (!line) return;
     this.root.setAttribute('aria-label', scene.title);
     this.root.append(
-      h('h2', { class: 'scene-title', text: scene.title }),
-      h('p', { class: 'scene-line' }, h('b', { text: `${line.speaker}: ` }), line.text),
+      h('h2', { class: 'scene-title', text: theme.text(scene.title) }),
+      h(
+        'p',
+        { class: 'scene-line' },
+        h('b', { text: `${theme.text(line.speaker)}: ` }),
+        theme.text(line.text),
+      ),
       h(
         'div',
         { class: 'scene-actions' },
@@ -104,7 +110,7 @@ export class BarkView {
   private hideAt = 0;
 
   show(speaker: string, text: string, now: number): void {
-    this.root.textContent = `${speaker}: ${text}`;
+    this.root.textContent = theme.text(`${speaker}: ${text}`);
     this.root.hidden = false;
     this.hideAt = now + 6000;
   }

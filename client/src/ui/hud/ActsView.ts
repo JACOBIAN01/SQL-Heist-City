@@ -1,3 +1,4 @@
+import { theme } from '../../theme/theme';
 import type { ActsMessage } from '@heist/shared';
 import type { I18n } from '../../i18n/I18n';
 import type { MessageKey } from '../../i18n/en';
@@ -30,7 +31,7 @@ export class ActsView {
       max: message.intelMax,
       take: message.take.toLocaleString('en-US'),
     };
-    this.root.textContent = this.i18n.t(`acts.${message.act}` as MessageKey, params);
+    this.root.textContent = theme.text(this.i18n.t(`acts.${message.act}` as MessageKey, params));
   }
 
   frame(now: number): void {

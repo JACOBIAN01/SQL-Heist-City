@@ -108,6 +108,9 @@ export const en = {
   'settings.motion.off': 'Allow all motion',
   'settings.subtitles': 'Captions for important sounds',
   'settings.language': 'Language',
+  'settings.theme': 'Country look',
+  'settings.themeNote':
+    'Changes how money, bank names and the crew’s names are written. The numbers stay the same.',
   'settings.languageNote':
     'Some text, such as the questions, stays in the language it was written in.',
   'palette.default': 'Standard',
