@@ -52,8 +52,8 @@
 | 32 | Story and characters | ✅ built; 32.1 and 32.4 await the owner |
 | 33 | SQL in the world: queries as superpowers | ✅ done; the balance playtest waits for 36.1 |
 | 34 | Breakthrough features | ✅ done |
-| 35 | Polish | 🟦 |
-| 36 | GTA scorecard gate | ⬜ |
+| 35 | Polish | 🟨 |
+| 36 | GTA scorecard gate | 🟨 |
 
 ---
 ## Phase 0 — Docs & scaffold  ✅
@@ -604,20 +604,20 @@ Post-launch. Audit section "Breakthrough features" 2–8.
 | 34.7 | Localised stories, bank names and currencies per country (uses 22.7) | two countries' themes ship | ✅ Three themes ship (`DEFAULT_COUNTRY_THEMES`): the default (`$`), **India** (`₹`, lakh grouping — ₹15,00,000 — and local bank names and cast: Gram Sahakari Bank, Mumbai Capital, Meera, Isha, Mohan Vyas…) and **United Kingdom** (`£`, High Street Savings, Thames Capital, Maisie, Imogen…). A student picks one under Settings → Language ("Country look"; kept with their settings and account). A theme changes only what is shown, never a number: the HUD purse, payout, shop, jobs, acts, toasts, the map's bank names and all the story text (journal, scenes, barks, the crew's line on a question) are written through it. **Not themed:** the bank signs drawn on the buildings in the 3D world, district and landmark names, and the questions' own text. The story is still English; a Hindi translation of it is an owner item (22.7 gave the interface a Hindi switch). Tested |
 
 ---
-## Phase 35 — Polish  🟦
+## Phase 35 — Polish  🟨
 Post-launch. Minor items from the audit.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
 | 35.1 | Kill-cam showing the killer's view and how long their last query took | plays on death | ✅ |
 | 35.2 | Round replay (server-recorded) for teachers | a round can be replayed | ✅ |
-| 35.3 | Small UX fixes from pilot and launch feedback | backlog emptied | ⬜ |
+| 35.3 | Small UX fixes from pilot and launch feedback | backlog emptied | ⛔ there is no pilot or launch feedback yet (no `TODO`/`FIXME` is left in the code either). Feedback is triaged into `docs/review/findings.md` by the rules in `docs/review/playtests.md`; fix it here when it arrives |
 
 ---
-## Phase 36 — GTA scorecard gate  ⬜
+## Phase 36 — GTA scorecard gate  🟨
 Post-launch. A review proving every pillar is at least 8/10.
 
 | # | Subphase | Done when | Status |
 |---|---|---|---|
-| 36.1 | Re-score all eight pillars (immersion, exploration, missions, story, progression, freedom, rewards, SQL fit) with playtest evidence | every pillar ≥ 8 | ⬜ |
-| 36.2 | Fix any pillar under 8 | re-scored ≥ 8 | ⬜ |
+| 36.1 | Re-score all eight pillars (immersion, exploration, missions, story, progression, freedom, rewards, SQL fit) with playtest evidence | every pillar ≥ 8 | 🟨 the form is ready: `docs/review/scorecard.md` (scoring rule, a survey question and evidence per pillar, the score sheet). It needs the playtest sessions and the pilot (inputs-needed #13) |
+| 36.2 | Fix any pillar under 8 | re-scored ≥ 8 | ⛔ after 36.1 |
