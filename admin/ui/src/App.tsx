@@ -12,6 +12,7 @@ import { ClassEditorPage } from './pages/ClassEditorPage';
 import { ClassesPage } from './pages/ClassesPage';
 import { ConceptsPage } from './pages/ConceptsPage';
 import { PoolsPage } from './pages/PoolsPage';
+import { CustomHeistsPage } from './pages/CustomHeistsPage';
 import { UsersPage } from './pages/UsersPage';
 import { QuestionListPage } from './pages/QuestionListPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -37,6 +38,7 @@ export function App() {
         <Route path="briefs" element={<BriefsPage />} />
         <Route path="concepts" element={<ConceptsPage />} />
         <Route path="pools" element={<PoolsPage />} />
+        <Route path="heists" element={<CustomHeistsPage />} />
         <Route path="import-export" element={<ImportExportPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="audit" element={<AuditPage />} />

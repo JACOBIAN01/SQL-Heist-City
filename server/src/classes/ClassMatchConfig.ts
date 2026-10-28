@@ -83,6 +83,13 @@ export function classTaskOptions(config: ClassMatchConfig): (rewardKey: string) 
     const dialect = { dialect: config.dialect };
     // Planning briefs are not released per class (yet): any enabled brief may be asked.
     if (rewardKey.startsWith('brief:')) return dialect;
+    // A teacher's own heist asks its own question at each lock of its bank (Phase 34.5).
+    const lock = /^vault:bank-(\d):lock-(\d)$/.exec(rewardKey);
+    const custom = config.mode.custom;
+    if (lock && custom && Number(lock[1]) === custom.bank) {
+      const slug = custom.locks[Number(lock[2]) - 1];
+      if (slug) return { fixed: { slug, seed: `custom-${config.classId}-${lock[2]}` }, ...dialect };
+    }
     return { allowedQuestions: (usage && sets.get(usage)) || none, ...dialect };
   };
 }

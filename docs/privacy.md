@@ -109,6 +109,19 @@ A student's leanest correct query for each question: how many rows it is estimat
 | `length` | Characters in the query (no text) | record | with the account |
 | `achieved_at` | When they reached it | technical | with the account |
 
+### `custom_heists`
+A teacher's own heist: a story and a chain of questions (Phase 34.5). Written by the teacher; it holds no student data.
+
+| Column | What it holds | Kind | Kept |
+|---|---|---|---|
+| `id` | Its number | technical | until the teacher deletes it |
+| `owner_user_id` | The teacher (admin account) who made it | pseudonymous | until the teacher deletes it |
+| `name` | Its name | content | until the teacher deletes it |
+| `spec` | The story lines, the bank and the questions' slugs | content | until the teacher deletes it |
+| `share_code` | The code another teacher types to copy it | technical | until the teacher deletes it |
+| `created_at` | When it was made | technical | until the teacher deletes it |
+| `updated_at` | When it last changed | technical | until the teacher deletes it |
+
 ### `player_contracts`
 The daily contracts a student was dealt and how far each got (Phase 26.5). Old days are deleted by the retention job.
 

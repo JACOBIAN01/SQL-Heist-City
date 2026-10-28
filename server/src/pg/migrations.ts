@@ -431,4 +431,17 @@ export const pgMigrations: readonly string[] = [
   );
   CREATE INDEX query_records_class ON query_records (class_id, question_id);
   `,
+  // 23 — a teacher's own heists, shareable by code (Phase 34.5)
+  `
+  CREATE TABLE custom_heists (
+    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    owner_user_id BIGINT,
+    name          TEXT        NOT NULL,
+    spec          JSON        NOT NULL,
+    share_code    TEXT        NOT NULL UNIQUE,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX custom_heists_owner ON custom_heists (owner_user_id);
+  `,
 ];

@@ -31,6 +31,19 @@ export const modeSchema = z.object({
   heist: z.record(z.string(), z.unknown()).default({}),
   /** At most this many banks are open (the lowest tiers the class has open); none for no limit. */
   bankLimit: z.number().int().min(0).max(5).nullable().default(null),
+  /** A teacher's own heist, when this mode is one (Phase 34.5): its story and its question for each lock. */
+  custom: z
+    .object({
+      name: z.string(),
+      story: z.object({
+        title: z.string(),
+        lines: z.array(z.object({ speaker: z.string(), text: z.string() })),
+      }),
+      bank: z.number().int().min(1).max(5),
+      locks: z.array(z.string()).min(1).max(5),
+      roundMinutes: z.number(),
+    })
+    .optional(),
   /** Duel rules, for the duel kind. */
   duel: duelSettingsSchema.default({ draws: 5, countdownSeconds: 3, drawSeconds: 120, maxTier: 2 }),
 });

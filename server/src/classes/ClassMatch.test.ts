@@ -23,6 +23,8 @@ import {
 import {
   DEFAULT_MODES_SETTINGS,
   classInputSchema,
+  customHeistSpecSchema,
+  customMode,
   modeById,
   usageOfReward,
   type ClassRecord,
@@ -224,5 +226,58 @@ describe('a room in another game mode (28.1, 28.2, 28.4)', () => {
     );
     expect(cfg.banksOpen).toEqual([1, 2]);
     expect(roundSeconds(cfg)).toBe(40 * 60);
+  });
+});
+
+describe('a teacher’s own heist (34.5)', () => {
+  const spec = customHeistSpecSchema.parse({
+    name: 'Library job',
+    bank: 2,
+    locks: ['select-all', 'where-basics', 'join-two'],
+    story: { title: 'The library', lines: [{ speaker: 'Mae', text: 'Quietly now.' }] },
+  });
+  const customConfig = (): ClassMatchConfig =>
+    classMatchConfig(record, [], {}, customMode(9, spec));
+
+  it('asks its own question at each lock of its bank, the same for the whole class', () => {
+    const ask = classTaskOptions(customConfig());
+    expect(ask('vault:bank-2:lock-1')).toMatchObject({
+      fixed: { slug: 'select-all', seed: 'custom-1-1' },
+    });
+    expect(ask('vault:bank-2:lock-3')).toMatchObject({ fixed: { slug: 'join-two' } });
+  });
+
+  it('leaves other banks, other rewards and locks past its chain to the ordinary rules', () => {
+    const ask = classTaskOptions(customConfig());
+    expect(ask('vault:bank-3:lock-1').fixed).toBeUndefined();
+    expect(ask('vault:bank-2:lock-4').fixed).toBeUndefined();
+    expect(ask('heal:small').fixed).toBeUndefined();
+  });
+
+  it('plays on one bank with as many locks as questions', () => {
+    const c = customConfig();
+    expect(c.mode.id).toBe('custom-9');
+    expect(c.mode.heist).toMatchObject({ locksPerVault: 3 });
+    expect(c.mode.bankLimit).toBe(1);
+  });
+
+  it('opens with the teacher’s story when a student joins', () => {
+    const match = new Match({
+      map: mapById('city') as GameMap,
+      settings: { ...DEFAULT_MATCH_SETTINGS, maxPlayers: 60, sandboxDummies: 0 },
+      combat: DEFAULT_COMBAT_SETTINGS,
+      heist: DEFAULT_HEIST_SETTINGS,
+      classConfig: customConfig(),
+      seed: 'custom',
+    });
+    const connection = new FakeConnection();
+    const r = match.join(PROTOCOL_VERSION, 'P', connection);
+    expect(r.ok).toBe(true);
+    const scene = connection.jsonOf('scene').at(-1) as unknown as {
+      title: string;
+      lines: { speaker: string }[];
+    };
+    expect(scene.title).toBe('The library');
+    expect(scene.lines[0]?.speaker).toBe('Mae');
   });
 });

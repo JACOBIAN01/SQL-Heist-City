@@ -1,4 +1,9 @@
 import {
+  InMemoryCustomHeistRepository,
+  PgCustomHeistRepository,
+  type CustomHeistRepository,
+} from '@heist/server/classes/CustomHeistRepository';
+import {
   InMemoryContractStore,
   PgContractStore,
   type ContractStore,
@@ -92,6 +97,8 @@ export interface AdminStores {
   readonly players: PlayerRepository;
   /** Teachers' classes, their question sets and rosters. SQLite development keeps them in memory only. */
   readonly classes: ClassRepository;
+  /** Teachers' own heists (Phase 34.5). */
+  readonly customHeists: CustomHeistRepository;
   /** Finished rounds of classes (written by the game server). */
   readonly classResults: ClassResultRepository;
   /** The learning record (written by the game server). */
@@ -129,6 +136,7 @@ export function sqliteStores(db: DatabaseSync): AdminStores {
     progress: new InMemoryProgressStore(),
     loadout: new InMemoryLoadoutStore(),
     contracts: new InMemoryContractStore(),
+    customHeists: new InMemoryCustomHeistRepository(),
     classes: new InMemoryClassRepository(
       undefined,
       () => new Set(questionRepo.list().map((q) => q.id)),
@@ -147,6 +155,7 @@ export function pgStores(db: PgDatabase): AdminStores {
     settings: new PgSettingsStore(db),
     players: new PgPlayerRepository(db),
     classes: new PgClassRepository(db),
+    customHeists: new PgCustomHeistRepository(db),
     classResults: new PgClassResults(db),
     concepts: new PgConceptStore(db),
     assessments: new PgAssessmentStore(db),

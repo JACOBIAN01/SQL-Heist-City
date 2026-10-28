@@ -30,6 +30,7 @@ import {
 } from '../api/classes';
 import { useQuestions } from '../api/questions';
 import { useAssessments, useSaveAssessment } from '../api/analytics';
+import { useCustomHeists } from '../api/customHeists';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { useMe } from '../auth/useMe';
 
@@ -62,10 +63,20 @@ function ClassEditor({ record }: { record: ClassRecord }) {
   const [dialect, setDialect] = useState(record.dialect);
   const [mode, setMode] = useState(record.mode);
   const modes = useSection('modes');
+  const custom = useCustomHeists();
   const modeList = (
     modes.data?.current as
       { modes?: { id: string; name: string; description: string }[] } | undefined
   )?.modes ?? [{ id: 'classic', name: 'Classic heist', description: '' }];
+  // A teacher's own heists play as modes too (Phase 34.5).
+  const allModes = [
+    ...modeList,
+    ...(custom.data ?? []).map((h) => ({
+      id: h.mode,
+      name: `My heist: ${h.name}`,
+      description: h.spec.story.title,
+    })),
+  ];
   const [squadMode, setSquadMode] = useState(record.squadMode);
   const [squadSize, setSquadSize] = useState(record.squadSize);
   const packs = useSection('dialects');
@@ -156,13 +167,13 @@ function ClassEditor({ record }: { record: ClassRecord }) {
         <label>
           Game mode
           <select value={mode} onChange={(e) => setMode(e.target.value)}>
-            {modeList.map((m) => (
+            {allModes.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
               </option>
             ))}
           </select>
-          <span className="muted">{modeList.find((m) => m.id === mode)?.description ?? ''}</span>
+          <span className="muted">{allModes.find((m) => m.id === mode)?.description ?? ''}</span>
         </label>
         <fieldset>
           <legend>Squads</legend>

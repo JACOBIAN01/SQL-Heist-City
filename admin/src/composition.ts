@@ -30,6 +30,7 @@ import { conceptRoutes } from './concepts';
 import { analyticsRoutes } from './analytics/routes';
 import { briefRoutes } from './analytics/briefs';
 import { classRoutes } from './classes/classRoutes';
+import { customHeistRoutes } from './classes/customHeistRoutes';
 import { playerStaffRoutes } from './players/staffRoutes';
 import {
   ANALYTICS_SETTINGS_KEY,
@@ -248,6 +249,7 @@ export function buildAdmin(
         events,
         now,
       }),
+      customHeistRoutes({ heists: stores.customHeists, questions: stores.questions }),
       classRoutes({
         classes: stores.classes,
         results: stores.classResults,

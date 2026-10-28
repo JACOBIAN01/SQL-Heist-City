@@ -307,3 +307,7 @@ Crack a lock and your man on the inside may ring: his query is broken, and the g
 ## Leanest-query leaderboards (Phase 34.4)
 
 Solve a write question and the game prices your query: about how many rows it reads (using a key beats reading a whole table) and how long it is. You get your place in your class and in the game right away, and Z shows the top of each table. A shorter, leaner query for the same answer climbs the table, so there is always a reason to go back and tighten one up.
+
+## A teacher's own heist (Phase 34.5)
+
+In the admin, **My heists** lets a teacher write a story and choose a chain of questions for one bank. Each lock asks the next question, the same for the whole class. Take it as the class's game mode to play it, and hand its share code to another teacher to let them copy it.

@@ -1,7 +1,9 @@
 import {
   DEFAULT_MODES_SETTINGS,
   consentIsCurrent,
+  customMode,
   modeById,
+  parseCustomModeId,
   type ModesSettings,
 } from '@heist/shared';
 import type { HeistSettings, MatchSettings } from '@heist/shared';
@@ -9,6 +11,7 @@ import { cityMapIdFor, citySettingsSchema, type CitySettings } from '@heist/shar
 import type { MapName } from '../game/maps';
 import type { ClassCommand, MatchExtras, MatchInfo } from '../game/MatchPool';
 import { classMatchConfig } from './ClassMatchConfig';
+import type { CustomHeistRepository } from './CustomHeistRepository';
 import type { ClassRepository } from './ClassRepository';
 
 /** The part of the match pool a class room needs (so tests can pass a fake). */
@@ -43,6 +46,8 @@ export interface RoomDeps {
   readonly heist: () => HeistSettings;
   /** The game modes a class can pick (Phase 28); without it every class plays classic. */
   readonly modes?: () => ModesSettings;
+  /** Teachers' own heists, played by picking `custom-<id>` as a class's mode (Phase 34.5). */
+  readonly customHeists?: CustomHeistRepository;
 }
 
 export type RoomAction =
@@ -132,11 +137,16 @@ export class ClassRooms {
   private async config(classId: number) {
     const record = await this.deps.classes.get(classId);
     if (!record) throw new Error(`class ${classId} is gone`);
+    const customId = parseCustomModeId(record.mode);
+    const custom = customId === undefined ? undefined : await this.deps.customHeists?.get(customId);
     return classMatchConfig(
       record,
       await this.deps.classes.questions(classId),
       await this.deps.classes.squads(classId),
-      modeById(this.deps.modes?.() ?? DEFAULT_MODES_SETTINGS, record.mode),
+      // A custom heist plays as its own mode; one that has been deleted falls back to classic.
+      custom
+        ? customMode(custom.id, custom.spec)
+        : modeById(this.deps.modes?.() ?? DEFAULT_MODES_SETTINGS, record.mode),
     );
   }
 

@@ -454,6 +454,15 @@ export class HeistController implements ArmsControl {
     this.squads.place(player);
     this.upgrades.load(player);
     this.story.load(player);
+    // A teacher's own heist opens with its story.
+    const custom = this.match.classInfo?.mode.custom;
+    if (custom)
+      this.match.sendJson(player, {
+        t: 'scene',
+        id: `custom-${this.match.classInfo?.classId ?? 0}`,
+        title: custom.story.title,
+        lines: custom.story.lines,
+      });
     this.cops.assign(player);
     this.cops.equip(player, (p) => this.giveWeapon(p, 'pistol'));
     this.match.sendJson(player, this.intel.catalog(player));

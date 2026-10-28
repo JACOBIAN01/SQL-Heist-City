@@ -84,6 +84,7 @@ export * from './progress/profilePage';
 export * from './classes/squads';
 export * from './config/squadAwards';
 export * from './config/modes';
+export * from './config/customHeist';
 export * from './config/story';
 export * from './config/cityDb';
 export * from './analytics/queryCost';

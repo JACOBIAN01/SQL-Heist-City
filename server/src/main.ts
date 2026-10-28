@@ -27,6 +27,7 @@ import { AnalyticsKit } from './analytics/AnalyticsKit';
 import { ClassRooms, type RoomAction } from './classes/ClassRooms';
 import { PgClassResults } from './classes/ClassResults';
 import { PgClassRepository } from './classes/ClassRepository';
+import { PgCustomHeistRepository } from './classes/CustomHeistRepository';
 import { ticketAuth } from './game/GameAuth';
 import { MatchPool } from './game/MatchPool';
 import { mapByName, parseMapName, type MapName } from './game/maps';
@@ -224,6 +225,7 @@ if (pg && classPool && challenges) {
     city: () => stack.citySettings(),
     heist: () => stack.heistSettings(),
     modes: () => stack.modesSettings(),
+    customHeists: new PgCustomHeistRepository(pg),
   });
   log.info('class rooms on: teachers start a room from the admin');
 }
