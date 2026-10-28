@@ -36,6 +36,7 @@ import { ActsView } from './ui/hud/ActsView';
 import { StoryView } from './ui/hud/StoryView';
 import { GhostRenderer } from './heist/GhostRenderer';
 import { LeaderboardView } from './ui/hud/LeaderboardView';
+import { KillCamView } from './heist/KillCamView';
 import { TeamBadge } from './ui/hud/TeamBadge';
 import { CityDbView } from './ui/hud/CityDbView';
 import { BarkView, SceneView } from './ui/hud/SceneView';
@@ -417,6 +418,8 @@ window.addEventListener('keydown', (event) => {
 const ghostArt = new GhostRenderer(scene);
 const leaderboardView = new LeaderboardView(i18n);
 document.body.append(leaderboardView.panel);
+const killCam = new KillCamView(i18n);
+document.body.append(killCam.root);
 const teamBadge = new TeamBadge(i18n);
 document.body.append(teamBadge.root);
 const cityDbView = new CityDbView(i18n, (m) => client.sendJson(m));
@@ -706,6 +709,8 @@ client.subscribe({
     } else if (message.t === 'leaderboard') {
       leaderboardView.update(message);
       hud.toast(leaderboardView.toastFor(message));
+    } else if (message.t === 'killcam') {
+      killCam.start(message, performance.now());
     } else if (message.t === 'team') {
       teamBadge.update(message);
     } else if (message.t === 'citydb') {
@@ -1211,6 +1216,12 @@ renderer.setAnimationLoop((now) => {
       frameMs / 1000,
       player.body.crouching,
     );
+  // The kill-cam: a few seconds from where the player who put you down stood.
+  killCam.frame(now, feedback.isAlive);
+  if (!feedback.isAlive && killCam.active(now)) {
+    const at = killCam.killerId === undefined ? undefined : remotes.positionOf(killCam.killerId);
+    if (at) killCam.place(camera, at, drawPos);
+  }
   // Time of day from the match clock, so every player shares one sky (?hour=22 pins it).
   const hour =
     fixedHour ??

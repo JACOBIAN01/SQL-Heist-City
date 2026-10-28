@@ -319,3 +319,7 @@ The fastest heist on each bank is kept as a ghost. The moment you begin on that 
 ## Country looks (Phase 34.7)
 
 Under Settings → Language, pick a **Country look**: India or the United Kingdom change the money symbol and digit grouping, the banks' names and the crew's names, everywhere the game writes them. The numbers underneath do not change, so a class can mix looks and still play the same heist.
+
+## Kill-cam (Phase 35.1)
+
+When another player puts you down, the camera moves to where they stood and looks back at you for 3.5 s, with a line saying who it was and how long their last answer took. It teaches that a fast query was what made them dangerous. Guards, dummies and your own falls do not trigger it.

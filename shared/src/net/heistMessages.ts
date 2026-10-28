@@ -212,6 +212,17 @@ export interface PayoutMessage {
   readonly mastery: number;
 }
 
+/**
+ * You were put down by another player (Phase 35.1): who, and how long their last answer to a
+ * question took, for the kill-cam. `seconds` is how long to watch from their side.
+ */
+export interface KillCamMessage {
+  readonly t: 'killcam';
+  readonly killer: { readonly id: number; readonly name: string };
+  readonly seconds: number;
+  readonly lastAnswer?: { readonly seconds: number; readonly rewardKey: string };
+}
+
 /** A ghost to race (Phase 34.6): the best run on a bank so far, replayed from the moment you begin yours. */
 export interface GhostMessage {
   readonly t: 'ghost';
@@ -911,6 +922,7 @@ export type HeistServerMessage =
   | InsideMessage
   | LeaderboardMessage
   | GhostMessage
+  | KillCamMessage
   | GhostResultMessage
   | CityResultMessage
   | SplitStateMessage

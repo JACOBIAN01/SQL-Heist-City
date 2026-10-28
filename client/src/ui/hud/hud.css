@@ -716,3 +716,23 @@
   background: rgba(120, 40, 30, 0.85);
   color: #ffc9b8;
 }
+
+/* Kill-cam caption (Phase 35.1). */
+.killcam {
+  position: fixed;
+  left: 50%;
+  bottom: 22vh;
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 6px 16px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #ffd2cc;
+  font:
+    700 1rem system-ui,
+    sans-serif;
+  pointer-events: none;
+}
+.killcam[hidden] {
+  display: none;
+}

@@ -143,6 +143,8 @@ export const en = {
   'action.approach': 'Stealth',
   'approach.stealth': 'STEALTH',
   'team.cop': 'COP',
+  'killcam.plain': 'Put down by {name}.',
+  'killcam.withAnswer': 'Put down by {name}. Their last answer took {seconds} s.',
   'action.leaderboard': 'Leaderboard',
   'lb.title': 'Leanest queries',
   'lb.close': 'Close',

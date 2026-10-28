@@ -41,6 +41,7 @@ import { StorySystem } from './StorySystem';
 import { CameraGrid } from './CameraGrid';
 import { CopsRobbers } from './CopsRobbers';
 import { GhostSystem } from './GhostSystem';
+import { KillCam } from './KillCam';
 import { InsideMan } from './InsideMan';
 import { SplitQueries } from './SplitQueries';
 import { CityDb } from './CityDb';
@@ -228,6 +229,8 @@ export class HeistController implements ArmsControl {
       },
       () => !this.taskOptions && !this.duels.enabled && !this.roundOver,
     );
+    // The kill-cam: who put you down, and how long their last answer took.
+    this.killcam = new KillCam(match, this.events);
     // Ghost heists: your fastest run on a bank, to race.
     this.ghosts = new GhostSystem(
       match,
@@ -846,6 +849,7 @@ export class HeistController implements ArmsControl {
     this.intel.forget(player);
     this.cops.forget(player);
     this.ghosts.drop(player);
+    this.killcam.forget(player);
     this.inside.forget(player);
     this.splits.forget(player);
     this.voice.forget(player);
@@ -967,6 +971,7 @@ export class HeistController implements ArmsControl {
   readonly story: StorySystem;
   readonly cops: CopsRobbers;
   readonly ghosts: GhostSystem;
+  readonly killcam: KillCam;
   readonly inside: InsideMan;
   readonly splits: SplitQueries;
   readonly cameras: CameraGrid;
