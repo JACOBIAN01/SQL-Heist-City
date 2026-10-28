@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_CHEAT_SETTINGS,
   DEFAULT_COMBAT_SETTINGS,
@@ -170,5 +170,40 @@ describe('the cheat code (37.2)', () => {
     expect(on.connection.jsonOf('cheat_info').at(-1)).toMatchObject({ combo: ['KeyQ', 'KeyW'] });
     const off = await setup({ scope: 'off' });
     expect(off.connection.jsonOf('cheat_info')).toHaveLength(0);
+  });
+
+  it('never lets the code reach a log, the learning record or the round replay (37.6)', async () => {
+    const lines: string[] = [];
+    const out = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+      lines.push(String(chunk));
+      return true;
+    });
+    const err = vi.spyOn(process.stderr, 'write').mockImplementation((chunk) => {
+      lines.push(String(chunk));
+      return true;
+    });
+    try {
+      const s = await setup();
+      const id = await s.ask();
+      const typed = 'typed-secret-0451';
+      await s.type(id, typed);
+      s.advance(1500);
+      s.send({ t: 'cheat', challengeId: id, code: typed }); // malformed: no ref
+      s.advance(1500);
+      await s.type(id, CODE);
+      const kept = JSON.stringify([
+        s.attempts.items,
+        s.attempts.events,
+        s.match.heist.recorder.snapshot(),
+        s.match.anomalies.counts(),
+      ]);
+      for (const secret of [typed, CODE, await hashCode(CODE).then((h) => h.split('$')[5] ?? 'x')])
+        expect(kept).not.toContain(secret);
+      expect(lines.join('')).not.toContain(typed);
+      expect(lines.join('')).not.toContain(CODE);
+    } finally {
+      out.mockRestore();
+      err.mockRestore();
+    }
   });
 });

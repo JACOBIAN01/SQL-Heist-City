@@ -75,4 +75,26 @@ describe('CheatGate limits', () => {
     t.advance(1100);
     expect((await t.g.check('p', 'right', { ...here, round: 2 })).ok).toBe(true);
   });
+
+  it('checks only a few codes at once, so a crowd cannot tie up the server', async () => {
+    let release: () => void = () => {};
+    const slow = new Promise<void>((r) => (release = r));
+    const settings = { ...base };
+    const g = new CheatGate(
+      () => settings,
+      () => 1_000_000,
+      true,
+      async () => {
+        await slow;
+        return false;
+      },
+    );
+    const tries = Array.from({ length: 6 }, (_, i) => g.check(`p${i}`, 'x', here));
+    const [fifth, sixth] = await Promise.all([tries[4], tries[5]]);
+    expect(fifth).toMatchObject({ reason: 'locked' });
+    expect(sixth).toMatchObject({ reason: 'locked' });
+    release();
+    const done = await Promise.all(tries.slice(0, 4));
+    expect(done.every((d) => !d.ok && d.reason === 'wrong')).toBe(true);
+  });
 });

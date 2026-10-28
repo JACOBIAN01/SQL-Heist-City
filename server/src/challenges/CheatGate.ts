@@ -14,6 +14,8 @@ export type CheatVerdict =
 
 /** Least time (ms) between two tries by one player, whatever the settings. */
 const MIN_GAP_MS = 1000;
+/** Hashes being checked at once; more wait, so a crowd cannot tie up the CPU (scrypt is deliberately slow). */
+const MAX_CHECKING = 4;
 /** Wrong codes across the whole match, as a multiple of one player's tries, before everyone waits. */
 const MATCH_WIDE_FACTOR = 5;
 
@@ -37,6 +39,7 @@ interface Seen {
 export class CheatGate {
   private readonly seen = new Map<string, Seen>();
   private wrongAt: number[] = [];
+  private checking = 0;
 
   constructor(
     private readonly settings: () => CheatSettings,
@@ -73,7 +76,16 @@ export class CheatGate {
       me.used = 0;
     }
     if (s.maxPerRound > 0 && me.used >= s.maxPerRound) return { ok: false, reason: 'limit' };
-    if (!(await this.verify(code, s.codeHash))) {
+    if (this.checking >= MAX_CHECKING)
+      return { ok: false, reason: 'locked', lockedUntil: now + MIN_GAP_MS };
+    this.checking++;
+    let right: boolean;
+    try {
+      right = await this.verify(code, s.codeHash);
+    } finally {
+      this.checking--;
+    }
+    if (!right) {
       this.wrongAt.push(now);
       if (++me.fails >= s.lockoutTries) {
         me.fails = 0;
